@@ -3,7 +3,6 @@
   flex-direction: column;
   justify-content: space-between;
   align-items: center;
-  padding: 6rem;
   min-height: 100vh;
 }
 
@@ -42,6 +41,18 @@
 .grid {
   max-width: 100%;
   width: var(--max-width);
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+  padding-bottom: 40px;
+
+  & a {
+    background: black;
+    padding-top: 6px;
+    padding-left: 6px;
+    padding-right: 6px;
+    border-radius: 10px;
+  }
 }
 
 .card {
