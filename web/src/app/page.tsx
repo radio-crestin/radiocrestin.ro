@@ -19,7 +19,7 @@ export default function Home() {
       <div>
 
         <div className={styles.grid}>
-          <Link href={"https://github.com/radio-crestin/radiocrestin.ro"}>
+          <Link href={"https://github.com/radio-crestin/radiocrestin.ro"} target={"_blank"}>
             <Image src={github_icon} alt={"Github icon"} width={30} />
           </Link>
         </div>
