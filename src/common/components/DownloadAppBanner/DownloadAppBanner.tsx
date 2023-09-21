@@ -1,6 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
+
 import { Box, Text } from '@chakra-ui/react';
 import styles from './DownloadAppBanner.module.scss';
 
@@ -28,7 +28,7 @@ export default function DownloadAppBanner() {
         </Text>
         <Box mt={5} display={'flex'} gap={2} alignItems={'center'}>
           <Link href="https://apps.apple.com/app/6451270471">
-            <Image
+            <img
               src={'/images/appstore.svg'}
               width={150}
               height={54}
@@ -38,7 +38,7 @@ export default function DownloadAppBanner() {
           <Link
             href="https://play.google.com/store/apps/details?id=com.radiocrestin.radio_crestin&hl=en_US"
             style={{ position: 'relative' }}>
-            <Image
+            <img
               className={styles.playstore_link}
               src={'/images/playstore.svg'}
               width={150}
@@ -53,14 +53,14 @@ export default function DownloadAppBanner() {
         position={'relative'}
         width={{ base: '100%', lg: '500px' }}
         marginRight={{ base: 0, lg: 90, xl: 150 }}>
-        <Image
+        <img
           className={styles.image_iphone12}
           width={500}
           height={500}
           src={'/images/iphone12-mock.png'}
           alt={'iPhone 12 Radio Crestin'}
         />
-        <Image
+        <img
           className={styles.image_iphone12_mobile}
           width={400}
           height={400}
@@ -68,7 +68,7 @@ export default function DownloadAppBanner() {
           alt={'iPhone 12 Radio Crestin'}
         />
       </Box>
-      <Image
+      <img
         className={styles.image_qr_code}
         width={90}
         height={90}

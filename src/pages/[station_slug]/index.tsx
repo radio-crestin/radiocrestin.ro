@@ -86,26 +86,30 @@ export default function StationPage({
   );
 }
 
-export async function getServerSideProps(context: any) {
-  const { req, res, query } = context;
-  res.setHeader(
-    'Cache-Control',
-    'public, s-maxage=10, stale-while-revalidate=59',
-  );
+export async function getStaticPaths() {
   const stations_metadata = await getStations();
-  const { station_slug } = query;
+
+  // Generate the paths for each station
+  const paths = stations_metadata.stations.map((station: IStation) => ({
+    params: { station_slug: station.slug },
+  }));
+
+  return {
+    paths,
+    fallback: false,
+  };
+}
+
+export async function getStaticProps(context: any) {
+  const stations_metadata = await getStations();
+  const { station_slug } = context.params;
   const stationData = stations_metadata.stations.find(
     (station: IStation) => station.slug === station_slug,
   );
-  const { pathname } = parse(req.url, true);
-  const host = req.headers.host;
 
   if (!stationData) {
     return {
-      redirect: {
-        permanent: false,
-        destination: `/?error=Statia ${station_slug} nu a fost gasita`,
-      },
+      notFound: true,
     };
   }
 
@@ -113,7 +117,6 @@ export async function getServerSideProps(context: any) {
     props: {
       stations_metadata,
       station_slug,
-      fullURL: `https://www.${host}${pathname}`,
     },
   };
 }
