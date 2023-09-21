@@ -1,9 +1,8 @@
 import styles from './styles.module.scss';
-import qr_code from "public/qr-code.webp"
-import playstore from "public/playstore.svg"
-import appstore from "public/appstore.svg"
-import { Simulate } from "react-dom/test-utils";
-import play = Simulate.play;
+import qr_code from "@/images/qr-code.webp"
+import playstore from "@/images/playstore.svg"
+import appstore from "@/images/appstore.svg"
+
 
 const BannerApp = () => {
   return (
@@ -46,7 +45,6 @@ const BannerApp = () => {
           src={qr_code.src}
         />
       </div>
-
     </div>
   );
 };
