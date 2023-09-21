@@ -3,17 +3,12 @@ import { Box, Container } from '@chakra-ui/react';
 import dynamic from 'next/dynamic';
 
 import StationHomepageHeader from '@/components/StationHomepageHeader/StationHomepageHeader';
-import StationGroups from '@/components/StationGroups/StationGroups';
 import StationList from '@/components/StationList/StationList';
 import Footer from '@/components/Footer/Footer';
-import { SearchStationsModal } from '@/components/SearchStationsModal/SearchStationsModal';
 import { ContactModalLink } from '@/components/ContactModalLink/ContactModalLink';
-import { parse } from 'url';
 import HeadContainer from '@/components/HeadContainer';
 import DownloadAppBanner from '@/components/DownloadAppBanner/DownloadAppBanner';
 import { IStation } from "@/models/Station";
-import { IStationGroup } from "@/models/StationGroup";
-import { indexBy } from "@/utils/indexBy";
 import { seoStation } from "@/utils/seo";
 import { ISeoMetadata } from "@/models/SeoMetadata";
 import { getStations } from "@/common/frontendServices/getStations";
@@ -62,18 +57,7 @@ export default function StationPage({
         fullURL={fullURL}
         selectedStation={selectedStation}
       />
-      <Container maxW={'8xl'}>
-        <Box
-          display={'flex'}
-          alignItems={'center'}
-          justifyContent={'flex-end'}
-          my={4}
-          gap={2}>
-          <ContactModalLink />
-        </Box>
-        {selectedStation && (
-          <StationHomepageHeader selectedStation={selectedStation} />
-        )}
+      <Container maxW={'8xl'} mt={16}>
         <StationList
           stations={stations}
         />

@@ -5,5 +5,8 @@
   ],
   "plugins": [
     "eslint-plugin-next-on-pages"
-  ]
+  ],
+  "rules": {
+    "@next/next/no-img-element": "off"
+  }
 }

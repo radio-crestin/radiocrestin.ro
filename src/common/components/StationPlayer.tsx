@@ -290,7 +290,7 @@ export default function StationPlayer({ stations }: any) {
       bottom={0}
       right={0}
       left={0}
-      margin="auto"
+      marginLeft="auto"
       zIndex={9}>
       <Box
         bg={{ base: 'black' }}

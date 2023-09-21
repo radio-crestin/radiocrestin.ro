@@ -45,7 +45,6 @@ export default function DownloadAppBanner() {
               height={53}
               alt={'PlayStore Image Radio Crestin'}
             />
-            <p className={styles.beta}>BETA</p>
           </Link>
         </Box>
       </Box>
