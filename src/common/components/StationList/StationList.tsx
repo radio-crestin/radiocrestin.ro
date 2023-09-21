@@ -7,7 +7,6 @@ import { ImageWithFallback } from '../ImageWithFallback/ImageWithFallback';
 import { ViewIcon } from '@chakra-ui/icons';
 import { useRouter } from 'next/router';
 import { CONSTANTS } from "@/constants";
-import { IStationGroup } from "@/models/StationGroup";
 import { IStation } from "@/models/Station";
 
 const StationMetadata = dynamic(
@@ -114,10 +113,8 @@ const StationItem = ({
 };
 
 export default function StationList({
-  station_group,
   stations,
 }: {
-  station_group: IStationGroup;
   stations: IStation[];
 }) {
   const route = useRouter();
@@ -127,42 +124,38 @@ export default function StationList({
   );
 
   return (
-    <Center>
-      <Grid
-        w="91%"
-        mt={1}
-        templateColumns={{
-          base: 'repeat(2, 1fr)',
-          md: 'repeat(4, 1fr)',
-          lg: 'repeat(5, 1fr)',
-          xl: 'repeat(5, 1fr)',
-        }}
-        gap={9}>
-        {Object.values(stations).length > 0 ? (
-          Object.values(stations).map((station: IStation): any => (
-            <GridItem as="button" key={station.id}>
-              <Link
-                prefetch={false}
-                href={`/${encodeURIComponent(
-                  station_group?.slug,
-                )}/${encodeURIComponent(station.slug)}`}
-                scroll={false}
-                passHref>
-                <StationItem
-                  station={station}
-                  is_listening={station === selectedStation || false}
-                />
-              </Link>
-            </GridItem>
-          ))
-        ) : (
-          <GridItem as="div" colSpan={5}>
-            <Text w={'100%'}>
-              Nu există nici o stație în această categorie.
-            </Text>
+    <Grid
+      w="91%"
+      mt={1}
+      templateColumns={{
+        base: 'repeat(2, 1fr)',
+        md: 'repeat(4, 1fr)',
+        lg: 'repeat(5, 1fr)',
+        xl: 'repeat(5, 1fr)',
+      }}
+      gap={9}>
+      {Object.values(stations).length > 0 ? (
+        Object.values(stations).map((station: IStation): any => (
+          <GridItem as="button" key={station.id}>
+            <Link
+              prefetch={false}
+              href={`/${encodeURIComponent(station.slug)}`}
+              scroll={false}
+              passHref>
+              <StationItem
+                station={station}
+                is_listening={station === selectedStation || false}
+              />
+            </Link>
           </GridItem>
-        )}
-      </Grid>
-    </Center>
+        ))
+      ) : (
+        <GridItem as="div" colSpan={5}>
+          <Text w={'100%'}>
+            Nu există nici o stație în această categorie.
+          </Text>
+        </GridItem>
+      )}
+    </Grid>
   );
 }

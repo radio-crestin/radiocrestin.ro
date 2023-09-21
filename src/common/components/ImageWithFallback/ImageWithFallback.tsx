@@ -21,10 +21,7 @@ export const ImageWithFallback = ({
       htmlHeight={250}
       htmlWidth={250}
       loading={'lazy'}
-      src={cdnImageLoader({
-        src: error ? fallbackSrc : props.src,
-        width: 256,
-      })}
+      src={error ? fallbackSrc : props.src}
       draggable={false}
       alt={"fallback image"}
     />

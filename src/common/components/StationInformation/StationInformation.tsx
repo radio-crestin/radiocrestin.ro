@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-import FacebookIcon from '@/public/facebook.svg';
+import FacebookIcon from '@/images/facebook.svg';
 import {
   Button,
   Flex,

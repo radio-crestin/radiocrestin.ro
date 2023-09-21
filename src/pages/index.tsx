@@ -1,23 +1,27 @@
 // TODO: Here should be the homepage.
-import { getStations } from "@/common/frontendServices/getStations";
 import { IStation } from "@/models/Station";
+import StationList from "@/components/StationList/StationList";
+import { getStations } from "@/common/frontendServices/getStations";
+import { IStationGroup } from "@/models/StationGroup";
+import { Flex } from "@chakra-ui/react";
 
-export default function HomePage({ stations }: { stations: IStation[] }) {
+export default function HomePage({ stations, station_groups }: { stations: IStation[], station_groups: IStationGroup[] }) {
   console.log("stations", stations[0])
 
   return (
-    <>
-      {JSON.stringify(stations)}
-    </>
+    <Flex paddingX={"10%"}>
+      <StationList stations={stations} />
+    </Flex>
   )
 }
 
 export const getStaticProps = (async () => {
-  const { stations } = await getStations()
+  const { stations, station_groups} = await getStations()
 
   return {
     props: {
       stations: stations,
+      station_groups: station_groups,
     },
   }
 })
