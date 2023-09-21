@@ -5,9 +5,7 @@ import { getStations } from "@/common/frontendServices/getStations";
 import { IStationGroup } from "@/models/StationGroup";
 import { Flex } from "@chakra-ui/react";
 
-export default function HomePage({ stations, station_groups }: { stations: IStation[], station_groups: IStationGroup[] }) {
-  console.log("stations", stations[0])
-
+export default function HomePage({ stations }: { stations: IStation[] }) {
   return (
     <Flex paddingX={"10%"}>
       <StationList stations={stations} />
