@@ -1,8 +1,9 @@
+import Image from "next/image";
+
 import styles from './styles.module.scss';
 import qr_code from "@/images/qr-code.webp"
 import playstore from "@/images/playstore.svg"
 import appstore from "@/images/appstore.svg"
-
 
 const BannerApp = () => {
   return (
@@ -16,7 +17,7 @@ const BannerApp = () => {
         </p>
         <div className={styles.apps_download}>
           <a href="https://apps.apple.com/app/6451270471" target={"_blank"}>
-            <img
+            <Image
               alt="AppStore Image Radio Crestin"
               loading="lazy"
               width="150"
@@ -26,7 +27,7 @@ const BannerApp = () => {
           </a>
           <a style={{ position: "relative" }} target={"_blank"}
             href="https://play.google.com/store/apps/details?id=com.radiocrestin.radio_crestin&amp;hl=en_US">
-            <img
+            <Image
               alt="PlayStore Image Radio Crestin"
               loading="lazy"
               width="150"
@@ -37,7 +38,7 @@ const BannerApp = () => {
         </div>
       </div>
       <div className={styles.QR_code}>
-        <img
+        <Image
           alt="QR Code Radio Crestin"
           loading="lazy"
           width="90"

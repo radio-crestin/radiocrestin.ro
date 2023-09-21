@@ -1,14 +1,13 @@
 // TODO: Here should be the homepage.
-import { getStations } from "@/services/getStations";
+import { getStations } from "@/common/frontendServices/getStations";
 import { IStation } from "@/models/Station";
-import StationsList from "@/components/StationsList";
 
 export default function HomePage({ stations }: { stations: IStation[] }) {
   console.log("stations", stations[0])
 
   return (
     <>
-      <StationsList stations={stations} />
+      {JSON.stringify(stations)}
     </>
   )
 }
