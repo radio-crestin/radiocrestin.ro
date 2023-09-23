@@ -11,7 +11,7 @@
     "pages:deploy": "npm run pages:build && wrangler pages deploy --project-name radiocrestin-ro-static out",
     "pages:watch": "npx @cloudflare/next-on-pages@1 --watch",
     "pages:dev": "npx wrangler pages dev out --compatibility-flag=nodejs_compat",
-    "postbuild": "next-sitemap"
+    "postbuild": "next-sitemap --config sitemap.config.js"
   },
   "dependencies": {
     "@chakra-ui/icons": "2.1.1",
@@ -34,7 +34,6 @@
     "hls.js": "1.4.12",
     "next": "13.5.2",
     "next-runtime-dotenv": "1.5.1",
-    "next-sitemap": "4.2.3",
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "react-rating-stars-component": "2.2.0",
@@ -58,6 +57,7 @@
     "sass": "1.67.0",
     "ts-node": "10.9.1",
     "typescript": "5.2.2",
-    "vercel": "32.3.0"
+    "vercel": "32.3.0",
+    "next-sitemap": "4.2.3"
   }
 }
