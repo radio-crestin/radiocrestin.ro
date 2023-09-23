@@ -30,11 +30,7 @@ export default function HomePage({ stations_BE }: { stations_BE: IStation[] }) {
 
   return (
     <Layout {...SEO_DEFAULT}>
-      <Flex
-        my={"50px"}
-        justifyContent={"center"}>
-        <StationList stations={stations} />
-      </Flex>
+      <StationList stations={stations} />
     </Layout>
   )
 }

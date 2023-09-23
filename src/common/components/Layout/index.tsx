@@ -1,7 +1,7 @@
 import Head from "next/head";
 import React from "react";
 
-import { Box } from "@chakra-ui/react";
+import { Box, Container } from "@chakra-ui/react";
 import Index from "@/components/AnalyticsScripts";
 import DownloadAppBanner from "@/components/DownloadAppBanner/DownloadAppBanner";
 import Footer from "@/components/Footer/Footer";
@@ -54,18 +54,19 @@ const Layout = ({
         {/* End Facebook */}
 
         {/* Canonical Urls */}
-        <link rel="canonical" href={`https://radiocrestin.ro/`} />
+        <link rel="canonical" href={fullURL} />
 
         <meta name="MobileOptimized" content="width" />
         <meta name="HandheldFriendly" content="true" />
       </Head>
-      <>
+      <Container maxW={'7xl'} mt={16}>
         {children}
-      </>
-      <DownloadAppBanner />
-      <Box mt={20}>
-        <Footer />
-      </Box>
+        <Box mt={20}>
+          <DownloadAppBanner />
+          <Footer />
+        </Box>
+      </Container>
+
     </>
   );
 };

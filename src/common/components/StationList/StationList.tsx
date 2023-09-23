@@ -47,12 +47,11 @@ const StationItem = ({
               display={'flex'}
               justifyContent={'center'}
               alignItems={'center'}
-              background={'rgba(0,0,0,0.68)'}
+              background={'rgba(7,17,21,0.68)'}
               color={'white'}
               paddingX={1}
               borderRadius={10}
-              right={4}
-              top={3}
+              bottom={3}
               fontSize={14}
               gap={1}>
               <ViewIcon />

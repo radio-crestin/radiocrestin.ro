@@ -48,16 +48,14 @@ export default function StationPage({
 
   return (
     <Layout {...seo}>
-      <Container maxW={'7xl'} mt={16}>
-        {selectedStation && (
-          <StationHomepageHeader selectedStation={selectedStation} />
-        )}
-        <StationList
-          stations={stations}
-        />
-        <Box mb={{ base: 40, lg: 20 }} />
-        <StationPlayer stations={stations} />
-      </Container>
+      {selectedStation && (
+        <StationHomepageHeader selectedStation={selectedStation} />
+      )}
+      <StationList
+        stations={stations}
+      />
+      <Box mb={{ base: 40, lg: 20 }} />
+      <StationPlayer stations={stations} />
     </Layout>
   );
 }
