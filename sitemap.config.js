@@ -1,4 +1,5 @@
 module.exports = {
+	sourceDir: './out',
 	outDir: './out',
 	siteUrl: 'https://radiocrestin.ro/',
 	generateRobotsTxt: true,
