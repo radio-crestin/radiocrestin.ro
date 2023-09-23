@@ -4,14 +4,11 @@ import dynamic from 'next/dynamic';
 
 import StationHomepageHeader from '@/components/StationHomepageHeader/StationHomepageHeader';
 import StationList from '@/components/StationList/StationList';
-import Footer from '@/components/Footer/Footer';
-import HeadContainer from '@/components/HeadContainer';
-import DownloadAppBanner from '@/components/DownloadAppBanner/DownloadAppBanner';
 import { IStation } from "@/models/Station";
 import { seoStation } from "@/utils/seo";
-import { ISeoMetadata } from "@/models/SeoMetadata";
 import { getStations } from "@/common/services/getStations";
 import { cleanStationsMetadata } from "@/utils/cleanStationsMetadata";
+import Layout from "@/components/Layout";
 
 const StationPlayer = dynamic(() => import('@/components/StationPlayer'), {
   ssr: false,
@@ -20,12 +17,10 @@ const StationPlayer = dynamic(() => import('@/components/StationPlayer'), {
 export default function StationPage({
   stations_BE,
   station_slug,
-  seoMetadata,
   fullURL,
 }: {
   stations_BE: IStation[];
   station_slug?: string;
-  seoMetadata?: ISeoMetadata;
   fullURL: string;
 }) {
   const [stations, setStations] = useState<IStation[]>(stations_BE);
@@ -34,7 +29,9 @@ export default function StationPage({
     const fetchStationsData = async () => {
       try {
         const data = await getStations();
-        setStations(data.stations);
+        if (data?.stations && data?.stations.length > 0) {
+          setStations(data.stations);
+        }
       } catch (error) {
         console.error("Failed to fetch stations:", error);
       }
@@ -47,17 +44,10 @@ export default function StationPage({
 
   // @ts-ignore
   const selectedStation: IStation = stations.find(s => s.slug === station_slug);
-  const seo: ISeoMetadata =
-    seoMetadata ||
-    seoStation(selectedStation?.title, selectedStation.description);
+  const seo = seoStation(selectedStation);
 
   return (
-    <>
-      <HeadContainer
-        seo={seo}
-        fullURL={fullURL}
-        selectedStation={selectedStation}
-      />
+    <Layout {...seo}>
       <Container maxW={'7xl'} mt={16}>
         {selectedStation && (
           <StationHomepageHeader selectedStation={selectedStation} />
@@ -65,14 +55,10 @@ export default function StationPage({
         <StationList
           stations={stations}
         />
-        <DownloadAppBanner />
-        <Box mt={20}>
-          <Footer />
-        </Box>
         <Box mb={{ base: 40, lg: 20 }} />
         <StationPlayer stations={stations} />
       </Container>
-    </>
+    </Layout>
   );
 }
 

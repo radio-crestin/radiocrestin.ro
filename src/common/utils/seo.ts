@@ -1,33 +1,21 @@
-import { capitalize } from './capitalize';
+import { IStation } from "@/models/Station";
 
-export const seoStation = (
-  stationTitle: string,
-  stationDescription: string | null,
-) => {
+export const seoStation = (station: IStation) => {
   return {
-    title: `${stationTitle + ' · LIVE  ·'} Radio Crestin `,
-    description: `${stationTitle} · 📻 ${
-      stationDescription ||
-      `Asculta ${stationTitle} live · Lista de radiouri crestine · Radio Crestin Live`
-    }`,
-    keywords: `${stationTitle}, ${stationTitle} live, ${stationTitle} online, radio crestin, radio-crestin.com, radiouri crestine romanesti, radio crestin online, muzica crestina, lista radio crestin, radio fm crestin`,
+    title: `${station.title + ' · LIVE  ·'} Radio Crestin `,
+    description: station?.title ? `Asculta ${station.title} live · ⭐ Lista de radiouri crestine · Radio Crestin Live` : SEO_DEFAULT.description,
+    keywords: station?.title ? `${station.title}, ${station.title} live, ${station.title} online, radio crestin, radio-crestin.com, radiouri crestine romanesti, radio crestin online, muzica crestina, lista radio crestin, radio fm crestin` : SEO_DEFAULT.keywords,
+    imageUrl: station?.thumbnail_url || SEO_DEFAULT.imageUrl,
+    fullURL: station?.slug ? `https://radiocrestin.ro/${station.slug}` : `https://radiocrestin.ro/`,
   };
 };
 
-export const seoCategory = (category: string) => {
-  return {
-    title: `Radiouri crestine · ${capitalize(category)}`,
-    description: `Asculta radio crestin online 📻 · ${capitalize(category)}`,
-    keywords: `post radio crestin, radio ${category} live,  radio-crestin.com, radio crestin online, muzica crestina, lista radio crestin, radio fm crestin, lista radio crestin online, radio crestin muzica non stop`,
-  };
-};
-
-export const seoHomepage = {
-  title: `Radio Crestin · Asculta Radio Crestin online`,
-  description: `Radio-Crestin.com contine o lista cu cele mai populare radiouri crestine din Romania, dar si din strainatate. Aici vei gasi radiouri crestine FM, dar si din online. Te invitam sa asculti impreuna cu noi radio crestin online.`,
-  keywords: `radio crestin, radiouri crestine, radio-crestin.com, radio crestin online, cantari crestine, muzica crestina, lista radio crestin, radio fm crestin, radiouri crestine romanesti`,
-};
-
+export const SEO_DEFAULT = {
+  title: "Radio Crestin | Caută şi ascultă Radiouri Creştine online",
+  description: "RadioCrestin.ro iti ofera o lista de radiouri crestine online. Asculta un radio crestin bun si sanatos pentru sufletul tau la un simplu click!",
+  keywords: "radio crestin, radiocrestin, radiouri crestine, radio crestin online, radiouri crestine online, radio crestine, radiocrestin.ro, online",
+  imageUrl: "/images/android-chrome-512x512.png"
+}
 export const seoNotFoundPage = {
   title: `Stația nu a fost găsită`,
 };
