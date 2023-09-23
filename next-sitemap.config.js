@@ -4,4 +4,5 @@ module.exports = {
   siteUrl: 'https://radiocrestin.ro/',
   generateRobotsTxt: true,
   generateIndexSitemap: false,
+  outDir: './out',
 }
