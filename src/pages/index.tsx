@@ -1,12 +1,12 @@
-// TODO: Here should be the homepage.
-import { IStation } from "@/models/Station";
-import StationList from "@/components/StationList/StationList";
-import { getStations } from "@/common/services/getStations";
+import { useEffect, useState } from "react";
+
 import { Flex } from "@chakra-ui/react";
 import { cleanStationsMetadata } from "@/utils/cleanStationsMetadata";
-import { useEffect, useState } from "react";
+import { SEO_DEFAULT } from "@/utils/seo";
+import { getStations } from "@/common/services/getStations";
 import Layout from "@/components/Layout";
-import { SEO_HOMEPAGE } from "@/constants";
+import StationList from "@/components/StationList/StationList";
+import { IStation } from "@/models/Station";
 
 export default function HomePage({ stations_BE }: { stations_BE: IStation[] }) {
   const [stations, setStations] = useState<IStation[]>(stations_BE);
@@ -29,7 +29,7 @@ export default function HomePage({ stations_BE }: { stations_BE: IStation[] }) {
   }, []);
 
   return (
-    <Layout {...SEO_HOMEPAGE}>
+    <Layout {...SEO_DEFAULT}>
       <Flex
         my={"50px"}
         justifyContent={"center"}>
