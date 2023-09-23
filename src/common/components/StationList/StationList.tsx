@@ -35,6 +35,7 @@ const StationItem = ({
     <Box position={'relative'} role="group">
       <AspectRatio position={'relative'} ratio={1}>
         <Box
+          border={is_listening ? '1px solid red': '1px solid transparent'}
           borderRadius={{ base: '20px', lg: '41px' }}
           position={'relative'}
           overflow={'hidden'}
@@ -120,7 +121,7 @@ export default function StationList({
   const route = useRouter();
   // @ts-ignore
   const selectedStation: Station = stations.find(
-    s => s.slug === route.asPath.split('/')[2],
+    s => s.slug === route.asPath.split('/')[1],
   );
 
   return (
