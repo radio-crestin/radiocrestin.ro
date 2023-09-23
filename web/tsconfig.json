@@ -24,8 +24,44 @@
       }
     ],
     "paths": {
+      "@/components/*": [
+        "src/common/components/*"
+      ],
+      "@/modules/*": [
+        "src/common/modules/*"
+      ],
+      "@/context/*": [
+        "src/common/context/*"
+      ],
+      "@/graphql/*": [
+        "src/common/graphql/*"
+      ],
+      "@/hooks/*": [
+        "src/common/hooks/*"
+      ],
+      "@/mocks/*": [
+        "src/common/mocks/*"
+      ],
+      "@/styles/*": [
+        "src/common/styles/*"
+      ],
+      "@/models/*": [
+        "src/common/models/*"
+      ],
+      "@/services/*": [
+        "src/common/services/*"
+      ],
+      "@/utils/*": [
+        "src/common/utils/*"
+      ],
+      "@/images/*": [
+        "public/images/*"
+      ],
+      "@/constants": [
+        "src/common/constants/constants"
+      ],
       "@/*": [
-        "./src/*"
+        "src/*"
       ]
     }
   },
