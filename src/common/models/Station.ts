@@ -44,7 +44,7 @@ export interface INowPlaying {
 export interface ISong {
   id: number;
   name: string;
-  thumbnail_url: string;
+  thumbnail_url: string | null;
   artist: IArtist;
 }
 

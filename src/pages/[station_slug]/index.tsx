@@ -5,47 +5,48 @@ import dynamic from 'next/dynamic';
 import StationHomepageHeader from '@/components/StationHomepageHeader/StationHomepageHeader';
 import StationList from '@/components/StationList/StationList';
 import Footer from '@/components/Footer/Footer';
-import { ContactModalLink } from '@/components/ContactModalLink/ContactModalLink';
 import HeadContainer from '@/components/HeadContainer';
 import DownloadAppBanner from '@/components/DownloadAppBanner/DownloadAppBanner';
 import { IStation } from "@/models/Station";
 import { seoStation } from "@/utils/seo";
 import { ISeoMetadata } from "@/models/SeoMetadata";
-import { getStations } from "@/common/frontendServices/getStations";
+import { getStations } from "@/common/services/getStations";
+import { cleanStationsMetadata } from "@/utils/cleanStationsMetadata";
 
 const StationPlayer = dynamic(() => import('@/components/StationPlayer'), {
   ssr: false,
 });
 
 export default function StationPage({
-  stations_metadata,
+  stations_BE,
   station_slug,
   seoMetadata,
   fullURL,
 }: {
-  stations_metadata: any;
+  stations_BE: IStation[];
   station_slug?: string;
   seoMetadata?: ISeoMetadata;
   fullURL: string;
 }) {
-  const [stations, setStations] = useState(stations_metadata.stations);
-  const [station_groups, setStation_groups] = useState(
-    stations_metadata.station_groups,
-  );
+  const [stations, setStations] = useState<IStation[]>(stations_BE);
 
   useEffect(() => {
-    const fetchStations = setInterval(() => {
-      fetch('/api/v1/stations').then(async r => {
-        const data = await r.json();
+    const fetchStationsData = async () => {
+      try {
+        const data = await getStations();
         setStations(data.stations);
-        setStation_groups(data.station_groups);
-      });
-    }, 10000);
-    return () => clearInterval(fetchStations);
+      } catch (error) {
+        console.error("Failed to fetch stations:", error);
+      }
+    };
+    fetchStationsData();
+    const intervalId = setInterval(fetchStationsData, 10000);
+
+    return () => clearInterval(intervalId);
   }, []);
 
   // @ts-ignore
-  const selectedStation: Station = stations.find(s => s.slug === station_slug);
+  const selectedStation: IStation = stations.find(s => s.slug === station_slug);
   const seo: ISeoMetadata =
     seoMetadata ||
     seoStation(selectedStation?.title, selectedStation.description);
@@ -57,12 +58,17 @@ export default function StationPage({
         fullURL={fullURL}
         selectedStation={selectedStation}
       />
-      <Container maxW={'8xl'} mt={16}>
+      <Container maxW={'7xl'} mt={16}>
+        {selectedStation && (
+          <StationHomepageHeader selectedStation={selectedStation} />
+        )}
         <StationList
           stations={stations}
         />
         <DownloadAppBanner />
-        <Footer />
+        <Box mt={20}>
+          <Footer />
+        </Box>
         <Box mb={{ base: 40, lg: 20 }} />
         <StationPlayer stations={stations} />
       </Container>
@@ -90,6 +96,7 @@ export async function getStaticProps(context: any) {
   const stationData = stations_metadata.stations.find(
     (station: IStation) => station.slug === station_slug,
   );
+  const stations_without_meta = cleanStationsMetadata(stations_metadata.stations);
 
   if (!stationData) {
     return {
@@ -99,7 +106,7 @@ export async function getStaticProps(context: any) {
 
   return {
     props: {
-      stations_metadata,
+      stations_BE: stations_without_meta,
       station_slug,
     },
   };

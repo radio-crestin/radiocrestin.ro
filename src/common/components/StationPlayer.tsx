@@ -13,7 +13,6 @@ import {
   useToast,
 } from '@chakra-ui/react';
 import { useLocalStorageState } from '@/utils/state';
-import { trackListenClientSide } from '../frontendServices/listen';
 import { ImageWithFallback } from '@/components/ImageWithFallback/ImageWithFallback';
 import Hls from 'hls.js';
 import useSpaceBarPress from '@/hooks/useSpaceBarPress';
@@ -214,25 +213,6 @@ export default function StationPlayer({ stations }: any) {
   }, [station]);
 
   // eslint-disable-next-line react-hooks/rules-of-hooks
-  useEffect(() => {
-    if (playbackState === PLAYBACK_STATE.PLAYING) {
-      trackListenClientSide({
-        station_id: station.id as unknown as bigint,
-        info: {},
-      });
-    }
-    const timer = setInterval(() => {
-      if (playbackState === PLAYBACK_STATE.PLAYING) {
-        trackListenClientSide({
-          station_id: station.id as unknown as bigint,
-          info: {},
-        });
-      }
-    }, 30 * 1000);
-    return () => clearInterval(timer);
-  }, [playbackState]);
-
-  // eslint-disable-next-line react-hooks/rules-of-hooks
   useSpaceBarPress(() => {
     if (
       playbackState === PLAYBACK_STATE.PLAYING ||
@@ -290,8 +270,9 @@ export default function StationPlayer({ stations }: any) {
       bottom={0}
       right={0}
       left={0}
-      marginLeft="auto"
-      zIndex={9}>
+      zIndex={9}
+      mx={"auto"}
+    >
       <Box
         bg={{ base: 'black' }}
         boxShadow={'0 10px 30px 0 rgb(0 0 0 / 15%)'}

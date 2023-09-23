@@ -125,7 +125,6 @@ export default function StationList({
 
   return (
     <Grid
-      w="91%"
       mt={1}
       templateColumns={{
         base: 'repeat(2, 1fr)',

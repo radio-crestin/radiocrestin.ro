@@ -17,7 +17,7 @@ export default function StationHomepageHeader({
       mb={{ base: 0, lg: 12 }}
       px={{ base: 3, lg: 16 }}
       py={{ base: 3, lg: 14 }}
-      bg={'brand.600'}
+      bg={`#c3dbff`}
       flexDirection={{ base: 'column-reverse', lg: 'row' }}>
       <SongInformation key={selectedStation?.id} station={selectedStation} />
       <Box

@@ -23,7 +23,7 @@ import {
 import { ExternalLinkIcon } from '@chakra-ui/icons';
 // @ts-ignore
 import ReactStars from 'react-rating-stars-component';
-import { postReviewClientSide } from '../../frontendServices/review';
+import { postReviewClientSide } from '@/common/services/review';
 
 export default function StationInformation(props: any) {
   const { station } = props;
