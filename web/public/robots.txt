@@ -1,0 +1,9 @@
+# *
+User-agent: *
+Allow: /
+
+# Host
+Host: https://radiocrestin.ro/
+
+# Sitemaps
+Sitemap: https://radiocrestin.ro/sitemap.xml
