@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 
 import FacebookIcon from '@/images/facebook.svg';
 import {
+  Box,
   Button,
   Flex,
   FormControl,
@@ -23,7 +24,7 @@ import {
 import { ExternalLinkIcon } from '@chakra-ui/icons';
 // @ts-ignore
 import ReactStars from 'react-rating-stars-component';
-import { postReviewClientSide } from '@/common/services/review';
+import { postReviewClientSide } from "@/services/review";
 
 export default function StationInformation(props: any) {
   const { station } = props;
@@ -38,13 +39,19 @@ export default function StationInformation(props: any) {
   const latestPost = station.posts[0];
   const toast = useToast();
 
-  const [userReviewStars, setUserReviewStars] = useState(5);
+  const [showErrorReview, setShowErrorReview] = useState(false)
+  const [userReviewStars, setUserReviewStars] = useState(0);
   const [userReviewMessage, setUserReviewMessage] = useState('');
   const { isOpen, onOpen, onClose } = useDisclosure();
 
   const initialRef = React.useRef<HTMLTextAreaElement>(null);
 
   const submitReviewMessage = async () => {
+    if (userReviewStars === 0) {
+      setShowErrorReview(true)
+      return
+    }
+
     onClose();
     const { done } = await postReviewClientSide({
       user_name: null,
@@ -88,22 +95,24 @@ export default function StationInformation(props: any) {
         <ReactStars
           key={`rating-${station.id}`}
           count={5}
-          onChange={(rating: number) => {
-            setUserReviewStars(rating);
-            setUserReviewMessage('');
-            onOpen();
-          }}
           size={20}
           value={StationRating}
           activeColor="#fe7f38"
-          edit={true}
+          edit={false}
+          half={true}
         />
-        {/* @ts-ignore */}
-        {StationRating !== 0 && (
-          <Text fontSize={'md'} lineHeight={'30px'} ml={1}>
-            {StationRating}/5
-          </Text>
-        )}
+
+        <Text
+          onClick={() => {
+            setShowErrorReview(false);
+            setUserReviewStars(0);
+            setUserReviewMessage('');
+            onOpen();
+          }}
+          fontSize={'md'} lineHeight={'20px'} ml={1} borderBottom={"2px dotted #666;"} cursor={"pointer"}>
+          {StationRating} ({station?.reviews.length} {station?.reviews.length === 1 ? 'recenzie' : 'recenzii'})
+        </Text>
+
         {station.facebook_page_id && (
           <Link
             href={'https://facebook.com/' + station.facebook_page_id}
@@ -162,17 +171,45 @@ export default function StationInformation(props: any) {
         initialFocusRef={initialRef}
         isOpen={isOpen}
         onClose={onClose}
-        preserveScrollBarGap={true}>
+        preserveScrollBarGap={true}
+        isCentered={true}
+      >
         <ModalOverlay />
         <ModalContent>
-          <ModalHeader>Adauga un mesaj recenziei</ModalHeader>
+          <ModalHeader>Acorda o nota statiei</ModalHeader>
+          <Box display={"flex"} px={5}>
+            <ReactStars
+              key={`rating-${station.id}`}
+              onChange={(rating: number) => {
+                setUserReviewStars(rating);
+              }}
+              count={5}
+              size={40}
+              value={userReviewStars}
+              activeColor="#fe7f38"
+              edit={true}
+              half={false}
+            />
+            <Text display={"flex"} alignItems={"center"} fontWeight={"bold"} pl={3}>
+              {userReviewStars === 1 && 'Nu recomand'}
+              {userReviewStars === 2 && 'Slab'}
+              {userReviewStars === 3 && 'Acceptabil'}
+              {userReviewStars === 4 && 'Bun'}
+              {userReviewStars === 5 && 'Excelent'}
+            </Text>
+          </Box>
+          {showErrorReview &&
+            <Text color={"#be2007"} px={5}>
+              Pe o scară de la 1 la 5, cât de mult ți-a plăcut {station.title}?
+            </Text>
+          }
           <ModalCloseButton />
-          <ModalBody pb={6}>
+          <ModalBody pb={6} pt={5}>
             <FormControl>
               <FormLabel>Mesajul dumneavoastra</FormLabel>
               <Textarea
                 ref={initialRef}
-                placeholder="Introduceți mesajul dumneavoastră aici.."
+                placeholder="Introduceți mesajul dumneavoastră aici... (optional)"
                 onChange={e => {
                   setUserReviewMessage(e.target.value);
                 }}
@@ -186,7 +223,6 @@ export default function StationInformation(props: any) {
             <Button colorScheme="blue" mr={3} onClick={submitReviewMessage}>
               Trimite
             </Button>
-            <Button onClick={submitReviewMessage}>Închide</Button>
           </ModalFooter>
         </ModalContent>
       </Modal>
