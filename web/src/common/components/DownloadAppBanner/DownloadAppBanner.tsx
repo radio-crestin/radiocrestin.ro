@@ -29,6 +29,7 @@ export default function DownloadAppBanner() {
         <Box mt={5} display={'flex'} gap={2} alignItems={'center'}>
           <Link href="https://apps.apple.com/app/6451270471">
             <img
+              loading={"lazy"}
               src={'/images/appstore.svg'}
               width={150}
               height={54}
@@ -39,6 +40,7 @@ export default function DownloadAppBanner() {
             href="https://play.google.com/store/apps/details?id=com.radiocrestin.radio_crestin&hl=en_US"
             style={{ position: 'relative' }}>
             <img
+              loading={"lazy"}
               className={styles.playstore_link}
               src={'/images/playstore.svg'}
               width={150}
@@ -53,6 +55,7 @@ export default function DownloadAppBanner() {
         width={{ base: '100%', lg: '500px' }}
         marginRight={{ base: 0, lg: 90, xl: 150 }}>
         <img
+          loading={"lazy"}
           className={styles.image_iphone12}
           width={500}
           height={500}
@@ -60,6 +63,7 @@ export default function DownloadAppBanner() {
           alt={'iPhone 12 Radio Crestin'}
         />
         <img
+          loading={"lazy"}
           className={styles.image_iphone12_mobile}
           width={400}
           height={400}
@@ -68,6 +72,7 @@ export default function DownloadAppBanner() {
         />
       </Box>
       <img
+        loading={"lazy"}
         className={styles.image_qr_code}
         width={90}
         height={90}
