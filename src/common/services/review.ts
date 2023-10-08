@@ -1,7 +1,7 @@
 import { IClientSideReview } from "@/models/ClientSideReview";
 
 export const postReviewClientSide = (review: IClientSideReview): Promise<{ done: boolean }> => {
-  return fetch('/api/v1/review', {
+  return fetch('https://www.radio-crestin.com/api/v1/review', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
