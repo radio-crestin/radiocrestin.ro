@@ -206,7 +206,7 @@ export default function StationInformation(props: any) {
           <ModalCloseButton />
           <ModalBody pb={6} pt={5}>
             <FormControl>
-              <FormLabel>Mesajul dumneavoastra</FormLabel>
+              <FormLabel>Mesajul dumneavoastră</FormLabel>
               <Textarea
                 ref={initialRef}
                 placeholder="Introduceți mesajul dumneavoastră aici... (optional)"
