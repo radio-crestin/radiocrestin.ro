@@ -239,7 +239,7 @@ export default function StationPlayer({ stations }: any) {
     const nextIndex = currentIndex + 1;
     const nextStation = upStations[nextIndex % upStations.length];
 
-    router.push(`/radio/${nextStation.slug}`);
+    router.push(`/${nextStation.slug}`);
   };
 
   const renderPlayButtonSvg = () => {
