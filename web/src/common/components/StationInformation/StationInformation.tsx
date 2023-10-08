@@ -99,7 +99,7 @@ export default function StationInformation(props: any) {
           value={StationRating}
           activeColor="#fe7f38"
           edit={false}
-          half={true}
+          isHalf={true}
         />
 
         <Text
@@ -179,7 +179,7 @@ export default function StationInformation(props: any) {
           <ModalHeader>Acorda o nota statiei</ModalHeader>
           <Box display={"flex"} px={5}>
             <ReactStars
-              key={`rating-${station.id}`}
+              key={`rating-editable-${station.id}`}
               onChange={(rating: number) => {
                 setUserReviewStars(rating);
               }}
@@ -206,7 +206,7 @@ export default function StationInformation(props: any) {
           <ModalCloseButton />
           <ModalBody pb={6} pt={5}>
             <FormControl>
-              <FormLabel>Mesajul dumneavoastra</FormLabel>
+              <FormLabel>Mesajul dumneavoastră</FormLabel>
               <Textarea
                 ref={initialRef}
                 placeholder="Introduceți mesajul dumneavoastră aici... (optional)"
