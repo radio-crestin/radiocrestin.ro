@@ -203,7 +203,7 @@ export default function StationInformation(props: any) {
               Pe o scară de la 1 la 5, cât de mult ți-a plăcut {station.title}?
             </Text>
           }
-          <ModalCloseButton />
+          <ModalCloseButton /> 
           <ModalBody pb={6} pt={5}>
             <FormControl>
               <FormLabel>Mesajul dumneavoastră</FormLabel>
