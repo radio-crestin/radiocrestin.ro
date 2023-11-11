@@ -1,0 +1,64 @@
+@use "@/styles/mixinHelper";
+@use "@/styles/globalVariables";
+
+.station_item {
+  @include mixinHelper.center-content;
+  justify-content: start;
+  gap: 25px;
+  width: 100%;
+  max-width: 571px;
+  max-height: 141px;
+  padding: 15px 17px;
+  border-radius: 18px;
+  box-shadow: 1px 1px 5px 0 rgba(0, 0, 0, 0.20);
+  position: relative;
+
+  .image_container {
+    img {
+      width: 110px;
+      height: 110px;
+      border-radius: 21px;
+    }
+  }
+
+  .station_details {
+    display: flex;
+    justify-content: center;
+    flex-direction: column;
+
+    .station_name {
+      font-size: 25px;
+      font-weight: 700;
+      margin-bottom: 5px;
+    }
+
+    .song_name {
+      font-size: 20px;
+      font-weight: 400;
+      margin-bottom: 5px;
+    }
+
+    .artist_name {
+      font-size: 17px;
+      font-weight: 400;
+    }
+  }
+
+  .total_listeners {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    font-size: 17px;
+    font-weight: 400;
+  }
+
+  .favourite_heart_container {
+    position: absolute;
+    bottom: 15px;
+    right: 15px;
+    font-size: 17px;
+    font-weight: 400;
+    cursor: pointer;
+    padding: 5px;
+  }
+}
