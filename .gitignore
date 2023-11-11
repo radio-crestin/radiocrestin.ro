@@ -6,6 +6,7 @@
 .pnp.js
 
 /.idea
+.yarn/install-state.gz
 
 # testing
 /coverage

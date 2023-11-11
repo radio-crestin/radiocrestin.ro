@@ -1,12 +1,7 @@
 {
   "compilerOptions": {
-    "baseUrl": ".",
     "target": "es5",
-    "lib": [
-      "dom",
-      "dom.iterable",
-      "esnext"
-    ],
+    "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -24,55 +19,9 @@
       }
     ],
     "paths": {
-      "@/components/*": [
-        "src/common/components/*"
-      ],
-      "@/modules/*": [
-        "src/common/modules/*"
-      ],
-      "@/context/*": [
-        "src/common/context/*"
-      ],
-      "@/graphql/*": [
-        "src/common/graphql/*"
-      ],
-      "@/hooks/*": [
-        "src/common/hooks/*"
-      ],
-      "@/mocks/*": [
-        "src/common/mocks/*"
-      ],
-      "@/styles/*": [
-        "src/common/styles/*"
-      ],
-      "@/models/*": [
-        "src/common/models/*"
-      ],
-      "@/services/*": [
-        "src/common/services/*"
-      ],
-      "@/utils/*": [
-        "src/common/utils/*"
-      ],
-      "@/images/*": [
-        "public/images/*"
-      ],
-      "@/constants": [
-        "src/common/constants/constants"
-      ],
-      "@/*": [
-        "src/*"
-      ]
+      "@/*": ["./src/*"]
     }
   },
-  "include": [
-    "next-env.d.ts",
-    "**/*.ts",
-    "**/*.tsx",
-    ".next/types/**/*.ts",
-    "out/types/**/*.ts"
-  ],
-  "exclude": [
-    "node_modules"
-  ]
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+  "exclude": ["node_modules"]
 }
