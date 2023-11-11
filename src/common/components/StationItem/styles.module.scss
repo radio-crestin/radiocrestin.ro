@@ -3,7 +3,7 @@
 
 .station_item {
   @include mixinHelper.center-content;
-  justify-content: start;
+  justify-content: flex-start;
   gap: 25px;
   width: 100%;
   max-width: 571px;
