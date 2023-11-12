@@ -6,6 +6,7 @@ import styles from "./styles.module.scss";
 import HeadphoneIcon from "@/icons/Headphone";
 import Heart from "@/icons/Heart";
 import useStore from "@/store/useStore";
+import Link from "next/link";
 
 const StationItem = (data: IStation) => {
   const { addOrRemoveFavourite } = useStore();
@@ -15,7 +16,7 @@ const StationItem = (data: IStation) => {
   }, [data]);
 
   return (
-    <div className={styles.station_item}>
+    <Link className={styles.station_item} href={data.slug}>
       <div className={styles.image_container}>
         <img src={data.thumbnail_url} alt={"test"} loading={"lazy"} />
       </div>
@@ -35,7 +36,7 @@ const StationItem = (data: IStation) => {
       >
         <Heart color={"red"} />
       </div>
-    </div>
+    </Link>
   );
 };
 
