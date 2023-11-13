@@ -17,6 +17,9 @@ const Stations = ({ data }: { data: IStation[] }) => {
     });
     setFavouriteStations(favouriteStations);
   }, [isFavorite, stations]);
+
+  console.log("Re-rendering Stations");
+
   return (
     <div className={styles.container}>
       <div>
@@ -25,7 +28,7 @@ const Stations = ({ data }: { data: IStation[] }) => {
           <div className={styles.stations_container}>
             {favouriteStations.map((station: IStation) => {
               return (
-                <React.Fragment key={`${station.id}-${station.slug}`}>
+                <React.Fragment key={`favourite-${station.id}-${station.slug}`}>
                   <StationItem {...station} />
                 </React.Fragment>
               );
