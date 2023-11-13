@@ -1,11 +1,13 @@
 import { getStations } from "@/services/getStations";
 import { IStation } from "@/models/Station";
-import StationItem from "@/components/StationItem";
 import React from "react";
 import styles from "./styles.module.scss";
+import Stations from "@/components/Stations";
 
 export async function generateStaticParams() {
   const { stations } = await getStations();
+
+  // TODO: Btw, you should use cleanStationsMetadata() function to remove unnecessary data from stations and have a fresh stations data
 
   return stations.map((station: IStation) => {
     return { station_slug: station.slug };
@@ -20,21 +22,19 @@ export default async function Page({
   const { station_slug } = params;
 
   const { stations } = await getStations();
+
+  // Add isFavourite property to each station
+  stations.forEach((station: IStation) => {
+    station.is_favorite = false;
+  });
+
   const currentStation = stations.find(
     (station: IStation) => station.slug === station_slug,
   );
 
   return (
     <div className={styles.container}>
-      <div className={styles.stations_container}>
-        {stations.map((station: IStation) => {
-          return (
-            <React.Fragment key={`${station.id}-${station.slug}`}>
-              <StationItem {...station} />
-            </React.Fragment>
-          );
-        })}
-      </div>
+      <Stations data={stations} />
     </div>
   );
 }

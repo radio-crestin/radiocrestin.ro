@@ -70,12 +70,15 @@ export const getStations = async () => {
       accept: "*/*",
     },
     body: JSON.stringify({ query }),
-  }).then(async (response) => {
-    return await response.json();
-  });
+  })
+    .then(async (response) => {
+      return await response.json();
+    })
+    .catch((error) => {
+      console.error("error", error);
+    });
 
   return {
-    stations: response.data.stations,
-    station_groups: response.data.station_groups,
+    stations: response?.data?.stations || [],
   };
 };
