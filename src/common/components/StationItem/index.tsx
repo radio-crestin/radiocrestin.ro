@@ -10,12 +10,12 @@ import useStore from "@/store/useStore";
 import { useEffect, useState } from "react";
 
 const StationItem = (data: IStation) => {
-  const { addOrRemoveFavourite, isFavorite } = useStore();
+  const { favouriteItems, toggleFavourite } = useStore();
   const [isStationFavourite, setIsStationFavourite] = useState(false);
 
   useEffect(() => {
-    setIsStationFavourite(isFavorite[data.slug]);
-  }, [isFavorite[data.slug]]);
+    setIsStationFavourite(favouriteItems.includes(data.slug));
+  }, [data.slug, favouriteItems]);
 
   return (
     <Link className={styles.station_item} href={data.slug} scroll={false}>
@@ -45,7 +45,7 @@ const StationItem = (data: IStation) => {
         onClick={(event) => {
           event.preventDefault();
           event.stopPropagation();
-          addOrRemoveFavourite(data.slug);
+          toggleFavourite(data.slug);
         }}
       >
         <Heart color={isStationFavourite ? "red" : "white"} />

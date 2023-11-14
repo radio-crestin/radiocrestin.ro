@@ -2,31 +2,37 @@ import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 
 export interface IFavouritesStore {
-  isFavorite: { [key: string]: boolean };
-  addOrRemoveFavourite: (slug: string) => void;
+  favouriteItems: string[];
+  toggleFavourite: (slug: string) => void;
 }
 
 const useStore = create<IFavouritesStore>()(
   persist(
     (set, get) => ({
-      isFavorite: {},
+      favouriteItems: [],
 
-      // Function to add or remove a favourite
-      addOrRemoveFavourite: (slug: string) => {
-        set((state: any) => {
-          const isFavourite = state.isFavorite[slug];
-          return {
-            isFavorite: {
-              ...state.isFavorite,
-              [slug]: !isFavourite,
-            },
-          };
+      toggleFavourite: (slug: string) => {
+        set((state) => {
+          const isFavourite = state.favouriteItems.includes(slug);
+          if (isFavourite) {
+            // Remove from favourites if it's already a favourite
+            return {
+              favouriteItems: state.favouriteItems.filter(
+                (item: string) => item !== slug,
+              ),
+            };
+          } else {
+            // Add to favourites if it's not already a favourite
+            return {
+              favouriteItems: [...state.favouriteItems, slug],
+            };
+          }
         });
       },
     }),
     {
-      name: "favourites-store", // name of localStorage key
-      storage: createJSONStorage(() => localStorage), // use localStorage
+      name: "favourites-store",
+      storage: createJSONStorage(() => localStorage),
     },
   ),
 );

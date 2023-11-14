@@ -7,15 +7,16 @@ import StationItem from "@/components/StationItem";
 import useStore from "@/store/useStore";
 
 const Stations = ({ stations }: { stations: IStation[] }) => {
-  const { isFavorite } = useStore();
+  const { favouriteItems } = useStore();
   const [favouriteStations, setFavouriteStations] = useState<IStation[]>([]);
 
   useEffect(() => {
-    const favouriteStations = stations.filter((station: IStation) => {
-      return isFavorite[station.slug];
-    });
+    const favouriteStations: Array<IStation | any> =
+      favouriteItems.map((slug: string) => {
+        return stations.find((station: IStation) => station.slug === slug);
+      }) || [];
     setFavouriteStations(favouriteStations);
-  }, [isFavorite, stations]);
+  }, [favouriteItems, stations]);
 
   return (
     <div className={styles.container}>
