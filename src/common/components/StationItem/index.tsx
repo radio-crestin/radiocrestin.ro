@@ -18,7 +18,7 @@ const StationItem = (data: IStation) => {
   }, [isFavorite[data.slug]]);
 
   return (
-    <Link className={styles.station_item} href={data.slug}>
+    <Link className={styles.station_item} href={data.slug} scroll={false}>
       <div className={styles.image_container}>
         <img
           src={data.thumbnail_url}
@@ -35,9 +35,11 @@ const StationItem = (data: IStation) => {
           {data.now_playing.song.artist.name}
         </p>
       </div>
-      <div className={styles.total_listeners}>
-        {data.total_listeners} <HeadphoneIcon />
-      </div>
+      {data.total_listeners > 0 && (
+        <div className={styles.total_listeners}>
+          {data.total_listeners} <HeadphoneIcon />
+        </div>
+      )}
       <div
         className={styles.favourite_heart_container}
         onClick={(event) => {

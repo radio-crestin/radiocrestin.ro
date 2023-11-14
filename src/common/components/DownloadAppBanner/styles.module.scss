@@ -1,0 +1,106 @@
+@use "@/styles/mixinHelper";
+
+.download_app_banner {
+  margin-top: 150px;
+  margin-bottom: 150px;
+  padding-top: 50px;
+  display: flex;
+  flex-direction: column;
+  background-color: #c6eaff;
+  position: relative;
+  justify-content: space-between;
+
+  @include mixinHelper.onDesktop {
+    padding-top: 100px;
+    flex-direction: row;
+  }
+}
+
+.text_container {
+  min-width: 390px;
+  padding: 0 20px 20px;
+  max-width: 625px;
+
+  @include mixinHelper.onDesktop {
+    padding-left: 60px;
+    padding-right: 0;
+  }
+}
+
+.main_heading {
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: 0.7px;
+}
+
+.sub_heading {
+  font-size: 15px;
+}
+
+.link_container {
+  margin-top: 5px;
+  display: flex;
+  gap: 2px;
+  align-items: center;
+  width: 100%;
+  max-width: 450px;
+}
+
+.link_box {
+  width: 33%;
+
+  img {
+    width: 100%;
+    height: auto;
+  }
+}
+
+.image_container {
+  position: relative;
+  width: 100%;
+  margin-right: 90px;
+  max-width: 500px;
+
+  img {
+    display: none;
+    width: 100%;
+    height: auto;
+    position: absolute;
+    right: 0;
+    bottom: 0;
+
+    @include mixinHelper.onTablet {
+      display: block;
+    }
+  }
+
+  @include mixinHelper.onTablet {
+    margin-right: 150px;
+  }
+}
+
+.iphone12_mock_image {
+  display: block;
+  width: 500px;
+  height: 500px;
+  position: absolute;
+  right: 0;
+  bottom: 0;
+
+  @include mixinHelper.onTablet {
+    display: none;
+  }
+}
+
+.qr_code {
+  display: block;
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  width: 90px;
+  height: 90px;
+
+  @include mixinHelper.onTablet {
+    display: none;
+  }
+}

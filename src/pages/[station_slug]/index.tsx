@@ -3,17 +3,35 @@ import { IStation } from "@/models/Station";
 import React from "react";
 import { cleanStationsMetadata } from "@/utils/cleanStationsMetadata";
 import Stations from "@/components/Stations";
-import styles from "./styles.module.scss";
+import Layout from "@/components/Layout";
+import useFetchAndUpdateStations from "@/hooks/useFetchAndUpdateStations";
+import { seoStation } from "@/utils/seo";
+import dynamic from "next/dynamic";
+import DownloadAppBanner from "@/components/DownloadAppBanner";
 
+const RadioPlayer = dynamic(() => import("@/components/RadioPlayer"), {
+  ssr: false,
+});
 export default function StationPage({
   stations_BE,
+  station_slug,
 }: {
   stations_BE: IStation[];
+  station_slug: string;
 }) {
+  const stations = useFetchAndUpdateStations(stations_BE);
+  // @ts-ignore
+  const selectedStation: IStation = stations.find(
+    (s) => s.slug === station_slug,
+  );
+  const seo = seoStation(selectedStation);
+
   return (
-    <div className={styles.container}>
-      <Stations data={stations_BE} />
-    </div>
+    <Layout {...seo}>
+      <Stations stations={stations} />
+      <DownloadAppBanner />
+      <RadioPlayer stations={stations} />
+    </Layout>
   );
 }
 

@@ -13,6 +13,15 @@
   box-shadow: 1px 1px 5px 0 rgba(0, 0, 0, 0.20);
   position: relative;
 
+  @include mixinHelper.onDesktop {
+    max-width: 45%;
+  }
+
+  @include mixinHelper.onSmallDesktop {
+    max-width: unset;
+    margin: 0 25px;
+  }
+
   .image_container {
     img {
       border-radius: 21px;
