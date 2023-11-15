@@ -1,5 +1,5 @@
-@use "@/styles/mixinHelper";
-@use "@/styles/globalVariables";
+@use "public/styles/mixinHelper";
+@use "public/styles/globalVariables";
 
 .station_item {
   @include mixinHelper.center-content;
@@ -34,6 +34,7 @@
     flex-direction: column;
 
     .station_name {
+      font-family: globalVariables.$dm-sans-bold, serif;
       font-size: 25px;
       font-weight: 700;
       margin-bottom: 5px;
