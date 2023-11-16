@@ -7,6 +7,7 @@ import StationItem from "@/components/StationItem";
 import useStore from "@/store/useStore";
 
 const Stations = ({ stations }: { stations: IStation[] }) => {
+  const [isFavLoaded, setIsFavLoaded] = useState<boolean>(false);
   const { favouriteItems } = useStore();
   const [favouriteStations, setFavouriteStations] = useState<IStation[]>([]);
 
@@ -16,10 +17,14 @@ const Stations = ({ stations }: { stations: IStation[] }) => {
         return stations.find((station: IStation) => station.slug === slug);
       }) || [];
     setFavouriteStations(favouriteStations);
+    setIsFavLoaded(true);
   }, [favouriteItems, stations]);
 
   return (
-    <div className={styles.container}>
+    <div
+      className={styles.container}
+      style={{ visibility: isFavLoaded ? "visible" : "hidden" }}
+    >
       <div>
         <h1>Favourite:</h1>
         <div className={styles.stations_container}>
