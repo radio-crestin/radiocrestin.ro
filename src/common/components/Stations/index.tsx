@@ -1,34 +1,25 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useContext } from "react";
 import { IStation } from "@/models/Station";
 import styles from "./styles.module.scss";
 import StationItem from "@/components/StationItem";
-import useStore from "@/store/useStore";
+import { Context } from "@/context/ContextProvider";
 
-const Stations = ({ stations }: { stations: IStation[] }) => {
-  const [isFavLoaded, setIsFavLoaded] = useState<boolean>(false);
-  const { favouriteItems } = useStore();
-  const [favouriteStations, setFavouriteStations] = useState<IStation[]>([]);
-
-  useEffect(() => {
-    const favouriteStations: Array<IStation | any> =
-      favouriteItems.map((slug: string) => {
-        return stations.find((station: IStation) => station.slug === slug);
-      }) || [];
-    setFavouriteStations(favouriteStations);
-    setIsFavLoaded(true);
-  }, [favouriteItems, stations]);
+const Stations = () => {
+  const { ctx } = useContext(Context);
 
   return (
     <div
       className={styles.container}
-      style={{ visibility: isFavLoaded ? "visible" : "hidden" }}
+      style={{
+        visibility: ctx.isFavouriteStationsLoaded ? "visible" : "hidden",
+      }}
     >
       <div>
         <h1>Favourite:</h1>
         <div className={styles.stations_container}>
-          {favouriteStations.map((station: IStation) => {
+          {ctx.favouriteStations.map((station: IStation) => {
             return (
               <React.Fragment key={`favourite-${station.id}-${station.slug}`}>
                 <StationItem {...station} />
@@ -39,7 +30,7 @@ const Stations = ({ stations }: { stations: IStation[] }) => {
       </div>
 
       <div className={styles.stations_container}>
-        {stations.map((station: IStation) => {
+        {ctx.stations.map((station: IStation) => {
           return (
             <React.Fragment key={`${station.id}-${station.slug}`}>
               <StationItem {...station} />

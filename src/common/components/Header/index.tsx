@@ -1,8 +1,10 @@
 import Link from "next/link";
-
-import { IStation } from "@/models/Station";
 import styles from "./styles.module.scss";
 import LogoIcon from "@/icons/LogoIcon";
+import { useContext } from "react";
+import { Context } from "@/context/ContextProvider";
+import RadioPlayer from "@/components/RadioPlayer";
+import useIsElementVisible from "@/hooks/useIsElementVisible";
 
 const Navigation = () => (
   <nav className={styles.nav}>
@@ -15,33 +17,52 @@ const Navigation = () => (
       <Link href={"/despre-noi"}>Sugestii</Link>
     </div>
     <div className={styles.external_links}>
-      <Link href="https://www.figma.com/file/iXXR3dhUjwfDDZH4FlEZgx/radio_crestin_com">
+      <Link
+        href="https://www.figma.com/file/iXXR3dhUjwfDDZH4FlEZgx/radio_crestin_com"
+        target={"_blank"}
+      >
         <img src="./icons/FigmaIcon.png" alt="Figma icon" />
       </Link>
-      <Link href="https://github.com/radio-crestin">
+      <Link href="https://github.com/radio-crestin" target={"_blank"}>
         <img src="./icons/Github.png" alt="Github icon" />
       </Link>
     </div>
   </nav>
 );
 
-const ContentLeft = ({ selectedStation }: { selectedStation: IStation }) => (
-  <div className={styles.station}>
-    <div className={styles.station_details}>
-      <h1>{selectedStation.title}</h1>
-      <p>{selectedStation.description}</p>
+const ContentLeft = () => {
+  const { ctx } = useContext(Context);
+  const [stationDetailsRef, isVisibleStationDetails] =
+    useIsElementVisible<HTMLDivElement>();
+
+  return (
+    <div className={styles.station} ref={stationDetailsRef}>
+      <div className={styles.station_details}>
+        <h1 className={styles.station_title}>{ctx.selectedStation.title}</h1>
+        <p className={styles.station_description}>
+          {ctx.selectedStation.description}
+        </p>
+        <div
+          className={
+            isVisibleStationDetails
+              ? styles.player_relative
+              : styles.player_fixed
+          }
+        >
+          <RadioPlayer />
+        </div>
+      </div>
     </div>
-  </div>
-);
+  );
+};
 const ContentRight = () => <>ContentRight</>;
 
-const Header = ({ selectedStation }: { selectedStation: IStation }) => {
-  console.log("selectedStation", selectedStation);
+const Header = () => {
   return (
     <header className={styles.container}>
       <Navigation />
       <div className={styles.content_section}>
-        <ContentLeft selectedStation={selectedStation} />
+        <ContentLeft />
         {/*<ContentRight />*/}
       </div>
     </header>

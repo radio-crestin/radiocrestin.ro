@@ -1,10 +1,11 @@
-import React, { useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import Hls from "hls.js";
 import useSpaceBarPress from "@/hooks/useSpaceBarPress";
 import { Loading } from "@/icons/Loading";
 import { CONSTANTS } from "@/constants/constants";
 import styles from "./styles.module.scss";
+import { Context } from "@/context/ContextProvider";
 
 enum STREAM_TYPE {
   HLS = "HLS",
@@ -21,7 +22,9 @@ enum PLAYBACK_STATE {
 
 const MAX_MEDIA_RETRIES = 20;
 
-export default function RadioPlayer({ stations }: any) {
+export default function RadioPlayer() {
+  const { ctx } = useContext(Context);
+  const station = ctx.selectedStation;
   // const toast = useToast();
   const router = useRouter();
   const { station_slug } = router.query;
@@ -89,14 +92,6 @@ export default function RadioPlayer({ stations }: any) {
         break;
     }
   }, [playbackState]);
-
-  const station = stations.find(
-    (station: { slug: string }) => station.slug === station_slug,
-  );
-
-  if (!station) {
-    return <></>;
-  }
 
   // eslint-disable-next-line react-hooks/rules-of-hooks
   useEffect(() => {
@@ -217,7 +212,7 @@ export default function RadioPlayer({ stations }: any) {
   });
 
   const nextRandomStation = () => {
-    const upStations = stations.filter(
+    const upStations = ctx.stations.filter(
       (station: any) => station.uptime.is_up === true,
     );
 

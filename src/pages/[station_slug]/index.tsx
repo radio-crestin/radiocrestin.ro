@@ -1,38 +1,33 @@
+import React from "react";
+
 import { getStations } from "@/services/getStations";
 import { IStation } from "@/models/Station";
-import React from "react";
 import { cleanStationsMetadata } from "@/utils/cleanStationsMetadata";
 import Layout from "@/components/Layout";
-import useFetchAndUpdateStations from "@/hooks/useFetchAndUpdateStations";
 import { seoStation } from "@/utils/seo";
-import dynamic from "next/dynamic";
 import Header from "@/components/Header";
 import Stations from "@/components/Stations";
 import DownloadAppBanner from "@/components/DownloadAppBanner";
+import useUpdateContextMetadata from "@/hooks/useUpdateStationsMetadata";
+import useFavouriteStations from "@/hooks/useFavouriteStations";
 
-const RadioPlayer = dynamic(() => import("@/components/RadioPlayer"), {
-  ssr: false,
-});
 export default function StationPage({
-  stations_BE,
-  station_slug,
+  stations,
+  selectedStation,
+  seo,
 }: {
-  stations_BE: IStation[];
-  station_slug: string;
+  stations: IStation[];
+  selectedStation: IStation;
+  seo: any;
 }) {
-  const stations = useFetchAndUpdateStations(stations_BE);
-  // @ts-ignore
-  const selectedStation: IStation = stations.find(
-    (s) => s.slug === station_slug,
-  );
-  const seo = seoStation(selectedStation);
+  useUpdateContextMetadata();
+  useFavouriteStations();
 
   return (
     <Layout {...seo}>
-      <Header selectedStation={selectedStation} />
-      <Stations stations={stations} />
+      <Header />
+      <Stations />
       <DownloadAppBanner />
-      <RadioPlayer stations={stations} />
     </Layout>
   );
 }
@@ -64,6 +59,12 @@ export async function getStaticProps(context: any) {
   );
   const stations_without_meta = cleanStationsMetadata(stations);
 
+  // @ts-ignore
+  const selectedStation: IStation = stations_without_meta.find(
+    (s: IStation) => s.slug === station_slug,
+  );
+  const seo = seoStation(selectedStation);
+
   if (!stationData) {
     return {
       notFound: true,
@@ -72,7 +73,11 @@ export async function getStaticProps(context: any) {
 
   return {
     props: {
-      stations_BE: stations_without_meta,
+      stations: stations_without_meta,
+      selectedStation,
+      seo,
+      isFavouriteStationsLoaded: false,
+      favouriteStations: [],
       station_slug,
     },
   };
