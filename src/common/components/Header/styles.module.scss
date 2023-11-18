@@ -1,0 +1,72 @@
+@use "public/styles/mixinHelper";
+@use "public/styles/globalVariables";
+
+.container {
+  max-width: 1440px;
+  padding: 70px;
+  margin: 25px auto 0;
+  background: #FFFBEF;
+  height: 584px;
+  border-radius: 50px;
+}
+
+.nav {
+  display: flex;
+  justify-content: space-between;
+  gap: 0 30px;
+
+  .internal_links {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+
+    a {
+      font-size: 16px;
+      font-weight: 500;
+      height: fit-content;
+      padding: 10px;
+    }
+
+    .logo {
+      padding: 0;
+    }
+
+  }
+
+  .external_links {
+    display: flex;
+    gap: 5px;
+
+    img {
+      height: 50px;
+      width: 50px;
+    }
+  }
+}
+
+.content_section {
+  display: flex;
+  flex-direction: row;
+  margin-top: 141px;
+}
+
+.station {
+  .station_details {
+    margin-left: 100px;
+
+    h1 {
+      font-family: globalVariables.$dm-sans-bold, serif;
+      font-size: 48px;
+      font-weight: 700;
+      margin-bottom: 20px;
+    }
+
+    p {
+      max-width: 700px;
+      font-size: 20px;
+      line-height: 25px;
+      font-weight: 400;
+    }
+  }
+}

@@ -2,11 +2,12 @@ import { getStations } from "@/services/getStations";
 import { IStation } from "@/models/Station";
 import React from "react";
 import { cleanStationsMetadata } from "@/utils/cleanStationsMetadata";
-import Stations from "@/components/Stations";
 import Layout from "@/components/Layout";
 import useFetchAndUpdateStations from "@/hooks/useFetchAndUpdateStations";
 import { seoStation } from "@/utils/seo";
 import dynamic from "next/dynamic";
+import Header from "@/components/Header";
+import Stations from "@/components/Stations";
 import DownloadAppBanner from "@/components/DownloadAppBanner";
 
 const RadioPlayer = dynamic(() => import("@/components/RadioPlayer"), {
@@ -28,6 +29,7 @@ export default function StationPage({
 
   return (
     <Layout {...seo}>
+      <Header selectedStation={selectedStation} />
       <Stations stations={stations} />
       <DownloadAppBanner />
       <RadioPlayer stations={stations} />
