@@ -12,16 +12,15 @@ const Layout = ({
   keywords,
   imageUrl,
   children,
-  fullURL
+  fullURL,
 }: {
   title: string;
   description: string;
   keywords: string;
   imageUrl: string;
   children: React.ReactNode;
-  fullURL: string
+  fullURL: string;
 }) => {
-
   return (
     <>
       <Index />
@@ -59,14 +58,13 @@ const Layout = ({
         <meta name="MobileOptimized" content="width" />
         <meta name="HandheldFriendly" content="true" />
       </Head>
-      <Container maxW={'7xl'} mt={16}>
+      <Container maxW={"7xl"} mt={"14"}>
         {children}
         <Box mt={20}>
           <DownloadAppBanner />
           <Footer />
         </Box>
       </Container>
-
     </>
   );
 };
