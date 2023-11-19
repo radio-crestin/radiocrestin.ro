@@ -5,6 +5,7 @@ import { useContext } from "react";
 import { Context } from "@/context/ContextProvider";
 import RadioPlayer from "@/components/RadioPlayer";
 import useIsElementVisible from "@/hooks/useIsElementVisible";
+import { IStation } from "@/models/Station";
 
 const Navigation = () => (
   <nav className={styles.nav}>
@@ -55,7 +56,23 @@ const ContentLeft = () => {
     </div>
   );
 };
-const ContentRight = () => <>ContentRight</>;
+const ContentRight = () => {
+  const { ctx } = useContext(Context);
+  return (
+    <div className={styles.next_3_stations}>
+      {ctx.nextStations.map((station: IStation) => (
+        <Link href={station.slug} key={station.slug}>
+          <img
+            src={station.thumbnail_url}
+            alt={station.title}
+            height={130}
+            width={130}
+          />
+        </Link>
+      ))}
+    </div>
+  );
+};
 
 const Header = () => {
   return (
@@ -63,7 +80,7 @@ const Header = () => {
       <Navigation />
       <div className={styles.content_section}>
         <ContentLeft />
-        {/*<ContentRight />*/}
+        <ContentRight />
       </div>
     </header>
   );

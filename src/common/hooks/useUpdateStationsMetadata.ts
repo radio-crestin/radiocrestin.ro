@@ -11,10 +11,21 @@ const useUpdateStationsMetadata = () => {
   useEffect(() => {
     const { station_slug } = router.query;
     if (station_slug && ctx?.stations) {
+      const selectedStationIndex = ctx.stations.findIndex(
+        (s: IStation) => s.slug === station_slug,
+      );
+
+      // Calculate next stations with wrap around
+      let nextStations = [];
+      for (let i = 1; i <= 3; i++) {
+        nextStations.push(
+          ctx.stations[(selectedStationIndex + i) % ctx.stations.length],
+        );
+      }
+
       setCtx({
-        selectedStation: ctx.stations.find(
-          (s: IStation) => s.slug === station_slug,
-        ),
+        selectedStation: ctx.stations[selectedStationIndex],
+        nextStations,
       });
     }
   }, [router.query.station_slug, ctx.stations]);

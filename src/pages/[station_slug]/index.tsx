@@ -11,15 +11,7 @@ import DownloadAppBanner from "@/components/DownloadAppBanner";
 import useUpdateContextMetadata from "@/hooks/useUpdateStationsMetadata";
 import useFavouriteStations from "@/hooks/useFavouriteStations";
 
-export default function StationPage({
-  stations,
-  selectedStation,
-  seo,
-}: {
-  stations: IStation[];
-  selectedStation: IStation;
-  seo: any;
-}) {
+export default function StationPage({ seo }: { seo: any }) {
   useUpdateContextMetadata();
   useFavouriteStations();
 
@@ -49,21 +41,32 @@ export async function getStaticPaths() {
 export async function getStaticProps(context: any) {
   const { stations } = await getStations();
 
+  // Add is_favorite property to each station
   stations.forEach((station: IStation) => {
     station.is_favorite = false;
   });
 
+  // Get selected station
   const { station_slug } = context.params;
   const stationData = stations.find(
     (station: IStation) => station.slug === station_slug,
   );
   const stations_without_meta = cleanStationsMetadata(stations);
-
-  // @ts-ignore
-  const selectedStation: IStation = stations_without_meta.find(
+  const selectedStationIndex = stations_without_meta.findIndex(
     (s: IStation) => s.slug === station_slug,
   );
+  const selectedStation: IStation = stations_without_meta[selectedStationIndex];
   const seo = seoStation(selectedStation);
+
+  // Get next 3 stations with wrap around logic
+  let nextStations = [];
+  for (let i = 1; i <= 3; i++) {
+    nextStations.push(
+      stations_without_meta[
+        (selectedStationIndex + i) % stations_without_meta.length
+      ],
+    );
+  }
 
   if (!stationData) {
     return {
@@ -76,6 +79,7 @@ export async function getStaticProps(context: any) {
       stations: stations_without_meta,
       selectedStation,
       seo,
+      nextStations,
       isFavouriteStationsLoaded: false,
       favouriteStations: [],
       station_slug,
