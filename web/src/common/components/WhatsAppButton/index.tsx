@@ -7,7 +7,7 @@ export default function WhatsAppButton(props: any) {
   const [isTabletOrMobile] = useMediaQuery('(max-width: 1024px)');
   return (
     <a
-      href="https://wa.me/40773994595?text=Buna%20ziua%20[radiocrestin.ro]%0A"
+      href="https://wa.me/40766338046?text=Buna%20ziua%20[radiocrestin.ro]%0A"
       target="_blank"
       className={styles.contactButton}
       style={{
