@@ -21,20 +21,15 @@ const useUpdateStationsMetadata = () => {
 
   useEffect(() => {
     const fetchStationsData = async () => {
-      let updatedStations = [];
       try {
         const data = await getStations();
         if (data?.stations && data?.stations.length > 0) {
-          updatedStations = data.stations;
+          setCtx({
+            stations: data.stations,
+          });
         }
       } catch (error) {
         console.error("Failed to fetch stations:", error);
-      }
-
-      if (updatedStations) {
-        setCtx({
-          stations: updatedStations,
-        });
       }
     };
 

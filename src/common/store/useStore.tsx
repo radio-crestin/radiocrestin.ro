@@ -1,14 +1,18 @@
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 
-export interface IFavouritesStore {
+export interface IStore {
   favouriteItems: string[];
   toggleFavourite: (slug: string) => void;
+
+  playerVolume: number;
+  setPlayerVolume: (volume: number) => void;
 }
 
-const useStore = create<IFavouritesStore>()(
+const useStore = create<IStore>()(
   persist(
     (set, get) => ({
+      playerVolume: 20,
       favouriteItems: [],
 
       toggleFavourite: (slug: string) => {
@@ -28,6 +32,12 @@ const useStore = create<IFavouritesStore>()(
             };
           }
         });
+      },
+
+      setPlayerVolume: (volume: number) => {
+        set(() => ({
+          playerVolume: volume,
+        }));
       },
     }),
     {

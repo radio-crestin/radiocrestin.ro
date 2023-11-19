@@ -6,6 +6,7 @@ import { Loading } from "@/icons/Loading";
 import { CONSTANTS } from "@/constants/constants";
 import styles from "./styles.module.scss";
 import { Context } from "@/context/ContextProvider";
+import useStore from "@/store/useStore";
 
 enum STREAM_TYPE {
   HLS = "HLS",
@@ -24,22 +25,20 @@ const MAX_MEDIA_RETRIES = 20;
 
 export default function RadioPlayer() {
   const { ctx } = useContext(Context);
+  const { playerVolume, setPlayerVolume } = useStore();
   const station = ctx.selectedStation;
   // const toast = useToast();
   const router = useRouter();
   const { station_slug } = router.query;
   const [retries, setRetries] = useState(MAX_MEDIA_RETRIES);
   const [playbackState, setPlaybackState] = useState(PLAYBACK_STATE.STOPPED);
-  const volume = 20;
-  // TODO: Fix it later
-  // const [volume, setVolume] = useLocalStorageState(25, "AUDIO_PLAYER_VOLUME");
   const [streamType, setStreamType] = useState(STREAM_TYPE.HLS);
 
   useEffect(() => {
     const audio = document.getElementById("audioPlayer") as HTMLAudioElement;
     if (!audio) return;
-    audio.volume = volume / 100;
-  }, [volume]);
+    audio.volume = playerVolume / 100;
+  }, [playerVolume]);
 
   const loadHLS = (
     hls_stream_url: string,
@@ -97,7 +96,7 @@ export default function RadioPlayer() {
   useEffect(() => {
     const audio = document.getElementById("audioPlayer") as HTMLAudioElement;
     if (!audio) return;
-    audio.volume = volume / 100;
+    audio.volume = playerVolume / 100;
 
     return () => {
       setStreamType(STREAM_TYPE.HLS);
@@ -276,9 +275,9 @@ export default function RadioPlayer() {
             type="range"
             min="1"
             max="100"
-            value={volume}
+            value={playerVolume}
             className={styles.slider}
-            // onChange={(e) => setVolume(Number(e.target.value))}
+            onChange={(e) => setPlayerVolume(Number(e.target.value))}
           />
         </div>
 
