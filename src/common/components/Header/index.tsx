@@ -13,8 +13,10 @@ const Navigation = () => (
       <Link href={"/"} className={styles.logo}>
         <LogoIcon width={50} height={50} />
       </Link>
-      <Link href={"/despre-noi"}>Despre noi</Link>
-      <Link href={"/despre-noi"}>Versetul zilei</Link>
+
+      {/*TODO: Add it later.*/}
+      {/*<Link href={"/despre-noi"}>Despre noi</Link>*/}
+      {/*<Link href={"/despre-noi"}>Versetul zilei</Link>*/}
       <Link href={"/despre-noi"}>Sugestii</Link>
     </div>
     <div className={styles.external_links}>

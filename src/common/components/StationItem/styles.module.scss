@@ -22,10 +22,19 @@
     margin: 0 25px;
   }
 
+  @include mixinHelper.onTablet {
+    margin: 0 15px;
+  }
+
   .image_container {
     img {
       border-radius: 21px;
       object-fit: cover;
+
+      @include mixinHelper.onTablet {
+        height: 70px;
+        width: 70px;
+      }
     }
   }
 
@@ -34,22 +43,38 @@
     justify-content: center;
     flex-direction: column;
 
+    @include mixinHelper.onTablet {
+      margin-right: 25px;
+    }
+
     .station_name {
       font-family: globalVariables.$dm-sans-bold, serif;
       font-size: 25px;
       font-weight: 700;
       margin-bottom: 5px;
+
+      @include mixinHelper.onTablet {
+        font-size: 16px;
+      }
     }
 
     .song_name {
       font-size: 20px;
       font-weight: 400;
       margin-bottom: 5px;
+
+      @include mixinHelper.onTablet {
+        font-size: 13px;
+      }
     }
 
     .artist_name {
       font-size: 17px;
       font-weight: 400;
+
+      @include mixinHelper.onTablet {
+        font-size: 13px;
+      }
     }
   }
 

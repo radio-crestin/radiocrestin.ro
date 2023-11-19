@@ -1,7 +1,23 @@
+@use "public/styles/globalVariables";
+
 .container {
   display: flex;
   flex-direction: column;
-  gap: 150px;
+  gap: 100px;
+}
+
+.favourite_section {
+  max-width: 1540px;
+  margin: 20px auto 0;
+  width: 100%;
+
+  h1 {
+    max-width: 1200px;
+    margin: 30px auto 15px;
+    font-size: 22px;
+    font-weight: 700;
+    font-family: globalVariables.$dm-sans-bold;
+  }
 }
 
 .stations_container {
@@ -11,4 +27,5 @@
   gap: 20px;
   max-width: 1230px;
   margin: 0 auto;
+  margin-top: 30px;
 }

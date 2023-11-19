@@ -16,18 +16,20 @@ const Stations = () => {
         visibility: ctx.isFavouriteStationsLoaded ? "visible" : "hidden",
       }}
     >
-      <div>
-        <h1>Favourite:</h1>
-        <div className={styles.stations_container}>
-          {ctx.favouriteStations.map((station: IStation) => {
-            return (
-              <React.Fragment key={`favourite-${station.id}-${station.slug}`}>
-                <StationItem {...station} />
-              </React.Fragment>
-            );
-          })}
+      {ctx.favouriteStations.length > 0 && (
+        <div className={styles.favourite_section}>
+          <h1>Favourite:</h1>
+          <div className={styles.stations_container}>
+            {ctx.favouriteStations.map((station: IStation) => {
+              return (
+                <React.Fragment key={`favourite-${station.id}-${station.slug}`}>
+                  <StationItem {...station} />
+                </React.Fragment>
+              );
+            })}
+          </div>
         </div>
-      </div>
+      )}
 
       <div className={styles.stations_container}>
         {ctx.stations.map((station: IStation) => {

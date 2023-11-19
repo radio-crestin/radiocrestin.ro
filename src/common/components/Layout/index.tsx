@@ -27,7 +27,8 @@ const Layout = ({
         <meta name="keywords" content={keywords} />
         <meta name="title" content={title} />
         <meta name="description" content={description} />
-        <meta name="robots" content={"index, follow"} />
+        {/*TODO: Temp while development*/}
+        <meta name="robots" content={"noindex, nofollow"} />
         <title>{title}</title>
 
         {/* Twitter */}

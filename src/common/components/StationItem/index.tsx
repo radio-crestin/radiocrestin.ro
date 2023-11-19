@@ -21,7 +21,7 @@ const StationItem = (data: IStation) => {
     <Link className={styles.station_item} href={data.slug} scroll={false}>
       <div className={styles.image_container}>
         <img
-          src={data.thumbnail_url}
+          src={data.now_playing.song.thumbnail_url || data.thumbnail_url}
           alt={`${data.title} | radiocrestin.ro`}
           loading={"lazy"}
           height={110}

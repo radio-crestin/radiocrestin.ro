@@ -9,6 +9,9 @@
   background-color: #c6eaff;
   position: relative;
   justify-content: space-between;
+  max-width: 1440px;
+  margin-right: auto;
+  margin-left: auto;
 
   @include mixinHelper.onDesktop {
     padding-top: 100px;
@@ -20,10 +23,16 @@
   min-width: 390px;
   padding: 0 20px 20px;
   max-width: 625px;
+  box-sizing: border-box;
+
 
   @include mixinHelper.onDesktop {
     padding-left: 60px;
     padding-right: 0;
+  }
+
+  @include mixinHelper.onTablet {
+    padding: 20px
   }
 }
 
@@ -35,12 +44,14 @@
 
 .sub_heading {
   font-size: 15px;
+  margin-top: 20px;
+  margin-bottom: 20px;
 }
 
 .link_container {
   margin-top: 5px;
   display: flex;
-  gap: 2px;
+  gap: 12px;
   align-items: center;
   width: 100%;
   max-width: 450px;
