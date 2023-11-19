@@ -21,11 +21,21 @@
   justify-content: space-between;
   gap: 0 30px;
 
+  @include mixinHelper.onTablet {
+    margin-left: 0;
+    gap: 0;
+  }
+
   .internal_links {
     display: flex;
     justify-content: center;
     align-items: center;
     gap: 15px;
+    margin-left: 90px;
+
+    @include mixinHelper.onTablet {
+      margin-left: 0;
+    }
 
     a {
       font-size: 16px;
@@ -56,6 +66,10 @@
   flex-direction: row;
   margin-top: 141px;
   height: 350px;
+
+  @include mixinHelper.onTablet {
+    margin-top: 50px;
+  }
 }
 
 .station {

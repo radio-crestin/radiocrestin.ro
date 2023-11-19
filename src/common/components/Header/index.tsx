@@ -17,7 +17,14 @@ const Navigation = () => (
       {/*TODO: Add it later.*/}
       {/*<Link href={"/despre-noi"}>Despre noi</Link>*/}
       {/*<Link href={"/despre-noi"}>Versetul zilei</Link>*/}
-      <Link href={"/despre-noi"}>Sugestii</Link>
+      <Link
+        href={
+          "https://api.whatsapp.com/send/?phone=40774610556&text=Sugestie+imbunatatire+aplicatie:"
+        }
+        target={"_blank"}
+      >
+        Ai o sugestie? Click aici 😊!
+      </Link>
     </div>
     <div className={styles.external_links}>
       <Link
@@ -36,7 +43,7 @@ const Navigation = () => (
 const ContentLeft = () => {
   const { ctx } = useContext(Context);
   const [stationDetailsRef, isVisibleStationDetails] =
-    useIsElementVisible<HTMLDivElement>();
+    useIsElementVisible<HTMLDivElement>(20);
 
   return (
     <div className={styles.station} ref={stationDetailsRef}>
