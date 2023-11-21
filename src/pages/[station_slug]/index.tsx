@@ -1,17 +1,16 @@
-import React, { useEffect, useState } from "react";
-import { Box } from "@chakra-ui/react";
-import dynamic from "next/dynamic";
+import React, { useEffect, useState } from 'react';
+import { Box, Container } from '@chakra-ui/react';
+import dynamic from 'next/dynamic';
 
-import StationHomepageHeader from "@/components/StationHomepageHeader/StationHomepageHeader";
-import StationList from "@/components/StationList/StationList";
+import StationHomepageHeader from '@/components/StationHomepageHeader/StationHomepageHeader';
+import StationList from '@/components/StationList/StationList';
 import { IStation } from "@/models/Station";
 import { seoStation } from "@/utils/seo";
 import { getStations } from "@/common/services/getStations";
 import { cleanStationsMetadata } from "@/utils/cleanStationsMetadata";
 import Layout from "@/components/Layout";
-import Link from "next/link";
 
-const StationPlayer = dynamic(() => import("@/components/StationPlayer"), {
+const StationPlayer = dynamic(() => import('@/components/StationPlayer'), {
   ssr: false,
 });
 
@@ -44,37 +43,17 @@ export default function StationPage({
   }, []);
 
   // @ts-ignore
-  const selectedStation: IStation = stations.find(
-    (s) => s.slug === station_slug,
-  );
+  const selectedStation: IStation = stations.find(s => s.slug === station_slug);
   const seo = seoStation(selectedStation);
 
   return (
     <Layout {...seo}>
-      <Link
-        href={
-          "https://elisei-re-design-radiocresti.radiocrestin-ro-static.pages.dev"
-        }
-        target={"_blank"}
-      >
-        <Box
-          mb={5}
-          textAlign={"left"}
-          paddingY={2}
-          paddingX={2}
-          borderRadius={20}
-          width={"fit-content"}
-          ml={"auto"}
-          background={"red"}
-          color={"white"}
-        >
-          Vezi ➡️ Radio crestin v2 (beta)
-        </Box>
-      </Link>
       {selectedStation && (
         <StationHomepageHeader selectedStation={selectedStation} />
       )}
-      <StationList stations={stations} />
+      <StationList
+        stations={stations}
+      />
       <Box mb={{ base: 40, lg: 20 }} />
       <StationPlayer stations={stations} />
     </Layout>
@@ -101,9 +80,7 @@ export async function getStaticProps(context: any) {
   const stationData = stations_metadata.stations.find(
     (station: IStation) => station.slug === station_slug,
   );
-  const stations_without_meta = cleanStationsMetadata(
-    stations_metadata.stations,
-  );
+  const stations_without_meta = cleanStationsMetadata(stations_metadata.stations);
 
   if (!stationData) {
     return {
