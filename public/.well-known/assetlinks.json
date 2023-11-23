@@ -1,0 +1,5 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target" : { "namespace": "android_app", "package_name": "com.radiocrestin.radio_crestin",
+               "sha256_cert_fingerprints": ["5B:4D:F2:2D:81:46:5A:63:B7:33:04:CD:DD:5A:F9:E9:9D:69:1F:B6:E2:3E:BC:CA:1E:4A:4A:05:60:33:0B:14"] }
+}]
