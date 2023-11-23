@@ -1,5 +1,15 @@
-[{
-  "relation": ["delegate_permission/common.handle_all_urls"],
-  "target" : { "namespace": "android_app", "package_name": "com.radiocrestin.radio_crestin",
-               "sha256_cert_fingerprints": ["5B:4D:F2:2D:81:46:5A:63:B7:33:04:CD:DD:5A:F9:E9:9D:69:1F:B6:E2:3E:BC:CA:1E:4A:4A:05:60:33:0B:14"] }
-}]
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.radiocrestin.radio_crestin",
+      "sha256_cert_fingerprints": [
+        "5B:4D:F2:2D:81:46:5A:63:B7:33:04:CD:DD:5A:F9:E9:9D:69:1F:B6:E2:3E:BC:CA:1E:4A:4A:05:60:33:0B:14",
+        "F0:72:02:52:C1:B9:26:83:45:59:6F:FF:DC:87:00:AB:05:EB:DE:EF:AB:FD:62:36:CD:A4:7C:40:B7:9B:5B:28"
+      ]
+    }
+  }
+]
