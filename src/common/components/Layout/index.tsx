@@ -6,7 +6,6 @@ import Index from "@/components/AnalyticsScripts";
 import DownloadAppBanner from "@/components/DownloadAppBanner/DownloadAppBanner";
 import Footer from "@/components/Footer/Footer";
 import RadioCrestinHeader from "@/components/RadioCrestinHeader";
-import OpenMobileApp from "@/components/OpenMobileApp";
 
 const Layout = ({
   title,
