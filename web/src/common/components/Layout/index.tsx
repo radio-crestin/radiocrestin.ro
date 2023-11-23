@@ -63,7 +63,6 @@ const Layout = ({
       </Head>
       <Container maxW={'7xl'}>
         <RadioCrestinHeader />
-        <OpenMobileApp />
         {children}
         <Box mt={20}>
           <DownloadAppBanner />

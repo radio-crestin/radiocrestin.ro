@@ -2,7 +2,7 @@ import '@/styles/globals.scss'
 import type { AppProps } from 'next/app'
 import { ChakraProvider, extendTheme } from "@chakra-ui/react";
 import OpenMobileApp from "@/components/OpenMobileApp";
-import RadioCrestinHeader from "@/components/RadioCrestinHeader";
+import React from "react";
 
 // 2. Extend the theme to include custom colors, fonts, etc
 const colors = {
@@ -19,6 +19,7 @@ const theme = extendTheme({ colors })
 function MyApp({ Component, pageProps }: AppProps) {
   return (
     <ChakraProvider theme={theme}>
+      <OpenMobileApp />
       <Component {...pageProps} />
     </ChakraProvider>
   )

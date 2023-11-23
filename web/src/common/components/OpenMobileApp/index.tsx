@@ -24,12 +24,14 @@ export default function OpenMobileApp(props: any) {
   const deviceType = useDeviceType();
   const { isOpen, onOpen, onClose } = useDisclosure()
   const router = useRouter();
-  const { nfc_tag } = router.query;
+  const { nfc_tag, station_slug } = router.query;
   useEffect(() => {
     if(nfc_tag && deviceType != 'desktop') {
       onOpen();
     }
   }, [nfc_tag, deviceType]);
+  console.log({router});
+
   return (
       <Modal isOpen={isOpen} onClose={onClose} size="full">
         <ModalOverlay />
@@ -55,7 +57,7 @@ export default function OpenMobileApp(props: any) {
               </Box>}
               {(deviceType == 'desktop' || deviceType == 'android') && <Box w={'100%'}>
                 <Link
-                    href="https://play.google.com/store/apps/details?id=com.radiocrestin.radio_crestin&hl=en_US"
+                    href={`market://details?id=com.radiocrestin.radio_crestin&url=radiocrestin%3A%2F%2F${station_slug}`}
                     style={{ position: 'relative' }} target={"_blank"}>
                   <Image
                       loading={"lazy"}
