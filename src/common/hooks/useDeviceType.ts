@@ -18,7 +18,7 @@ const useDeviceType = () => {
         setDeviceType('desktop');
       }
     }
-  }, []); // Empty dependency array ensures this effect runs once after the initial render
+  }, []);
 
   return deviceType;
 };
