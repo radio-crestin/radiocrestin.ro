@@ -1,0 +1,12 @@
+{
+  "theme_color": "#2196f3",
+  "background_color": "#2196f3",
+  "display": "browser",
+  "scope": "/",
+  "start_url": "/",
+
+  "related_applications": [{
+    "platform": "play",
+    "id": "com.radiocrestin.radio_crestin"
+  }]
+}
