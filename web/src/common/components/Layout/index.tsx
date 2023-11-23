@@ -5,6 +5,8 @@ import { Box, Container } from "@chakra-ui/react";
 import Index from "@/components/AnalyticsScripts";
 import DownloadAppBanner from "@/components/DownloadAppBanner/DownloadAppBanner";
 import Footer from "@/components/Footer/Footer";
+import RadioCrestinHeader from "@/components/RadioCrestinHeader";
+import OpenMobileApp from "@/components/OpenMobileApp";
 
 const Layout = ({
   title,
@@ -59,7 +61,9 @@ const Layout = ({
         <meta name="MobileOptimized" content="width" />
         <meta name="HandheldFriendly" content="true" />
       </Head>
-      <Container maxW={'7xl'} mt={16}>
+      <Container maxW={'7xl'}>
+        <RadioCrestinHeader />
+        <OpenMobileApp />
         {children}
         <Box mt={20}>
           <DownloadAppBanner />

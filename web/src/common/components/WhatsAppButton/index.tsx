@@ -12,9 +12,9 @@ export default function WhatsAppButton(props: any) {
       className={styles.contactButton}
       style={{
         bottom: props.isPlaying
-          ? isTabletOrMobile
-            ? '93px'
-            : '104px'
+          ? (isTabletOrMobile
+                ? '140px'
+                : '32px')
           : '32px',
       }}>
       <div className={styles.contactLinkButton}>
