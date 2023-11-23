@@ -9,6 +9,7 @@ import { seoStation } from "@/utils/seo";
 import { getStations } from "@/common/services/getStations";
 import { cleanStationsMetadata } from "@/utils/cleanStationsMetadata";
 import Layout from "@/components/Layout";
+import WhatsAppButton from "@/components/WhatsAppButton";
 
 const StationPlayer = dynamic(() => import('@/components/StationPlayer'), {
   ssr: false,
@@ -48,6 +49,7 @@ export default function StationPage({
 
   return (
     <Layout {...seo}>
+      <WhatsAppButton isPlaying={true}/>
       {selectedStation && (
         <StationHomepageHeader selectedStation={selectedStation} />
       )}

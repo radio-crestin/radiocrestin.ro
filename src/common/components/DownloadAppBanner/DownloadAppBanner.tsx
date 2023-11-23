@@ -1,10 +1,13 @@
-import React from 'react';
+import React from "react";
 import Link from 'next/link';
 
 import { Box, Text } from '@chakra-ui/react';
 import styles from './DownloadAppBanner.module.scss';
+import useDeviceType from "@/hooks/useDeviceType";
 
 export default function DownloadAppBanner() {
+  const deviceType = useDeviceType();
+
   return (
     <Box
       mt={150}
@@ -28,7 +31,7 @@ export default function DownloadAppBanner() {
           reclame.
         </Text>
         <Box mt={5} display={'flex'} gap={2} alignItems={'center'} w={'100%'} maxWidth={450}>
-          <Box width={'33%'}>
+          {(deviceType == 'desktop' || deviceType == 'ios') && <Box width={deviceType == 'desktop' ? '33%': '48%'}>
             <Link href="https://apps.apple.com/app/6451270471" target={"_blank"}>
               <img
                 loading={"lazy"}
@@ -38,8 +41,8 @@ export default function DownloadAppBanner() {
                 alt={'AppStore Image Radio Crestin'}
               />
             </Link>
-          </Box>
-          <Box width={'33%'}>
+          </Box>}
+          {(deviceType == 'desktop' || deviceType == 'android') && <Box width={deviceType == 'desktop' ? '33%': '48%'}>
             <Link
               href="https://play.google.com/store/apps/details?id=com.radiocrestin.radio_crestin&hl=en_US"
               style={{ position: 'relative' }} target={"_blank"}>
@@ -52,8 +55,8 @@ export default function DownloadAppBanner() {
                 alt={'PlayStore Image Radio Crestin'}
               />
             </Link>
-          </Box>
-          <Box width={'33%'}>
+          </Box>}
+          {(deviceType == 'desktop' || deviceType == 'huawei') && <Box width={deviceType == 'desktop' ? '33%': '48%'}>
             <Link
               href="https://appgallery.huawei.com/app/C109055331"
               style={{ position: 'relative' }} target={"_blank"}>
@@ -66,7 +69,7 @@ export default function DownloadAppBanner() {
                 alt={'AppGallery Image Radio Crestin'}
               />
             </Link>
-          </Box>
+          </Box>}
         </Box>
       </Box>
       <Box

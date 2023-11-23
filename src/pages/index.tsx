@@ -7,6 +7,7 @@ import { getStations } from "@/common/services/getStations";
 import Layout from "@/components/Layout";
 import StationList from "@/components/StationList/StationList";
 import { IStation } from "@/models/Station";
+import WhatsAppButton from "@/components/WhatsAppButton";
 
 export default function HomePage({ stations_BE }: { stations_BE: IStation[] }) {
   const [stations, setStations] = useState<IStation[]>(stations_BE);
@@ -30,6 +31,7 @@ export default function HomePage({ stations_BE }: { stations_BE: IStation[] }) {
 
   return (
     <Layout {...SEO_DEFAULT}>
+      <WhatsAppButton isPlaying={false}/>
       <StationList stations={stations} />
     </Layout>
   )

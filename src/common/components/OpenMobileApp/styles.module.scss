@@ -4,6 +4,7 @@
   position: fixed;
   width: 60px;
   height: 60px;
+  bottom: 32px;
   right: 33px;
   background-color: #25d366;
   color: #FFF;
@@ -19,15 +20,14 @@
   -ms-transition: all .2s ease-in-out;
   -o-transition: all .2s ease-in-out;
   transition: all .2s ease-in-out;
-  z-index: 9;
-
+  z-index: 99999999;
 
   @include mixinHelper.onMobile {
-    right: 15px !important;
+    top: -55px !important;
+    right: 10px !important;
     width: 50px;
     height: 50px;
-    position: fixed;
-    z-index: 3;
+    position: absolute;
   }
 
   .contactLinkButton {
