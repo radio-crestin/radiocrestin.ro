@@ -1,4 +1,5 @@
 @use "public/styles/globalVariables";
+@use "public/styles/mixinHelper";
 
 .container {
   display: flex;
@@ -30,6 +31,10 @@
     align-content: flex-start;
     min-height: 160px;
     margin-bottom: 25px;
+
+    @include mixinHelper.onSmallDesktop {
+      margin: 0 25px 35px;
+    }
   }
 }
 
@@ -39,6 +44,5 @@
   flex-wrap: wrap;
   gap: 20px;
   max-width: 1230px;
-  margin: 0 auto;
-  margin-top: 30px;
+  margin: 30px auto 0;
 }

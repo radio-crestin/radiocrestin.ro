@@ -1,50 +1,61 @@
 @use "public/styles/mixinHelper";
+@use "public/styles/globalVariables";
 
 .download_app_banner {
-  margin-top: 150px;
-  margin-bottom: 150px;
-  padding-top: 50px;
+  padding-top: 100px;
+  padding-left: 60px;
+  padding-bottom: 60px;
   display: flex;
   flex-direction: column;
   background-color: #c6eaff;
   position: relative;
   justify-content: space-between;
   max-width: 1440px;
-  margin-right: auto;
-  margin-left: auto;
+  margin: 150px auto;
 
   @include mixinHelper.onDesktop {
     padding-top: 100px;
     flex-direction: row;
   }
+
+  @include mixinHelper.dynamicBreakpoint(940px) {
+    @include mixinHelper.center-content;
+    flex-direction: column;
+    padding-left: 0;
+  }
 }
 
 .text_container {
-  min-width: 390px;
+  min-width: 560px;
   padding: 0 20px 20px;
   max-width: 625px;
   box-sizing: border-box;
 
 
   @include mixinHelper.onDesktop {
-    padding-left: 60px;
-    padding-right: 0;
+    padding: 0;
   }
 
   @include mixinHelper.onTablet {
     padding: 20px
   }
+
+  @include mixinHelper.dynamicBreakpoint(940px) {
+    width: fit-content;
+    min-width: unset;
+  }
 }
 
 .main_heading {
+  font-family: globalVariables.$dm-sans-bold;
   font-size: 32px;
   font-weight: 700;
-  letter-spacing: 0.7px;
+  letter-spacing: -0.3px;
 }
 
 .sub_heading {
   font-size: 15px;
-  margin-top: 20px;
+  margin-top: 5px;
   margin-bottom: 20px;
 }
 
@@ -70,36 +81,50 @@
   position: relative;
   width: 100%;
   margin-right: 90px;
-  max-width: 500px;
 
-  img {
-    display: none;
-    width: 100%;
+  @include mixinHelper.dynamicBreakpoint(940px) {
+    margin-right: 0;
+    @include mixinHelper.center-content;
+  }
+
+  .iphone12_mock_image {
     height: auto;
     position: absolute;
-    right: 0;
-    bottom: 0;
+    right: 150px;
+    bottom: -60px;
+    width: 100%;
+    max-width: 500px;
 
-    @include mixinHelper.onTablet {
-      display: block;
+    @include mixinHelper.onDesktop {
+      right: 0;
+    }
+
+    @include mixinHelper.onSmallDesktop {
+      display: none;
     }
   }
 
-  @include mixinHelper.onTablet {
-    margin-right: 150px;
-  }
-}
-
-.iphone12_mock_image {
-  display: block;
-  width: 500px;
-  height: 500px;
-  position: absolute;
-  right: 0;
-  bottom: 0;
-
-  @include mixinHelper.onTablet {
+  .iphone12_mobile_image {
     display: none;
+    width: 100%;
+    max-width: 375px;
+    height: auto;
+    position: absolute;
+    right: 0;
+    bottom: -60px;
+
+    @include mixinHelper.onSmallDesktop {
+      display: block;
+    }
+
+    @include mixinHelper.dynamicBreakpoint(940px) {
+      position: relative;
+      bottom: -60px
+    }
+
+    @include mixinHelper.onTablet {
+      max-width: 200px;
+    }
   }
 }
 
@@ -111,7 +136,7 @@
   width: 90px;
   height: 90px;
 
-  @include mixinHelper.onTablet {
+  @include mixinHelper.onSmallDesktop {
     display: none;
   }
 }

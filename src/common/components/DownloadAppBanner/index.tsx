@@ -60,6 +60,7 @@ export default function DownloadAppBanner() {
           alt={"iPhone 12 Radio Crestin"}
         />
         <img
+          className={styles.iphone12_mobile_image}
           loading={"lazy"}
           src={"/images/iphone12_mobile.png"}
           alt={"iPhone 12 Radio Crestin"}

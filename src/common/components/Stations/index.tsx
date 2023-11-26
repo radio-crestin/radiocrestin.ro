@@ -19,7 +19,7 @@ const Stations = () => {
     >
       {ctx.favouriteStations.length > 0 && (
         <div className={styles.favourite_section}>
-          <h1>Favorite</h1>
+          <h1>⭐ Favorite</h1>
           <div className={styles.stations_container}>
             {ctx.favouriteStations.map((station: IStation) => {
               return (
