@@ -43,6 +43,8 @@ const ContentLeft = () => {
   const [stationDetailsRef, isVisibleStationDetails] =
     useIsElementVisible<HTMLDivElement>(20);
 
+  if (!ctx.selectedStation) return null;
+
   return (
     <div className={styles.station} ref={stationDetailsRef}>
       <div className={styles.station_details}>
@@ -65,6 +67,8 @@ const ContentLeft = () => {
 };
 const ContentRight = () => {
   const { ctx } = useContext(Context);
+  if (!ctx.nextStations) return null;
+
   return (
     <div className={styles.next_3_stations}>
       {ctx.nextStations.map((station: IStation) => (
