@@ -1,7 +1,6 @@
 import Link from "next/link";
 import styles from "./styles.module.scss";
-import LogoIcon from "@/icons/LogoIcon";
-import { useContext } from "react";
+import React, { useContext } from "react";
 import { Context } from "@/context/ContextProvider";
 import RadioPlayer from "@/components/RadioPlayer";
 import useIsElementVisible from "@/hooks/useIsElementVisible";
@@ -11,20 +10,19 @@ const Navigation = () => (
   <nav className={styles.nav}>
     <div className={styles.internal_links}>
       <Link href={"/"} className={styles.logo}>
-        <LogoIcon width={50} height={50} />
+        <img
+          loading={"lazy"}
+          src={"/images/radiocrestin_logo.png"}
+          width={40}
+          height={40}
+          alt={"AppStore Image Radio Crestin"}
+        />
+        <h1>Radio Creștin</h1>
       </Link>
 
       {/*TODO: Add it later.*/}
       {/*<Link href={"/despre-noi"}>Despre noi</Link>*/}
       {/*<Link href={"/despre-noi"}>Versetul zilei</Link>*/}
-      <Link
-        href={
-          "https://api.whatsapp.com/send/?phone=40774610556&text=Sugestie+imbunatatire+aplicatie:"
-        }
-        target={"_blank"}
-      >
-        Ai o sugestie? Click aici 😊!
-      </Link>
     </div>
     <div className={styles.external_links}>
       <Link
