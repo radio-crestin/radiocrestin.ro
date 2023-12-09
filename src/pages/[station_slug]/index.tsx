@@ -10,6 +10,7 @@ import Stations from "@/components/Stations";
 import DownloadAppBanner from "@/components/DownloadAppBanner";
 import useUpdateContextMetadata from "@/hooks/useUpdateStationsMetadata";
 import useFavouriteStations from "@/hooks/useFavouriteStations";
+import RadioPlayer from "@/components/RadioPlayer";
 
 export default function StationPage({ seo }: { seo: any }) {
   useUpdateContextMetadata();
@@ -20,6 +21,7 @@ export default function StationPage({ seo }: { seo: any }) {
       <Header />
       <Stations />
       <DownloadAppBanner />
+      <RadioPlayer />
     </Layout>
   );
 }

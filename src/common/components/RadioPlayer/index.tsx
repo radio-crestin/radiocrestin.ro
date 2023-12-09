@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useContext, useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import Hls from "hls.js";
@@ -6,7 +8,8 @@ import { Loading } from "@/icons/Loading";
 import { CONSTANTS } from "@/constants/constants";
 import styles from "./styles.module.scss";
 import { Context } from "@/context/ContextProvider";
-import useStore from "@/store/useStore";
+import usePlayer from "@/store/usePlayer";
+import { PLAYBACK_STATE } from "@/models/enum";
 
 enum STREAM_TYPE {
   HLS = "HLS",
@@ -14,24 +17,17 @@ enum STREAM_TYPE {
   ORIGINAL = "ORIGINAL",
 }
 
-enum PLAYBACK_STATE {
-  STARTED = "started",
-  STOPPED = "stopped",
-  BUFFERING = "buffering",
-  PLAYING = "playing",
-}
-
 const MAX_MEDIA_RETRIES = 20;
 
 export default function RadioPlayer() {
   const { ctx } = useContext(Context);
-  const { playerVolume, setPlayerVolume } = useStore();
+  const { playerVolume, setPlayerVolume, playbackState, setPlaybackState } =
+    usePlayer();
   const station = ctx.selectedStation;
   // const toast = useToast();
   const router = useRouter();
   const { station_slug } = router.query;
   const [retries, setRetries] = useState(MAX_MEDIA_RETRIES);
-  const [playbackState, setPlaybackState] = useState(PLAYBACK_STATE.STOPPED);
   const [streamType, setStreamType] = useState(STREAM_TYPE.HLS);
 
   useEffect(() => {

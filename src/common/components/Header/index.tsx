@@ -2,9 +2,6 @@ import Link from "next/link";
 import styles from "./styles.module.scss";
 import React, { useContext } from "react";
 import { Context } from "@/context/ContextProvider";
-import RadioPlayer from "@/components/RadioPlayer";
-import useIsElementVisible from "@/hooks/useIsElementVisible";
-import { IStation } from "@/models/Station";
 
 const Navigation = () => (
   <nav className={styles.nav}>
@@ -19,10 +16,6 @@ const Navigation = () => (
         />
         <h1>Radio Creștin</h1>
       </Link>
-
-      {/*TODO: Add it later.*/}
-      {/*<Link href={"/despre-noi"}>Despre noi</Link>*/}
-      {/*<Link href={"/despre-noi"}>Versetul zilei</Link>*/}
     </div>
     <div className={styles.external_links}>
       <Link
@@ -38,49 +31,51 @@ const Navigation = () => (
   </nav>
 );
 
-const ContentLeft = () => {
+const ContentRight = () => {
   const { ctx } = useContext(Context);
-  const [stationDetailsRef, isVisibleStationDetails] =
-    useIsElementVisible<HTMLDivElement>(20);
-
-  if (!ctx.selectedStation) return null;
 
   return (
-    <div className={styles.station} ref={stationDetailsRef}>
+    <div className={styles.right_content}>
       <div className={styles.station_details}>
         <h1 className={styles.station_title}>{ctx.selectedStation.title}</h1>
         <p className={styles.station_description}>
           {ctx.selectedStation.description}
         </p>
-        <div
-          className={
-            isVisibleStationDetails
-              ? styles.player_relative
-              : styles.player_fixed
-          }
-        >
-          <RadioPlayer />
-        </div>
       </div>
     </div>
   );
 };
-const ContentRight = () => {
+
+const ContentLeft = () => {
   const { ctx } = useContext(Context);
-  if (!ctx.nextStations) return null;
+  const { selectedStation } = ctx;
+
+  if (!selectedStation) return null;
+
+  console.log("selectedStation", ctx.selectedStation);
 
   return (
-    <div className={styles.next_3_stations}>
-      {ctx.nextStations.map((station: IStation) => (
-        <Link href={station.slug} key={station.slug}>
+    <div className={styles.left_content}>
+      {ctx.selectedStation && (
+        <>
           <img
-            src={station.thumbnail_url}
-            alt={station.title}
-            height={130}
-            width={130}
+            loading={"lazy"}
+            src={selectedStation.thumbnail_url}
+            alt={selectedStation.title}
+            className={styles.station_image}
+            width={230}
+            height={230}
           />
-        </Link>
-      ))}
+          <div className={styles.station_info}>
+            <h2 className={styles.station_title}>
+              {selectedStation.now_playing?.song?.name || selectedStation.title}
+            </h2>
+            <p className={styles.station_artist}>
+              {selectedStation.now_playing?.song?.artist.name}
+            </p>
+          </div>
+        </>
+      )}
     </div>
   );
 };

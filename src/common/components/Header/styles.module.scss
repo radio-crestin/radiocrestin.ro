@@ -6,7 +6,7 @@
   padding: 70px;
   margin: 25px auto 0;
   background: #FFFBEF;
-  height: 584px;
+  height: 462px;
   border-radius: 50px;
 
   @include mixinHelper.onTablet {
@@ -51,7 +51,6 @@
       gap: 0 15px;
       padding: 0;
     }
-
   }
 
   .external_links {
@@ -68,15 +67,43 @@
 .content_section {
   display: flex;
   flex-direction: row;
-  margin-top: 141px;
+  margin-top: 86px;
   height: 350px;
+  gap: 30px;
 
   @include mixinHelper.onTablet {
     margin-top: 50px;
   }
 }
 
-.station {
+.left_content {
+  display: flex;
+  flex-direction: column;
+  height: fit-content;
+  margin-left: 100px;
+
+  img {
+    box-shadow: rgba(0, 0, 0, 0.08) 0px 4px 12px;
+    margin-bottom: 20px;
+  }
+
+  .station_info {
+    max-width: 230px;
+
+    h2 {
+      font-family: globalVariables.$dm-sans-bold, serif;
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+  }
+}
+
+
+.right_content {
+  max-width: 850px;
+  width: 100%;
+
   .station_details {
     margin-left: 100px;
     @include mixinHelper.onTablet {
@@ -91,75 +118,13 @@
     }
 
     .station_description {
-      max-width: 700px;
       font-size: 20px;
       line-height: 25px;
       font-weight: 400;
-      height: 100px;
-
-      display: -webkit-box;
-      -webkit-line-clamp: 4;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .player_fixed {
-      position: fixed;
-      bottom: 25px;
-      z-index: 10;
-      left: 50%;
-      transform: translateX(-50%);
-      max-width: 560px;
-      width: calc(100% - 50px);
+      margin-bottom: 30px;
     }
 
     .player_relative {
-      height: 80px;
-      margin-top: 50px;
-    }
-  }
-}
-
-.next_3_stations {
-  position: relative;
-  width: 50%;
-  height: 248px;
-
-  @include mixinHelper.onSmallDesktop {
-    display: none;
-  }
-
-  a {
-    img {
-      object-fit: cover;
-      border-radius: 100px;
-      box-shadow: 0px 4px 4px 0px rgba(0, 0, 0, 0.25);
-      position: absolute;
-    }
-  }
-
-  a:nth-child(1) {
-    img {
-      height: 99px;
-      width: 99px;
-      right: 250px;
-      bottom: 30px;
-    }
-  }
-
-  a:nth-child(2) {
-    img {
-      height: 199px;
-      width: 199px;
-      right: 50px;
-    }
-  }
-
-  a:nth-child(3) {
-    img {
-      right: 120px;
-      bottom: -100px;
     }
   }
 }

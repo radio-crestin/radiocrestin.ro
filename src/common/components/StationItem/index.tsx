@@ -6,11 +6,11 @@ import { IStation } from "@/models/Station";
 import styles from "./styles.module.scss";
 import HeadphoneIcon from "@/icons/Headphone";
 import Heart from "@/icons/Heart";
-import useStore from "@/store/useStore";
+import useFavourite from "@/store/useFavourite";
 import { useEffect, useState } from "react";
 
 const StationItem = (data: IStation) => {
-  const { favouriteItems, toggleFavourite } = useStore();
+  const { favouriteItems, toggleFavourite } = useFavourite();
   const [isStationFavourite, setIsStationFavourite] = useState(false);
 
   useEffect(() => {

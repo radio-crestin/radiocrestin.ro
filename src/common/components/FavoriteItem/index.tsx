@@ -4,12 +4,12 @@ import Link from "next/link";
 
 import { IStation } from "@/models/Station";
 import styles from "./styles.module.scss";
-import useStore from "@/store/useStore";
+import useFavourite from "@/store/useFavourite";
 import { useEffect, useState } from "react";
 import CloseIcon from "@/icons/CloseIcon";
 
 const FavouriteItem = (data: IStation) => {
-  const { favouriteItems, toggleFavourite } = useStore();
+  const { favouriteItems, toggleFavourite } = useFavourite();
   const [isStationFavourite, setIsStationFavourite] = useState(false);
 
   useEffect(() => {

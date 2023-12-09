@@ -1,8 +1,12 @@
 .radio_player {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
   width: 100%;
   max-width: 560px;
-  padding: 2px;
-  background-color: black;
+  padding: 10px;
+  background-color: #232321;
   box-shadow: 0 10px 30px 0 rgba(0, 0, 0, 0.15);
   border-radius: 16px;
   z-index: 10;
@@ -11,7 +15,6 @@
 .player_container {
   display: flex;
   align-items: center;
-  margin-right: 20px;
 }
 
 .station_thumbnail {
@@ -22,12 +25,12 @@
 }
 
 .station_info {
-  margin-left: 4px;
+  margin-left: 24px;
   flex-grow: 1;
 }
 
 .station_title {
-  font-size: 1rem;
+  font-size: 1.5rem;
   color: white;
   font-weight: 700;
   margin-top: 0;
@@ -63,7 +66,5 @@
   background-color: transparent;
   border: none;
   color: white;
-  width: 50px;
-  height: 50px;
   cursor: pointer;
 }

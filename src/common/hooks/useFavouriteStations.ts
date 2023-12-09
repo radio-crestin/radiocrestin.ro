@@ -1,11 +1,11 @@
 import { useContext, useEffect } from "react";
 import { IStation } from "@/models/Station";
 import { Context } from "@/context/ContextProvider";
-import useStore from "@/store/useStore";
+import useFavourite from "@/store/useFavourite";
 
 const useFavouriteStations = () => {
   const { ctx, setCtx } = useContext(Context);
-  const { favouriteItems } = useStore();
+  const { favouriteItems } = useFavourite();
   useEffect(() => {
     const favouriteStations: Array<IStation | any> =
       favouriteItems.map((slug: string) => {
