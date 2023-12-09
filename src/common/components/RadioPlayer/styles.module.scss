@@ -1,6 +1,6 @@
 .radio_player {
   position: fixed;
-  bottom: 0;
+  bottom: 10px;
   left: 50%;
   transform: translateX(-50%);
   width: 100%;
@@ -30,7 +30,7 @@
 }
 
 .station_title {
-  font-size: 1.5rem;
+  font-size: 1.2rem;
   color: white;
   font-weight: 700;
   margin-top: 0;

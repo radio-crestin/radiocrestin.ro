@@ -26,7 +26,10 @@ const FavouriteItem = (data: IStation) => {
           height={100}
           width={100}
         />
-        <p className={styles.station_name}>{data.title}</p>
+        <div className={styles.station_details}>
+          <p className={styles.station_name}>{data.title}</p>
+          <p className={styles.song_name}>{data.now_playing.song.name}</p>
+        </div>
       </div>
       <div
         className={styles.favourite_heart_container}

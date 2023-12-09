@@ -45,4 +45,8 @@
   gap: 20px;
   max-width: 1230px;
   margin: 30px auto 0;
+
+  @include mixinHelper.onDesktop {
+    justify-content: center;
+  }
 }

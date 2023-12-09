@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useContext } from "react";
 
 import { getStations } from "@/services/getStations";
 import { IStation } from "@/models/Station";
@@ -11,8 +11,10 @@ import DownloadAppBanner from "@/components/DownloadAppBanner";
 import useUpdateContextMetadata from "@/hooks/useUpdateStationsMetadata";
 import useFavouriteStations from "@/hooks/useFavouriteStations";
 import RadioPlayer from "@/components/RadioPlayer";
+import { Context } from "@/context/ContextProvider";
 
 export default function StationPage({ seo }: { seo: any }) {
+  const { ctx } = useContext(Context);
   useUpdateContextMetadata();
   useFavouriteStations();
 
@@ -21,7 +23,7 @@ export default function StationPage({ seo }: { seo: any }) {
       <Header />
       <Stations />
       <DownloadAppBanner />
-      <RadioPlayer />
+      {ctx.selectedStation && <RadioPlayer />}
     </Layout>
   );
 }

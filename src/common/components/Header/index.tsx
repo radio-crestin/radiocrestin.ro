@@ -33,13 +33,12 @@ const Navigation = () => (
 
 const ContentRight = () => {
   const { ctx } = useContext(Context);
-
   return (
     <div className={styles.right_content}>
       <div className={styles.station_details}>
-        <h1 className={styles.station_title}>{ctx.selectedStation.title}</h1>
+        <h1 className={styles.station_title}>{ctx.selectedStation?.title}</h1>
         <p className={styles.station_description}>
-          {ctx.selectedStation.description}
+          {ctx.selectedStation?.description}
         </p>
       </div>
     </div>
@@ -51,8 +50,6 @@ const ContentLeft = () => {
   const { selectedStation } = ctx;
 
   if (!selectedStation) return null;
-
-  console.log("selectedStation", ctx.selectedStation);
 
   return (
     <div className={styles.left_content}>

@@ -96,6 +96,7 @@
 .station {
   .station_details {
     margin-left: 100px;
+
     @include mixinHelper.onTablet {
       margin-left: 20px;
     }

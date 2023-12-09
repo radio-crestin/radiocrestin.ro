@@ -3,6 +3,7 @@
 
 .station_item {
   @include mixinHelper.center-content;
+  align-items: flex-start;
   justify-content: space-between;
   padding: 15px 17px;
   width: 29%;
