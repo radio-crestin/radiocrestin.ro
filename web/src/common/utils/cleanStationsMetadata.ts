@@ -9,7 +9,11 @@ export function cleanStationsMetadata(stations: IStation[]) {
     }
 
     // Set artist's thumbnail_url and name
-    if (station.now_playing && station.now_playing.song && station.now_playing.song.artist) {
+    if (
+      station.now_playing &&
+      station.now_playing.song &&
+      station.now_playing.song.artist
+    ) {
       station.now_playing.song.artist.thumbnail_url = null;
       station.now_playing.song.artist.name = "";
     }

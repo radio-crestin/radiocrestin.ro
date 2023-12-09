@@ -1,0 +1,5 @@
+@use "globalVariables";
+
+body {
+  font-family: globalVariables.$dm-sans, serif;
+}

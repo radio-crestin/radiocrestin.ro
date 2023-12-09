@@ -1,0 +1,95 @@
+@use "public/styles/mixinHelper";
+@use "public/styles/globalVariables";
+
+.station_item {
+  @include mixinHelper.center-content;
+  justify-content: flex-start;
+  gap: 25px;
+  width: 100%;
+  max-width: 571px;
+  max-height: 141px;
+  padding: 15px 17px;
+  border-radius: 18px;
+  box-shadow: 1px 1px 5px 0 rgba(0, 0, 0, 0.20);
+  position: relative;
+
+  @include mixinHelper.onDesktop {
+    max-width: 45%;
+  }
+
+  @include mixinHelper.onSmallDesktop {
+    max-width: unset;
+    margin: 0 25px;
+  }
+
+  @include mixinHelper.onTablet {
+    margin: 0 15px;
+  }
+
+  .image_container {
+    img {
+      border-radius: 21px;
+      object-fit: cover;
+
+      @include mixinHelper.onTablet {
+        height: 70px;
+        width: 70px;
+      }
+    }
+  }
+
+  .station_details {
+    display: flex;
+    justify-content: center;
+    flex-direction: column;
+    margin-right: 27px;
+
+    .station_name {
+      font-family: globalVariables.$dm-sans-bold, serif;
+      font-size: 25px;
+      font-weight: 700;
+      margin-bottom: 5px;
+
+      @include mixinHelper.onTablet {
+        font-size: 16px;
+      }
+    }
+
+    .song_name {
+      font-size: 20px;
+      font-weight: 400;
+      margin-bottom: 5px;
+
+      @include mixinHelper.onTablet {
+        font-size: 13px;
+      }
+    }
+
+    .artist_name {
+      font-size: 17px;
+      font-weight: 400;
+
+      @include mixinHelper.onTablet {
+        font-size: 13px;
+      }
+    }
+  }
+
+  .total_listeners {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    font-size: 17px;
+    font-weight: 400;
+  }
+
+  .favourite_heart_container {
+    position: absolute;
+    bottom: 15px;
+    right: 15px;
+    font-size: 17px;
+    font-weight: 400;
+    cursor: pointer;
+    padding: 5px;
+  }
+}

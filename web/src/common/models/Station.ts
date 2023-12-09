@@ -19,6 +19,7 @@ export interface IStation {
   uptime: IUptime;
   now_playing: INowPlaying;
   reviews: any[];
+  is_favorite: boolean;
 }
 
 export interface IPost {

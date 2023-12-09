@@ -1,10 +1,11 @@
-@use '../../styles/mixinHelper';
+@use "public/styles/mixinHelper";
 
 .contactButton {
   position: fixed;
   width: 60px;
   height: 60px;
-  right: 33px;
+  right: 30px;
+  bottom: 30px;
   background-color: #25d366;
   color: #FFF;
   border-radius: 50px;
@@ -21,13 +22,14 @@
   transition: all .2s ease-in-out;
   z-index: 9;
 
-
-  @include mixinHelper.onMobile {
-    right: 15px !important;
-    width: 50px;
-    height: 50px;
-    position: fixed;
-    z-index: 3;
+  @include mixinHelper.onTablet {
+    position: relative;
+    top: 3px;
+    right: 0;
+    bottom: 0;
+    height: 42px;
+    width: 42px;
+    margin-right: 2px;
   }
 
   .contactLinkButton {
@@ -36,5 +38,13 @@
     display: flex;
     margin-left: 2px;
     margin-top: 2px;
+
+    @include mixinHelper.onTablet {
+      height: 25px;
+      width: 25px;
+      margin-left: 3px;
+      margin-top: 0;
+      margin-bottom: 5px;
+    }
   }
 }

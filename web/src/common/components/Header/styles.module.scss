@@ -1,0 +1,138 @@
+@use "public/styles/mixinHelper";
+@use "public/styles/globalVariables";
+
+.container {
+  max-width: 1440px;
+  padding: 70px;
+  margin: 25px auto 0;
+  background: #FFFBEF;
+  height: 462px;
+  border-radius: 50px;
+
+  @include mixinHelper.onTablet {
+    padding: 20px;
+    height: 100%;
+    border-radius: 0;
+  }
+}
+
+.nav {
+  display: flex;
+  justify-content: space-between;
+  gap: 0 30px;
+
+  @include mixinHelper.onTablet {
+    margin-left: 0;
+    gap: 0;
+  }
+
+  .internal_links {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    margin-left: 100px;
+
+    @include mixinHelper.onDesktop {
+      margin-left: 20px;
+    }
+
+    a {
+      font-size: 16px;
+      font-weight: 500;
+      height: fit-content;
+      padding: 10px;
+    }
+
+    .logo {
+      @include mixinHelper.center-content;
+      font-size: 20px;
+      font-weight: bold;
+      gap: 0 15px;
+      padding: 0;
+    }
+  }
+
+  .external_links {
+    display: flex;
+    gap: 5px;
+
+    img {
+      height: 50px;
+      width: 50px;
+    }
+  }
+}
+
+.content_section {
+  display: flex;
+  flex-direction: row;
+  margin-top: 86px;
+  height: 350px;
+  gap: 30px;
+
+  @include mixinHelper.onTablet {
+    margin-top: 50px;
+  }
+}
+
+.left_content {
+  display: flex;
+  flex-direction: column;
+  height: fit-content;
+  margin: 0 100px;
+
+
+  @include mixinHelper.onDesktop {
+    margin: 0 20px
+  }
+
+  @include mixinHelper.onTablet {
+    display: none;
+  }
+
+
+  img {
+    box-shadow: rgba(0, 0, 0, 0.08) 0px 4px 12px;
+    margin-bottom: 20px;
+  }
+
+  .station_info {
+    max-width: 230px;
+
+    h2 {
+      font-family: globalVariables.$dm-sans-bold, serif;
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+  }
+}
+
+
+.right_content {
+  max-width: 850px;
+  width: 100%;
+
+  .station_details {
+    .station_title {
+      font-family: globalVariables.$dm-sans-bold, serif;
+      font-size: 48px;
+      font-weight: 700;
+      margin-bottom: 20px;
+    }
+
+    .station_description {
+      font-size: 20px;
+      line-height: 25px;
+      font-weight: 400;
+      margin-bottom: 30px;
+
+      display: -webkit-box;
+      -webkit-line-clamp: 9;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  }
+}

@@ -1,11 +1,6 @@
 import Head from "next/head";
 import React from "react";
-
-import { Box, Container } from "@chakra-ui/react";
-import Index from "@/components/AnalyticsScripts";
-import DownloadAppBanner from "@/components/DownloadAppBanner/DownloadAppBanner";
-import Footer from "@/components/Footer/Footer";
-import RadioCrestinHeader from "@/components/RadioCrestinHeader";
+import AnalyticsScripts from "@/components/AnalyticsScripts";
 
 const Layout = ({
   title,
@@ -13,19 +8,18 @@ const Layout = ({
   keywords,
   imageUrl,
   children,
-  fullURL
+  fullURL,
 }: {
   title: string;
   description: string;
   keywords: string;
   imageUrl: string;
   children: React.ReactNode;
-  fullURL: string
+  fullURL: string;
 }) => {
-
   return (
     <>
-      <Index />
+      <AnalyticsScripts />
       <Head>
         <link rel="image_src" href={imageUrl} />
 
@@ -60,15 +54,7 @@ const Layout = ({
         <meta name="MobileOptimized" content="width" />
         <meta name="HandheldFriendly" content="true" />
       </Head>
-      <Container maxW={'7xl'}>
-        <RadioCrestinHeader />
-        {children}
-        <Box mt={20}>
-          <DownloadAppBanner />
-          <Footer />
-        </Box>
-      </Container>
-
+      {children}
     </>
   );
 };

@@ -1,4 +1,4 @@
-import Script from 'next/script';
+import Script from "next/script";
 
 export default function AnalyticsScripts() {
   return (
@@ -7,9 +7,7 @@ export default function AnalyticsScripts() {
         strategy="afterInteractive"
         src="https://www.googletagmanager.com/gtag/js?id=G-CKRHS296W2"
       />
-      <Script strategy="afterInteractive"
-      id={"google-analytics"}
-      >
+      <Script strategy="afterInteractive" id={"google-analytics"}>
         {`
           window.dataLayer = window.dataLayer || [];
           function gtag() {
