@@ -84,7 +84,6 @@ export async function getStaticProps(context: any) {
       selectedStation,
       seo,
       nextStations,
-      isFavouriteStationsLoaded: false,
       favouriteStations: [],
       station_slug,
     },
