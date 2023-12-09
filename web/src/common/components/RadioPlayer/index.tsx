@@ -10,6 +10,7 @@ import styles from "./styles.module.scss";
 import { Context } from "@/context/ContextProvider";
 import usePlayer from "@/store/usePlayer";
 import { PLAYBACK_STATE } from "@/models/enum";
+import { toast } from "react-toastify";
 
 enum STREAM_TYPE {
   HLS = "HLS",
@@ -144,15 +145,27 @@ export default function RadioPlayer() {
           break;
       }
     } else {
-      // TODO: Update this !!
-      // toast({
-      //   title: `Nu s-a putut stabili o conexiune cu stația: ${station.title}`,
-      //   description: "Vă rugăm să încercați mai târziu!",
-      //   status: "error",
-      //   position: "top",
-      //   duration: 8000,
-      //   isClosable: true,
-      // });
+      toast.error(
+        <div>
+          Nu s-a putut stabili o conexiune cu stația:{" "}
+          <strong style={{ fontWeight: "bold" }}>{station.title}</strong>
+          <br />
+          <br />
+          <span style={{ marginTop: 20 }}>
+            Vă rugăm să încercați mai târziu!
+          </span>
+        </div>,
+        {
+          position: "top-center",
+          autoClose: 9000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          theme: "light",
+        },
+      );
     }
   };
 

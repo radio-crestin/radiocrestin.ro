@@ -8,17 +8,19 @@ import DownloadAppBanner from "@/components/DownloadAppBanner";
 import useUpdateContextMetadata from "@/hooks/useUpdateStationsMetadata";
 import useFavouriteStations from "@/hooks/useFavouriteStations";
 import HeaderHomepage from "@/components/HeaderHomepage";
+import Layout from "@/components/Layout";
+import { SEO_DEFAULT } from "@/utils/seo";
 
 export default function StationPage({ seo }: { seo: any }) {
   useUpdateContextMetadata();
   useFavouriteStations();
 
   return (
-    <div>
+    <Layout {...SEO_DEFAULT}>
       <HeaderHomepage />
       <Stations />
       <DownloadAppBanner />
-    </div>
+    </Layout>
   );
 }
 
@@ -34,7 +36,6 @@ export async function getStaticProps(context: any) {
   return {
     props: {
       stations: stations_without_meta,
-      isFavouriteStationsLoaded: false,
       favouriteStations: [],
     },
   };

@@ -27,8 +27,15 @@ export const SEO_DEFAULT = {
   imageUrl: "/images/android-chrome-512x512.png",
   fullURL: "https://radiocrestin.ro/",
 };
-export const seoNotFoundPage = {
-  title: `Stația nu a fost găsită`,
+
+export const SEO_404 = {
+  title: "Stația nu a fost găsită | Radio Creștin",
+  description:
+    "RadioCrestin.ro iti ofera o lista de radiouri crestine online. Asculta un radio crestin bun si sanatos pentru sufletul tau la un simplu click!",
+  keywords:
+    "radio crestin, radiocrestin, radiouri crestine, radio crestin online, radiouri crestine online, radio crestine, radiocrestin.ro, online",
+  imageUrl: "/images/android-chrome-512x512.png",
+  fullURL: "https://radiocrestin.ro/",
 };
 
 export const seoInternalErrorPage = {
