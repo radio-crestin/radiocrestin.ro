@@ -1,27 +1,17 @@
-import '@/styles/globals.scss'
-import type { AppProps } from 'next/app'
-import { ChakraProvider, extendTheme } from "@chakra-ui/react";
-import React from "react";
-
-// 2. Extend the theme to include custom colors, fonts, etc
-const colors = {
-  brand: {
-    900: '#ee8614',
-    800: '#fda446',
-    700: '#ffb05a',
-    600: '#ffd9af',
-  },
-}
-
-const theme = extendTheme({ colors })
+import "public/styles/_all.scss";
+import type { AppProps } from "next/app";
+import { ContextProvider } from "@/context/ContextProvider";
 
 function MyApp({ Component, pageProps }: AppProps) {
+  const initialState = {
+    ...pageProps,
+  };
+
   return (
-    <ChakraProvider theme={theme}>
+    <ContextProvider initialState={initialState}>
       <Component {...pageProps} />
-    </ChakraProvider>
-  )
+    </ContextProvider>
+  );
 }
 
-export default MyApp
-
+export default MyApp;

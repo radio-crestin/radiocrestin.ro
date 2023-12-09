@@ -1,0 +1,61 @@
+@use "public/styles/mixinHelper";
+@use "public/styles/globalVariables";
+
+.station_item {
+  @include mixinHelper.center-content;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 15px 17px;
+  width: 29%;
+  height: fit-content;
+  border-radius: 18px;
+  box-shadow: 1px 1px 5px 0 rgba(0, 0, 0, 0.20);
+
+  @include mixinHelper.onDesktop {
+    width: 45%;
+  }
+
+  @include mixinHelper.onSmallDesktop {
+    width: 100%;
+  }
+
+  .image_container {
+    @include mixinHelper.center-content;
+    gap: 10px;
+
+    .station_name {
+      font-family: globalVariables.$dm-sans-bold, serif;
+      font-size: 22px;
+      font-weight: 500;
+      margin-bottom: 5px;
+
+      @include mixinHelper.onTablet {
+        font-size: 16px;
+      }
+    }
+
+    img {
+      border-radius: 10px;
+      object-fit: cover;
+      height: 100px;
+      width: 100px;
+    }
+  }
+
+  .total_listeners {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    font-size: 17px;
+    font-weight: 400;
+  }
+
+  .favourite_heart_container {
+    bottom: 15px;
+    right: 15px;
+    font-size: 17px;
+    font-weight: 400;
+    cursor: pointer;
+    padding: 5px;
+  }
+}

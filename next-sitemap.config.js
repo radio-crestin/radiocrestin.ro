@@ -1,6 +1,6 @@
-/** @type {import('next-sitemap').IConfig} */
+/** @type {import("next-sitemap").IConfig} */
 module.exports = {
-  output: 'export',
-  siteUrl: 'https://radiocrestin.ro/',
+  output: "export",
+  siteUrl: "https://radiocrestin.ro/",
   generateRobotsTxt: true,
-}
+};

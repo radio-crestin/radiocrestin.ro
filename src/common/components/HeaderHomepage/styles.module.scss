@@ -1,0 +1,129 @@
+@use "public/styles/mixinHelper";
+@use "public/styles/globalVariables";
+
+.container {
+  max-width: 1440px;
+  padding: 70px;
+  margin: 25px auto 0;
+  background: #FFFBEF;
+  height: 462px;
+  border-radius: 50px;
+  position: relative;
+
+  @include mixinHelper.onTablet {
+    padding: 20px;
+    height: 100%;
+    border-radius: 0;
+  }
+
+  .vector_yellow {
+    position: absolute;
+    right: 0;
+    top: 0;
+    height: 100%;
+    border-top-right-radius: 50px;
+    border-bottom-right-radius: 50px;
+
+    @include mixinHelper.onSmallDesktop {
+      display: none;
+    }
+  }
+}
+
+.nav {
+  display: flex;
+  justify-content: space-between;
+  gap: 0 30px;
+
+  @include mixinHelper.onTablet {
+    margin-left: 0;
+    gap: 0;
+  }
+
+  .internal_links {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    margin-left: 90px;
+
+    @include mixinHelper.onTablet {
+      margin-left: 0;
+    }
+
+    a {
+      font-size: 16px;
+      font-weight: 500;
+      height: fit-content;
+      padding: 10px;
+    }
+
+    .logo {
+      @include mixinHelper.center-content;
+      font-size: 20px;
+      font-weight: bold;
+      gap: 0 15px;
+      padding: 0;
+    }
+
+  }
+
+  .external_links {
+    display: flex;
+    gap: 5px;
+    z-index: 2;
+    position: relative;
+    right: 251px;
+
+    @include mixinHelper.onSmallDesktop {
+      right: 0;
+    }
+
+    img {
+      height: 50px;
+      width: 50px;
+    }
+  }
+}
+
+.content_section {
+  display: flex;
+  flex-direction: row;
+  margin-top: 141px;
+  height: 350px;
+
+  @include mixinHelper.onTablet {
+    margin-top: 50px;
+  }
+}
+
+.station {
+  .station_details {
+    margin-left: 100px;
+
+    @include mixinHelper.onTablet {
+      margin-left: 20px;
+    }
+
+    .station_title {
+      font-family: globalVariables.$dm-sans-bold, serif;
+      font-size: 48px;
+      font-weight: 700;
+      margin-bottom: 20px;
+    }
+
+    .station_description {
+      max-width: 537px;
+      font-size: 20px;
+      line-height: 25px;
+      font-weight: 400;
+      height: 100px;
+
+      display: -webkit-box;
+      -webkit-line-clamp: 4;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  }
+}

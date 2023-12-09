@@ -1,50 +1,41 @@
-import { useEffect, useState } from "react";
+import React from "react";
 
-import { Flex } from "@chakra-ui/react";
-import { cleanStationsMetadata } from "@/utils/cleanStationsMetadata";
-import { SEO_DEFAULT } from "@/utils/seo";
-import { getStations } from "@/common/services/getStations";
-import Layout from "@/components/Layout";
-import StationList from "@/components/StationList/StationList";
+import { getStations } from "@/services/getStations";
 import { IStation } from "@/models/Station";
-import WhatsAppButton from "@/components/WhatsAppButton";
+import { cleanStationsMetadata } from "@/utils/cleanStationsMetadata";
+import Stations from "@/components/Stations";
+import DownloadAppBanner from "@/components/DownloadAppBanner";
+import useUpdateContextMetadata from "@/hooks/useUpdateStationsMetadata";
+import useFavouriteStations from "@/hooks/useFavouriteStations";
+import HeaderHomepage from "@/components/HeaderHomepage";
 
-export default function HomePage({ stations_BE }: { stations_BE: IStation[] }) {
-  const [stations, setStations] = useState<IStation[]>(stations_BE);
-
-  useEffect(() => {
-    const fetchStationsData = async () => {
-      try {
-        const data = await getStations();
-        if (data?.stations && data?.stations.length > 0) {
-          setStations(data.stations);
-        }
-      } catch (error) {
-        console.error("Failed to fetch stations:", error);
-      }
-    };
-    fetchStationsData();
-    const intervalId = setInterval(fetchStationsData, 10000);
-
-    return () => clearInterval(intervalId);
-  }, []);
+export default function StationPage({ seo }: { seo: any }) {
+  useUpdateContextMetadata();
+  useFavouriteStations();
 
   return (
-    <Layout {...SEO_DEFAULT}>
-      <WhatsAppButton isPlaying={false}/>
-      <StationList stations={stations} />
-    </Layout>
-  )
+    <div>
+      <HeaderHomepage />
+      <Stations />
+      <DownloadAppBanner />
+    </div>
+  );
 }
 
-export const getStaticProps = (async () => {
-  const { stations } = await getStations()
+export async function getStaticProps(context: any) {
+  const { stations } = await getStations();
+
+  // Add is_favorite property to each station
+  stations.forEach((station: IStation) => {
+    station.is_favorite = false;
+  });
 
   const stations_without_meta = cleanStationsMetadata(stations);
-
   return {
     props: {
-      stations_BE: stations_without_meta,
+      stations: stations_without_meta,
+      isFavouriteStationsLoaded: false,
+      favouriteStations: [],
     },
-  }
-})
+  };
+}

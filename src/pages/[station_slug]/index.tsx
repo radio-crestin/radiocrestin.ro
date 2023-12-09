@@ -1,72 +1,38 @@
-import React, { useEffect, useState } from 'react';
-import { Box, Container } from '@chakra-ui/react';
-import dynamic from 'next/dynamic';
+import React, { useContext } from "react";
 
-import StationHomepageHeader from '@/components/StationHomepageHeader/StationHomepageHeader';
-import StationList from '@/components/StationList/StationList';
+import { getStations } from "@/services/getStations";
 import { IStation } from "@/models/Station";
-import { seoStation } from "@/utils/seo";
-import { getStations } from "@/common/services/getStations";
 import { cleanStationsMetadata } from "@/utils/cleanStationsMetadata";
 import Layout from "@/components/Layout";
-import WhatsAppButton from "@/components/WhatsAppButton";
+import { seoStation } from "@/utils/seo";
+import Header from "@/components/Header";
+import Stations from "@/components/Stations";
+import DownloadAppBanner from "@/components/DownloadAppBanner";
+import useUpdateContextMetadata from "@/hooks/useUpdateStationsMetadata";
+import useFavouriteStations from "@/hooks/useFavouriteStations";
+import RadioPlayer from "@/components/RadioPlayer";
+import { Context } from "@/context/ContextProvider";
 
-const StationPlayer = dynamic(() => import('@/components/StationPlayer'), {
-  ssr: false,
-});
-
-export default function StationPage({
-  stations_BE,
-  station_slug,
-  fullURL,
-}: {
-  stations_BE: IStation[];
-  station_slug?: string;
-  fullURL: string;
-}) {
-  const [stations, setStations] = useState<IStation[]>(stations_BE);
-
-  useEffect(() => {
-    const fetchStationsData = async () => {
-      try {
-        const data = await getStations();
-        if (data?.stations && data?.stations.length > 0) {
-          setStations(data.stations);
-        }
-      } catch (error) {
-        console.error("Failed to fetch stations:", error);
-      }
-    };
-    fetchStationsData();
-    const intervalId = setInterval(fetchStationsData, 10000);
-
-    return () => clearInterval(intervalId);
-  }, []);
-
-  // @ts-ignore
-  const selectedStation: IStation = stations.find(s => s.slug === station_slug);
-  const seo = seoStation(selectedStation);
+export default function StationPage({ seo }: { seo: any }) {
+  const { ctx } = useContext(Context);
+  useUpdateContextMetadata();
+  useFavouriteStations();
 
   return (
     <Layout {...seo}>
-      <WhatsAppButton isPlaying={true}/>
-      {selectedStation && (
-        <StationHomepageHeader selectedStation={selectedStation} />
-      )}
-      <StationList
-        stations={stations}
-      />
-      <Box mb={{ base: 40, lg: 20 }} />
-      <StationPlayer stations={stations} />
+      <Header />
+      <Stations />
+      <DownloadAppBanner />
+      {ctx.selectedStation && <RadioPlayer />}
     </Layout>
   );
 }
 
 export async function getStaticPaths() {
-  const stations_metadata = await getStations();
+  const { stations } = await getStations();
 
   // Generate the paths for each station
-  const paths = stations_metadata.stations.map((station: IStation) => ({
+  const paths = stations.map((station: IStation) => ({
     params: { station_slug: station.slug },
   }));
 
@@ -77,12 +43,34 @@ export async function getStaticPaths() {
 }
 
 export async function getStaticProps(context: any) {
-  const stations_metadata = await getStations();
+  const { stations } = await getStations();
+
+  // Add is_favorite property to each station
+  stations.forEach((station: IStation) => {
+    station.is_favorite = false;
+  });
+
+  // Get selected station
   const { station_slug } = context.params;
-  const stationData = stations_metadata.stations.find(
+  const stationData = stations.find(
     (station: IStation) => station.slug === station_slug,
   );
-  const stations_without_meta = cleanStationsMetadata(stations_metadata.stations);
+  const stations_without_meta = cleanStationsMetadata(stations);
+  const selectedStationIndex = stations_without_meta.findIndex(
+    (s: IStation) => s.slug === station_slug,
+  );
+  const selectedStation: IStation = stations_without_meta[selectedStationIndex];
+  const seo = seoStation(selectedStation);
+
+  // Get next 3 stations with wrap around logic
+  let nextStations = [];
+  for (let i = 1; i <= 3; i++) {
+    nextStations.push(
+      stations_without_meta[
+        (selectedStationIndex + i) % stations_without_meta.length
+      ],
+    );
+  }
 
   if (!stationData) {
     return {
@@ -92,7 +80,12 @@ export async function getStaticProps(context: any) {
 
   return {
     props: {
-      stations_BE: stations_without_meta,
+      stations: stations_without_meta,
+      selectedStation,
+      seo,
+      nextStations,
+      isFavouriteStationsLoaded: false,
+      favouriteStations: [],
       station_slug,
     },
   };

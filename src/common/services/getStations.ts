@@ -1,4 +1,4 @@
-import { CONSTANTS } from "@/constants";
+import { CONSTANTS } from "@/constants/constants";
 
 const query = `
     query GetStations {
@@ -60,22 +60,25 @@ const query = `
     }
   }
 }
-`
+`;
 
 export const getStations = async () => {
   const endpoint = CONSTANTS.GRAPHQL_ENDPOINT;
   const response = await fetch(endpoint, {
     method: "POST",
-    "headers": {
-      "accept": "*/*",
+    headers: {
+      accept: "*/*",
     },
-    body: JSON.stringify({query}),
-  }).then(async (response) => {
-    return await response.json();
-  });
+    body: JSON.stringify({ query }),
+  })
+    .then(async (response) => {
+      return await response.json();
+    })
+    .catch((error) => {
+      console.error("error", error);
+    });
 
   return {
-    stations: response.data.stations,
-    station_groups: response.data.station_groups
-  }
+    stations: response?.data?.stations || [],
+  };
 };
