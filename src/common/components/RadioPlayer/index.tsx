@@ -21,12 +21,10 @@ const MAX_MEDIA_RETRIES = 20;
 
 export default function RadioPlayer() {
   const { ctx } = useContext(Context);
-  const { playerVolume, setPlayerVolume, playbackState, setPlaybackState } =
-    usePlayer();
+  const { playerVolume, setPlayerVolume } = usePlayer();
+  const [playbackState, setPlaybackState] = useState(PLAYBACK_STATE.STOPPED);
   const station = ctx.selectedStation;
-  // const toast = useToast();
   const router = useRouter();
-  const { station_slug } = router.query;
   const [retries, setRetries] = useState(MAX_MEDIA_RETRIES);
   const [streamType, setStreamType] = useState(STREAM_TYPE.HLS);
 
@@ -146,6 +144,7 @@ export default function RadioPlayer() {
           break;
       }
     } else {
+      // TODO: Update this !!
       // toast({
       //   title: `Nu s-a putut stabili o conexiune cu stația: ${station.title}`,
       //   description: "Vă rugăm să încercați mai târziu!",
