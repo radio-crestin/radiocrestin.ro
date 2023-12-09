@@ -42,10 +42,7 @@
     display: flex;
     justify-content: center;
     flex-direction: column;
-
-    @include mixinHelper.onTablet {
-      margin-right: 25px;
-    }
+    margin-right: 27px;
 
     .station_name {
       font-family: globalVariables.$dm-sans-bold, serif;

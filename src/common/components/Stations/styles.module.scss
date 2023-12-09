@@ -16,7 +16,7 @@
 .favourite_section {
   max-width: 1540px;
   margin: 20px auto 0;
-  width: 100%;
+  width: calc(100% - 20px);
 
   h1 {
     max-width: 1200px;
@@ -33,7 +33,7 @@
     margin-bottom: 25px;
 
     @include mixinHelper.onSmallDesktop {
-      margin: 0 25px 35px;
+      margin: 0 3px 35px;
     }
   }
 }

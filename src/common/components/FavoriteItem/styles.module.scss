@@ -27,6 +27,7 @@
       font-family: globalVariables.$dm-sans-bold, serif;
       font-size: 22px;
       font-weight: 500;
+      margin-bottom: 5px;
 
       @include mixinHelper.onTablet {
         font-size: 16px;
