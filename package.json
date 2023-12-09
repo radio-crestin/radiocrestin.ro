@@ -6,11 +6,13 @@
     "dev": "next dev",
     "build": "next build",
     "start": "npx serve@latest out",
-    "lint": "next lint"
+    "lint": "next lint",
+    "postbuild": "next-sitemap"
   },
   "dependencies": {
     "hls.js": "1.4.12",
     "next": "14.0.2",
+    "next-sitemap": "^4.2.3",
     "react": "^18",
     "react-dom": "^18",
     "zustand": "^4.4.6"
