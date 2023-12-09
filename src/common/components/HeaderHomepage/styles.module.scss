@@ -75,6 +75,10 @@
     position: relative;
     right: 251px;
 
+    @include mixinHelper.onSmallDesktop {
+      right: 0;
+    }
+
     img {
       height: 50px;
       width: 50px;

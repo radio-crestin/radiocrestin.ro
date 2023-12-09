@@ -1,6 +1,8 @@
 import Link from "next/link";
-import styles from "./styles.module.scss";
 import React from "react";
+
+import styles from "./styles.module.scss";
+import WhatsAppButton from "@/components/WhatsAppButton";
 
 const Navigation = () => (
   <nav className={styles.nav}>
@@ -17,6 +19,7 @@ const Navigation = () => (
       </Link>
     </div>
     <div className={styles.external_links}>
+      <WhatsAppButton />
       <Link
         href="https://www.figma.com/file/iXXR3dhUjwfDDZH4FlEZgx/radio_crestin_com"
         target={"_blank"}
