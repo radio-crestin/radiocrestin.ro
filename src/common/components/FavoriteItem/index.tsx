@@ -5,7 +5,7 @@ import Link from "next/link";
 import { IStation } from "@/models/Station";
 import styles from "./styles.module.scss";
 import useFavourite from "@/store/useFavourite";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import CloseIcon from "@/icons/CloseIcon";
 
 const FavouriteItem = (data: IStation) => {
@@ -28,7 +28,15 @@ const FavouriteItem = (data: IStation) => {
         />
         <div className={styles.station_details}>
           <p className={styles.station_name}>{data.title}</p>
-          <p className={styles.song_name}>{data.now_playing.song.name}</p>
+          <p className={styles.song_name}>
+            {data?.now_playing?.song.name}
+            {data?.now_playing?.song?.artist?.name && (
+              <span className={styles.artist_name}>
+                {" · "}
+                {data?.now_playing?.song?.artist?.name}
+              </span>
+            )}
+          </p>
         </div>
       </div>
       <div
