@@ -117,13 +117,17 @@
   .station_details {
     .station_title {
       font-family: globalVariables.$dm-sans-bold, serif;
-      font-size: 48px;
+      font-size: 3rem;
       font-weight: 700;
       margin-bottom: 20px;
+
+      @include mixinHelper.onTablet {
+        font-size: 1.7rem;
+      }
     }
 
     .station_description {
-      font-size: 20px;
+      font-size: 1.2rem;
       line-height: 25px;
       font-weight: 400;
       margin-bottom: 30px;
@@ -133,6 +137,12 @@
       -webkit-box-orient: vertical;
       overflow: hidden;
       text-overflow: ellipsis;
+
+      @include mixinHelper.onTablet {
+        font-size: 1rem;
+        line-height: 20px;
+        -webkit-line-clamp: 13;
+      }
     }
   }
 }

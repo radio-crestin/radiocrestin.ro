@@ -1,3 +1,5 @@
+@use "public/styles/globalVariables";
+
 .radio_player {
   position: fixed;
   bottom: 10px;
@@ -30,11 +32,26 @@
 }
 
 .station_title {
+  font-family: globalVariables.$dm-sans, serif;
   font-size: 1.2rem;
   color: white;
   font-weight: 700;
   margin-top: 0;
   line-height: 1.3;
+}
+
+.song_name, .artist_name {
+  font-size: 0.775rem;
+  color: #adadad;
+  font-family: globalVariables.$dm-sans, serif;
+  font-weight: 200;
+}
+
+.two_lines {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .station_artist {

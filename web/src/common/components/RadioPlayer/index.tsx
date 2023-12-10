@@ -269,12 +269,16 @@ export default function RadioPlayer() {
           className={styles.station_thumbnail}
         />
 
-        <div className={styles.station_info}>
-          <h2 className={styles.station_title}>
-            {station.now_playing?.song?.name || station.title}
-          </h2>
-          <p className={styles.station_artist}>
-            {station.now_playing?.song?.artist.name}
+        <div className={`${styles.station_info} ${styles.two_lines}`}>
+          <h2 className={styles.station_title}>{station.title}</h2>
+          <p className={styles.song_name}>
+            {station?.now_playing?.song.name}
+            {station?.now_playing?.song?.artist?.name && (
+              <span className={styles.artist_name}>
+                {" · "}
+                {station?.now_playing?.song?.artist?.name}
+              </span>
+            )}
           </p>
         </div>
 
