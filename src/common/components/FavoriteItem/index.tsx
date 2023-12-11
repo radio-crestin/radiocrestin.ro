@@ -6,7 +6,7 @@ import { IStation } from "@/models/Station";
 import styles from "./styles.module.scss";
 import useFavourite from "@/store/useFavourite";
 import React, { useEffect, useState } from "react";
-import CloseIcon from "@/icons/CloseIcon";
+import Heart from "@/icons/Heart";
 
 const FavouriteItem = (data: IStation) => {
   const { favouriteItems, toggleFavourite } = useFavourite();
@@ -47,7 +47,7 @@ const FavouriteItem = (data: IStation) => {
           toggleFavourite(data.slug);
         }}
       >
-        <CloseIcon width={16} height={16} scale={1} />
+        <Heart color={"red"} />
       </div>
     </Link>
   );
