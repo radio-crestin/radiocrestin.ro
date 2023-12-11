@@ -7,18 +7,25 @@ import styles from "./styles.module.scss";
 import HeadphoneIcon from "@/icons/Headphone";
 import Heart from "@/icons/Heart";
 import useFavourite from "@/store/useFavourite";
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
+import { Context } from "@/context/ContextProvider";
 
 const StationItem = (data: IStation) => {
+  const { ctx } = useContext(Context);
   const { favouriteItems, toggleFavourite } = useFavourite();
   const [isStationFavourite, setIsStationFavourite] = useState(false);
-
+  const isActive = ctx.selectedStation?.slug === data.slug;
   useEffect(() => {
     setIsStationFavourite(favouriteItems.includes(data.slug));
   }, [data.slug, favouriteItems]);
 
   return (
-    <Link className={styles.station_item} href={data.slug} scroll={false}>
+    <Link
+      className={styles.station_item}
+      data-active={isActive}
+      href={data.slug}
+      scroll={false}
+    >
       <div className={styles.image_container}>
         <img
           src={data.now_playing?.song?.thumbnail_url || data?.thumbnail_url}
