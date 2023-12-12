@@ -19,8 +19,9 @@
     background-color: #f3f2f2;
   }
 
-  @media (hover: none) {
+  @media (pointer: coarse) {
     &:hover {
+      transform: none;
       scale: 1;
     }
   }
