@@ -1,7 +1,7 @@
 import React, { useEffect } from "react";
 import { toast } from "react-toastify";
 
-import { cleanStationsMetadata } from "@/utils/cleanStationsMetadata";
+import { cleanStationsMetadata } from "@/utils";
 import { SEO_404 } from "@/utils/seo";
 import Layout from "@/components/Layout";
 import { IStation } from "@/models/Station";

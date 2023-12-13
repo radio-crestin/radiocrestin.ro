@@ -2,7 +2,7 @@ import React from "react";
 
 import { getStations } from "@/services/getStations";
 import { IStation } from "@/models/Station";
-import { cleanStationsMetadata } from "@/utils/cleanStationsMetadata";
+import { cleanStationsMetadata } from "@/utils";
 import Stations from "@/components/Stations";
 import DownloadAppBanner from "@/components/DownloadAppBanner";
 import useUpdateContextMetadata from "@/hooks/useUpdateStationsMetadata";

@@ -2,7 +2,7 @@ import React, { useContext } from "react";
 
 import { getStations } from "@/services/getStations";
 import { IStation } from "@/models/Station";
-import { cleanStationsMetadata } from "@/utils/cleanStationsMetadata";
+import { cleanStationsMetadata } from "@/utils";
 import Layout from "@/components/Layout";
 import { seoStation } from "@/utils/seo";
 import Header from "@/components/Header";

@@ -5,6 +5,7 @@ import styles from "./styles.module.scss";
 import { Context } from "@/context/ContextProvider";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import Rating from "@/components/Rating";
+import { getStationRating } from "@/utils";
 
 const Navigation = () => (
   <nav className={styles.nav}>
@@ -69,19 +70,16 @@ const ContentLeft = () => {
 
 const ContentRight = () => {
   const { ctx } = useContext(Context);
-  const average = (arr: any[]) => arr.reduce((a, b) => a + b, 0) / arr.length;
-  const stationRating =
-    Math.round(
-      (average(ctx.selectedStation?.reviews?.map((i: any) => i.stars) || []) ||
-        0) * 10,
-    ) / 10;
 
   return (
     <div className={styles.right_content}>
       <div className={styles.station_details}>
         <h1 className={styles.station_title}>{ctx.selectedStation?.title}</h1>
         <div className={styles.rating_wrapper}>
-          <Rating score={stationRating} starHeight={22} />
+          <Rating
+            score={getStationRating(ctx.selectedStation?.reviews)}
+            starHeight={22}
+          />
           <span>({ctx.selectedStation?.reviews?.length || 0} recenzii)</span>
         </div>
         <p className={styles.nr_listeners}>
