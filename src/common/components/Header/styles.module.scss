@@ -119,11 +119,19 @@
       font-family: globalVariables.$dm-sans-bold, serif;
       font-size: 3rem;
       font-weight: 700;
-      margin-bottom: 20px;
 
       @include mixinHelper.onTablet {
         font-size: 1.7rem;
       }
+    }
+
+    .rating_wrapper {
+      @include mixinHelper.center-content;
+      justify-content: start;
+      flex-direction: row;
+      gap: 4px;
+      margin-top: 10px;
+      margin-bottom: 20px;
     }
 
     .nr_listeners {
