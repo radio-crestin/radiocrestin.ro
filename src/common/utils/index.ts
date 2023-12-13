@@ -24,3 +24,11 @@ export function cleanStationsMetadata(stations: IStation[]) {
     return station;
   });
 }
+
+export function getStationRating(reviews: any[]) {
+  const average = (arr: any[]) => arr.reduce((a, b) => a + b, 0) / arr.length;
+  return (
+    Math.round((average(reviews?.map((i: any) => i.stars) || []) || 0) * 10) /
+    10
+  );
+}

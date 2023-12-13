@@ -1,6 +1,8 @@
 import Head from "next/head";
-import React from "react";
+import React, { useContext } from "react";
 import AnalyticsScripts from "@/components/AnalyticsScripts";
+import { Context } from "@/context/ContextProvider";
+import { getStationRating } from "@/utils";
 
 const Layout = ({
   title,
@@ -17,10 +19,30 @@ const Layout = ({
   children: React.ReactNode;
   fullURL: string;
 }) => {
+  const { ctx } = useContext(Context);
+  const { selectedStation } = ctx;
+
   return (
     <>
       <AnalyticsScripts />
       <Head>
+        {selectedStation && (
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{
+              __html: JSON.stringify({
+                "@context": "http://schema.org",
+                "@type": "Product",
+                name: `${selectedStation.title} - Radio Crestin`,
+                aggregateRating: {
+                  "@type": "AggregateRating",
+                  ratingValue: getStationRating(ctx.selectedStation?.reviews),
+                  reviewCount: selectedStation.reviews.length,
+                },
+              }),
+            }}
+          />
+        )}
         <link rel="image_src" href={imageUrl} />
 
         {/* Metatags */}
