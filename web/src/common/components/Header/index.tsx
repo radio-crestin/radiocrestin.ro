@@ -34,20 +34,6 @@ const Navigation = () => (
   </nav>
 );
 
-const ContentRight = () => {
-  const { ctx } = useContext(Context);
-  return (
-    <div className={styles.right_content}>
-      <div className={styles.station_details}>
-        <h1 className={styles.station_title}>{ctx.selectedStation?.title}</h1>
-        <p className={styles.station_description}>
-          {ctx.selectedStation?.description}
-        </p>
-      </div>
-    </div>
-  );
-};
-
 const ContentLeft = () => {
   const { ctx } = useContext(Context);
   const { selectedStation } = ctx;
@@ -76,6 +62,25 @@ const ContentLeft = () => {
           </div>
         </>
       )}
+    </div>
+  );
+};
+
+const ContentRight = () => {
+  const { ctx } = useContext(Context);
+
+  return (
+    <div className={styles.right_content}>
+      <div className={styles.station_details}>
+        <h1 className={styles.station_title}>{ctx.selectedStation?.title}</h1>
+        <p className={styles.nr_listeners}>
+          {ctx.selectedStation?.total_listeners} persoane ascultă împreună cu
+          tine acest radio
+        </p>
+        <p className={styles.station_description}>
+          {ctx.selectedStation?.description}
+        </p>
+      </div>
     </div>
   );
 };
