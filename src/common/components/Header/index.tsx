@@ -82,10 +82,12 @@ const ContentRight = () => {
           />
           <span>({ctx.selectedStation?.reviews?.length || 0} recenzii)</span>
         </div>
-        <p className={styles.nr_listeners}>
-          {ctx.selectedStation?.total_listeners} persoane ascultă împreună cu
-          tine acest radio
-        </p>
+        {ctx.selectedStation?.total_listeners !== 0 && (
+          <p className={styles.nr_listeners}>
+            {ctx.selectedStation?.total_listeners} persoane ascultă împreună cu
+            tine acest radio
+          </p>
+        )}
         <p className={styles.station_description}>
           {ctx.selectedStation?.description}
         </p>
