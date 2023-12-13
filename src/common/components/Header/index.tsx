@@ -81,8 +81,8 @@ const ContentRight = () => {
       <div className={styles.station_details}>
         <h1 className={styles.station_title}>{ctx.selectedStation?.title}</h1>
         <div className={styles.rating_wrapper}>
-          <Rating score={stationRating} starHeight={22} /> (
-          {ctx.selectedStation?.reviews?.length || 0} recenzii)
+          <Rating score={stationRating} starHeight={22} />
+          <span>({ctx.selectedStation?.reviews?.length || 0} recenzii)</span>
         </div>
         <p className={styles.nr_listeners}>
           {ctx.selectedStation?.total_listeners} persoane ascultă împreună cu
