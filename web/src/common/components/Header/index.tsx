@@ -21,16 +21,19 @@ const Navigation = () => (
         <h1>Radio Creștin</h1>
       </Link>
     </div>
+    <WhatsAppButton />
     <div className={styles.external_links}>
-      <WhatsAppButton />
+      <Link href="https://github.com/radio-crestin" target={"_blank"}>
+        <img src="./icons/Github.png" alt="Github icon" />
+      </Link>
+      <Link href="https://graphql-viewer.radio-crestin.com/" target={"_blank"}>
+        <img src="./icons/GraphQLIcon.png" alt="GraphQLIcon icon" />
+      </Link>
       <Link
         href="https://www.figma.com/file/iXXR3dhUjwfDDZH4FlEZgx/radio_crestin_com"
         target={"_blank"}
       >
         <img src="./icons/FigmaIcon.png" alt="Figma icon" />
-      </Link>
-      <Link href="https://github.com/radio-crestin" target={"_blank"}>
-        <img src="./icons/Github.png" alt="Github icon" />
       </Link>
     </div>
   </nav>
