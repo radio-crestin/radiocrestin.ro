@@ -285,7 +285,7 @@ export default function RadioPlayer() {
         <div className={styles.volume_slider}>
           <input
             type="range"
-            min="1"
+            min="0"
             max="100"
             value={playerVolume}
             className={styles.slider}
