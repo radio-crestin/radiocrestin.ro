@@ -2,7 +2,7 @@ import { CONSTANTS } from "@/constants/constants";
 
 const query = `
     query GetStations {
-  stations(order_by: {total_listeners: desc}) {
+  stations(order_by: {order: asc}) {
     id
     order
     title

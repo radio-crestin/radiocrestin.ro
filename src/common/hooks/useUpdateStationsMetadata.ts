@@ -35,14 +35,8 @@ const useUpdateStationsMetadata = () => {
       try {
         const data = await getStations();
         if (data?.stations && data?.stations.length > 0) {
-          const updatedStations = ctx.stations.map((station: IStation) => {
-            const newStationData = data.stations.find(
-              (s: IStation) => s.id === station.id,
-            );
-            return newStationData ? { ...station, ...newStationData } : station;
-          });
           setCtx({
-            stations: updatedStations,
+            stations: data.stations,
           });
         }
       } catch (error) {
