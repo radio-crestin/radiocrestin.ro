@@ -33,7 +33,7 @@ const Navigation = () => (
         href="https://www.figma.com/file/iXXR3dhUjwfDDZH4FlEZgx/radio_crestin_com"
         target={"_blank"}
       >
-        <img src="./icons/FigmaIcon.png" alt="Figma icon" />
+        <img src="./icons/FigmaIcon2.png" alt="Figma icon" />
       </Link>
     </div>
   </nav>
