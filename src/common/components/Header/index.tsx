@@ -46,14 +46,33 @@ const ContentLeft = () => {
     <div className={styles.left_content}>
       {ctx.selectedStation && (
         <>
-          <img
-            loading={"lazy"}
-            src={selectedStation.thumbnail_url}
-            alt={selectedStation.title}
-            className={styles.station_image}
-            width={230}
-            height={230}
-          />
+          {selectedStation.now_playing?.song?.thumbnail_url ? (
+            <div className={styles.container_img_plus_thumb}>
+              <img
+                loading={"lazy"}
+                src={selectedStation.now_playing?.song?.thumbnail_url}
+                alt={selectedStation.title}
+                width={230}
+                height={230}
+              />
+              <img
+                loading={"lazy"}
+                src={selectedStation?.thumbnail_url}
+                alt={selectedStation.title}
+                className={styles.img_thumb}
+                width={230}
+                height={230}
+              />
+            </div>
+          ) : (
+            <img
+              loading={"lazy"}
+              src={selectedStation?.thumbnail_url}
+              alt={selectedStation.title}
+              width={230}
+              height={230}
+            />
+          )}
           <div className={styles.station_info}>
             <h2 className={styles.station_title}>
               {selectedStation.now_playing?.song?.name || selectedStation.title}
