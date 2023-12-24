@@ -7,30 +7,60 @@ import { Context } from "@/context/ContextProvider";
 import FavoriteItem from "@/components/FavoriteItem";
 import StationItem from "@/components/StationItem";
 import { Magnify } from "@/icons/Magnify";
+import CloseIcon from "@/icons/CloseIcon";
 
 const Stations = () => {
   const { ctx } = useContext(Context);
-  const [searchTerm, setSearchTerm] = useState("");
   const [filteredStations, setFilteredStations] = useState(ctx.stations);
+  const [searchedValue, setSearchedValue] = useState("");
 
   useEffect(() => {
-    if (searchTerm) {
-      setFilteredStations(
-        ctx.stations.filter((station: IStation) =>
-          station.title.toLowerCase().includes(searchTerm.toLowerCase()),
-        ),
-      );
+    if (searchedValue) {
+      handleSearch();
     } else {
       setFilteredStations(ctx.stations);
     }
   }, [ctx.stations]);
 
+  useEffect(() => {
+    handleSearch();
+  }, [searchedValue]);
+
   const handleSearch = () => {
-    setFilteredStations(
-      ctx.stations.filter((station: IStation) =>
-        station.title.toLowerCase().includes(searchTerm.toLowerCase()),
+    let newFilteredStations = [];
+    // Filter by station title
+    newFilteredStations.push(
+      ...ctx.stations.filter((station: IStation) =>
+        station.title.toLowerCase().includes(searchedValue),
       ),
     );
+
+    // Filter by song name
+    newFilteredStations.push(
+      ...ctx.stations.filter(
+        (station: IStation) =>
+          station.now_playing?.song?.name.toLowerCase().includes(searchedValue),
+      ),
+    );
+
+    // Filter by artist name
+    newFilteredStations.push(
+      ...ctx.stations.filter(
+        (station: IStation) =>
+          station.now_playing?.song?.artist?.name
+            .toLowerCase()
+            .includes(searchedValue),
+      ),
+    );
+
+    // Remove duplicates
+    newFilteredStations = newFilteredStations.filter(
+      (station, index, self) =>
+        index ===
+        self.findIndex((t) => t.id === station.id && t.slug === station.slug),
+    );
+
+    setFilteredStations(newFilteredStations);
   };
 
   return (
@@ -59,16 +89,19 @@ const Stations = () => {
           <input
             type="text"
             placeholder="Caută un radio..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                handleSearch();
-              }
-            }}
+            value={searchedValue}
+            onChange={(e) => setSearchedValue(e.target.value.toLowerCase())}
           />
-          <Magnify className={styles.icon} onClick={handleSearch} width={20} />
+          {searchedValue ? (
+            <CloseIcon
+              className={styles.icon}
+              width={20}
+              height={20}
+              onClick={() => setSearchedValue("")}
+            />
+          ) : (
+            <Magnify className={styles.icon} width={20} />
+          )}
         </div>
       </div>
       <div className={styles.stations_container}>
