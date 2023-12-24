@@ -105,11 +105,20 @@ const Stations = () => {
         </div>
       </div>
       <div className={styles.stations_container}>
-        {filteredStations.map((station: IStation) => (
-          <React.Fragment key={`${station.id}-${station.slug}`}>
-            <StationItem {...station} />
-          </React.Fragment>
-        ))}
+        {filteredStations.length === 0 ? (
+          <div className={styles.no_results}>
+            <h1>
+              Nu am găsit niciun rezultat cu denumirea:{" "}
+              <strong>{searchedValue}</strong>.
+            </h1>
+          </div>
+        ) : (
+          filteredStations.map((station: IStation) => (
+            <React.Fragment key={`${station.id}-${station.slug}`}>
+              <StationItem {...station} />
+            </React.Fragment>
+          ))
+        )}
       </div>
     </div>
   );
