@@ -26,7 +26,7 @@ const Layout = ({
     <>
       <AnalyticsScripts />
       <Head>
-        {selectedStation && (
+        {selectedStation && selectedStation?.reviews.length > 0 && (
           <script
             type="application/ld+json"
             dangerouslySetInnerHTML={{
