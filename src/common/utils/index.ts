@@ -1,5 +1,9 @@
 import { IStation } from "@/models/Station";
 
+/**
+ * clean the Stations metadata because the pages are rendered statically, and the metadata will pe loaded on client side.
+ * @param stations
+ */
 export function cleanStationsMetadata(stations: IStation[]) {
   return stations.map((station: IStation) => {
     // Set song's thumbnail_url and name
