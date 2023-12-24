@@ -63,6 +63,13 @@ const Stations = () => {
     setFilteredStations(newFilteredStations);
   };
 
+  const handleKeyPress = (event: any) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      event.target.blur(); // Remove focus from the input to close the keyboard
+    }
+  };
+
   return (
     <div
       className={styles.container}
@@ -91,6 +98,7 @@ const Stations = () => {
             placeholder="Caută un radio..."
             value={searchedValue}
             onChange={(e) => setSearchedValue(e.target.value.toLowerCase())}
+            onKeyDown={handleKeyPress}
           />
           {searchedValue ? (
             <CloseIcon
