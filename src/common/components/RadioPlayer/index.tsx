@@ -11,6 +11,7 @@ import { Context } from "@/context/ContextProvider";
 import usePlayer from "@/store/usePlayer";
 import { PLAYBACK_STATE } from "@/models/enum";
 import { toast } from "react-toastify";
+import { trackListen } from "@/services/trackListen";
 
 enum STREAM_TYPE {
   HLS = "HLS",
@@ -85,6 +86,23 @@ export default function RadioPlayer() {
         audio.pause();
         break;
     }
+
+    /**
+     * Track listen every 30 seconds if the station is playing
+     */
+    if (playbackState === PLAYBACK_STATE.PLAYING) {
+      trackListen({
+        station_id: station.id as unknown as bigint,
+      });
+    }
+    const timer = setInterval(() => {
+      if (playbackState === PLAYBACK_STATE.PLAYING) {
+        trackListen({
+          station_id: station.id as unknown as bigint,
+        });
+      }
+    }, 30 * 1000);
+    return () => clearInterval(timer);
   }, [playbackState]);
 
   // eslint-disable-next-line react-hooks/rules-of-hooks
