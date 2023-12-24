@@ -75,6 +75,7 @@ const Layout = ({
 
         <meta name="MobileOptimized" content="width" />
         <meta name="HandheldFriendly" content="true" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
       {children}
     </>
