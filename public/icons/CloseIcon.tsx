@@ -1,12 +1,26 @@
 import * as React from "react";
 
-const CloseIcon = ({ width = 13, height = 12, scale = 1 }) => (
+const CloseIcon = ({
+  width = 13,
+  height = 12,
+  scale = 1,
+  className,
+  onClick,
+}: {
+  width?: number;
+  height?: number;
+  scale?: number;
+  className?: string;
+  onClick?: () => void;
+}) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     width={width}
     height={height}
     viewBox="0 0 13 12"
     fill="none"
+    className={className}
+    onClick={onClick}
   >
     <g transform={`scale(${scale})`}>
       <path
