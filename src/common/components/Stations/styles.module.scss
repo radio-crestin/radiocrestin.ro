@@ -39,26 +39,44 @@
   width: 100%;
   gap: 10px;
 
+  @include mixinHelper.onDesktop {
+    width: unset;
+    margin-right: 25px;
+  }
+
+  @include mixinHelper.onTablet {
+    margin-right: 15px;
+  }
+
   .search_container {
     display: flex;
     border: 1px solid gray;
     border-radius: 20px;
+    max-width: 250px;
+    width: 100%;
+
+    &:hover, &:focus-within {
+      max-width: 260px;
+    }
 
     input, button {
       border-radius: 20px;
       border: none;
       height: 40px;
       padding: 0 15px;
-      max-width: 350px;
-      width: 100%;
 
       &:focus {
         outline: none;
       }
     }
 
+    input {
+      width: 100%;
+    }
+
     .icon {
       height: 40px;
+      padding-left: 10px;
       padding-right: 15px;
       cursor: pointer;
     }
