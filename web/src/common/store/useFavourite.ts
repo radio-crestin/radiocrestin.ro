@@ -22,9 +22,9 @@ const useFavourite = create<IStore>()(
               ),
             };
           } else {
-            // Add to favourites if it's not already a favourite
+            // Add to favourites at the beginning if it's not already a favourite
             return {
-              favouriteItems: [...state.favouriteItems, slug],
+              favouriteItems: [slug, ...state.favouriteItems],
             };
           }
         });
