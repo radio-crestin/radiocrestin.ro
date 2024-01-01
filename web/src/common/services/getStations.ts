@@ -14,6 +14,7 @@ const query = `
     hls_stream_url
     thumbnail_url
     total_listeners
+    radio_crestin_listeners
     description
     description_action_title
     description_link

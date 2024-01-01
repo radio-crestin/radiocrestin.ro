@@ -41,3 +41,12 @@ export const SEO_404 = {
 export const seoInternalErrorPage = {
   title: `A apărut o eroare neașteptată`,
 };
+
+export const SEO_STATISTICI = {
+  title: "Statistici | Radio Creștin",
+  description: "Statistici ascultatori Radio Crestin.",
+  keywords:
+    "radio crestin, statistici, radiocrestin, radiouri crestine, radio crestin online, radiouri crestine online, radio crestine, radiocrestin.ro, online",
+  imageUrl: "/images/android-chrome-512x512.png",
+  fullURL: "https://radiocrestin.ro/",
+};
