@@ -11,6 +11,7 @@ import useUpdateContextMetadata from "@/hooks/useUpdateStationsMetadata";
 import useFavouriteStations from "@/hooks/useFavouriteStations";
 import HeaderHomepage from "@/components/HeaderHomepage";
 import { useRouter } from "next/router";
+import FooterLinks from "@/components/FooterLinks";
 
 export default function HomePage() {
   const router = useRouter();
@@ -51,6 +52,7 @@ export default function HomePage() {
     <Layout {...SEO_404}>
       <HeaderHomepage />
       <Stations />
+      <FooterLinks />
     </Layout>
   );
 }

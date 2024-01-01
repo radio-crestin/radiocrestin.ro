@@ -10,6 +10,7 @@ export interface IStation {
   hls_stream_url: string;
   thumbnail_url: string;
   total_listeners: number;
+  radio_crestin_listeners: number;
   description: string;
   description_action_title: string;
   description_link: string;

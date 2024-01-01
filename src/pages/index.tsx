@@ -10,6 +10,7 @@ import useFavouriteStations from "@/hooks/useFavouriteStations";
 import HeaderHomepage from "@/components/HeaderHomepage";
 import Layout from "@/components/Layout";
 import { SEO_DEFAULT } from "@/utils/seo";
+import FooterLinks from "@/components/FooterLinks";
 
 export default function StationPage({ seo }: { seo: any }) {
   useUpdateContextMetadata();
@@ -20,6 +21,7 @@ export default function StationPage({ seo }: { seo: any }) {
       <HeaderHomepage />
       <Stations />
       <DownloadAppBanner />
+      <FooterLinks />
     </Layout>
   );
 }

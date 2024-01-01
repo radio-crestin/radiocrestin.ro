@@ -12,6 +12,7 @@ import useUpdateContextMetadata from "@/hooks/useUpdateStationsMetadata";
 import useFavouriteStations from "@/hooks/useFavouriteStations";
 import RadioPlayer from "@/components/RadioPlayer";
 import { Context } from "@/context/ContextProvider";
+import FooterLinks from "@/components/FooterLinks";
 
 export default function StationPage({ seo }: { seo: any }) {
   const { ctx } = useContext(Context);
@@ -23,6 +24,7 @@ export default function StationPage({ seo }: { seo: any }) {
       <Header />
       <Stations />
       <DownloadAppBanner />
+      <FooterLinks />
       {ctx.selectedStation && <RadioPlayer />}
     </Layout>
   );
