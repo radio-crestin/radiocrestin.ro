@@ -9,6 +9,8 @@ const useFavouriteStations = () => {
   useEffect(() => {
     const favouriteStations: Array<IStation | any> =
       favouriteItems.map((slug: string) => {
+        if (!ctx.stations) return [];
+
         return ctx.stations.find((station: IStation) => station.slug === slug);
       }) || [];
     setCtx({
