@@ -5,14 +5,19 @@ import Link from "next/link";
 import { IStation } from "@/models/Station";
 import styles from "./styles.module.scss";
 import useFavourite from "@/store/useFavourite";
-import React, { useContext } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import Heart from "@/icons/Heart";
 import { Context } from "@/context/ContextProvider";
 
 const FavouriteItem = (data: IStation) => {
   const { ctx } = useContext(Context);
-  const { toggleFavourite } = useFavourite();
+  const { favouriteItems, toggleFavourite } = useFavourite();
+  const [isStationFavourite, setIsStationFavourite] = useState(false);
   const isActive = ctx.selectedStation?.slug === data.slug;
+
+  useEffect(() => {
+    setIsStationFavourite(favouriteItems.includes(data.slug));
+  }, [data.slug, favouriteItems]);
 
   return (
     <Link
