@@ -23,6 +23,20 @@ const Stations = () => {
   }, [ctx.stations]);
 
   useEffect(() => {
+    if (
+      ctx.favouriteStations.length > 0 &&
+      document.getElementsByClassName("apasa_aici_move").length > 0
+    ) {
+      document.getElementsByClassName("apasa_aici_move")[0].remove();
+      let favouriteSection: any = document.querySelectorAll(
+        '[data-info="favourite-section"]',
+      );
+      let scrollPosition = favouriteSection[0].offsetTop - 100;
+      window.scrollTo({ top: scrollPosition, behavior: "smooth" });
+    }
+  }, [ctx.favouriteStations]);
+
+  useEffect(() => {
     handleSearch();
   }, [searchedValue]);
 
@@ -70,11 +84,31 @@ const Stations = () => {
     }
   };
 
+  function handleNoStationClicked() {
+    let stationItems = document.querySelectorAll(
+      '[data-station="station-item"]',
+    );
+
+    stationItems[1].scrollIntoView({ behavior: "smooth" });
+
+    if (!document.querySelector(".apasa_aici_move")) {
+      let newElement = document.createElement("div");
+      newElement.className = "apasa_aici_move";
+      newElement.innerHTML =
+        'Apasa aici <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 25 25"><path style="fill:white" d="m17.5 5.999-.707.707 5.293 5.293H1v1h21.086l-5.294 5.295.707.707L24 12.499l-6.5-6.5z" data-name="Right"/></svg>';
+      stationItems[2].appendChild(newElement);
+
+      setTimeout(() => {
+        newElement.remove();
+      }, 10000);
+    }
+  }
+
   return (
     <div className={styles.container}>
-      {ctx.favouriteStations.length > 0 && (
-        <div className={styles.favourite_section}>
-          <h1>⭐ Favorite</h1>
+      <div className={styles.favourite_section} data-info={"favourite-section"}>
+        <h1>❤️ Favorite</h1>
+        {ctx.favouriteStations.length > 0 ? (
           <div className={styles.stations_container}>
             {ctx.favouriteStations.map((station: IStation) => {
               return (
@@ -84,8 +118,17 @@ const Stations = () => {
               );
             })}
           </div>
-        </div>
-      )}
+        ) : (
+          <div
+            className={`${styles.stations_container} ${styles.favourite_cont}`}
+          >
+            <div className={styles.favorite_card}>
+              Adaugă un radio la favorit pentru a fi mult mai ușor de găsit.
+              <button onClick={() => handleNoStationClicked()}>Adaugă</button>
+            </div>
+          </div>
+        )}
+      </div>
       <div className={`${styles.search_section}`}>
         <div className={`${styles.search_container}`}>
           <input

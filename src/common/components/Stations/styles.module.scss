@@ -110,3 +110,49 @@
     justify-content: center;
   }
 }
+
+.favourite_cont {
+  justify-content: start !important;
+  min-height: 110px !important;
+
+  .favorite_card {
+    display: flex;
+    max-width: 545px;
+    gap: 25px;
+    width: 100%;
+    padding: 15px 17px;
+    border-radius: 18px;
+    box-shadow: 1px 1px 5px 0 rgba(0, 0, 0, 0.2);
+    position: relative;
+    font-size: 16px;
+    margin: 20px 0 20px 20px;
+    line-height: 22px;
+
+    @include mixinHelper.onTablet {
+      margin-left: 0;
+    }
+
+    button {
+      padding: 10px;
+      border-radius: 20px;
+      cursor: pointer;
+      border: 1px solid #e0e0e0;
+      animation: pulse 8s infinite;
+    }
+  }
+}
+
+@keyframes pulse {
+  0%, 37.5% {
+    transform: scale(1.05);
+    border: 2px solid black;
+  }
+  18.75% {
+    transform: scale(1);
+    border: 2px solid #e0e0e0;
+  }
+  37.5%, 100% {
+    transform: scale(1.05);
+    border: 2px solid black;
+  }
+}
