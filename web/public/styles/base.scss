@@ -3,3 +3,36 @@
 body {
   font-family: globalVariables.$dm-sans, serif;
 }
+
+.apasa_aici_move {
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  animation: move_left_right 1.5s infinite;
+  position: absolute;
+  right: 45px;
+  bottom: 11px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  background: #ff0057;
+  color: white;
+  padding: 2px 8px;
+  border-radius: 20px;
+
+  svg {
+    width: 30px;
+  }
+}
+
+@keyframes move_left_right {
+  0% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(-15px);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}

@@ -22,6 +22,7 @@ const StationItem = (data: IStation) => {
   return (
     <Link
       className={styles.station_item}
+      data-station={"station-item"}
       data-active={isActive}
       href={data.slug}
       scroll={false}
