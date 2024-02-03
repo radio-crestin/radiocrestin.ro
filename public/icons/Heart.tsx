@@ -1,6 +1,12 @@
 import React from "react";
 
-function Heart({ color }: { color: "red" | "white" }) {
+function Heart({
+  color,
+  defaultColor = "black",
+}: {
+  color: "red" | "white";
+  defaultColor?: "red" | "black";
+}) {
   const isRed = color === "red";
   const pathData = isRed
     ? "M11 19.5708L9.67083 18.3608C4.95 14.08 1.83333 11.2567 1.83333 7.79167C1.83333 4.96833 4.05167 2.75 6.875 2.75C8.47 2.75 10.0008 3.4925 11 4.66583C11.9992 3.4925 13.53 2.75 15.125 2.75C17.9483 2.75 20.1667 4.96833 20.1667 7.79167C20.1667 11.2567 17.05 14.08 12.3292 18.37L11 19.5708Z"
@@ -15,7 +21,7 @@ function Heart({ color }: { color: "red" | "white" }) {
       fill="none"
     >
       <g clipPath="url(#clip0_329_398)">
-        <path d={pathData} fill={isRed ? "#CF1919" : "black"} />
+        <path d={pathData} fill={isRed ? "#CF1919" : `${defaultColor}`} />
       </g>
       <defs>
         <clipPath id="clip0_329_398">
