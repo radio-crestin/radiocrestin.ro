@@ -12,6 +12,8 @@ import usePlayer from "@/store/usePlayer";
 import { PLAYBACK_STATE } from "@/models/enum";
 import { toast } from "react-toastify";
 import { trackListen } from "@/services/trackListen";
+import Heart from "@/icons/Heart";
+import useFavourite from "@/store/useFavourite";
 
 enum STREAM_TYPE {
   HLS = "HLS",
@@ -29,6 +31,12 @@ export default function RadioPlayer() {
   const router = useRouter();
   const [retries, setRetries] = useState(MAX_MEDIA_RETRIES);
   const [streamType, setStreamType] = useState(STREAM_TYPE.HLS);
+  const { favouriteItems, toggleFavourite } = useFavourite();
+  const [isFavorite, setIsFavorite] = useState(false);
+
+  useEffect(() => {
+    setIsFavorite(favouriteItems.includes(station.slug));
+  }, [favouriteItems, station.slug]);
 
   useEffect(() => {
     const audio = document.getElementById("audioPlayer") as HTMLAudioElement;
@@ -277,15 +285,23 @@ export default function RadioPlayer() {
   return (
     <div className={styles.radio_player}>
       <div className={styles.player_container}>
-        <img
-          src={
-            station.now_playing?.song?.thumbnail_url ||
-            station.thumbnail_url ||
-            CONSTANTS.DEFAULT_COVER
-          }
-          alt={`${station.title} | Radio Crestin`}
-          className={styles.station_thumbnail}
-        />
+        <div className={styles.image_container}>
+          <img
+            src={
+              station.now_playing?.song?.thumbnail_url ||
+              station.thumbnail_url ||
+              CONSTANTS.DEFAULT_COVER
+            }
+            alt={`${station.title} | Radio Crestin`}
+            className={styles.station_thumbnail}
+          />
+          <div
+            className={styles.heart_container}
+            onClick={() => toggleFavourite(station.slug)}
+          >
+            <Heart color={isFavorite ? "red" : "white"} defaultColor={"red"} />
+          </div>
+        </div>
 
         <div className={`${styles.station_info} ${styles.two_lines}`}>
           <h2 className={styles.station_title}>{station.title}</h2>
