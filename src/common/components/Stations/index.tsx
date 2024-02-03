@@ -71,12 +71,7 @@ const Stations = () => {
   };
 
   return (
-    <div
-      className={styles.container}
-      style={{
-        visibility: ctx.isFavouriteStationsLoaded ? "visible" : "hidden",
-      }}
-    >
+    <div className={styles.container}>
       {ctx.favouriteStations.length > 0 && (
         <div className={styles.favourite_section}>
           <h1>⭐ Favorite</h1>
