@@ -153,7 +153,7 @@
 
     .rating_wrapper {
       @include mixinHelper.center-content;
-      justify-content: start;
+      justify-content: flex-start;
       flex-direction: row;
       gap: 4px;
       margin-top: 10px;
