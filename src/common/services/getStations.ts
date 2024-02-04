@@ -16,16 +16,6 @@ const query = `
     total_listeners
     radio_crestin_listeners
     description
-    description_action_title
-    description_link
-    feature_latest_post
-    posts(limit: 1, order_by: { published: desc }) {
-      id
-      title
-      description
-      link
-      published
-    }
     uptime {
       is_up
       latency_ms
@@ -49,15 +39,6 @@ const query = `
       id
       stars
       message
-    }
-  }
-  station_groups {
-    id
-    name
-    order
-    station_to_station_groups {
-      station_id
-      order
     }
   }
 }

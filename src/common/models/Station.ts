@@ -12,9 +12,6 @@ export interface IStation {
   total_listeners: number;
   radio_crestin_listeners: number;
   description: string;
-  description_action_title: string;
-  description_link: string;
-  feature_latest_post: boolean;
   facebook_page_id: string;
   posts: IPost[];
   uptime: IUptime;
