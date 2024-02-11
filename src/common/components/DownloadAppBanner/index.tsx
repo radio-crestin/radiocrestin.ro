@@ -56,13 +56,17 @@ export default function DownloadAppBanner() {
         <img
           loading={"lazy"}
           className={styles.iphone13_mock_image}
-          src={"/images/iphone_desktop_size.png"}
+          src={
+            "https://radio-crestin.s3.eu-central-1.amazonaws.com/media/public/iphone_desktop_size.png"
+          }
           alt={"iPhone 13 Radio Crestin"}
         />
         <img
           className={styles.iphone13_mobile_image}
           loading={"lazy"}
-          src={"/images/iphone_mob_size.png"}
+          src={
+            "https://radio-crestin.s3.eu-central-1.amazonaws.com/media/public/iphone_mob_size.png"
+          }
           alt={"iPhone 13 Radio Crestin"}
         />
       </div>
