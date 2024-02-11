@@ -124,8 +124,8 @@
       bottom: -60px
     }
 
-    @include mixinHelper.onTablet {
-      max-width: 200px;
+    @include mixinHelper.onMobile {
+      max-width: 270px;
     }
   }
 }
