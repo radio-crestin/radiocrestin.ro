@@ -87,15 +87,16 @@
     @include mixinHelper.center-content;
   }
 
-  .iphone12_mock_image {
+  .iphone13_mock_image {
     height: auto;
     position: absolute;
-    right: 150px;
+    right: 100px;
     bottom: -60px;
     width: 100%;
-    max-width: 500px;
+    max-width: 524px;
 
     @include mixinHelper.onDesktop {
+      max-width: 450px;
       right: 0;
     }
 
@@ -104,7 +105,7 @@
     }
   }
 
-  .iphone12_mobile_image {
+  .iphone13_mobile_image {
     display: none;
     width: 100%;
     max-width: 375px;
@@ -114,6 +115,7 @@
     bottom: -60px;
 
     @include mixinHelper.onSmallDesktop {
+      max-width: 316px;
       display: block;
     }
 

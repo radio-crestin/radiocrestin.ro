@@ -55,15 +55,15 @@ export default function DownloadAppBanner() {
       <div className={styles.image_container}>
         <img
           loading={"lazy"}
-          className={styles.iphone12_mock_image}
-          src={"/images/iphone12-mock.png"}
-          alt={"iPhone 12 Radio Crestin"}
+          className={styles.iphone13_mock_image}
+          src={"/images/iphone_desktop_size.png"}
+          alt={"iPhone 13 Radio Crestin"}
         />
         <img
-          className={styles.iphone12_mobile_image}
+          className={styles.iphone13_mobile_image}
           loading={"lazy"}
-          src={"/images/iphone12_mobile.png"}
-          alt={"iPhone 12 Radio Crestin"}
+          src={"/images/iphone_mob_size.png"}
+          alt={"iPhone 13 Radio Crestin"}
         />
       </div>
       <img
