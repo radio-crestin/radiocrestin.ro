@@ -1,7 +1,6 @@
 import { IStation } from "@/models/Station";
 
 export const seoStation = (station: IStation) => {
-  console.log(`seo - ${station.title} - `, station);
   return {
     title: `${
       station?.title || "Radio Creștin"

@@ -3,6 +3,7 @@ import { getStations } from "@/services/getStations";
 import { IStation } from "@/models/Station";
 import { Context } from "@/context/ContextProvider";
 import { useRouter } from "next/router";
+import { Bugsnag } from "@/utils/bugsnag";
 
 const useUpdateStationsMetadata = () => {
   const { ctx, setCtx } = useContext(Context);
@@ -15,17 +16,8 @@ const useUpdateStationsMetadata = () => {
         (s: IStation) => s.slug === station_slug,
       );
 
-      // Calculate next stations with wrap around
-      let nextStations = [];
-      for (let i = 1; i <= 3; i++) {
-        nextStations.push(
-          ctx.stations[(selectedStationIndex + i) % ctx.stations.length],
-        );
-      }
-
       setCtx({
         selectedStation: ctx.stations[selectedStationIndex],
-        nextStations,
       });
     }
   }, [router.query.station_slug, ctx.stations]);
@@ -40,7 +32,15 @@ const useUpdateStationsMetadata = () => {
           });
         }
       } catch (error) {
-        console.error("Failed to fetch stations:", error);
+        Bugsnag.notify(
+          new Error(
+            `Failed to fetch stations - error: ${JSON.stringify(
+              error,
+              null,
+              2,
+            )}`,
+          ),
+        );
       }
     };
 
