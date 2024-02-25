@@ -14,6 +14,7 @@ import { toast } from "react-toastify";
 import { trackListen } from "@/services/trackListen";
 import Heart from "@/icons/Heart";
 import useFavourite from "@/store/useFavourite";
+import { Bugsnag } from "@/utils/bugsnag";
 
 enum STREAM_TYPE {
   HLS = "HLS",
@@ -65,8 +66,9 @@ export default function RadioPlayer() {
       audio.addEventListener(
         "canplaythrough",
         function () {
-          audio.play().catch(() => {
+          audio.play().catch((error) => {
             setPlaybackState(PLAYBACK_STATE.STOPPED);
+            Bugsnag.notify(new Error("canplaythrough error: ", error));
           });
         },
         { once: true },
@@ -74,6 +76,12 @@ export default function RadioPlayer() {
     });
 
     hls.on(Hls.Events.ERROR, function (event, data) {
+      Bugsnag.notify(
+        new Error(
+          `HLS canplaythrough - station.title: ${station.title}, error: ${data}`,
+        ),
+      );
+
       if (data.fatal) {
         retryMechanism();
       }
@@ -86,8 +94,13 @@ export default function RadioPlayer() {
 
     switch (playbackState) {
       case PLAYBACK_STATE.STARTED:
-        audio.play().catch(() => {
-          setPlaybackState(PLAYBACK_STATE.STOPPED);
+        audio.play().catch((error) => {
+          Bugsnag.notify(
+            new Error(
+              `Start playing:96 error: - station.title: ${station.title}, error: ${error}`,
+            ),
+          );
+          retryMechanism();
         });
         break;
       case PLAYBACK_STATE.STOPPED:
@@ -137,14 +150,24 @@ export default function RadioPlayer() {
         break;
       case STREAM_TYPE.PROXY:
         audio.src = station.proxy_stream_url;
-        audio.play().catch(() => {
-          setPlaybackState(PLAYBACK_STATE.STOPPED);
+        audio.play().catch((error) => {
+          Bugsnag.notify(
+            new Error(
+              `Switching to Proxy stream error:148 - station.title: ${station.title}, error: ${error}`,
+            ),
+          );
+          retryMechanism();
         });
         break;
       case STREAM_TYPE.ORIGINAL:
         audio.src = station.stream_url;
-        audio.play().catch(() => {
-          setPlaybackState(PLAYBACK_STATE.STOPPED);
+        audio.play().catch((error) => {
+          Bugsnag.notify(
+            new Error(
+              `Switching to Original stream error:160 - station.title: ${station.title}, error: ${error}`,
+            ),
+          );
+          retryMechanism();
         });
     }
 
@@ -171,6 +194,11 @@ export default function RadioPlayer() {
           break;
       }
     } else {
+      Bugsnag.notify(
+        new Error(
+          `Hasn't been able to connect to the station - ${station.title}`,
+        ),
+      );
       toast.error(
         <div>
           Nu s-a putut stabili o conexiune cu stația:{" "}
@@ -373,7 +401,12 @@ export default function RadioPlayer() {
         onWaiting={() => {
           setPlaybackState(PLAYBACK_STATE.BUFFERING);
         }}
-        onError={() => {
+        onError={(error) => {
+          Bugsnag.notify(
+            new Error(
+              `Audio error:387 - station.tite: ${station.title}, error: ${error}`,
+            ),
+          );
           retryMechanism();
         }}
       />

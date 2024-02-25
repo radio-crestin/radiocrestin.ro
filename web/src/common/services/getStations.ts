@@ -1,4 +1,5 @@
 import { CONSTANTS } from "@/constants/constants";
+import { Bugsnag } from "@/utils/bugsnag";
 
 const query = `
     query GetStations {
@@ -76,7 +77,7 @@ export const getStations = async () => {
       return await response.json();
     })
     .catch((error) => {
-      console.error("error", error);
+      Bugsnag.notify(new Error("Getting stations error: ", error));
     });
 
   return {

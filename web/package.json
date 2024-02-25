@@ -10,6 +10,9 @@
     "postbuild": "next-sitemap"
   },
   "dependencies": {
+    "@bugsnag/browser-performance": "^2.2.0",
+    "@bugsnag/js": "^7.22.4",
+    "@bugsnag/plugin-react": "^7.19.0",
     "hls.js": "1.4.12",
     "next": "14.0.2",
     "next-sitemap": "^4.2.3",
