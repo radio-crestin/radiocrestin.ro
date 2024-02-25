@@ -8,6 +8,7 @@ export default function WhatsAppButton() {
       href="https://wa.me/40766338046?text=Buna%20ziua%20[radiocrestin.ro]%0A"
       target="_blank"
       className={styles.contactButton}
+      aria-label="Contact us on WhatsApp"
     >
       <div className={styles.contactLinkButton}>
         <svg
@@ -15,6 +16,7 @@ export default function WhatsAppButton() {
           width="30px"
           height="30px"
           viewBox="0 0 24 24"
+          aria-hidden="true"
         >
           <path
             fill="#fff"
