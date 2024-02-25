@@ -78,7 +78,7 @@ export const getStations = async () => {
     })
     .catch((error) => {
       Bugsnag.notify(
-        new Error("Getting stations error: " + JSON.stringify(error)),
+        new Error("Getting stations error: " + JSON.stringify(error, null, 2)),
       );
     });
 
