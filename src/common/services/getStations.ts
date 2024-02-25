@@ -1,6 +1,5 @@
 import { CONSTANTS } from "@/constants/constants";
 import { Bugsnag } from "@/utils/bugsnag";
-import { stringify } from "flatted";
 
 const query = `
     query GetStations {
@@ -78,7 +77,9 @@ export const getStations = async () => {
       return await response.json();
     })
     .catch((error) => {
-      Bugsnag.notify(new Error(`Getting stations error: ${stringify(error)}`));
+      Bugsnag.notify(
+        new Error("Getting stations error: " + JSON.stringify(error, null, 2)),
+      );
     });
 
   return {

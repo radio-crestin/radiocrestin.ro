@@ -15,7 +15,6 @@ import { trackListen } from "@/services/trackListen";
 import Heart from "@/icons/Heart";
 import useFavourite from "@/store/useFavourite";
 import { Bugsnag } from "@/utils/bugsnag";
-import { stringify } from "flatted";
 
 enum STREAM_TYPE {
   HLS = "HLS",
@@ -81,7 +80,11 @@ export default function RadioPlayer() {
           new Error(
             `HLS Fatal error - station.title: ${
               station.title
-            }, error: ${stringify(data)} - event: ${stringify(event)}`,
+            }, error: ${JSON.stringify(
+              data,
+              null,
+              2,
+            )} - event: ${JSON.stringify(event, null, 2)}`,
           ),
         );
         retryMechanism();
@@ -100,7 +103,7 @@ export default function RadioPlayer() {
             new Error(
               `Start playing:96 error: - station.title: ${
                 station.title
-              }, error: ${stringify(error)}`,
+              }, error: ${JSON.stringify(error, null, 2)}`,
             ),
           );
           retryMechanism();
@@ -158,7 +161,7 @@ export default function RadioPlayer() {
             new Error(
               `Switching from HLS -> PROXY error:157 - station.title: ${
                 station.title
-              }, error: ${stringify(error)}`,
+              }, error: ${JSON.stringify(error, null, 2)}`,
             ),
           );
           retryMechanism();
@@ -171,7 +174,7 @@ export default function RadioPlayer() {
             new Error(
               `Switching from PROXY to ORIGINAL error:168 - station.title: ${
                 station.title
-              }, error: ${stringify(error)}`,
+              }, error: ${JSON.stringify(error, null, 2)}`,
             ),
           );
           retryMechanism();
@@ -413,7 +416,7 @@ export default function RadioPlayer() {
             new Error(
               `Audio error:414 - station.title: ${
                 station.title
-              }, error: ${stringify(error)}`,
+              }, error: ${JSON.stringify(error, null, 2)}`,
             ),
           );
           retryMechanism();
