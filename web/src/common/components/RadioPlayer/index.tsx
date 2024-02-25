@@ -66,9 +66,8 @@ export default function RadioPlayer() {
       audio.addEventListener(
         "canplaythrough",
         function () {
-          audio.play().catch((error) => {
+          audio.play().catch(() => {
             setPlaybackState(PLAYBACK_STATE.STOPPED);
-            Bugsnag.notify(new Error("canplaythrough error: ", error));
           });
         },
         { once: true },
@@ -78,7 +77,9 @@ export default function RadioPlayer() {
     hls.on(Hls.Events.ERROR, function (event, data) {
       Bugsnag.notify(
         new Error(
-          `HLS canplaythrough - station.title: ${station.title}, error: ${data}`,
+          `HLS canplaythrough - station.title: ${
+            station.title
+          }, error: ${JSON.stringify(data)} - event: ${JSON.stringify(event)}`,
         ),
       );
 
@@ -97,7 +98,9 @@ export default function RadioPlayer() {
         audio.play().catch((error) => {
           Bugsnag.notify(
             new Error(
-              `Start playing:96 error: - station.title: ${station.title}, error: ${error}`,
+              `Start playing:96 error: - station.title: ${
+                station.title
+              }, error: ${JSON.stringify(error)}`,
             ),
           );
           retryMechanism();
@@ -153,7 +156,9 @@ export default function RadioPlayer() {
         audio.play().catch((error) => {
           Bugsnag.notify(
             new Error(
-              `Switching to Proxy stream error:148 - station.title: ${station.title}, error: ${error}`,
+              `Switching from HLS -> PROXY error:157 - station.title: ${
+                station.title
+              }, error: ${JSON.stringify(error)}`,
             ),
           );
           retryMechanism();
@@ -164,7 +169,9 @@ export default function RadioPlayer() {
         audio.play().catch((error) => {
           Bugsnag.notify(
             new Error(
-              `Switching to Original stream error:160 - station.title: ${station.title}, error: ${error}`,
+              `Switching from PROXY to ORIGINAL error:168 - station.title: ${
+                station.title
+              }, error: ${JSON.stringify(error)}`,
             ),
           );
           retryMechanism();
@@ -196,7 +203,7 @@ export default function RadioPlayer() {
     } else {
       Bugsnag.notify(
         new Error(
-          `Hasn't been able to connect to the station - ${station.title}`,
+          `Hasn't been able to connect to the station - ${station.title}. Tried 20 times :P.`,
         ),
       );
       toast.error(
@@ -404,7 +411,9 @@ export default function RadioPlayer() {
         onError={(error) => {
           Bugsnag.notify(
             new Error(
-              `Audio error:387 - station.tite: ${station.title}, error: ${error}`,
+              `Audio error:414 - station.title: ${
+                station.title
+              }, error: ${JSON.stringify(error)}`,
             ),
           );
           retryMechanism();
