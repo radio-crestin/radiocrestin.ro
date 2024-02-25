@@ -362,11 +362,13 @@ export default function RadioPlayer() {
             value={playerVolume}
             className={styles.slider}
             onChange={(e) => setPlayerVolume(Number(e.target.value))}
+            aria-label="Player Volume"
           />
         </div>
 
         <div className={styles.play_button_container}>
           <button
+            aria-label="Play"
             className={styles.play_button}
             onClick={() => {
               if (
