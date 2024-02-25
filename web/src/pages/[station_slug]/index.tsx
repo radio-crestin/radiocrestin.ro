@@ -64,16 +64,6 @@ export async function getStaticProps(context: any) {
   const selectedStation: IStation = stations_without_meta[selectedStationIndex];
   const seo = seoStation(selectedStation);
 
-  // Get next 3 stations with wrap around logic
-  let nextStations = [];
-  for (let i = 1; i <= 3; i++) {
-    nextStations.push(
-      stations_without_meta[
-        (selectedStationIndex + i) % stations_without_meta.length
-      ],
-    );
-  }
-
   if (!stationData) {
     return {
       notFound: true,
@@ -85,7 +75,6 @@ export async function getStaticProps(context: any) {
       stations: stations_without_meta,
       selectedStation,
       seo,
-      nextStations,
       favouriteStations: [],
       station_slug,
     },
