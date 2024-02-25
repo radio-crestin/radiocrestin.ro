@@ -124,7 +124,12 @@ const Stations = () => {
           >
             <div className={styles.favorite_card}>
               Adaugă un radio la favorit pentru a fi mult mai ușor de găsit.
-              <button onClick={() => handleNoStationClicked()}>Adaugă</button>
+              <button
+                onClick={() => handleNoStationClicked()}
+                aria-label="Add to favourite"
+              >
+                Adaugă
+              </button>
             </div>
           </div>
         )}
@@ -137,6 +142,7 @@ const Stations = () => {
             value={searchedValue}
             onChange={(e) => setSearchedValue(e.target.value.toLowerCase())}
             onKeyDown={handleKeyPress}
+            aria-label="Search a station"
           />
           {searchedValue ? (
             <CloseIcon
