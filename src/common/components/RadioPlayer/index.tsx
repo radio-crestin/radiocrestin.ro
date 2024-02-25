@@ -75,15 +75,18 @@ export default function RadioPlayer() {
     });
 
     hls.on(Hls.Events.ERROR, function (event, data) {
-      Bugsnag.notify(
-        new Error(
-          `HLS canplaythrough - station.title: ${
-            station.title
-          }, error: ${JSON.stringify(data)} - event: ${JSON.stringify(event)}`,
-        ),
-      );
-
       if (data.fatal) {
+        Bugsnag.notify(
+          new Error(
+            `HLS Fatal error - station.title: ${
+              station.title
+            }, error: ${JSON.stringify(
+              data,
+              null,
+              2,
+            )} - event: ${JSON.stringify(event, null, 2)}`,
+          ),
+        );
         retryMechanism();
       }
     });
@@ -100,7 +103,7 @@ export default function RadioPlayer() {
             new Error(
               `Start playing:96 error: - station.title: ${
                 station.title
-              }, error: ${JSON.stringify(error)}`,
+              }, error: ${JSON.stringify(error, null, 2)}`,
             ),
           );
           retryMechanism();
@@ -158,7 +161,7 @@ export default function RadioPlayer() {
             new Error(
               `Switching from HLS -> PROXY error:157 - station.title: ${
                 station.title
-              }, error: ${JSON.stringify(error)}`,
+              }, error: ${JSON.stringify(error, null, 2)}`,
             ),
           );
           retryMechanism();
@@ -171,7 +174,7 @@ export default function RadioPlayer() {
             new Error(
               `Switching from PROXY to ORIGINAL error:168 - station.title: ${
                 station.title
-              }, error: ${JSON.stringify(error)}`,
+              }, error: ${JSON.stringify(error, null, 2)}`,
             ),
           );
           retryMechanism();
@@ -413,7 +416,7 @@ export default function RadioPlayer() {
             new Error(
               `Audio error:414 - station.title: ${
                 station.title
-              }, error: ${JSON.stringify(error)}`,
+              }, error: ${JSON.stringify(error, null, 2)}`,
             ),
           );
           retryMechanism();
