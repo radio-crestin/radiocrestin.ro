@@ -416,9 +416,7 @@ export default function RadioPlayer() {
         onError={(error) => {
           Bugsnag.notify(
             new Error(
-              `Audio error:414 - station.title: ${
-                station.title
-              }, error: ${JSON.stringify(error, null, 2)}`,
+              `Audio error:414 - station.title: ${station.title}, error: ${error}`,
             ),
           );
           retryMechanism();
