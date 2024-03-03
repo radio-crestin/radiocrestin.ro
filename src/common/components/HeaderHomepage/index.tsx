@@ -3,6 +3,7 @@ import React from "react";
 
 import styles from "./styles.module.scss";
 import WhatsAppButton from "@/components/WhatsAppButton";
+import InstallMobileAppButton from "@/components/InstallMobileAppButton";
 
 const Navigation = () => (
   <nav className={styles.nav}>
@@ -58,9 +59,9 @@ const HeaderHomepage = () => {
   return (
     <header className={styles.container}>
       <Navigation />
-      <div className={styles.content_section}>
-        <ContentLeft />
-      </div>
+
+      <InstallMobileAppButton />
+      <ContentLeft />
       <img
         className={styles.vector_yellow}
         src={"/images/vector_yellow.svg"}
