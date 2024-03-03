@@ -1,4 +1,4 @@
-import React, { useContext } from "react";
+import React from "react";
 
 import styles from "./styles.module.scss";
 
@@ -6,7 +6,7 @@ export default function InstallMobileAppButton() {
   return (
       <div className={`${styles.mobileAppButtonContainer}`}>
         <p className={`${styles.mobileAppDescription}`}>
-          Continuă în aplicația mobilă
+          Te invităm să instalezi aplicația mobilă Radio Creștin.
         </p>
         <div className={`${styles.mobileAppLinkApps}`}>
           <a

@@ -124,14 +124,16 @@ const ContentRight = () => {
 
 const Header = () => {
   return (
-    <header className={styles.container}>
-      <Navigation />
-      <InstallMobileAppButton />
-      <div className={styles.content_section}>
-        <ContentLeft />
-        <ContentRight />
-      </div>
-    </header>
+      <>
+        <InstallMobileAppButton />
+        <header className={styles.container}>
+          <Navigation />
+          <div className={styles.content_section}>
+            <ContentLeft />
+            <ContentRight />
+          </div>
+        </header>
+      </>
   );
 };
 
