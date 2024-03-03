@@ -57,17 +57,20 @@ const ContentLeft = () => {
 
 const HeaderHomepage = () => {
   return (
-    <header className={styles.container}>
-      <Navigation />
-
-      <InstallMobileAppButton />
-      <ContentLeft />
-      <img
-        className={styles.vector_yellow}
-        src={"/images/vector_yellow.svg"}
-        alt={"vector_yellow"}
-      />
-    </header>
+      <>
+        <InstallMobileAppButton />
+        <header className={styles.container}>
+          <Navigation />
+          <div className={styles.content_section} style={{height: "150px"}}>
+            <ContentLeft />
+          </div>
+          <img
+              className={styles.vector_yellow}
+              src={"/images/vector_yellow.svg"}
+              alt={"vector_yellow"}
+          />
+        </header>
+      </>
   );
 };
 
