@@ -6,6 +6,7 @@ import { Context } from "@/context/ContextProvider";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import Rating from "@/components/Rating";
 import { getStationRating } from "@/utils";
+import InstallMobileAppButton from "@/components/InstallMobileAppButton";
 
 const Navigation = () => (
   <nav className={styles.nav}>
@@ -125,6 +126,7 @@ const Header = () => {
   return (
     <header className={styles.container}>
       <Navigation />
+      <InstallMobileAppButton />
       <div className={styles.content_section}>
         <ContentLeft />
         <ContentRight />

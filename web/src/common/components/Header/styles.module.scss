@@ -3,14 +3,14 @@
 
 .container {
   max-width: 1440px;
-  padding: 70px;
-  margin: 25px auto 0;
+  padding: 95px 70px;
+  margin: 0 auto;
   background: #FFFBEF;
   height: 462px;
   border-radius: 50px;
 
   @include mixinHelper.onTablet {
-    padding: 20px;
+    padding: 35px 25px;
     height: 100%;
     border-radius: 0;
   }

@@ -1,5 +1,11 @@
 @use "public/styles/mixinHelper";
 
+.contactButtonPlayerIsOn {
+  @include mixinHelper.onTablet {
+    bottom: 125px !important;
+  }
+}
+
 .contactButton {
   position: fixed;
   width: 60px;
@@ -22,14 +28,9 @@
   transition: all .2s ease-in-out;
   z-index: 9;
 
+
   @include mixinHelper.onTablet {
-    position: relative;
-    top: -6px;
-    right: 0;
-    bottom: 0;
-    height: 42px;
-    width: 42px;
-    margin-right: 2px;
+    right: 15px;
   }
 
   .contactLinkButton {
