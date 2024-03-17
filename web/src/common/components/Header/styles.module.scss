@@ -194,3 +194,10 @@
     }
   }
 }
+
+.share_on_social {
+  display: block;
+  @include mixinHelper.onTablet {
+    display: none;
+  }
+}
