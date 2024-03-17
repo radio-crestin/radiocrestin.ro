@@ -19,7 +19,7 @@ const Navigation = () => (
         <h1>Radio Creștin</h1>
       </Link>
     </div>
-    <WhatsAppButton />
+    {/*<WhatsAppButton />*/}
     <div className={styles.external_links}>
       <Link href="https://github.com/radio-crestin" target={"_blank"}>
         <img src="./icons/Github.png" alt="Github icon" />

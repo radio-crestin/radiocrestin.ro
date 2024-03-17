@@ -7,6 +7,7 @@ import WhatsAppButton from "@/components/WhatsAppButton";
 import Rating from "@/components/Rating";
 import { getStationRating } from "@/utils";
 import InstallMobileAppButton from "@/components/InstallMobileAppButton";
+import ShareOnSocial from "@/components/ShareOnSocial";
 
 const Navigation = () => (
   <nav className={styles.nav}>
@@ -22,7 +23,7 @@ const Navigation = () => (
         <h1>Radio Creștin</h1>
       </Link>
     </div>
-    <WhatsAppButton />
+    {/*<WhatsAppButton />*/}
     <div className={styles.external_links}>
       <Link href="https://github.com/radio-crestin" target={"_blank"}>
         <img src="./icons/Github.png" alt="Github icon" />
@@ -103,20 +104,24 @@ const ContentRight = () => {
         <h1 className={styles.station_title}>{ctx.selectedStation?.title}</h1>
         <div className={styles.rating_wrapper}>
           <Rating
-            score={getStationRating(ctx.selectedStation?.reviews)}
-            starHeight={22}
+              score={getStationRating(ctx.selectedStation?.reviews)}
+              starHeight={22}
           />
           <span>({ctx.selectedStation?.reviews?.length || 0} recenzii)</span>
         </div>
         {ctx.selectedStation?.total_listeners !== 0 && (
-          <p className={styles.nr_listeners}>
-            {ctx.selectedStation?.total_listeners} persoane ascultă împreună cu
-            tine acest radio
-          </p>
+            <p className={styles.nr_listeners}>
+              {ctx.selectedStation?.total_listeners} persoane ascultă împreună cu
+              tine acest radio
+            </p>
         )}
         <p className={styles.station_description}>
           {ctx.selectedStation?.description}
         </p>
+
+        <div className={styles.share_on_social}>
+          <ShareOnSocial />
+        </div>
       </div>
     </div>
   );

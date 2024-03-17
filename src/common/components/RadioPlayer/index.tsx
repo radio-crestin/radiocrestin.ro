@@ -15,6 +15,7 @@ import { trackListen } from "@/services/trackListen";
 import Heart from "@/icons/Heart";
 import useFavourite from "@/store/useFavourite";
 import { Bugsnag } from "@/utils/bugsnag";
+import ShareOnSocial from "@/components/ShareOnSocial";
 
 enum STREAM_TYPE {
   HLS = "HLS",
@@ -321,107 +322,112 @@ export default function RadioPlayer() {
   };
 
   return (
-    <div className={styles.radio_player}>
-      <div className={styles.player_container}>
-        <div className={styles.image_container}>
-          <img
-            src={
-              station.now_playing?.song?.thumbnail_url ||
-              station.thumbnail_url ||
-              CONSTANTS.DEFAULT_COVER
-            }
-            alt={`${station.title} | Radio Crestin`}
-            className={styles.station_thumbnail}
-          />
-          <div
-            className={styles.heart_container}
-            onClick={() => toggleFavourite(station.slug)}
-          >
-            <Heart color={isFavorite ? "red" : "white"} defaultColor={"red"} />
-          </div>
+      <div className={styles.radio_player_container}>
+        <div className={styles.share_on_social}>
+          <ShareOnSocial />
         </div>
+        <div className={styles.radio_player}>
+          <div className={styles.player_container}>
+            <div className={styles.image_container}>
+              <img
+                  src={
+                      station.now_playing?.song?.thumbnail_url ||
+                      station.thumbnail_url ||
+                      CONSTANTS.DEFAULT_COVER
+                  }
+                  alt={`${station.title} | Radio Crestin`}
+                  className={styles.station_thumbnail}
+              />
+              <div
+                  className={styles.heart_container}
+                  onClick={() => toggleFavourite(station.slug)}
+              >
+                <Heart color={isFavorite ? "red" : "white"} defaultColor={"red"} />
+              </div>
+            </div>
 
-        <div className={`${styles.station_info} ${styles.two_lines}`}>
-          <h2 className={styles.station_title}>{station.title}</h2>
-          <p className={styles.song_name}>
-            {station?.now_playing?.song.name}
-            {station?.now_playing?.song?.artist?.name && (
-              <span className={styles.artist_name}>
+            <div className={`${styles.station_info} ${styles.two_lines}`}>
+              <h2 className={styles.station_title}>{station.title}</h2>
+              <p className={styles.song_name}>
+                {station?.now_playing?.song.name}
+                {station?.now_playing?.song?.artist?.name && (
+                    <span className={styles.artist_name}>
                 {" · "}
-                {station?.now_playing?.song?.artist?.name}
+                      {station?.now_playing?.song?.artist?.name}
               </span>
-            )}
-          </p>
-        </div>
+                )}
+              </p>
+            </div>
 
-        <div className={styles.volume_slider}>
-          <input
-            type="range"
-            min="0"
-            max="100"
-            value={playerVolume}
-            className={styles.slider}
-            onChange={(e) => setPlayerVolume(Number(e.target.value))}
-            aria-label="Player Volume"
-          />
-        </div>
+            <div className={styles.volume_slider}>
+              <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={playerVolume}
+                  className={styles.slider}
+                  onChange={(e) => setPlayerVolume(Number(e.target.value))}
+                  aria-label="Player Volume"
+              />
+            </div>
 
-        <div className={styles.play_button_container}>
-          <button
-            aria-label="Play"
-            className={styles.play_button}
-            onClick={() => {
-              if (
-                playbackState === PLAYBACK_STATE.PLAYING ||
-                playbackState === PLAYBACK_STATE.STARTED
-              ) {
+            <div className={styles.play_button_container}>
+              <button
+                  aria-label="Play"
+                  className={styles.play_button}
+                  onClick={() => {
+                    if (
+                        playbackState === PLAYBACK_STATE.PLAYING ||
+                        playbackState === PLAYBACK_STATE.STARTED
+                    ) {
+                      setPlaybackState(PLAYBACK_STATE.STOPPED);
+                      return;
+                    }
+
+                    if (playbackState === PLAYBACK_STATE.STOPPED) {
+                      setPlaybackState(PLAYBACK_STATE.STARTED);
+                    }
+                  }}
+              >
+                <svg
+                    width="50px"
+                    height="50px"
+                    focusable="false"
+                    aria-hidden="true"
+                    viewBox="0 0 24 24"
+                >
+                  {renderPlayButtonSvg()}
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <audio
+              preload="true"
+              autoPlay
+              id="audioPlayer"
+              onPlaying={() => {
+                setPlaybackState(PLAYBACK_STATE.PLAYING);
+              }}
+              onPlay={() => {
+                setPlaybackState(PLAYBACK_STATE.PLAYING);
+              }}
+              onPause={() => {
                 setPlaybackState(PLAYBACK_STATE.STOPPED);
-                return;
-              }
-
-              if (playbackState === PLAYBACK_STATE.STOPPED) {
-                setPlaybackState(PLAYBACK_STATE.STARTED);
-              }
-            }}
-          >
-            <svg
-              width="50px"
-              height="50px"
-              focusable="false"
-              aria-hidden="true"
-              viewBox="0 0 24 24"
-            >
-              {renderPlayButtonSvg()}
-            </svg>
-          </button>
+              }}
+              onWaiting={() => {
+                setPlaybackState(PLAYBACK_STATE.BUFFERING);
+              }}
+              onError={(error) => {
+                Bugsnag.notify(
+                    new Error(
+                        `Audio error:414 - station.title: ${station.title}, error: ${error}`,
+                    ),
+                );
+                retryMechanism();
+              }}
+          />
         </div>
       </div>
-
-      <audio
-        preload="true"
-        autoPlay
-        id="audioPlayer"
-        onPlaying={() => {
-          setPlaybackState(PLAYBACK_STATE.PLAYING);
-        }}
-        onPlay={() => {
-          setPlaybackState(PLAYBACK_STATE.PLAYING);
-        }}
-        onPause={() => {
-          setPlaybackState(PLAYBACK_STATE.STOPPED);
-        }}
-        onWaiting={() => {
-          setPlaybackState(PLAYBACK_STATE.BUFFERING);
-        }}
-        onError={(error) => {
-          Bugsnag.notify(
-            new Error(
-              `Audio error:414 - station.title: ${station.title}, error: ${error}`,
-            ),
-          );
-          retryMechanism();
-        }}
-      />
-    </div>
   );
 }

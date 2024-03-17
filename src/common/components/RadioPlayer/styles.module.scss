@@ -1,17 +1,28 @@
+@use "public/styles/mixinHelper";
 @use "public/styles/globalVariables";
 
-.radio_player {
+.radio_player_container {
   position: fixed;
   bottom: 10px;
   left: 50%;
   transform: translateX(-50%);
   width: calc(100% - 40px);
   max-width: 560px;
+  z-index: 10;
+}
+.share_on_social {
+  margin: 10px 5px;
+  display: none;
+  @include mixinHelper.onTablet {
+    display: block;
+  }
+}
+
+.radio_player {
   padding: 10px;
   background-color: #232321;
   box-shadow: 0 10px 30px 0 rgba(0, 0, 0, 0.15);
   border-radius: 16px;
-  z-index: 10;
 }
 
 .player_container {
