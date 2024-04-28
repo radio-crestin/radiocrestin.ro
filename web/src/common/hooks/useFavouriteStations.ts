@@ -8,11 +8,14 @@ const useFavouriteStations = () => {
   const { favouriteItems } = useFavourite();
   useEffect(() => {
     const favouriteStations: Array<IStation | any> =
-      favouriteItems.map((slug: string) => {
-        if (!ctx.stations) return [];
-
-        return ctx.stations.find((station: IStation) => station.slug === slug);
-      }) || [];
+      favouriteItems
+        .map((slug: string) => {
+          const foundStation = ctx.stations?.find(
+            (station: IStation) => station.slug === slug,
+          );
+          return foundStation ? foundStation : null;
+        })
+        .filter((station) => station !== null) || [];
     setCtx({
       favouriteStations: favouriteStations,
       isFavouriteStationsLoaded: true,
