@@ -8,6 +8,7 @@ export interface IStore {
 
 const useFavourite = create<IStore>()(
   persist(
+    // @ts-ignore
     (set, get) => ({
       favouriteItems: [],
 
