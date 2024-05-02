@@ -36,3 +36,7 @@ export function getStationRating(reviews: any[]) {
     10
   );
 }
+
+export function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
