@@ -3,8 +3,8 @@
 
 .container {
   max-width: 1440px;
-  padding: 70px;
-  margin: 20px auto 0;
+  padding: 95px 70px;
+  margin: 0 auto 0;
   background: #FFFBEF;
   height: 462px;
   border-radius: 50px;
@@ -73,6 +73,21 @@
     display: flex;
     gap: 5px;
     z-index: 2;
+    position: relative;
+    right: 251px;
+
+    @include mixinHelper.onSmallDesktop {
+      right: 0;
+    }
+
+    @include mixinHelper.onTablet {
+      display: none;
+    }
+
+    img {
+      height: 50px;
+      width: 50px;
+    }
   }
 }
 
