@@ -1,7 +1,8 @@
 .container {
   display: flex;
-  flex-direction: row;
-  gap: 10px;
+  flex-direction: column;
+  position: relative;
+  justify-content: space-between;
   max-width: 1499px;
   margin: 0 auto 150px;
   margin-top: 20px;

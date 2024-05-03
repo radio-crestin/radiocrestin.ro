@@ -25,36 +25,25 @@
   padding: 12px 25px;
   font-size: 0.8rem;
 
-  transition: 0.3s;
-
-  &:hover {
-    scale: 1.04;
-  }
-
   @include mixinHelper.onTablet {
     width: 50%;
   }
 }
-
 .facebookButton {
   background-color: #3b5998;
   border-radius: 10px;
 }
-
 .whatsappButton {
   background-color: #25d366;
   border-radius: 10px;
 }
-
 .socialIcon {
   width: 16px;
   height: 16px;
 }
-
 .facebookSocialIcon {
   margin-right: 3px;
 }
-
 .whatsappSocialIcon {
   margin-right: 5px;
 }
