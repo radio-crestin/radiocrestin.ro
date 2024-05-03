@@ -16,8 +16,10 @@ import Heart from "@/icons/Heart";
 import useFavourite from "@/store/useFavourite";
 import { Bugsnag } from "@/utils/bugsnag";
 import ShareOnSocial from "@/components/ShareOnSocial";
+import { sleep } from "@/utils";
 
 enum STREAM_TYPE {
+  NONE = "NONE",
   HLS = "HLS",
   PROXY = "PROXY",
   ORIGINAL = "ORIGINAL",
@@ -28,7 +30,7 @@ const MAX_MEDIA_RETRIES = 20;
 export default function RadioPlayer() {
   const { ctx } = useContext(Context);
   const { playerVolume, setPlayerVolume } = usePlayer();
-  const [playbackState, setPlaybackState] = useState(PLAYBACK_STATE.STOPPED);
+  const [playbackState, setPlaybackState] = useState(PLAYBACK_STATE.BUFFERING);
   const station = ctx.selectedStation;
   const router = useRouter();
   const [retries, setRetries] = useState(MAX_MEDIA_RETRIES);
@@ -51,11 +53,17 @@ export default function RadioPlayer() {
     audio: HTMLAudioElement,
     hls: Hls,
   ) => {
-    if (Hls.isSupported()) {
+    if (
+      /iPad|iPhone|iPod/.test(navigator.userAgent) &&
+      audio.canPlayType("application/vnd.apple.mpegurl")
+    ) {
+      audio.src = hls_stream_url;
+      audio.load();
+      audio.play().catch(retryMechanism);
+      return;
+    } else if (Hls.isSupported()) {
       hls.loadSource(hls_stream_url);
       hls.attachMedia(audio);
-    } else if (audio.canPlayType("application/vnd.apple.mpegurl")) {
-      audio.src = hls_stream_url;
     }
 
     hls.on(Hls.Events.AUDIO_TRACK_LOADING, function () {
@@ -67,9 +75,7 @@ export default function RadioPlayer() {
       audio.addEventListener(
         "canplaythrough",
         function () {
-          audio.play().catch(() => {
-            setPlaybackState(PLAYBACK_STATE.STOPPED);
-          });
+          audio.play().catch(retryMechanism);
         },
         { once: true },
       );
@@ -77,6 +83,7 @@ export default function RadioPlayer() {
 
     hls.on(Hls.Events.ERROR, function (event, data) {
       if (data.fatal) {
+        setPlaybackState(PLAYBACK_STATE.BUFFERING);
         Bugsnag.notify(
           new Error(
             `HLS Fatal error - station.title: ${
@@ -88,7 +95,7 @@ export default function RadioPlayer() {
             )} - event: ${JSON.stringify(event, null, 2)}`,
           ),
         );
-        retryMechanism();
+        retryMechanism(event);
       }
     });
   };
@@ -99,19 +106,10 @@ export default function RadioPlayer() {
 
     switch (playbackState) {
       case PLAYBACK_STATE.STARTED:
-        audio.play().catch((error) => {
-          Bugsnag.notify(
-            new Error(
-              `Start playing:96 error: - station.title: ${
-                station.title
-              }, error: ${JSON.stringify(error, null, 2)}`,
-            ),
-          );
-          retryMechanism();
-        });
+        setStreamType(STREAM_TYPE.HLS);
         break;
       case PLAYBACK_STATE.STOPPED:
-        audio.pause();
+        setStreamType(STREAM_TYPE.NONE);
         break;
     }
 
@@ -151,35 +149,27 @@ export default function RadioPlayer() {
     const audio = document.getElementById("audioPlayer") as HTMLAudioElement;
     if (!audio) return;
 
+    if (streamType === STREAM_TYPE.NONE) {
+      audio.src = "/assets/empty.mp3";
+      audio.muted = true;
+      audio.pause();
+      setPlaybackState(PLAYBACK_STATE.STOPPED);
+      return;
+    } else {
+      audio.muted = false;
+    }
+
     switch (streamType) {
       case STREAM_TYPE.HLS:
         loadHLS(station.hls_stream_url, audio, hls);
         break;
       case STREAM_TYPE.PROXY:
         audio.src = station.proxy_stream_url;
-        audio.play().catch((error) => {
-          Bugsnag.notify(
-            new Error(
-              `Switching from HLS -> PROXY error:157 - station.title: ${
-                station.title
-              }, error: ${JSON.stringify(error, null, 2)}`,
-            ),
-          );
-          retryMechanism();
-        });
+        audio.play().catch(retryMechanism);
         break;
       case STREAM_TYPE.ORIGINAL:
         audio.src = station.stream_url;
-        audio.play().catch((error) => {
-          Bugsnag.notify(
-            new Error(
-              `Switching from PROXY to ORIGINAL error:168 - station.title: ${
-                station.title
-              }, error: ${JSON.stringify(error, null, 2)}`,
-            ),
-          );
-          retryMechanism();
-        });
+        audio.play().catch(retryMechanism);
     }
 
     return () => {
@@ -187,9 +177,22 @@ export default function RadioPlayer() {
     };
   }, [streamType, station.slug]);
 
-  const retryMechanism = () => {
+  const retryMechanism = async (error: any) => {
+    if (error.name === "NotAllowedError") {
+      setPlaybackState(PLAYBACK_STATE.STOPPED);
+      return;
+    }
+
+    Bugsnag.notify(
+      new Error(
+        `Current streamType: ${streamType} and is not working. Switching to the next one. Station.title: ${station.title}, error: ${error}`,
+      ),
+    );
+
     const audio = document.getElementById("audioPlayer") as HTMLAudioElement;
     if (!audio) return;
+
+    await sleep(300);
 
     setRetries(retries - 1);
     if (retries > 0) {
@@ -322,112 +325,108 @@ export default function RadioPlayer() {
   };
 
   return (
-      <div className={styles.radio_player_container}>
-        <div className={styles.share_on_social}>
-          <ShareOnSocial />
-        </div>
-        <div className={styles.radio_player}>
-          <div className={styles.player_container}>
-            <div className={styles.image_container}>
-              <img
-                  src={
-                      station.now_playing?.song?.thumbnail_url ||
-                      station.thumbnail_url ||
-                      CONSTANTS.DEFAULT_COVER
-                  }
-                  alt={`${station.title} | Radio Crestin`}
-                  className={styles.station_thumbnail}
+    <div className={styles.radio_player_container}>
+      <div className={styles.share_on_social}>
+        <ShareOnSocial />
+      </div>
+      <div className={styles.radio_player}>
+        <div className={styles.player_container}>
+          <div className={styles.image_container}>
+            <img
+              src={
+                station.now_playing?.song?.thumbnail_url ||
+                station.thumbnail_url ||
+                CONSTANTS.DEFAULT_COVER
+              }
+              alt={`${station.title} | Radio Crestin`}
+              className={styles.station_thumbnail}
+            />
+            <div
+              className={styles.heart_container}
+              onClick={() => toggleFavourite(station.slug)}
+            >
+              <Heart
+                color={isFavorite ? "red" : "white"}
+                defaultColor={"red"}
               />
-              <div
-                  className={styles.heart_container}
-                  onClick={() => toggleFavourite(station.slug)}
-              >
-                <Heart color={isFavorite ? "red" : "white"} defaultColor={"red"} />
-              </div>
-            </div>
-
-            <div className={`${styles.station_info} ${styles.two_lines}`}>
-              <h2 className={styles.station_title}>{station.title}</h2>
-              <p className={styles.song_name}>
-                {station?.now_playing?.song.name}
-                {station?.now_playing?.song?.artist?.name && (
-                    <span className={styles.artist_name}>
-                {" · "}
-                      {station?.now_playing?.song?.artist?.name}
-              </span>
-                )}
-              </p>
-            </div>
-
-            <div className={styles.volume_slider}>
-              <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  value={playerVolume}
-                  className={styles.slider}
-                  onChange={(e) => setPlayerVolume(Number(e.target.value))}
-                  aria-label="Player Volume"
-              />
-            </div>
-
-            <div className={styles.play_button_container}>
-              <button
-                  aria-label="Play"
-                  className={styles.play_button}
-                  onClick={() => {
-                    if (
-                        playbackState === PLAYBACK_STATE.PLAYING ||
-                        playbackState === PLAYBACK_STATE.STARTED
-                    ) {
-                      setPlaybackState(PLAYBACK_STATE.STOPPED);
-                      return;
-                    }
-
-                    if (playbackState === PLAYBACK_STATE.STOPPED) {
-                      setPlaybackState(PLAYBACK_STATE.STARTED);
-                    }
-                  }}
-              >
-                <svg
-                    width="50px"
-                    height="50px"
-                    focusable="false"
-                    aria-hidden="true"
-                    viewBox="0 0 24 24"
-                >
-                  {renderPlayButtonSvg()}
-                </svg>
-              </button>
             </div>
           </div>
 
-          <audio
-              preload="true"
-              autoPlay
-              id="audioPlayer"
-              onPlaying={() => {
-                setPlaybackState(PLAYBACK_STATE.PLAYING);
+          <div className={`${styles.station_info} ${styles.two_lines}`}>
+            <h2 className={styles.station_title}>{station.title}</h2>
+            <p className={styles.song_name}>
+              {station?.now_playing?.song.name}
+              {station?.now_playing?.song?.artist?.name && (
+                <span className={styles.artist_name}>
+                  {" · "}
+                  {station?.now_playing?.song?.artist?.name}
+                </span>
+              )}
+            </p>
+          </div>
+
+          <div className={styles.volume_slider}>
+            <input
+              type="range"
+              min="0"
+              max="100"
+              value={playerVolume}
+              className={styles.slider}
+              onChange={(e) => setPlayerVolume(Number(e.target.value))}
+              aria-label="Player Volume"
+            />
+          </div>
+
+          <div className={styles.play_button_container}>
+            <button
+              aria-label="Play"
+              className={styles.play_button}
+              onClick={() => {
+                if (
+                  playbackState === PLAYBACK_STATE.PLAYING ||
+                  playbackState === PLAYBACK_STATE.STARTED
+                ) {
+                  setPlaybackState(PLAYBACK_STATE.STOPPED);
+                  return;
+                }
+
+                if (playbackState === PLAYBACK_STATE.STOPPED) {
+                  setPlaybackState(PLAYBACK_STATE.STARTED);
+                }
               }}
-              onPlay={() => {
-                setPlaybackState(PLAYBACK_STATE.PLAYING);
-              }}
-              onPause={() => {
-                setPlaybackState(PLAYBACK_STATE.STOPPED);
-              }}
-              onWaiting={() => {
-                setPlaybackState(PLAYBACK_STATE.BUFFERING);
-              }}
-              onError={(error) => {
-                Bugsnag.notify(
-                    new Error(
-                        `Audio error:414 - station.title: ${station.title}, error: ${error}`,
-                    ),
-                );
-                retryMechanism();
-              }}
-          />
+            >
+              <svg
+                width="50px"
+                height="50px"
+                focusable="false"
+                aria-hidden="true"
+                viewBox="0 0 24 24"
+              >
+                {renderPlayButtonSvg()}
+              </svg>
+            </button>
+          </div>
         </div>
+
+        <audio
+          preload="true"
+          autoPlay
+          id="audioPlayer"
+          onPlaying={() => {
+            setPlaybackState(PLAYBACK_STATE.PLAYING);
+          }}
+          onPlay={() => {
+            setPlaybackState(PLAYBACK_STATE.PLAYING);
+          }}
+          onPause={() => {
+            setPlaybackState(PLAYBACK_STATE.STOPPED);
+          }}
+          onWaiting={() => {
+            setPlaybackState(PLAYBACK_STATE.BUFFERING);
+          }}
+          onError={retryMechanism}
+        />
       </div>
+    </div>
   );
 }
