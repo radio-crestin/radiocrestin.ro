@@ -144,13 +144,33 @@
   width: 100%;
 
   .station_details {
-    .station_title {
-      font-family: globalVariables.$dm-sans-bold, serif;
-      font-size: 3rem;
-      font-weight: 700;
-
+    .title_container {
       @include mixinHelper.onTablet {
-        font-size: 1.7rem;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        gap: 10px;
+      }
+
+      img {
+        display: none;
+        width: 100px;
+        border-radius: 50%;
+
+        @include mixinHelper.onTablet {
+          display: block;
+        }
+      }
+
+      .station_title {
+        font-family: globalVariables.$dm-sans-bold, serif;
+        font-size: 3rem;
+        font-weight: 700;
+
+        @include mixinHelper.onTablet {
+          font-size: 1.7rem;
+        }
       }
     }
 
@@ -161,6 +181,12 @@
       gap: 4px;
       margin-top: 10px;
       margin-bottom: 20px;
+
+      @include mixinHelper.onTablet {
+        margin-top: 10px;
+        justify-content: center;
+        scale: 0.8;
+      }
 
       span {
         margin-top: 3px;
