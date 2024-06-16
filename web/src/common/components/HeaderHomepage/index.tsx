@@ -2,8 +2,6 @@ import Link from "next/link";
 import React from "react";
 
 import styles from "./styles.module.scss";
-import WhatsAppButton from "@/components/WhatsAppButton";
-import InstallMobileAppButton from "@/components/InstallMobileAppButton";
 
 const Navigation = () => (
   <nav className={styles.nav}>
@@ -57,20 +55,19 @@ const ContentLeft = () => {
 
 const HeaderHomepage = () => {
   return (
-      <>
-        <InstallMobileAppButton />
-        <header className={styles.container}>
-          <Navigation />
-          <div className={styles.content_section} style={{height: "150px"}}>
-            <ContentLeft />
-          </div>
-          <img
-              className={styles.vector_yellow}
-              src={"/images/vector_yellow.svg"}
-              alt={"vector_yellow"}
-          />
-        </header>
-      </>
+    <>
+      <header className={styles.container}>
+        <Navigation />
+        <div className={styles.content_section} style={{ height: "150px" }}>
+          <ContentLeft />
+        </div>
+        <img
+          className={styles.vector_yellow}
+          src={"/images/vector_yellow.svg"}
+          alt={"vector_yellow"}
+        />
+      </header>
+    </>
   );
 };
 

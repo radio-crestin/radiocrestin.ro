@@ -3,10 +3,8 @@ import React, { useContext } from "react";
 
 import styles from "./styles.module.scss";
 import { Context } from "@/context/ContextProvider";
-import WhatsAppButton from "@/components/WhatsAppButton";
 import Rating from "@/components/Rating";
 import { getStationRating } from "@/utils";
-import InstallMobileAppButton from "@/components/InstallMobileAppButton";
 import ShareOnSocial from "@/components/ShareOnSocial";
 
 const Navigation = () => (
@@ -104,16 +102,16 @@ const ContentRight = () => {
         <h1 className={styles.station_title}>{ctx.selectedStation?.title}</h1>
         <div className={styles.rating_wrapper}>
           <Rating
-              score={getStationRating(ctx.selectedStation?.reviews)}
-              starHeight={22}
+            score={getStationRating(ctx.selectedStation?.reviews)}
+            starHeight={22}
           />
           <span>({ctx.selectedStation?.reviews?.length || 0} recenzii)</span>
         </div>
         {ctx.selectedStation?.total_listeners !== 0 && (
-            <p className={styles.nr_listeners}>
-              {ctx.selectedStation?.total_listeners} persoane ascultă împreună cu
-              tine acest radio
-            </p>
+          <p className={styles.nr_listeners}>
+            {ctx.selectedStation?.total_listeners} persoane ascultă împreună cu
+            tine acest radio
+          </p>
         )}
         <p className={styles.station_description}>
           {ctx.selectedStation?.description}
@@ -129,16 +127,15 @@ const ContentRight = () => {
 
 const Header = () => {
   return (
-      <>
-        <InstallMobileAppButton />
-        <header className={styles.container}>
-          <Navigation />
-          <div className={styles.content_section}>
-            <ContentLeft />
-            <ContentRight />
-          </div>
-        </header>
-      </>
+    <>
+      <header className={styles.container}>
+        <Navigation />
+        <div className={styles.content_section}>
+          <ContentLeft />
+          <ContentRight />
+        </div>
+      </header>
+    </>
   );
 };
 
