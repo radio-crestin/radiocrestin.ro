@@ -60,7 +60,6 @@ const ContentLeft = () => {
                 alt={selectedStation.title}
                 width={230}
                 height={230}
-                className={styles.song_thumb}
               />
               <img
                 loading={"lazy"}
