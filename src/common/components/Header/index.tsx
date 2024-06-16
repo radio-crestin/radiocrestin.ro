@@ -100,7 +100,7 @@ const ContentRight = () => {
     <div className={styles.right_content}>
       <div className={styles.station_details}>
         <div className={styles.title_container}>
-          <img src={ctx.selectedStation?.thumbnail_url} alt="Radio Crestin" />
+          <img src={ctx.selectedStation?.thumbnail_url} alt="Radio Crestin" height={100} width={100} />
           <h1 className={styles.station_title}>{ctx.selectedStation?.title}</h1>
         </div>
         <div className={styles.rating_wrapper}>
