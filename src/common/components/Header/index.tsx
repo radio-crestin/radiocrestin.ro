@@ -111,10 +111,15 @@ const ContentRight = () => {
           <span>({ctx.selectedStation?.reviews?.length || 0} recenzii)</span>
         </div>
         {ctx.selectedStation?.total_listeners !== 0 && (
-          <p className={styles.nr_listeners}>
-            {ctx.selectedStation?.total_listeners} persoane ascultă împreună cu
-            tine acest radio
-          </p>
+          <>
+            <p className={styles.nr_listeners_desktop}>
+              {ctx.selectedStation?.total_listeners} persoane ascultă împreună cu
+              tine acest radio
+            </p>
+            <p className={styles.nr_listeners_mobile}>
+              {ctx.selectedStation?.total_listeners} ascultători
+            </p>
+          </>
         )}
         <p className={styles.station_description}>
           {ctx.selectedStation?.description}

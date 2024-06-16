@@ -124,6 +124,7 @@
     box-shadow: rgba(0, 0, 0, 0.08) 0px 4px 12px;
     margin-bottom: 20px;
     object-fit: cover;
+    border-radius: 1rem;
   }
 
   .station_info {
@@ -167,6 +168,7 @@
         font-family: globalVariables.$dm-sans-bold, serif;
         font-size: 3rem;
         font-weight: 700;
+        display: flex;
 
         @include mixinHelper.onTablet {
           font-size: 1.7rem;
@@ -183,6 +185,7 @@
       margin-bottom: 20px;
 
       @include mixinHelper.onTablet {
+        margin-bottom: 10px;
         margin-top: 10px;
         justify-content: center;
         scale: 0.8;
@@ -193,13 +196,25 @@
       }
     }
 
-    .nr_listeners {
+    .nr_listeners_desktop {
       font-size: 1rem;
       font-weight: 400;
       margin-bottom: 20px;
 
       @include mixinHelper.onTablet {
-        font-size: 1rem;
+        display: none;
+      }
+    }
+
+    .nr_listeners_mobile {
+      display: none;
+      font-size: 0.8rem;
+      font-weight: 400;
+      margin-bottom: 20px;
+      text-align: center;
+
+      @include mixinHelper.onTablet {
+        display: block;
       }
     }
 
@@ -216,7 +231,7 @@
       text-overflow: ellipsis;
 
       @include mixinHelper.onTablet {
-        font-size: 1rem;
+        font-size: 0.9rem;
         line-height: 20px;
         height: 140px;
         -webkit-line-clamp: 7;
