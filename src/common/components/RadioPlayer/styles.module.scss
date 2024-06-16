@@ -10,13 +10,6 @@
   max-width: 560px;
   z-index: 10;
 }
-.share_on_social {
-  margin: 10px 5px;
-  display: none;
-  @include mixinHelper.onTablet {
-    display: block;
-  }
-}
 
 .radio_player {
   padding: 10px;

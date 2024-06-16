@@ -15,7 +15,6 @@ import { trackListen } from "@/services/trackListen";
 import Heart from "@/icons/Heart";
 import useFavourite from "@/store/useFavourite";
 import { Bugsnag } from "@/utils/bugsnag";
-import ShareOnSocial from "@/components/ShareOnSocial";
 
 enum STREAM_TYPE {
   HLS = "HLS",
@@ -49,7 +48,7 @@ export default function RadioPlayer() {
   const loadHLS = (
     hls_stream_url: string,
     audio: HTMLAudioElement,
-    hls: Hls,
+    hls: Hls
   ) => {
     if (Hls.isSupported()) {
       hls.loadSource(hls_stream_url);
@@ -58,7 +57,7 @@ export default function RadioPlayer() {
       audio.src = hls_stream_url;
     }
 
-    hls.on(Hls.Events.AUDIO_TRACK_LOADING, function () {
+    hls.on(Hls.Events.AUDIO_TRACK_LOADING, function() {
       setPlaybackState(PLAYBACK_STATE.BUFFERING);
     });
 
@@ -66,16 +65,16 @@ export default function RadioPlayer() {
       setPlaybackState(PLAYBACK_STATE.BUFFERING);
       audio.addEventListener(
         "canplaythrough",
-        function () {
+        function() {
           audio.play().catch(() => {
             setPlaybackState(PLAYBACK_STATE.STOPPED);
           });
         },
-        { once: true },
+        { once: true }
       );
     });
 
-    hls.on(Hls.Events.ERROR, function (event, data) {
+    hls.on(Hls.Events.ERROR, function(event, data) {
       if (data.fatal) {
         Bugsnag.notify(
           new Error(
@@ -84,9 +83,9 @@ export default function RadioPlayer() {
             }, error: ${JSON.stringify(
               data,
               null,
-              2,
-            )} - event: ${JSON.stringify(event, null, 2)}`,
-          ),
+              2
+            )} - event: ${JSON.stringify(event, null, 2)}`
+          )
         );
         retryMechanism();
       }
@@ -104,8 +103,8 @@ export default function RadioPlayer() {
             new Error(
               `Start playing:96 error: - station.title: ${
                 station.title
-              }, error: ${JSON.stringify(error, null, 2)}`,
-            ),
+              }, error: ${JSON.stringify(error, null, 2)}`
+            )
           );
           retryMechanism();
         });
@@ -120,13 +119,13 @@ export default function RadioPlayer() {
      */
     if (playbackState === PLAYBACK_STATE.PLAYING) {
       trackListen({
-        station_id: station.id as unknown as bigint,
+        station_id: station.id as unknown as bigint
       });
     }
     const timer = setInterval(() => {
       if (playbackState === PLAYBACK_STATE.PLAYING) {
         trackListen({
-          station_id: station.id as unknown as bigint,
+          station_id: station.id as unknown as bigint
         });
       }
     }, 30 * 1000);
@@ -162,8 +161,8 @@ export default function RadioPlayer() {
             new Error(
               `Switching from HLS -> PROXY error:157 - station.title: ${
                 station.title
-              }, error: ${JSON.stringify(error, null, 2)}`,
-            ),
+              }, error: ${JSON.stringify(error, null, 2)}`
+            )
           );
           retryMechanism();
         });
@@ -175,8 +174,8 @@ export default function RadioPlayer() {
             new Error(
               `Switching from PROXY to ORIGINAL error:168 - station.title: ${
                 station.title
-              }, error: ${JSON.stringify(error, null, 2)}`,
-            ),
+              }, error: ${JSON.stringify(error, null, 2)}`
+            )
           );
           retryMechanism();
         });
@@ -207,8 +206,8 @@ export default function RadioPlayer() {
     } else {
       Bugsnag.notify(
         new Error(
-          `Hasn't been able to connect to the station - ${station.title}. Tried 20 times :P.`,
-        ),
+          `Hasn't been able to connect to the station - ${station.title}. Tried 20 times :P.`
+        )
       );
       toast.error(
         <div>
@@ -228,8 +227,8 @@ export default function RadioPlayer() {
           pauseOnHover: true,
           draggable: true,
           progress: undefined,
-          theme: "light",
-        },
+          theme: "light"
+        }
       );
     }
   };
@@ -245,9 +244,9 @@ export default function RadioPlayer() {
           {
             src: station.thumbnail_url || CONSTANTS.DEFAULT_COVER,
             sizes: "512x512",
-            type: "image/png",
-          },
-        ],
+            type: "image/png"
+          }
+        ]
       });
 
       navigator.mediaSession.setActionHandler("play", () => {
@@ -285,7 +284,7 @@ export default function RadioPlayer() {
 
   const nextRandomStation = () => {
     const upStations = ctx.stations.filter(
-      (station: any) => station.uptime.is_up === true,
+      (station: any) => station.uptime.is_up === true
     );
 
     // Find the index of the current ID
@@ -322,112 +321,109 @@ export default function RadioPlayer() {
   };
 
   return (
-      <div className={styles.radio_player_container}>
-        <div className={styles.share_on_social}>
-          <ShareOnSocial />
-        </div>
-        <div className={styles.radio_player}>
-          <div className={styles.player_container}>
-            <div className={styles.image_container}>
-              <img
-                  src={
-                      station.now_playing?.song?.thumbnail_url ||
-                      station.thumbnail_url ||
-                      CONSTANTS.DEFAULT_COVER
-                  }
-                  alt={`${station.title} | Radio Crestin`}
-                  className={styles.station_thumbnail}
-              />
-              <div
-                  className={styles.heart_container}
-                  onClick={() => toggleFavourite(station.slug)}
-              >
-                <Heart color={isFavorite ? "red" : "white"} defaultColor={"red"} />
-              </div>
-            </div>
-
-            <div className={`${styles.station_info} ${styles.two_lines}`}>
-              <h2 className={styles.station_title}>{station.title}</h2>
-              <p className={styles.song_name}>
-                {station?.now_playing?.song.name}
-                {station?.now_playing?.song?.artist?.name && (
-                    <span className={styles.artist_name}>
-                {" · "}
-                      {station?.now_playing?.song?.artist?.name}
-              </span>
-                )}
-              </p>
-            </div>
-
-            <div className={styles.volume_slider}>
-              <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  value={playerVolume}
-                  className={styles.slider}
-                  onChange={(e) => setPlayerVolume(Number(e.target.value))}
-                  aria-label="Player Volume"
-              />
-            </div>
-
-            <div className={styles.play_button_container}>
-              <button
-                  aria-label="Play"
-                  className={styles.play_button}
-                  onClick={() => {
-                    if (
-                        playbackState === PLAYBACK_STATE.PLAYING ||
-                        playbackState === PLAYBACK_STATE.STARTED
-                    ) {
-                      setPlaybackState(PLAYBACK_STATE.STOPPED);
-                      return;
-                    }
-
-                    if (playbackState === PLAYBACK_STATE.STOPPED) {
-                      setPlaybackState(PLAYBACK_STATE.STARTED);
-                    }
-                  }}
-              >
-                <svg
-                    width="50px"
-                    height="50px"
-                    focusable="false"
-                    aria-hidden="true"
-                    viewBox="0 0 24 24"
-                >
-                  {renderPlayButtonSvg()}
-                </svg>
-              </button>
+    <div className={styles.radio_player_container}>
+      <div className={styles.radio_player}>
+        <div className={styles.player_container}>
+          <div className={styles.image_container}>
+            <img
+              src={
+                station.now_playing?.song?.thumbnail_url ||
+                station.thumbnail_url ||
+                CONSTANTS.DEFAULT_COVER
+              }
+              alt={`${station.title} | Radio Crestin`}
+              className={styles.station_thumbnail}
+            />
+            <div
+              className={styles.heart_container}
+              onClick={() => toggleFavourite(station.slug)}
+            >
+              <Heart color={isFavorite ? "red" : "white"} defaultColor={"red"} />
             </div>
           </div>
 
-          <audio
-              preload="true"
-              autoPlay
-              id="audioPlayer"
-              onPlaying={() => {
-                setPlaybackState(PLAYBACK_STATE.PLAYING);
+          <div className={`${styles.station_info} ${styles.two_lines}`}>
+            <h2 className={styles.station_title}>{station.title}</h2>
+            <p className={styles.song_name}>
+              {station?.now_playing?.song.name}
+              {station?.now_playing?.song?.artist?.name && (
+                <span className={styles.artist_name}>
+                {" · "}
+                  {station?.now_playing?.song?.artist?.name}
+              </span>
+              )}
+            </p>
+          </div>
+
+          <div className={styles.volume_slider}>
+            <input
+              type="range"
+              min="0"
+              max="100"
+              value={playerVolume}
+              className={styles.slider}
+              onChange={(e) => setPlayerVolume(Number(e.target.value))}
+              aria-label="Player Volume"
+            />
+          </div>
+
+          <div className={styles.play_button_container}>
+            <button
+              aria-label="Play"
+              className={styles.play_button}
+              onClick={() => {
+                if (
+                  playbackState === PLAYBACK_STATE.PLAYING ||
+                  playbackState === PLAYBACK_STATE.STARTED
+                ) {
+                  setPlaybackState(PLAYBACK_STATE.STOPPED);
+                  return;
+                }
+
+                if (playbackState === PLAYBACK_STATE.STOPPED) {
+                  setPlaybackState(PLAYBACK_STATE.STARTED);
+                }
               }}
-              onPlay={() => {
-                setPlaybackState(PLAYBACK_STATE.PLAYING);
-              }}
-              onPause={() => {
-                setPlaybackState(PLAYBACK_STATE.STOPPED);
-              }}
-              onWaiting={() => {
-                setPlaybackState(PLAYBACK_STATE.BUFFERING);
-              }}
-              onError={(error) => {
-                Bugsnag.notify(
-                    new Error(
-                        `Audio error:414 - station.title: ${station.title}, error: ${error}`,
-                    ),
-                );
-                retryMechanism();
-              }}
-          />
+            >
+              <svg
+                width="50px"
+                height="50px"
+                focusable="false"
+                aria-hidden="true"
+                viewBox="0 0 24 24"
+              >
+                {renderPlayButtonSvg()}
+              </svg>
+            </button>
+          </div>
         </div>
+
+        <audio
+          preload="true"
+          autoPlay
+          id="audioPlayer"
+          onPlaying={() => {
+            setPlaybackState(PLAYBACK_STATE.PLAYING);
+          }}
+          onPlay={() => {
+            setPlaybackState(PLAYBACK_STATE.PLAYING);
+          }}
+          onPause={() => {
+            setPlaybackState(PLAYBACK_STATE.STOPPED);
+          }}
+          onWaiting={() => {
+            setPlaybackState(PLAYBACK_STATE.BUFFERING);
+          }}
+          onError={(error) => {
+            Bugsnag.notify(
+              new Error(
+                `Audio error:414 - station.title: ${station.title}, error: ${error}`
+              )
+            );
+            retryMechanism();
+          }}
+        />
       </div>
+    </div>
   );
 }

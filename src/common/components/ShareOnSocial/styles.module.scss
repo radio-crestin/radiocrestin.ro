@@ -26,24 +26,31 @@
   font-size: 0.8rem;
 
   @include mixinHelper.onTablet {
+    padding: 10px 5px;
     width: 50%;
+    font-size: 0.75rem;
   }
 }
+
 .facebookButton {
   background-color: #3b5998;
   border-radius: 10px;
 }
+
 .whatsappButton {
   background-color: #25d366;
   border-radius: 10px;
 }
+
 .socialIcon {
   width: 16px;
   height: 16px;
 }
+
 .facebookSocialIcon {
   margin-right: 3px;
 }
+
 .whatsappSocialIcon {
   margin-right: 5px;
 }

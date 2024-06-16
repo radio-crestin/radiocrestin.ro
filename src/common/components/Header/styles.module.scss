@@ -10,7 +10,7 @@
   border-radius: 50px;
 
   @include mixinHelper.onTablet {
-    padding: 35px 25px;
+    padding: 35px 20px;
     height: 100%;
     border-radius: 0;
   }
@@ -192,12 +192,5 @@
         -webkit-line-clamp: 8;
       }
     }
-  }
-}
-
-.share_on_social {
-  display: block;
-  @include mixinHelper.onTablet {
-    display: none;
   }
 }
