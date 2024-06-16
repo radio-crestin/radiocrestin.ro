@@ -10,7 +10,7 @@ const Layout = ({
   keywords,
   imageUrl,
   children,
-  fullURL,
+  fullURL
 }: {
   title: string;
   description: string;
@@ -37,9 +37,9 @@ const Layout = ({
                 aggregateRating: {
                   "@type": "AggregateRating",
                   ratingValue: getStationRating(ctx.selectedStation?.reviews),
-                  reviewCount: selectedStation.reviews.length,
-                },
-              }),
+                  reviewCount: selectedStation.reviews.length
+                }
+              })
             }}
           />
         )}
@@ -76,6 +76,11 @@ const Layout = ({
         <meta name="MobileOptimized" content="width" />
         <meta name="HandheldFriendly" content="true" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+        <meta name="apple-itunes-app"
+          content={`app-id=6451270471${selectedStation?.slug ? `, app-argument=https://share.radiocrestin.ro/${selectedStation.slug}` : ``}`} />
+        <meta name="google-play-app" content="app-id=com.radiocrestin.radio_crestin" />
+        <link rel="alternate" href="https://play.google.com/store/apps/details?id=com.radiocrestin.radio_crestin" />
       </Head>
       {children}
     </>
