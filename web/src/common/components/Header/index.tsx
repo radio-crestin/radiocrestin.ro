@@ -99,7 +99,10 @@ const ContentRight = () => {
   return (
     <div className={styles.right_content}>
       <div className={styles.station_details}>
-        <h1 className={styles.station_title}>{ctx.selectedStation?.title}</h1>
+        <div className={styles.title_container}>
+          <img src={ctx.selectedStation?.thumbnail_url} alt="Radio Crestin" />
+          <h1 className={styles.station_title}>{ctx.selectedStation?.title}</h1>
+        </div>
         <div className={styles.rating_wrapper}>
           <Rating
             score={getStationRating(ctx.selectedStation?.reviews)}
