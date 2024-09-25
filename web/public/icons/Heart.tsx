@@ -21,7 +21,7 @@ function Heart({
       fill="none"
     >
       <g clipPath="url(#clip0_329_398)">
-        <path d={pathData} fill={isRed ? "#CF1919" : `${defaultColor}`} />
+        <path d={pathData} fill={isRed ? "#CF1919" : "currentColor"} />
       </g>
       <defs>
         <clipPath id="clip0_329_398">

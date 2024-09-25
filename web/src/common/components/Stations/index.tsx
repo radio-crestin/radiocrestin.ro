@@ -95,7 +95,7 @@ const Stations = () => {
       let newElement = document.createElement("div");
       newElement.className = "apasa_aici_move";
       newElement.innerHTML =
-        'Apasa aici <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 25 25"><path style="fill:white" d="m17.5 5.999-.707.707 5.293 5.293H1v1h21.086l-5.294 5.295.707.707L24 12.499l-6.5-6.5z" data-name="Right"/></svg>';
+        'Apasa aici <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 25 25"><path style="fill:#161616FF" d="m17.5 5.999-.707.707 5.293 5.293H1v1h21.086l-5.294 5.295.707.707L24 12.499l-6.5-6.5z" data-name="Right"/></svg>';
       stationItems[2].appendChild(newElement);
 
       setTimeout(() => {
@@ -107,7 +107,7 @@ const Stations = () => {
   return (
     <div className={styles.container}>
       <div className={styles.favourite_section} data-info={"favourite-section"}>
-        <h1>❤️ Favorite</h1>
+        <h1>Favorite recent:</h1>
         {ctx.favouriteStations.length > 0 ? (
           <div className={styles.stations_container}>
             {ctx.favouriteStations.map((station: IStation) => {
@@ -123,7 +123,10 @@ const Stations = () => {
             className={`${styles.stations_container} ${styles.favourite_cont}`}
           >
             <div className={styles.favorite_card}>
-              Adaugă un radio la favorit pentru a fi mult mai ușor de găsit.
+              <img src="./icons/diamond.svg" alt="Diamond icon" height={24} />
+              <p>
+                Adaugă un radio în lista de favorite pentru a-l accesa mai ușor.
+              </p>
               <button
                 onClick={() => handleNoStationClicked()}
                 aria-label="Add to favourite"

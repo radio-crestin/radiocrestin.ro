@@ -13,9 +13,10 @@
 
 .radio_player {
   padding: 10px;
-  background-color: #232321;
+  background-color: var(--radio-player-container-bg);
   box-shadow: 0 10px 30px 0 rgba(0, 0, 0, 0.15);
   border-radius: 16px;
+  border: 1px solid var(--radio-player-border);
 }
 
 .player_container {
@@ -39,10 +40,12 @@
     right: -21px;
     cursor: pointer;
     padding: 8px;
+    color: red;
 
     svg {
       border-top-left-radius: 10px;
-      background: #232321;
+      border-bottom-right-radius: 10px;
+      background: var(--text-color);
       padding: 2px;
     }
   }
@@ -56,7 +59,7 @@
 .station_title {
   font-family: globalVariables.$dm-sans, serif;
   font-size: 1.2rem;
-  color: white;
+  color: var(--text-player-title);
   font-weight: 700;
   margin-top: 0;
   line-height: 1.3;

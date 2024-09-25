@@ -6,6 +6,8 @@ import { Context } from "@/context/ContextProvider";
 import Rating from "@/components/Rating";
 import { getStationRating } from "@/utils";
 import ShareOnSocial from "@/components/ShareOnSocial";
+import ThemeToggle from "@/components/ThemeToggle";
+import WhatsAppButton from "@/components/WhatsAppButton";
 
 const Navigation = () => (
   <nav className={styles.nav}>
@@ -20,6 +22,10 @@ const Navigation = () => (
         />
         <h1>Radio Creștin</h1>
       </Link>
+    </div>
+    <div className={styles.right_content}>
+      <ThemeToggle />
+      <WhatsAppButton />
     </div>
   </nav>
 );
@@ -82,7 +88,12 @@ const ContentRight = () => {
     <div className={styles.right_content}>
       <div className={styles.station_details}>
         <div className={styles.title_container}>
-          <img src={ctx.selectedStation?.thumbnail_url} alt="Radio Crestin" height={100} width={100} />
+          <img
+            src={ctx.selectedStation?.thumbnail_url}
+            alt="Radio Crestin"
+            height={100}
+            width={100}
+          />
           <h1 className={styles.station_title}>{ctx.selectedStation?.title}</h1>
         </div>
         <div className={styles.rating_wrapper}>
@@ -95,8 +106,8 @@ const ContentRight = () => {
         {ctx.selectedStation?.total_listeners !== 0 && (
           <>
             <p className={styles.nr_listeners_desktop}>
-              {ctx.selectedStation?.total_listeners} persoane ascultă împreună cu
-              tine acest radio
+              {ctx.selectedStation?.total_listeners} persoane ascultă împreună
+              cu tine acest radio
             </p>
             <p className={styles.nr_listeners_mobile}>
               {ctx.selectedStation?.total_listeners} ascultători

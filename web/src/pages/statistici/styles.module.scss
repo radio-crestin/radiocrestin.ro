@@ -12,6 +12,11 @@
     .total_listeners {
       margin-top: 10px;
       margin-bottom: 60px;
+      color: var(--text-color);
+
+      svg {
+        color: var(--text-color);
+      }
     }
   }
 }
