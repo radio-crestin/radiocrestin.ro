@@ -26,6 +26,7 @@ const StationItem = (data: IStation) => {
       data-active={isActive}
       href={data.slug}
       scroll={false}
+      draggable={false}
     >
       <div className={styles.image_container}>
         <img

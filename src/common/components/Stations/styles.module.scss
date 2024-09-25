@@ -4,30 +4,28 @@
 .container {
   display: flex;
   flex-direction: column;
+  align-items: center;
 }
 
 .favourite_section {
-  max-width: 1540px;
-  margin: 20px auto 0;
-  width: calc(100% - 20px);
+  max-width: 1230px;
+  width: 100%;
+  margin: 0 auto;
+
+  @include mixinHelper.onDesktop {
+    width: calc(100% - 30px);
+    padding: 0 15px;
+    margin-bottom: 10px;
+  }
 
   h1 {
-    max-width: 1200px;
-    margin: 30px auto 15px;
+    margin: 50px auto 15px;
     font-size: 22px;
     font-weight: 700;
     font-family: globalVariables.$dm-sans-bold;
-    padding: 0 20px;
+    color: var(--text-color);
   }
 
-  .stations_container {
-    align-content: flex-start;
-    min-height: 160px;
-
-    @include mixinHelper.onSmallDesktop {
-      margin: 0 3px 35px;
-    }
-  }
 }
 
 .search_section {
@@ -54,6 +52,8 @@
     max-width: 250px;
     width: 100%;
     margin-top: 25px;
+    background: var(--bg-search-a-radio);
+    color: var(--text-color);
 
     &:hover, &:focus-within {
       max-width: 260px;
@@ -64,6 +64,11 @@
       border: none;
       height: 40px;
       padding: 0 15px;
+      background: transparent;
+      
+      &::placeholder {
+        color: var(--text-color);
+      }
 
       &:focus {
         outline: none;
@@ -80,6 +85,7 @@
       padding-left: 10px;
       padding-right: 15px;
       cursor: pointer;
+      color: var(--text-color);
     }
   }
 }
@@ -104,55 +110,42 @@
   max-width: 1230px;
   margin: 30px auto 0;
   width: 100%;
-  min-height: 32vh;
-
-  @include mixinHelper.onDesktop {
-    justify-content: center;
-  }
 }
 
 .favourite_cont {
-  justify-content: start !important;
-  min-height: 110px !important;
-
   .favorite_card {
     display: flex;
     max-width: 545px;
-    gap: 25px;
+    gap: 8px;
     width: 100%;
-    padding: 15px 17px;
-    border-radius: 18px;
-    box-shadow: 1px 1px 5px 0 rgba(0, 0, 0, 0.2);
+    padding: 1rem 1.5rem;
     position: relative;
     font-size: 16px;
-    margin: 20px 0 20px 20px;
     line-height: 22px;
+    background: var(--bg-favourite-intro);
+    border: 1px solid #fdae1c;
+    border-radius: .75rem;
+    align-items: center;
 
     @include mixinHelper.onTablet {
       margin-left: 0;
     }
 
+    p {
+      color: var(--text-color);
+      font-size: 1rem;
+      max-width: 400px;
+      margin-right: auto;
+    }
+
     button {
       padding: 10px;
-      border-radius: 20px;
       cursor: pointer;
-      border: 1px solid #e0e0e0;
-      animation: pulse 8s infinite;
+      background: #fdae1c;
+      color: var(--bg-favourite-intro);
+      border: unset;
+      border-radius: .375rem;
+      font-weight: bold;
     }
-  }
-}
-
-@keyframes pulse {
-  0%, 37.5% {
-    transform: scale(1.05);
-    border: 2px solid black;
-  }
-  18.75% {
-    transform: scale(1);
-    border: 2px solid #e0e0e0;
-  }
-  37.5%, 100% {
-    transform: scale(1.05);
-    border: 2px solid black;
   }
 }
