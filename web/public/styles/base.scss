@@ -39,6 +39,21 @@ body {
   }
 }
 
+:root[data-theme='dark'] {
+  --bg-body: #121212;
+  --bg-header-container: #1E1E1E;
+  --bg-favourite-intro: #1A1A1A;
+  --bg-search-a-radio: #121212;
+  --station-card-color: #2A2A2A;
+  --text-color: #E0E0E0;
+  --subtext-metadata-color: #A8A8A8;
+  --text-player-title: #FFFFFF;
+  --bg-active-station: #333333;
+  --radio-player-container-bg: #121212;
+  --banner-install-app-bg: #1E1E1E;
+  --radio-player-border: #4D4D4D;
+}
+
 /* Define the light theme variables */
 :root[data-theme='light'] {
   --bg-body: #ffffff;
@@ -53,19 +68,4 @@ body {
   --radio-player-container-bg: #232321;
   --banner-install-app-bg: #c6eaff;
   --radio-player-border: transparent;
-}
-
-:root[data-theme='dark'] {
-  --bg-body: #121212;
-  --bg-header-container: #1E1E1E;
-  --bg-favourite-intro: #1A1A1A;
-  --bg-search-a-radio: #121212;
-  --station-card-color: #2A2A2A;
-  --text-color: #E0E0E0;
-  --subtext-metadata-color: #A8A8A8;
-  --text-player-title: #FFFFFF;
-  --bg-active-station: #333333;
-  --radio-player-container-bg: #121212;
-  --banner-install-app-bg: #1E1E1E;
-  --radio-player-border: #4D4D4D;
 }
