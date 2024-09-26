@@ -39,7 +39,7 @@ body {
   }
 }
 
-:root[data-theme='dark'] {
+:root, :root[data-theme='dark'] {
   --bg-body: #121212;
   --bg-header-container: #1E1E1E;
   --bg-favourite-intro: #1A1A1A;
@@ -53,6 +53,7 @@ body {
   --banner-install-app-bg: #1E1E1E;
   --radio-player-border: #4D4D4D;
 }
+
 
 /* Define the light theme variables */
 :root[data-theme='light'] {
