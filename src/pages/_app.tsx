@@ -17,7 +17,7 @@ function MyApp({ Component, pageProps }: AppProps) {
       <ContextProvider initialState={initialState}>
         <ThemeProvider
           attribute="data-theme"
-          defaultTheme="system"
+          enableSystem={true}
           disableTransitionOnChange={true}
         >
           <Component {...pageProps} />
