@@ -4,10 +4,10 @@
 .container {
   max-width: 1440px;
   padding: 95px 70px;
-  margin: 0 auto;
-  background: #FFFBEF;
+  background: var(--bg-header-container);
   height: 462px;
   border-radius: 50px;
+  margin: 5rem auto 0;
 
   @include mixinHelper.onTablet {
     padding: 35px 20px;
@@ -50,6 +50,10 @@
       padding: 10px;
     }
 
+    h1 {
+      color: var(--text-color);
+    }
+
     .logo {
       @include mixinHelper.center-content;
       font-size: 20px;
@@ -59,18 +63,10 @@
     }
   }
 
-  .external_links {
+  .right_content {
     display: flex;
-    gap: 5px;
-
-    @include mixinHelper.onTablet {
-      display: none;
-    }
-
-    img {
-      height: 50px;
-      width: 50px;
-    }
+    gap: 20px;
+    width: fit-content;
   }
 }
 
@@ -131,10 +127,15 @@
     max-width: 230px;
 
     h2 {
+      color: var(--text-color);
       font-family: globalVariables.$dm-sans-bold, serif;
       font-size: 22px;
       font-weight: 700;
       margin-bottom: 10px;
+    }
+
+    p {
+      color: var(--text-color);
     }
   }
 }
@@ -169,6 +170,7 @@
         font-size: 3rem;
         font-weight: 700;
         display: flex;
+        color: var(--text-color);
 
         @include mixinHelper.onTablet {
           font-size: 1.7rem;
@@ -192,6 +194,7 @@
       }
 
       span {
+        color: var(--text-color);
         margin-top: 3px;
       }
     }
@@ -200,6 +203,7 @@
       font-size: 1rem;
       font-weight: 400;
       margin-bottom: 20px;
+      color: var(--text-color);
 
       @include mixinHelper.onTablet {
         display: none;
@@ -212,6 +216,7 @@
       font-weight: 400;
       margin-bottom: 20px;
       text-align: center;
+      color: var(--text-color);
 
       @include mixinHelper.onTablet {
         display: block;
@@ -223,6 +228,7 @@
       line-height: 25px;
       font-weight: 400;
       margin-bottom: 30px;
+      color: var(--text-color);
 
       display: -webkit-box;
       -webkit-line-clamp: 5;

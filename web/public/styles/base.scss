@@ -1,6 +1,7 @@
 @use "globalVariables";
 
 body {
+  background: var(--bg-body);
   font-family: globalVariables.$dm-sans, serif;
 }
 
@@ -15,12 +16,13 @@ body {
   justify-content: center;
   align-items: center;
   gap: 10px;
-  background: #ff0057;
-  color: white;
+  background: #fdae1c;
+  color: var(--bg-favourite-intro);
   padding: 2px 8px;
   border-radius: 20px;
 
   svg {
+
     width: 30px;
   }
 }
@@ -35,4 +37,36 @@ body {
   100% {
     transform: translateX(0);
   }
+}
+
+:root, :root[data-theme='dark'] {
+  --bg-body: #121212;
+  --bg-header-container: #1E1E1E;
+  --bg-favourite-intro: #1A1A1A;
+  --bg-search-a-radio: #121212;
+  --station-card-color: #2A2A2A;
+  --text-color: #E0E0E0;
+  --subtext-metadata-color: #A8A8A8;
+  --text-player-title: #FFFFFF;
+  --bg-active-station: #333333;
+  --radio-player-container-bg: #121212;
+  --banner-install-app-bg: #1E1E1E;
+  --radio-player-border: #4D4D4D;
+}
+
+
+/* Define the light theme variables */
+:root[data-theme='light'] {
+  --bg-body: #ffffff;
+  --bg-header-container: #FFFBEF;
+  --bg-favourite-intro: #FFFBEF;
+  --bg-search-a-radio: #fff;
+  --bg-active-station: #f3f2f2;
+  --station-card-color: #ffffff;
+  --text-color: #000000;
+  --subtext-metadata-color: #656565;
+  --text-player-title: #fff;
+  --radio-player-container-bg: #232321;
+  --banner-install-app-bg: #c6eaff;
+  --radio-player-border: transparent;
 }
