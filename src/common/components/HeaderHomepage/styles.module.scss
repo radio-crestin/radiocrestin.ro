@@ -4,11 +4,11 @@
 .container {
   max-width: 1440px;
   padding: 95px 70px;
-  margin: 0 auto 0;
-  background: #FFFBEF;
+  background: var(--bg-header-container);
   height: 462px;
   border-radius: 50px;
   position: relative;
+  margin: 5rem auto 0;
 
   @include mixinHelper.onTablet {
     padding: 20px;
@@ -67,26 +67,8 @@
       padding: 0;
     }
 
-  }
-
-  .external_links {
-    display: flex;
-    gap: 5px;
-    z-index: 2;
-    position: relative;
-    right: 251px;
-
-    @include mixinHelper.onSmallDesktop {
-      right: 0;
-    }
-
-    @include mixinHelper.onTablet {
-      display: none;
-    }
-
-    img {
-      height: 50px;
-      width: 50px;
+    h1 {
+      color: var(--text-color);
     }
   }
 }
@@ -115,6 +97,7 @@
       font-size: 3rem;
       font-weight: 700;
       margin-bottom: 20px;
+      color: var(--text-color);
 
       @include mixinHelper.onTablet {
         font-size: 1.7rem;
@@ -127,6 +110,7 @@
       line-height: 25px;
       font-weight: 400;
       height: 100px;
+      color: var(--text-color);
 
       @include mixinHelper.onTablet {
         font-size: 1rem;

@@ -25,6 +25,7 @@ const FavouriteItem = (data: IStation) => {
       href={data.slug}
       scroll={false}
       data-active={isActive}
+      draggable={false}
     >
       <div className={styles.image_container}>
         <img

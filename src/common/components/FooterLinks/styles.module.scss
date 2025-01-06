@@ -1,9 +1,24 @@
+@use "public/styles/mixinHelper";
+@use "public/styles/globalVariables";
+
+
 .container {
   display: flex;
   flex-direction: column;
   position: relative;
-  justify-content: space-between;
   max-width: 1499px;
-  margin: 0 auto 150px;
-  margin-top: 20px;
+  margin: 20px auto 150px;
+
+  .external_links {
+    display: flex;
+    gap: 5px;
+    z-index: 2;
+    position: relative;
+    justify-content: end;
+
+    img {
+      height: 50px;
+      width: 50px;
+    }
+  }
 }

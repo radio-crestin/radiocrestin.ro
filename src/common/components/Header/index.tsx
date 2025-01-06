@@ -6,6 +6,8 @@ import { Context } from "@/context/ContextProvider";
 import Rating from "@/components/Rating";
 import { getStationRating } from "@/utils";
 import ShareOnSocial from "@/components/ShareOnSocial";
+import ThemeToggle from "@/components/ThemeToggle";
+import WhatsAppButton from "@/components/WhatsAppButton";
 
 const Navigation = () => (
   <nav className={styles.nav}>
@@ -21,23 +23,9 @@ const Navigation = () => (
         <h1>Radio Creștin</h1>
       </Link>
     </div>
-    {/*<WhatsAppButton />*/}
-    <div className={styles.external_links}>
-      <Link href="https://github.com/radio-crestin" target={"_blank"}>
-        <img src="./icons/Github.png" alt="Github icon" />
-      </Link>
-      <Link
-        href="https://graphql-viewer.radio-crestin.com/?endpoint=cc_BYFxAcGcC4HpYOYCcCG5gEcA2A6VATASwHsBaAYyQFNIRCA7Hc4gW1gDcBGRVdbIA&query=cc_I4VwpgTgngBA4mALgZUQQ0QSwPYDsDOMA3jPulnoSZgCYzYQ2QxaIA2YMA7mAEb6ZEnMAFs0mNqUQQwaEQH0QESQAcI2AB5R5ZGXMXKYACzb4d02QqWTERkCN65xbAzezoXbTGTC5IhJnwAYwhMFQpcGECQsIj5NCC41g4osGDQ8JxceS9cAGsYADNZRCUwHIw0xHkVbDIYWrJ8AAovEUEALhgARgAaekZIeV4oLpIVEF4vfCMwGi7omABfAEpiGFoWQRTojIiYXIKJqe9ZuiWYEEyRTmozK4PK3CDtEUIsG7I5FWWYXGwuDU2GgoJhcABzdabD5Vb6kPCQ6h0Jw3Fh2BxOCSuGBoCBYepIv5yTi2eyOZzYi5UmAyABumDAXCoGzoXwghE++DQ4M41K+cXB6iuzM2KM4DCYECkGCy8kQ2HMMrw8kF2GF635ss2EuY1IuQA&variables=cc_N4XyA"
-        target={"_blank"}
-      >
-        <img src="./icons/GraphQLIcon.png" alt="GraphQLIcon icon" />
-      </Link>
-      <Link
-        href="https://www.figma.com/file/iXXR3dhUjwfDDZH4FlEZgx/radio_crestin_com"
-        target={"_blank"}
-      >
-        <img src="./icons/FigmaIcon2.png" alt="Figma icon" />
-      </Link>
+    <div className={styles.right_content}>
+      <ThemeToggle />
+      <WhatsAppButton />
     </div>
   </nav>
 );
@@ -100,7 +88,12 @@ const ContentRight = () => {
     <div className={styles.right_content}>
       <div className={styles.station_details}>
         <div className={styles.title_container}>
-          <img src={ctx.selectedStation?.thumbnail_url} alt="Radio Crestin" height={100} width={100} />
+          <img
+            src={ctx.selectedStation?.thumbnail_url}
+            alt="Radio Crestin"
+            height={100}
+            width={100}
+          />
           <h1 className={styles.station_title}>{ctx.selectedStation?.title}</h1>
         </div>
         <div className={styles.rating_wrapper}>
@@ -113,8 +106,8 @@ const ContentRight = () => {
         {ctx.selectedStation?.total_listeners !== 0 && (
           <>
             <p className={styles.nr_listeners_desktop}>
-              {ctx.selectedStation?.total_listeners} persoane ascultă împreună cu
-              tine acest radio
+              {ctx.selectedStation?.total_listeners} persoane ascultă împreună
+              cu tine acest radio
             </p>
             <p className={styles.nr_listeners_mobile}>
               {ctx.selectedStation?.total_listeners} ascultători
