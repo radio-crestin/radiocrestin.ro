@@ -1,0 +1,46 @@
+
+.container {
+    display: none;
+    background-color: #1A1A1A;
+    margin: 2rem 1rem 0 1rem;
+    max-width: 545px;
+    gap: 8px;
+    padding: 1rem 1.5rem;
+    position: relative;
+    font-size: 16px;
+    line-height: 22px;
+    background: var(--bg-favourite-intro);
+    border: 1px solid #128c7e;
+    border-radius: 0.75rem;
+    align-items: center;
+
+}
+
+.title {
+    color: white;
+    font-size: 1rem;
+    margin-bottom: 1rem;
+    line-height: 1.4;
+}
+
+.joinButton {
+    background-color: #128c7e;
+    color: white;
+    border: none;
+    padding: 0.8rem 1rem;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+@media (max-width: 768px) {
+    .container {
+        display: block;
+    }
+}
