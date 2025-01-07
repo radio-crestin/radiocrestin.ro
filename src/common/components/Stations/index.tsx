@@ -8,6 +8,7 @@ import FavoriteItem from "@/components/FavoriteItem";
 import StationItem from "@/components/StationItem";
 import { Magnify } from "@/icons/Magnify";
 import CloseIcon from "@/icons/CloseIcon";
+import WhatsAppBibleGroup from "@/components/WhatsAppBibleGroup";
 
 const Stations = () => {
   const { ctx } = useContext(Context);
@@ -106,8 +107,9 @@ const Stations = () => {
 
   return (
     <div className={styles.container}>
+       <WhatsAppBibleGroup/>
       <div className={styles.favourite_section} data-info={"favourite-section"}>
-        <h1>Favorite recent:</h1>
+        <h1>Stații favorite:</h1>
         {ctx.favouriteStations.length > 0 ? (
           <div className={styles.stations_container}>
             {ctx.favouriteStations.map((station: IStation) => {
