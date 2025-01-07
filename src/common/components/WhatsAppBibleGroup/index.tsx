@@ -1,6 +1,5 @@
 import React from 'react'
 import styles from './styles.module.scss'
-import {MessageCircle} from 'lucide-react'
 
 export default function WhatsAppBibleGroup() {
     const joinGroup = () => {
