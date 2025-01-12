@@ -2,7 +2,12 @@
   max-width: 1440px;
   margin: 10vh auto 0;
   padding: 0 20px;
+  color: var(--text-color);
 
+  a {
+    color: var(--text-color);
+    margin-bottom: 4px;
+  }
   .all_stations {
     display: flex;
     flex-direction: column;
