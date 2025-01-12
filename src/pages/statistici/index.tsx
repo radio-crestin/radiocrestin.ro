@@ -28,19 +28,22 @@ export default function StatisticiPage() {
   return (
     <Layout {...SEO_STATISTICI}>
       <div className={styles.container}>
-        <Link href={"/"}> 🔙 Inapoi</Link>
         <div className={styles.all_stations}>
+          <Link href={"/"} className={styles.back_link}>
+            <span>←</span> Inapoi
+          </Link>
           {sortedStations.map((station: IStation) => (
-            <Link href={station.slug} key={station.id}>
-              {station.title} - {station.radio_crestin_listeners || 0}
+            <Link href={station.slug} key={station.id} className={styles.station_item}>
+              <span className={styles.station_name}>{station.title}</span>
+              <span className={styles.listeners_count}>
+                {station.radio_crestin_listeners || 0} ascultători
+              </span>
             </Link>
           ))}
           <div className={styles.total_listeners}>
-            ------------------------
-            <br />
-            🎧 Total Listeners: {totalListeners}
+            🎧 Total Ascultători: {totalListeners}
           </div>
-          <p>
+          <p className={styles.info_text}>
             (radio-crestin.com / radiocrestin.ro / Radio Crestin mobile apps)
           </p>
         </div>
