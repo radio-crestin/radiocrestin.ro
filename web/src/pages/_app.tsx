@@ -6,6 +6,7 @@ import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import BugsnagErrorBoundary from "@/components/BugsnagErrorBoundary";
 import { ThemeProvider } from "next-themes";
+import NoInternetConnection from "@/components/NoInternetConnection";
 
 function MyApp({ Component, pageProps }: AppProps) {
   const initialState = {
@@ -20,8 +21,10 @@ function MyApp({ Component, pageProps }: AppProps) {
           enableSystem={true}
           disableTransitionOnChange={true}
         >
-          <Component {...pageProps} />
-          <ToastContainer />
+          <NoInternetConnection>
+            <Component {...pageProps} />
+            <ToastContainer />
+          </NoInternetConnection>
         </ThemeProvider>
       </ContextProvider>
     </BugsnagErrorBoundary>
