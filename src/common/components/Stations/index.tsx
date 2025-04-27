@@ -52,19 +52,17 @@ const Stations = () => {
 
     // Filter by song name
     newFilteredStations.push(
-      ...ctx.stations.filter(
-        (station: IStation) =>
-          station.now_playing?.song?.name.toLowerCase().includes(searchedValue),
+      ...ctx.stations.filter((station: IStation) =>
+        station.now_playing?.song?.name.toLowerCase().includes(searchedValue),
       ),
     );
 
     // Filter by artist name
     newFilteredStations.push(
-      ...ctx.stations.filter(
-        (station: IStation) =>
-          station.now_playing?.song?.artist?.name
-            .toLowerCase()
-            .includes(searchedValue),
+      ...ctx.stations.filter((station: IStation) =>
+        station.now_playing?.song?.artist?.name
+          .toLowerCase()
+          .includes(searchedValue),
       ),
     );
 
@@ -107,7 +105,7 @@ const Stations = () => {
 
   return (
     <div className={styles.container}>
-       <WhatsAppBibleGroup/>
+      <WhatsAppBibleGroup />
       <div className={styles.favourite_section} data-info={"favourite-section"}>
         <h1>Stații favorite:</h1>
         {ctx.favouriteStations.length > 0 ? (
@@ -164,10 +162,8 @@ const Stations = () => {
       <div className={styles.stations_container}>
         {filteredStations.length === 0 ? (
           <div className={styles.no_results}>
-            <h1>
-              Nu am găsit niciun rezultat cu denumirea:{" "}
-              <strong>{searchedValue}</strong>.
-            </h1>
+            Nu am găsit niciun rezultat cu denumirea:{" "}
+            <strong>{searchedValue}</strong>.
           </div>
         ) : (
           filteredStations.map((station: IStation) => (

@@ -65,7 +65,7 @@
       height: 40px;
       padding: 0 15px;
       background: transparent;
-      
+
       &::placeholder {
         color: var(--text-color);
       }
@@ -91,9 +91,11 @@
 }
 
 .no_results {
+  color: var(--text-color);
   margin: 0 20px;
 
   strong {
+    color: var(--text-color);
     font-size: 18px;
     font-weight: 700;
     font-family: globalVariables.$dm-sans-bold;
