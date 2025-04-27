@@ -35,6 +35,7 @@ export default function RadioPlayer() {
   const [streamType, setStreamType] = useState<STREAM_TYPE | null>(null);
   const { favouriteItems, toggleFavourite } = useFavourite();
   const [isFavorite, setIsFavorite] = useState(false);
+  const [hlsInstance, setHlsInstance] = useState<Hls | null>(null);
 
   useEffect(() => {
     const preferredStreamOrder = [
@@ -117,25 +118,54 @@ export default function RadioPlayer() {
     });
   };
 
+  const resetAndReloadStream = () => {
+    const audio = document.getElementById("audioPlayer") as HTMLAudioElement;
+    if (!audio || !streamType) return;
+
+    if (hlsInstance) {
+      hlsInstance.destroy();
+    }
+
+    const streamUrl = getStreamUrl(streamType);
+    if (!streamUrl) {
+      retryMechanism();
+      return;
+    }
+
+    if (streamType === STREAM_TYPE.HLS) {
+      const newHls = new Hls();
+      setHlsInstance(newHls);
+      loadHLS(streamUrl, audio, newHls);
+    } else {
+      audio.src = streamUrl;
+      audio.load();
+      audio.play().catch((error) => {
+        Bugsnag.notify(
+          new Error(
+            `Error reloading stream - station.title: ${
+              station.title
+            }, error: ${JSON.stringify(error, null, 2)}`,
+          ),
+        );
+        retryMechanism();
+      });
+    }
+  };
+
   useEffect(() => {
     const audio = document.getElementById("audioPlayer") as HTMLAudioElement;
     if (!audio) return;
 
     switch (playbackState) {
       case PLAYBACK_STATE.STARTED:
-        audio.play().catch((error) => {
-          Bugsnag.notify(
-            new Error(
-              `Start playing:96 error: - station.title: ${
-                station.title
-              }, error: ${JSON.stringify(error, null, 2)}`,
-            ),
-          );
-          retryMechanism();
-        });
+        resetAndReloadStream();
         break;
       case PLAYBACK_STATE.STOPPED:
         audio.pause();
+        if (hlsInstance) {
+          hlsInstance.stopLoad();
+          hlsInstance.detachMedia();
+        }
         break;
     }
 
@@ -165,7 +195,6 @@ export default function RadioPlayer() {
   }, [station.slug]);
 
   useEffect(() => {
-    const hls = new Hls();
     const audio = document.getElementById("audioPlayer") as HTMLAudioElement;
     if (!audio || !streamType) return;
 
@@ -174,6 +203,9 @@ export default function RadioPlayer() {
       retryMechanism();
       return;
     }
+
+    const hls = new Hls();
+    setHlsInstance(hls);
 
     switch (streamType) {
       case STREAM_TYPE.HLS:
