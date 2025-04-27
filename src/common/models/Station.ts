@@ -21,6 +21,12 @@ export interface IStation {
   now_playing: INowPlaying;
   reviews: any[];
   is_favorite: boolean;
+  station_streams: IStationStreams[];
+}
+
+export interface IStationStreams {
+  type: "HLS" | "proxied_stream" | "direct_stream";
+  stream_url: string;
 }
 
 export interface IPost {

@@ -20,6 +20,10 @@ const query = `
     description_action_title
     description_link
     feature_latest_post
+    station_streams {
+      type
+      stream_url
+    }
     posts(limit: 1, order_by: { published: desc }) {
       id
       title
