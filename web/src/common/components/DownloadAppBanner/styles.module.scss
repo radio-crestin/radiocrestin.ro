@@ -98,6 +98,7 @@
     bottom: -60px;
     width: 100%;
     max-width: 524px;
+    pointer-events: none;
 
     @include mixinHelper.onDesktop {
       max-width: 450px;
