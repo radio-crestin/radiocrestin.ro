@@ -1,0 +1,194 @@
+.container {
+  max-width: 1440px;
+  margin: 10vh auto 0;
+  padding: 0 20px;
+  color: var(--text-color);
+  min-height: 80vh;
+
+  * {
+    color: var(--text-color);
+  }
+
+  a {
+    color: var(--text-color);
+    text-decoration: none;
+    transition: all 0.2s ease;
+
+    &:hover {
+      color: var(--primary-color);
+      transform: translateX(5px);
+    }
+  }
+
+  .back_link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 24px;
+    border-radius: 50px;
+    background-color: var(--background-secondary-color);
+    font-weight: 500;
+    top: 20px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+    border: 1px solid var(--border-color);
+    z-index: 100;
+
+    span {
+      transition: transform 0.3s ease;
+    }
+
+    &:hover {
+      background-color: var(--primary-color);
+      color: white;
+      box-shadow: 0 4px 8px rgba(var(--primary-color-rgb), 0.2);
+      transform: translateY(-2px);
+
+      span {
+        transform: translateX(-4px);
+      }
+    }
+
+    &:active {
+      transform: translateY(0);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+  }
+
+  .all_stations {
+    display: flex;
+    flex-direction: column;
+    max-width: 800px;
+    margin: 50px auto 0;
+    background: var(--background-secondary-color);
+    padding: 2rem;
+    border-radius: 16px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+
+    .station_item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem;
+      margin: 0.5rem 0;
+      background: var(--background-color);
+      border-radius: 8px;
+      transition: all 0.2s ease;
+
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      }
+
+      .station_name {
+        font-weight: 600;
+        color: var(--text-color);
+        flex: 1;
+      }
+
+      .listeners_info {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 4px;
+      }
+
+      .listeners_count {
+        font-weight: 500;
+        color: var(--primary-color);
+        background: rgba(var(--primary-color-rgb), 0.1);
+        padding: 4px 12px;
+        border-radius: 20px;
+      }
+
+      .listeners_detail {
+        font-size: 0.85rem;
+        color: var(--text-secondary-color);
+        opacity: 0.8;
+      }
+    }
+
+    .total_listeners {
+      margin-top: 2rem;
+      margin-bottom: 1rem;
+      padding: 1.5rem;
+      text-align: center;
+      background: var(--background-color);
+      border-radius: 8px;
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: var(--primary-color);
+
+      svg {
+        color: var(--primary-color);
+        margin-right: 8px;
+      }
+
+      .total_detail {
+        font-size: 0.9rem;
+        font-weight: 400;
+        color: var(--text-secondary-color);
+        margin-top: 8px;
+        opacity: 0.8;
+      }
+    }
+
+    .info_text {
+      text-align: center;
+      margin-top: 1rem;
+      font-size: 0.9rem;
+      color: var(--text-secondary-color);
+      opacity: 0.8;
+    }
+  }
+
+  // Mobile responsiveness
+  @media (max-width: 768px) {
+    .all_stations {
+      padding: 1.5rem;
+      margin: 30px auto 0;
+
+      .station_item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+
+        .station_name {
+          font-size: 1rem;
+        }
+
+        .listeners_info {
+          align-items: flex-start;
+          width: 100%;
+
+          .listeners_count {
+            font-size: 0.9rem;
+          }
+
+          .listeners_detail {
+            font-size: 0.8rem;
+          }
+        }
+      }
+
+      .total_listeners {
+        font-size: 1.1rem;
+        padding: 1.2rem;
+
+        .total_detail {
+          font-size: 0.85rem;
+        }
+      }
+    }
+  }
+
+  @media (max-width: 480px) {
+    .all_stations {
+      padding: 1rem;
+
+      .station_item {
+        padding: 0.8rem;
+      }
+    }
+  }
+}

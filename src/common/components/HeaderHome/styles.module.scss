@@ -3,14 +3,14 @@
 
 .container {
   max-width: 1440px;
-  padding: 60px 70px 80px;
+  padding: 95px 70px;
   background: var(--bg-header-container);
   height: 462px;
   border-radius: 50px;
   margin: 5rem auto 0;
 
   @include mixinHelper.onTablet {
-    padding: 25px 20px 35px;
+    padding: 35px 20px;
     height: 100%;
     border-radius: 0;
   }
@@ -73,12 +73,78 @@
 .content_section {
   display: flex;
   flex-direction: row;
-  margin-top: 60px;
+  margin-top: 86px;
   gap: 30px;
   align-items: flex-start;
 
   @include mixinHelper.onTablet {
-    margin-top: 35px;
+    margin-top: 50px;
+  }
+}
+
+.welcome_container {
+  display: flex;
+  justify-content: flex-start;
+  align-items: flex-start;
+  width: 100%;
+  padding: 0 100px;
+
+  @include mixinHelper.onDesktop {
+    padding: 0 20px;
+  }
+
+  @include mixinHelper.onTablet {
+    padding: 0;
+    justify-content: center;
+    text-align: center;
+  }
+
+  .station_details {
+    .title_container {
+      margin-bottom: 20px;
+
+      @include mixinHelper.onTablet {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .station_title {
+        font-family: globalVariables.$dm-sans-bold, serif;
+        font-size: 4rem;
+        font-weight: 700;
+        color: var(--text-color);
+        text-align: left;
+        line-height: 1.2;
+
+        @include mixinHelper.onTablet {
+          font-size: 2.5rem;
+          text-align: center;
+        }
+      }
+    }
+
+    .station_description {
+      font-size: 1.2rem;
+      line-height: 1.6;
+      font-weight: 400;
+      color: var(--text-color);
+      text-align: left;
+      max-width: 800px;
+
+      @include mixinHelper.onTablet {
+        font-size: 1rem;
+        line-height: 1.5;
+        text-align: center;
+      }
+
+      strong {
+        color: var(--text-color);
+        font-weight: 700;
+      }
+    }
   }
 }
 

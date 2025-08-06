@@ -53,6 +53,16 @@
         width: 70px;
       }
     }
+
+    .image_skeleton {
+      border-radius: 21px;
+      background-color: var(--skeleton-color, #e0e0e0);
+
+      @include mixinHelper.onTablet {
+        height: 70px !important;
+        width: 70px !important;
+      }
+    }
   }
 
   .station_details {
