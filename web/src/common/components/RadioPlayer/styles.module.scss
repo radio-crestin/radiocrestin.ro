@@ -34,6 +34,13 @@
     border-radius: 12px;
   }
 
+  .station_thumbnail_skeleton {
+    width: 80px;
+    height: 80px;
+    border-radius: 12px;
+    background-color: var(--skeleton-color, #e0e0e0);
+  }
+
   .heart_container {
     position: absolute;
     bottom: -14px;

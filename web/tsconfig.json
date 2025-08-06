@@ -25,10 +25,19 @@
     ],
     "paths": {
       "@/*": [
+        "./src/*"
+      ],
+      "@/common/*": [
         "./src/common/*"
       ],
+      "@/lib/*": [
+        "./src/lib/*"
+      ],
+      "@/app/*": [
+        "./src/app/*"
+      ],
       "@/icons/*": [
-        "public/icons/*"
+        "./public/icons/*"
       ]
     }
   },
