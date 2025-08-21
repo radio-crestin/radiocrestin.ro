@@ -22,6 +22,7 @@ export default function RadioPlayer({ initialStation }: RadioPlayerProps) {
   const [currentStreamIndex, setCurrentStreamIndex] = useState(0);
   const { favouriteItems, toggleFavourite } = useFavourite();
   const [isFavorite, setIsFavorite] = useState(false);
+  const [autoplayBlocked, setAutoplayBlocked] = useState(false);
   const hlsRef = useRef<Hls | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const isLoadingRef = useRef(false);
@@ -32,6 +33,7 @@ export default function RadioPlayer({ initialStation }: RadioPlayerProps) {
   // Use context station or fall back to initial
   const { selectedStation: contextStation } = useSelectedStation();
   const activeStation = contextStation || initialStation;
+  const prevStationId = useRef<number | null>(null);
 
   // Get sorted streams by order
   const sortedStreams = useMemo(() => {
@@ -85,15 +87,31 @@ export default function RadioPlayer({ initialStation }: RadioPlayerProps) {
     }
   }, [playerVolume]);
 
-  // Reset stream index when station changes
+  // Handle station changes and autoplay
   useEffect(() => {
-    if (activeStation?.id) {
-      console.log('[RadioPlayer] Station changed to:', activeStation.title, '- resetting stream index to 0');
+    if (activeStation?.id && activeStation.id !== prevStationId.current) {
+      console.log('[RadioPlayer] Station update - current:', activeStation.title, 'prev:', prevStationId.current);
+      
+      const isInitialLoad = prevStationId.current === null;
+      const hasStationInPath = typeof window !== 'undefined' && 
+                              window.location.pathname !== '/' && 
+                              window.location.pathname.length > 1;
+      
+      console.log('[RadioPlayer] isInitialLoad:', isInitialLoad, 'hasStationInPath:', hasStationInPath, 'path:', typeof window !== 'undefined' ? window.location.pathname : 'SSR');
+      
       setCurrentStreamIndex(0);
-      // Also clear loading state and refs to ensure clean start
       isLoadingRef.current = false;
       currentUrlRef.current = null;
       retryCountRef.current = 0;
+      setAutoplayBlocked(false);
+      
+      // Try autoplay on station pages or when changing stations
+      if ((isInitialLoad && hasStationInPath) || !isInitialLoad) {
+        console.log('[RadioPlayer] Starting autoplay');
+        setPlaybackState(PLAYBACK_STATE.STARTED);
+      }
+      
+      prevStationId.current = activeStation.id;
     }
   }, [activeStation?.id, activeStation?.title]);
 
@@ -194,12 +212,14 @@ export default function RadioPlayer({ initialStation }: RadioPlayerProps) {
         if (shouldPlayRef.current) {
           audio.play().then(() => {
             console.log('[RadioPlayer] HLS playback started successfully');
+            setAutoplayBlocked(false);
           }).catch((error) => {
             console.error('[RadioPlayer] HLS play error:', error);
-            if (error.name !== 'NotAllowedError') {
-              shouldPlayRef.current = false;
-              setPlaybackState(PLAYBACK_STATE.STOPPED);
+            if (error.name === 'NotAllowedError') {
+              setAutoplayBlocked(true);
             }
+            shouldPlayRef.current = false;
+            setPlaybackState(PLAYBACK_STATE.STOPPED);
           });
         }
       });
@@ -276,9 +296,14 @@ export default function RadioPlayer({ initialStation }: RadioPlayerProps) {
         audio.load();
         audio.play().then(() => {
           console.log('[RadioPlayer] Direct stream playback started after fallback');
+          setAutoplayBlocked(false);
         }).catch((error) => {
           console.error('[RadioPlayer] Direct stream play error:', error);
-          if (error.name !== 'NotAllowedError') {
+          if (error.name === 'NotAllowedError') {
+            setAutoplayBlocked(true);
+            setPlaybackState(PLAYBACK_STATE.STOPPED);
+            shouldPlayRef.current = false;
+          } else {
             tryNextStream();
           }
         });
@@ -310,11 +335,14 @@ export default function RadioPlayer({ initialStation }: RadioPlayerProps) {
       if (audio.src && !isLoadingRef.current) {
         audio.play().then(() => {
           console.log('[RadioPlayer] Playback resumed successfully');
+          setAutoplayBlocked(false);
         }).catch((error) => {
           console.error('[RadioPlayer] Play error:', error);
-          if (error.name !== 'NotAllowedError') {
-            setPlaybackState(PLAYBACK_STATE.STOPPED);
+          if (error.name === 'NotAllowedError') {
+            setAutoplayBlocked(true);
+            shouldPlayRef.current = false;
           }
+          setPlaybackState(PLAYBACK_STATE.STOPPED);
         });
       }
     } else if (playbackState === PLAYBACK_STATE.STOPPED) {
@@ -341,36 +369,21 @@ export default function RadioPlayer({ initialStation }: RadioPlayerProps) {
 
   const togglePlayback = () => {
     console.log('[RadioPlayer] togglePlayback called, current state:', playbackState);
-    if (playbackState === PLAYBACK_STATE.PLAYING) {
-      console.log('[RadioPlayer] Stopping playback');
-      setPlaybackState(PLAYBACK_STATE.STOPPED);
-    } else {
-      console.log('[RadioPlayer] Starting playback');
-      setPlaybackState(PLAYBACK_STATE.STARTED);
-    }
+    setAutoplayBlocked(false);
+    setPlaybackState(playbackState === PLAYBACK_STATE.PLAYING ? PLAYBACK_STATE.STOPPED : PLAYBACK_STATE.STARTED);
   };
 
   const renderPlayButton = () => {
-    if (playbackState === PLAYBACK_STATE.BUFFERING ||
-        playbackState === PLAYBACK_STATE.STARTED) {
+    if (autoplayBlocked) {
+      return <path fill="white" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zM9.5 16.5v-9l7 4.5-7 4.5z" />;
+    }
+    if (playbackState === PLAYBACK_STATE.BUFFERING || playbackState === PLAYBACK_STATE.STARTED) {
       return <Loading />;
     }
-
     if (playbackState === PLAYBACK_STATE.PLAYING) {
-      return (
-        <path
-          fill="white"
-          d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"
-        />
-      );
+      return <path fill="white" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z" />;
     }
-
-    return (
-      <path
-        fill="white"
-        d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zM9.5 16.5v-9l7 4.5-7 4.5z"
-      />
-    );
+    return <path fill="white" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zM9.5 16.5v-9l7 4.5-7 4.5z" />;
   };
 
   if (!activeStation) return null;
