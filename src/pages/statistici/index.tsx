@@ -7,7 +7,6 @@ import useUpdateContextMetadata from "@/hooks/useUpdateStationsMetadata";
 import useFavouriteStations from "@/hooks/useFavouriteStations";
 import { Context } from "@/context/ContextProvider";
 import { IStation } from "@/models/Station";
-import styles from "./styles.module.scss";
 
 export default function StatisticiPage() {
   const { ctx } = useContext(Context);
@@ -27,23 +26,23 @@ export default function StatisticiPage() {
 
   return (
     <Layout {...SEO_STATISTICI}>
-      <div className={styles.container}>
-        <div className={styles.all_stations}>
-          <Link href={"/"} className={styles.back_link}>
+      <div className="max-w-4xl mx-auto px-4 py-8">
+        <div className="flex flex-col gap-4">
+          <Link href={"/"} className="text-blue-600 hover:underline mb-4">
             <span>←</span> Inapoi
           </Link>
           {sortedStations.map((station: IStation) => (
-            <Link href={station.slug} key={station.id} className={styles.station_item}>
-              <span className={styles.station_name}>{station.title}</span>
-              <span className={styles.listeners_count}>
+            <Link href={station.slug} key={station.id} className="flex justify-between items-center p-4 bg-white dark:bg-gray-800 rounded-lg shadow hover:shadow-md transition-shadow">
+              <span className="font-medium text-gray-900 dark:text-gray-100">{station.title}</span>
+              <span className="text-gray-600 dark:text-gray-400">
                 {station.radio_crestin_listeners || 0} ascultători
               </span>
             </Link>
           ))}
-          <div className={styles.total_listeners}>
+          <div className="text-center text-xl font-bold mt-8 text-gray-900 dark:text-gray-100">
             🎧 Total Ascultători: {totalListeners}
           </div>
-          <p className={styles.info_text}>
+          <p className="text-center text-sm text-gray-600 dark:text-gray-400">
             (radio-crestin.com / radiocrestin.ro / Radio Crestin mobile apps)
           </p>
         </div>

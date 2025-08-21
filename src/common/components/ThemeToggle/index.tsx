@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useTheme } from "next-themes";
-import styles from "./styles.module.scss";
 
 const ThemeToggle: React.FC = () => {
   const { theme, setTheme, resolvedTheme } = useTheme();
@@ -48,14 +47,14 @@ const ThemeToggle: React.FC = () => {
   const currentTheme = theme || "system";
 
   return (
-    <div className={styles.dropdown} ref={dropdownRef}>
+    <div className="relative inline-block" ref={dropdownRef}>
       <button
-        className={styles.dropdownButton}
+        className="p-2 cursor-pointer text-base rounded flex items-center transition-colors duration-200 bg-transparent border-0"
         onClick={() => setDropdownOpen(!dropdownOpen)}
         aria-haspopup="true"
         aria-expanded={dropdownOpen}
       >
-        <span className={styles.buttonContent}>
+        <span className="flex items-center">
           {currentTheme === "system" && (
             <img
               src={
@@ -87,14 +86,23 @@ const ThemeToggle: React.FC = () => {
         </span>
       </button>
       {dropdownOpen && (
-        <ul className={styles.dropdownMenu}>
-          <li onClick={() => handleThemeChange("system")}>
+        <ul className="absolute top-[calc(100%+5px)] right-0 bg-background-card border border-border list-none m-0 p-1 min-w-[160px] z-[1000] rounded shadow-md">
+          <li 
+            onClick={() => handleThemeChange("system")}
+            className="px-4 py-2 cursor-pointer flex items-center transition-colors duration-100 rounded-lg hover:bg-background-active text-foreground"
+          >
             {themeNames["system"]}
           </li>
-          <li onClick={() => handleThemeChange("light")}>
+          <li 
+            onClick={() => handleThemeChange("light")}
+            className="px-4 py-2 cursor-pointer flex items-center transition-colors duration-100 rounded-lg hover:bg-background-active text-foreground"
+          >
             {themeNames["light"]}
           </li>
-          <li onClick={() => handleThemeChange("dark")}>
+          <li 
+            onClick={() => handleThemeChange("dark")}
+            className="px-4 py-2 cursor-pointer flex items-center transition-colors duration-100 rounded-lg hover:bg-background-active text-foreground"
+          >
             {themeNames["dark"]}
           </li>
         </ul>

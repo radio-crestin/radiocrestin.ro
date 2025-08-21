@@ -23,13 +23,17 @@
     "zustand": "^5.0.3"
   },
   "devDependencies": {
+    "@tailwindcss/line-clamp": "^0.4.4",
     "@types/node": "^24.3.0",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "autoprefixer": "^10.4.21",
     "eslint": "^9",
     "eslint-config-next": "^15.5.0",
+    "postcss": "^8.5.6",
     "prettier": "^3.6.2",
-    "sass": "^1.87.0",
+    "tailwindcss": "^3.4.17",
+    "tailwindcss-themer": "^4.1.1",
     "typescript": "^5"
   }
 }

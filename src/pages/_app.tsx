@@ -1,4 +1,4 @@
-import "public/styles/_all.scss";
+import "../globals.css";
 import type { AppProps } from "next/app";
 
 import { ContextProvider } from "@/context/ContextProvider";
@@ -17,9 +17,10 @@ function MyApp({ Component, pageProps }: AppProps) {
     <BugsnagErrorBoundary>
       <ContextProvider initialState={initialState}>
         <ThemeProvider
-          attribute="data-theme"
+          attribute="class"
           enableSystem={true}
           disableTransitionOnChange={true}
+          defaultTheme="light"
         >
           <NoInternetConnection>
             <Component {...pageProps} />

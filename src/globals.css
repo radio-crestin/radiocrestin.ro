@@ -1,0 +1,135 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@font-face {
+  font-family: "DMSans Bold";
+  src: url("/fonts/Poppins-Bold.woff") format("woff");
+}
+
+@font-face {
+  font-family: "DMSans Regular";
+  src: url("/fonts/Poppins-Regular.woff") format("woff");
+}
+
+@font-face {
+  font-family: "DMSans Thin";
+  src: url("/fonts/Poppins-Thin.woff") format("woff");
+}
+
+@layer base {
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
+      Ubuntu, Cantarell, 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    @apply bg-background text-foreground;
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  button {
+    cursor: pointer;
+    border: none;
+    background: none;
+    font: inherit;
+  }
+
+  input, textarea, select {
+    font: inherit;
+  }
+
+  img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+  }
+}
+
+@layer components {
+  .container {
+    @apply max-w-7xl mx-auto px-4;
+  }
+
+  .btn {
+    @apply px-4 py-2 rounded-lg font-medium transition-all duration-200;
+  }
+
+  .btn-primary {
+    @apply btn bg-primary text-white hover:bg-opacity-90;
+  }
+
+  .btn-secondary {
+    @apply btn bg-secondary text-white hover:bg-opacity-90;
+  }
+
+  .card {
+    @apply bg-background-card rounded-lg shadow-md p-4;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .animate-fade-in {
+    animation: fadeIn 0.5s ease-in-out;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  /* Custom animation for "apasa aici" */
+  .apasa_aici_move {
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    animation: move_left_right 1.5s infinite;
+    position: absolute;
+    right: 45px;
+    bottom: 11px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    background: #fdae1c;
+    color: var(--bg-favourite-intro);
+    padding: 2px 8px;
+    border-radius: 20px;
+  }
+
+  .apasa_aici_move svg {
+    width: 30px;
+  }
+
+  @keyframes move_left_right {
+    0% {
+      transform: translateX(0);
+    }
+    50% {
+      transform: translateX(-15px);
+    }
+    100% {
+      transform: translateX(0);
+    }
+  }
+}

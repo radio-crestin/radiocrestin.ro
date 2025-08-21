@@ -1,5 +1,4 @@
 import React from "react";
-import styles from "./styles.module.scss";
 
 export default function WhatsAppBibleGroup() {
   const joinGroup = () => {
@@ -7,11 +6,14 @@ export default function WhatsAppBibleGroup() {
   };
 
   return (
-    <div className={styles.container}>
-      <h2 className={styles.title}>
+    <div className="hidden md:hidden sm:block bg-gray-900 dark:bg-gray-800 m-8 mt-8 max-w-[545px] gap-2 p-4 px-6 relative text-base leading-6 border border-[#128c7e] rounded-xl items-center">
+      <h2 className="text-gray-900 dark:text-gray-100 text-base mb-4 leading-relaxed">
         Versetul zilei pe WhatsApp zilnic la ora 7:30
       </h2>
-      <button className={styles.joinButton} onClick={joinGroup}>
+      <button 
+        className="bg-[#128c7e] text-white border-none py-3 px-4 rounded-lg text-sm font-semibold cursor-pointer w-full flex items-center justify-center gap-2"
+        onClick={joinGroup}
+      >
         Primește versetul zilnic pe WhatsApp
         <svg
           width="16"

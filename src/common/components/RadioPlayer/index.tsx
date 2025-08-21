@@ -6,7 +6,6 @@ import Hls from "hls.js";
 import useSpaceBarPress from "@/hooks/useSpaceBarPress";
 import { Loading } from "@/icons/Loading";
 import { CONSTANTS } from "@/constants/constants";
-import styles from "./styles.module.scss";
 import { Context } from "@/context/ContextProvider";
 import usePlayer from "@/store/usePlayer";
 import { PLAYBACK_STATE } from "@/models/enum";
@@ -370,10 +369,10 @@ export default function RadioPlayer() {
   };
 
   return (
-    <div className={styles.radio_player_container}>
-      <div className={styles.radio_player}>
-        <div className={styles.player_container}>
-          <div className={styles.image_container}>
+    <div className="fixed bottom-2.5 left-1/2 -translate-x-1/2 w-[calc(100%-40px)] max-w-xl z-10">
+      <div className="p-2.5 shadow-lg rounded-2xl bg-background-player border border-border-player">
+        <div className="flex items-center">
+          <div className="relative">
             <img
               src={
                 station.now_playing?.song?.thumbnail_url ||
@@ -381,13 +380,13 @@ export default function RadioPlayer() {
                 CONSTANTS.DEFAULT_COVER
               }
               alt={`${station.title} | Radio Crestin`}
-              className={styles.station_thumbnail}
+              className="object-cover w-20 h-20 rounded-xl"
               onError={(e) => {
                 e.currentTarget.src = '/images/radio-crestin-default-logo.png';
               }}
             />
             <div
-              className={styles.heart_container}
+              className="absolute -bottom-3.5 -right-5 cursor-pointer p-2 text-red-500 [&_svg]:rounded-tl-xl [&_svg]:rounded-br-xl [&_svg]:bg-[var(--text-color)] [&_svg]:p-0.5"
               onClick={() => toggleFavourite(station.slug)}
             >
               <Heart
@@ -397,12 +396,12 @@ export default function RadioPlayer() {
             </div>
           </div>
 
-          <div className={`${styles.station_info} ${styles.two_lines}`}>
-            <h2 className={styles.station_title}>{station.title}</h2>
-            <p className={styles.song_name}>
+          <div className="ml-6 flex-grow line-clamp-3">
+            <h2 className="font-DMSans text-xl font-bold mt-0 leading-tight mb-1 text-foreground-player">{station.title}</h2>
+            <p className="text-xs font-extralight text-gray-400 font-DMSans">
               {station?.now_playing?.song?.name}
               {station?.now_playing?.song?.artist?.name && (
-                <span className={styles.artist_name}>
+                <span className="text-xs text-gray-400 font-extralight font-DMSans">
                   {" · "}
                   {station?.now_playing?.song?.artist?.name}
                 </span>
@@ -410,22 +409,22 @@ export default function RadioPlayer() {
             </p>
           </div>
 
-          <div className={styles.volume_slider}>
+          <div className="hidden ml-1 mr-0.5 tablet:block">
             <input
               type="range"
               min="0"
               max="100"
               value={playerVolume}
-              className={styles.slider}
+              className="w-24 mt-0.5"
               onChange={(e) => setPlayerVolume(Number(e.target.value))}
               aria-label="Player Volume"
             />
           </div>
 
-          <div className={styles.play_button_container}>
+          <div className="ml-auto mr-0.5">
             <button
               aria-label="Play"
-              className={styles.play_button}
+              className="bg-transparent border-none text-white cursor-pointer"
               onClick={() => {
                 if (
                   playbackState === PLAYBACK_STATE.PLAYING ||

@@ -1,5 +1,4 @@
 import React from "react";
-import styles from "./styles.module.scss";
 import Star from "@/icons/Star";
 
 interface RatingProps {
@@ -17,7 +16,7 @@ const Rating: React.FC<RatingProps> = ({ score, starHeight }) => {
     return stars;
   };
 
-  return <div className={styles.rating}>{renderStars()}</div>;
+  return <div className="flex flex-row gap-1 text-gray-900 dark:text-gray-100">{renderStars()}</div>;
 };
 
 export default Rating;
