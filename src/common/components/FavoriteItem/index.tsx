@@ -34,6 +34,9 @@ const FavouriteItem = (data: IStation) => {
           loading={"lazy"}
           height={100}
           width={100}
+          onError={(e) => {
+            e.currentTarget.src = '/images/radio-crestin-default-logo.png';
+          }}
         />
         <div className={styles.station_details}>
           <p className={styles.station_name}>{data.title}</p>

@@ -48,6 +48,9 @@ const ContentLeft = () => {
                 alt={selectedStation.title}
                 width={230}
                 height={230}
+                onError={(e) => {
+                  e.currentTarget.src = '/images/radio-crestin-default-logo.png';
+                }}
               />
               <img
                 loading={"lazy"}
@@ -56,6 +59,9 @@ const ContentLeft = () => {
                 className={styles.img_thumb}
                 width={230}
                 height={230}
+                onError={(e) => {
+                  e.currentTarget.src = '/images/radio-crestin-default-logo.png';
+                }}
               />
             </div>
           ) : (
@@ -65,6 +71,9 @@ const ContentLeft = () => {
               alt={selectedStation.title}
               width={230}
               height={230}
+              onError={(e) => {
+                e.currentTarget.src = '/images/radio-crestin-default-logo.png';
+              }}
             />
           )}
           <div className={styles.station_info}>
@@ -93,6 +102,9 @@ const ContentRight = () => {
             alt="Radio Crestin"
             height={100}
             width={100}
+            onError={(e) => {
+              e.currentTarget.src = '/images/radio-crestin-default-logo.png';
+            }}
           />
           <h1 className={styles.station_title}>{ctx.selectedStation?.title}</h1>
         </div>
