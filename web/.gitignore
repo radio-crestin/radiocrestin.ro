@@ -39,5 +39,3 @@ next-env.d.ts
 
 .gitignore
 .aider*
-.open-next
-.wrangler
