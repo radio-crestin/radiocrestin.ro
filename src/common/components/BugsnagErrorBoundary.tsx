@@ -1,7 +1,9 @@
-"use client";
-
 // components/BugsnagErrorBoundary.tsx
 import React from "react";
+import { Bugsnag } from "../utils/bugsnag";
+
+const ErrorBoundary =
+  Bugsnag.getPlugin("react")?.createErrorBoundary(React) ?? React.Fragment;
 
 interface BugsnagErrorBoundaryProps {
   children?: React.ReactNode;
@@ -9,21 +11,6 @@ interface BugsnagErrorBoundaryProps {
 
 const BugsnagErrorBoundary: React.FC<BugsnagErrorBoundaryProps> = ({
   children,
-}) => {
-  const [ErrorBoundary, setErrorBoundary] = React.useState<React.ComponentType<any>>(() => React.Fragment);
-
-  React.useEffect(() => {
-    // Only load Bugsnag on the client side
-    if (typeof window !== 'undefined') {
-      const { Bugsnag } = require('../utils/bugsnag');
-      const BugsnagErrorBoundary = Bugsnag.getPlugin?.("react")?.createErrorBoundary(React);
-      if (BugsnagErrorBoundary) {
-        setErrorBoundary(() => BugsnagErrorBoundary);
-      }
-    }
-  }, []);
-
-  return <ErrorBoundary>{children}</ErrorBoundary>;
-};
+}) => <ErrorBoundary>{children}</ErrorBoundary>;
 
 export default BugsnagErrorBoundary;
