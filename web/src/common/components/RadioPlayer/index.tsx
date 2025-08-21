@@ -382,6 +382,9 @@ export default function RadioPlayer() {
               }
               alt={`${station.title} | Radio Crestin`}
               className={styles.station_thumbnail}
+              onError={(e) => {
+                e.currentTarget.src = '/images/radio-white-default.jpg';
+              }}
             />
             <div
               className={styles.heart_container}
