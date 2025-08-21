@@ -35,6 +35,9 @@ const StationItem = (data: IStation) => {
           loading={"lazy"}
           height={110}
           width={110}
+          onError={(e) => {
+            e.currentTarget.src = '/images/radio-white-default.jpg';
+          }}
         />
       </div>
       <div className={styles.station_details}>
