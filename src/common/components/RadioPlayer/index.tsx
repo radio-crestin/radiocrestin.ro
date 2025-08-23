@@ -67,7 +67,19 @@ export default function RadioPlayer() {
     const stream = station.station_streams.find(
       (stream: IStationStreams) => stream.type === type,
     );
-    return stream?.stream_url || null;
+    if (!stream?.stream_url) return null;
+
+    // Add session tracking (only on client side)
+    const url = new URL(stream.stream_url);
+    
+    if (typeof window !== 'undefined') {
+      const uuid = localStorage.getItem('radio-crestin-session-uuid') || crypto.randomUUID();
+      localStorage.setItem('radio-crestin-session-uuid', uuid);
+      url.searchParams.set('ref', window.location.hostname);
+      url.searchParams.set('s', uuid);
+    }
+
+    return url.toString();
   };
 
   const loadHLS = (
