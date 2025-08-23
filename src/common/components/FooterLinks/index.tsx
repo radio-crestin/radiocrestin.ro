@@ -6,6 +6,9 @@ export default function FooterLinks() {
   return (
     <div className={styles.container}>
       <div className={styles.external_links}>
+        <Link href="/statistici" className={styles.statistics_link}>
+          Statistici
+        </Link>
         <Link href="https://github.com/radio-crestin" target={"_blank"}>
           <img src="./icons/Github.png" alt="Github icon" />
         </Link>
