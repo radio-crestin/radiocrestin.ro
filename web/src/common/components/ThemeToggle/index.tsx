@@ -6,26 +6,35 @@ const ThemeToggle: React.FC = () => {
   const { theme, setTheme, resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
+  const closeDropdown = () => {
+    setIsClosing(true);
+    setTimeout(() => {
+      setDropdownOpen(false);
+      setIsClosing(false);
+    }, 150);
+  };
+
   const handleThemeChange = (newTheme: string) => {
     setTheme(newTheme);
-    setDropdownOpen(false);
+    closeDropdown();
   };
 
   useEffect(() => {
-    if (!dropdownOpen) return;
+    if (!dropdownOpen || isClosing) return;
 
     const handleClickOutside = (event: MouseEvent) => {
       if (
         dropdownRef.current &&
         !dropdownRef.current.contains(event.target as Node)
       ) {
-        setDropdownOpen(false);
+        closeDropdown();
       }
     };
 
@@ -33,7 +42,7 @@ const ThemeToggle: React.FC = () => {
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [dropdownOpen]);
+  }, [dropdownOpen, isClosing]);
 
   const themeNames: { [key: string]: string } = {
     system: "Sistem",
@@ -86,16 +95,16 @@ const ThemeToggle: React.FC = () => {
           )}
         </span>
       </button>
-      {dropdownOpen && (
-        <ul className={styles.dropdownMenu}>
+      {(dropdownOpen || isClosing) && (
+        <ul className={`${styles.dropdownMenu} ${isClosing ? styles.closing : ''}`}>
           <li onClick={() => handleThemeChange("system")}>
-            {themeNames["system"]}
+            <span>🖥️</span> {themeNames["system"]}
           </li>
           <li onClick={() => handleThemeChange("light")}>
-            {themeNames["light"]}
+            <span>☀️</span> {themeNames["light"]}
           </li>
           <li onClick={() => handleThemeChange("dark")}>
-            {themeNames["dark"]}
+            <span>🌙</span> {themeNames["dark"]}
           </li>
         </ul>
       )}

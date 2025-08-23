@@ -9,7 +9,11 @@ import React, { useContext, useEffect, useState } from "react";
 import Heart from "@/icons/Heart";
 import { Context } from "@/context/ContextProvider";
 
-const FavouriteItem = (data: IStation) => {
+interface FavouriteItemProps extends IStation {
+  animationDelay?: number;
+}
+
+const FavouriteItem = (data: FavouriteItemProps) => {
   const { ctx } = useContext(Context);
   const { favouriteItems, toggleFavourite } = useFavourite();
   const [isStationFavourite, setIsStationFavourite] = useState(false);
@@ -19,6 +23,12 @@ const FavouriteItem = (data: IStation) => {
     setIsStationFavourite(favouriteItems.includes(data.slug));
   }, [data.slug, favouriteItems]);
 
+  const handleRemoveFavorite = (event: React.MouseEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+    toggleFavourite(data.slug);
+  };
+
   return (
     <Link
       className={styles.station_item}
@@ -26,6 +36,7 @@ const FavouriteItem = (data: IStation) => {
       scroll={false}
       data-active={isActive}
       draggable={false}
+      style={{ animationDelay: `${data.animationDelay || 0}s` }}
     >
       <div className={styles.image_container}>
         <img
@@ -35,7 +46,7 @@ const FavouriteItem = (data: IStation) => {
           height={100}
           width={100}
           onError={(e) => {
-            e.currentTarget.src = '/images/radio-white-default.jpg';
+            e.currentTarget.src = "/images/radio-white-default.jpg";
           }}
         />
         <div className={styles.station_details}>
@@ -53,11 +64,7 @@ const FavouriteItem = (data: IStation) => {
       </div>
       <div
         className={styles.favourite_heart_container}
-        onClick={(event) => {
-          event.preventDefault();
-          event.stopPropagation();
-          toggleFavourite(data.slug);
-        }}
+        onClick={handleRemoveFavorite}
       >
         <Heart color={"red"} />
       </div>
