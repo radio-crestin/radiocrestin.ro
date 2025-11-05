@@ -36,3 +36,10 @@ export function getStationRating(reviews: any[]) {
     10
   );
 }
+
+export function getValidImageUrl(url: string | null | undefined, fallback: string = "/images/radio-white-default.jpg"): string {
+  if (!url || url === "null" || url === "undefined" || url.trim() === "") {
+    return fallback;
+  }
+  return url;
+}
