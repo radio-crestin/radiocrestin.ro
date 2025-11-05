@@ -8,6 +8,7 @@ import useFavourite from "@/store/useFavourite";
 import React, { useContext, useEffect, useState } from "react";
 import Heart from "@/icons/Heart";
 import { Context } from "@/context/ContextProvider";
+import { getValidImageUrl } from "@/utils";
 
 interface FavouriteItemProps extends IStation {
   animationDelay?: number;
@@ -40,7 +41,7 @@ const FavouriteItem = (data: FavouriteItemProps) => {
     >
       <div className={styles.image_container}>
         <img
-          src={data.thumbnail_url}
+          src={getValidImageUrl(data.thumbnail_url)}
           alt={`${data.title} | radiocrestin.ro`}
           loading={"lazy"}
           height={100}
