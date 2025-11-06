@@ -9,6 +9,7 @@ import Heart from "@/icons/Heart";
 import useFavourite from "@/store/useFavourite";
 import { useContext, useEffect, useState } from "react";
 import { Context } from "@/context/ContextProvider";
+import { getValidImageUrl } from "@/utils";
 
 const StationItem = (data: IStation) => {
   const { ctx } = useContext(Context);
@@ -30,7 +31,7 @@ const StationItem = (data: IStation) => {
     >
       <div className={styles.image_container}>
         <img
-          src={data.now_playing?.song?.thumbnail_url || data?.thumbnail_url}
+          src={getValidImageUrl(data.now_playing?.song?.thumbnail_url || data?.thumbnail_url)}
           alt={`${data.title} | radiocrestin.ro`}
           loading={"lazy"}
           height={110}
