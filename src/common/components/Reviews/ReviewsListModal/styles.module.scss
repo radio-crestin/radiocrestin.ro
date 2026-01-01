@@ -1,0 +1,224 @@
+@use "public/styles/mixinHelper";
+@use "public/styles/globalVariables";
+@use "public/styles/modal";
+
+.modal_overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+  animation: modalFadeIn 0.2s ease-out;
+}
+
+.modal_content {
+  background: var(--bg-header-container);
+  border-radius: 16px;
+  padding: 32px;
+  max-width: 550px;
+  width: 100%;
+  min-height: 450px;
+  max-height: 85vh;
+  overflow-y: auto;
+  position: relative;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+  animation: modalSlideDown 0.25s ease-out;
+  display: flex;
+  flex-direction: column;
+
+  @include mixinHelper.onTablet {
+    padding: 24px 20px;
+    max-width: 100%;
+    border-radius: 12px;
+    max-height: 90vh;
+    min-height: 400px;
+  }
+}
+
+.close_button {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-color);
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background-color 0.2s;
+
+  &:hover {
+    background-color: rgba(0, 0, 0, 0.1);
+  }
+}
+
+.modal_title {
+  font-family: globalVariables.$dm-sans-bold, serif;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-color);
+  margin-bottom: 4px;
+  padding-right: 40px;
+}
+
+.station_name {
+  font-size: 1rem;
+  color: var(--text-color);
+  opacity: 0.7;
+  margin-bottom: 20px;
+}
+
+.summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  background: rgba(128, 128, 128, 0.08);
+  border-radius: 12px;
+  margin-bottom: 24px;
+
+  @include mixinHelper.onTablet {
+    flex-direction: column;
+    gap: 16px;
+    text-align: center;
+  }
+}
+
+.average_rating {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  @include mixinHelper.onTablet {
+    flex-direction: column;
+    gap: 8px;
+  }
+}
+
+.rating_number {
+  font-family: globalVariables.$dm-sans-bold, serif;
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--text-color);
+}
+
+.stars_row {
+  display: flex;
+  gap: 2px;
+}
+
+.total_reviews {
+  font-size: 0.9rem;
+  color: var(--text-color);
+  opacity: 0.6;
+}
+
+.write_review_button {
+  padding: 10px 20px;
+  background-color: #ED8A19;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+
+  &:hover {
+    background-color: #d67a15;
+  }
+}
+
+.reviews_list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+}
+
+.no_reviews {
+  text-align: center;
+  color: var(--text-color);
+  opacity: 0.6;
+  padding: 20px;
+  font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  min-height: 200px;
+}
+
+.review_item {
+  background: rgba(128, 128, 128, 0.06);
+  padding: 16px;
+  border-radius: 10px;
+}
+
+.review_header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.review_stars {
+  display: flex;
+  gap: 2px;
+}
+
+.review_date {
+  font-size: 0.8rem;
+  color: var(--text-color);
+  opacity: 0.5;
+}
+
+.review_message {
+  font-size: 0.95rem;
+  color: var(--text-color);
+  line-height: 1.6;
+  margin: 0;
+}
+
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  gap: 16px;
+  flex: 1;
+  min-height: 200px;
+
+  p {
+    font-size: 0.95rem;
+    color: var(--text-color);
+    opacity: 0.6;
+    margin: 0;
+  }
+}
+
+.loading_spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid rgba(237, 138, 25, 0.2);
+  border-top-color: #ED8A19;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

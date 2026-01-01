@@ -1,0 +1,64 @@
+@use "public/styles/mixinHelper";
+
+.rating_wrapper {
+  @include mixinHelper.center-content;
+  justify-content: flex-start;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+  margin-bottom: 20px;
+
+  @include mixinHelper.onTablet {
+    margin-bottom: 10px;
+    margin-top: 10px;
+    justify-content: center;
+    scale: 0.8;
+  }
+}
+
+.stars_row {
+  display: flex;
+  gap: 2px;
+}
+
+.star_display {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+}
+
+.reviews_count {
+  background: none;
+  border: none;
+  color: var(--text-color);
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: background-color 0.2s ease;
+  margin-top: 3px;
+
+  &:hover {
+    background-color: rgba(128, 128, 128, 0.15);
+    text-decoration: underline;
+  }
+}
+
+.add_review_button {
+  background-color: rgba(128, 128, 128, 0.2);
+  border: none;
+  cursor: pointer;
+  padding: 6px 14px;
+  border-radius: 20px;
+  color: var(--text-color);
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition: background-color 0.2s ease;
+  white-space: nowrap;
+
+  &:hover {
+    background-color: rgba(128, 128, 128, 0.35);
+  }
+}

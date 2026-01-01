@@ -178,27 +178,6 @@
       }
     }
 
-    .rating_wrapper {
-      @include mixinHelper.center-content;
-      justify-content: flex-start;
-      flex-direction: row;
-      gap: 4px;
-      margin-top: 10px;
-      margin-bottom: 20px;
-
-      @include mixinHelper.onTablet {
-        margin-bottom: 10px;
-        margin-top: 10px;
-        justify-content: center;
-        scale: 0.8;
-      }
-
-      span {
-        color: var(--text-color);
-        margin-top: 3px;
-      }
-    }
-
     .nr_listeners_desktop {
       font-size: 1rem;
       font-weight: 400;

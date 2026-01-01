@@ -1,3 +1,19 @@
+export interface IReview {
+  id: number;
+  station_id: number;
+  stars: number;
+  message: string;
+  user_identifier?: string;
+  created_at: string;
+  updated_at: string;
+  verified?: boolean;
+}
+
+export interface IReviewsStats {
+  number_of_reviews: number;
+  average_rating: number;
+}
+
 export interface IStation {
   id: number;
   slug: string;
@@ -19,7 +35,7 @@ export interface IStation {
   posts: IPost[];
   uptime: IUptime;
   now_playing: INowPlaying;
-  reviews: any[];
+  reviews_stats: IReviewsStats;
   is_favorite: boolean;
   station_streams: IStationStreams[];
 }

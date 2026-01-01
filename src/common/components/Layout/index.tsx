@@ -2,7 +2,6 @@ import Head from "next/head";
 import React, { useContext } from "react";
 import AnalyticsScripts from "@/components/AnalyticsScripts";
 import { Context } from "@/context/ContextProvider";
-import { getStationRating } from "@/utils";
 
 const Layout = ({
   title,
@@ -26,7 +25,7 @@ const Layout = ({
     <>
       <AnalyticsScripts />
       <Head>
-        {selectedStation && selectedStation?.reviews.length > 0 && (
+        {selectedStation && selectedStation.reviews_stats?.number_of_reviews > 0 && (
           <script
             type="application/ld+json"
             dangerouslySetInnerHTML={{
@@ -36,8 +35,8 @@ const Layout = ({
                 name: `${selectedStation.title} - Radio Crestin`,
                 aggregateRating: {
                   "@type": "AggregateRating",
-                  ratingValue: getStationRating(ctx.selectedStation?.reviews),
-                  reviewCount: selectedStation.reviews.length
+                  ratingValue: selectedStation.reviews_stats.average_rating,
+                  reviewCount: selectedStation.reviews_stats.number_of_reviews
                 }
               })
             }}
