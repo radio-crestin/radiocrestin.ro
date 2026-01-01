@@ -21,7 +21,7 @@ export default function DownloadAppBanner() {
             >
               <img
                 loading={"lazy"}
-                src={"/images/appstore.svg"}
+                src={"/images/download_appstore_ro.svg"}
                 alt={"AppStore Image Radio Crestin"}
               />
             </Link>
@@ -33,20 +33,8 @@ export default function DownloadAppBanner() {
             >
               <img
                 loading={"lazy"}
-                src={"/images/playstore.svg"}
+                src={"/images/download_playstore_ro.svg"}
                 alt={"PlayStore Image Radio Crestin"}
-              />
-            </Link>
-          </div>
-          <div className={styles.link_box}>
-            <Link
-              href="https://appgallery.huawei.com/app/C109055331"
-              target={"_blank"}
-            >
-              <img
-                loading={"lazy"}
-                src={"/images/appgallery.svg"}
-                alt={"AppGallery Image Radio Crestin"}
               />
             </Link>
           </div>

@@ -58,8 +58,8 @@
 
 .sub_heading {
   font-size: 15px;
-  margin-top: 5px;
-  margin-bottom: 20px;
+  margin-top: 12px;
+  margin-bottom: 40px;
   color: var(--text-color);
 }
 
@@ -73,11 +73,9 @@
 }
 
 .link_box {
-  width: 33%;
-
   img {
-    width: 100%;
-    height: auto;
+    height: 48px;
+    width: auto;
   }
 }
 
