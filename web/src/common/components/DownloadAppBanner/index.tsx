@@ -1,8 +1,14 @@
-import React from "react";
+import React, { useContext } from "react";
 import Link from "next/link";
+import { QRCodeSVG } from "qrcode.react";
 import styles from "./styles.module.scss";
+import { Context } from "@/context/ContextProvider";
 
 export default function DownloadAppBanner() {
+  const { ctx } = useContext(Context);
+  const stationSlug = ctx?.selectedStation?.slug || "";
+  const shareUrl = `https://share.radiocrestin.ro/${stationSlug}`;
+
   return (
     <div className={styles.download_app_banner}>
       <div className={styles.text_container}>
@@ -58,11 +64,13 @@ export default function DownloadAppBanner() {
           alt={"iPhone 13 Radio Crestin"}
         />
       </div>
-      <img
-        loading={"lazy"}
+      <QRCodeSVG
         className={styles.qr_code}
-        src={"/images/qr-code.png"}
-        alt={"QR Code Radio Crestin"}
+        value={shareUrl}
+        size={90}
+        level="M"
+        bgColor="#f5f5f5"
+        fgColor="#1a1a2e"
       />
     </div>
   );
