@@ -2,7 +2,7 @@ import styles from "./styles.module.scss";
 
 export default function PrivacyPolicyPage() {
     return (
-        <div className={styles.container}>
+        <main className={styles.container}>
             <h1>Privacy Policy</h1>
             <p>Last updated: January 12, 2025</p>
             <p>This Privacy Policy describes Our policies and procedures on the collection, use and disclosure of Your
@@ -11,7 +11,7 @@ export default function PrivacyPolicyPage() {
             <p>We use Your Personal data to provide and improve the Service. By using the Service, You agree to the
                 collection and use of information in accordance with this Privacy Policy. This Privacy Policy has been
                 created with the help of the <a href="https://www.freeprivacypolicy.com/free-privacy-policy-generator/"
-                                                target="_blank">Free Privacy Policy Generator</a>.</p>
+                                                target="_blank" rel="noopener noreferrer">Free Privacy Policy Generator</a>.</p>
             <h2>Interpretation and Definitions</h2>
             <h3>Interpretation</h3>
             <p>The words of which the initial letter is capitalized have meanings defined under the following
@@ -249,6 +249,6 @@ export default function PrivacyPolicyPage() {
             <ul>
                 <li>By email: contact@radiocrestin.ro</li>
             </ul>
-        </div>
+        </main>
     )
 }

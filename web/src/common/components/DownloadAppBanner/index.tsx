@@ -23,24 +23,30 @@ export default function DownloadAppBanner() {
           <div className={styles.link_box}>
             <Link
               href="https://apps.apple.com/app/6451270471"
-              target={"_blank"}
+              target="_blank"
+              rel="noopener noreferrer"
             >
               <img
-                loading={"lazy"}
-                src={"/images/download_appstore_ro.svg"}
-                alt={"AppStore Image Radio Crestin"}
+                loading="lazy"
+                src="/images/download_appstore_ro.svg"
+                alt="AppStore Image Radio Crestin"
+                width={120}
+                height={40}
               />
             </Link>
           </div>
           <div className={styles.link_box}>
             <Link
               href="https://play.google.com/store/apps/details?id=com.radiocrestin.radio_crestin&hl=en_US"
-              target={"_blank"}
+              target="_blank"
+              rel="noopener noreferrer"
             >
               <img
-                loading={"lazy"}
-                src={"/images/download_playstore_ro.svg"}
-                alt={"PlayStore Image Radio Crestin"}
+                loading="lazy"
+                src="/images/download_playstore_ro.svg"
+                alt="PlayStore Image Radio Crestin"
+                width={135}
+                height={40}
               />
             </Link>
           </div>
@@ -48,20 +54,20 @@ export default function DownloadAppBanner() {
       </div>
       <div className={styles.image_container}>
         <img
-          loading={"lazy"}
+          loading="lazy"
           className={styles.iphone13_mock_image}
-          src={
-            "https://radio-crestin.s3.eu-central-1.amazonaws.com/media/public/iphone_desktop_size.png"
-          }
-          alt={"iPhone 13 Radio Crestin"}
+          src="https://radio-crestin.s3.eu-central-1.amazonaws.com/media/public/iphone_desktop_size.png"
+          alt="iPhone 13 Radio Crestin"
+          width={300}
+          height={600}
         />
         <img
           className={styles.iphone13_mobile_image}
-          loading={"lazy"}
-          src={
-            "https://radio-crestin.s3.eu-central-1.amazonaws.com/media/public/iphone_mob_size.png"
-          }
-          alt={"iPhone 13 Radio Crestin"}
+          loading="lazy"
+          src="https://radio-crestin.s3.eu-central-1.amazonaws.com/media/public/iphone_mob_size.png"
+          alt="iPhone 13 Radio Crestin"
+          width={200}
+          height={400}
         />
       </div>
       <QRCodeSVG

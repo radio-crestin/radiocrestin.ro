@@ -9,6 +9,7 @@ export default function WhatsAppButton() {
     <a
       href="https://wa.me/40766338046?text=Buna%20ziua%20[radiocrestin.ro]%0A"
       target="_blank"
+      rel="noopener noreferrer"
       className={`${styles.contactButton} ${
         ctx?.selectedStation ? styles.contactButtonPlayerIsOn : ""
       }`}

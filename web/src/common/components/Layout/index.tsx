@@ -61,13 +61,12 @@ const Layout = ({
         {/* End Twitter */}
 
         {/* Facebook */}
-        <meta property="og:url" content={imageUrl} />
+        <meta property="og:url" content={fullURL} />
         <meta property="og:title" content={title} />
         <meta property="og:description" content={description} />
         <meta property="og:image" content={imageUrl} />
         <meta property="og:site_name" content="Radio Crestin" />
         <meta property="og:type" content="website" />
-        <meta property="og:url" content={fullURL} />
         {/* End Facebook */}
 
         {/* Canonical Urls */}
@@ -82,7 +81,7 @@ const Layout = ({
         <meta name="google-play-app" content="app-id=com.radiocrestin.radio_crestin" />
         <link rel="alternate" href="https://play.google.com/store/apps/details?id=com.radiocrestin.radio_crestin" />
       </Head>
-      {children}
+      <main>{children}</main>
     </>
   );
 };

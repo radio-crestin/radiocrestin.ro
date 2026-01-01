@@ -2,7 +2,7 @@ import styles from "./styles.module.scss";
 
 export default function PrivacyPolicyPage() {
     return (
-        <div className={styles.container}>
+        <main className={styles.container}>
             <h1>Terms and Conditions</h1>
             <p>These terms and conditions outline the rules and regulations for the use
             of Cauta versete in Biblie&#x27;s Website, located
@@ -157,6 +157,6 @@ export default function PrivacyPolicyPage() {
             </ul>
             <p>As long as the website and the information and services on the website are provided free of charge, we
                 will not be liable for any loss or damage of any nature.</p>
-        </div>
+        </main>
     )
 }
