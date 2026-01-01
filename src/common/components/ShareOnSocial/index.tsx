@@ -15,11 +15,11 @@ export default function ShareOnSocial() {
   const whatsappShareLink = `https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`;
   return (
       <div className={styles.buttonContainer}>
-        <a href={facebookShareLink} target="_blank" className={`${styles.button} ${styles.facebookButton}`}>
+        <a href={facebookShareLink} target="_blank" rel="noopener noreferrer" className={`${styles.button} ${styles.facebookButton}`}>
             <img src="./icons/facebook.svg" alt="Trimite pe Facebook" className={`${styles.socialIcon} ${styles.facebookSocialIcon}`} />
             Trimite pe Facebook
         </a>
-        <a href={whatsappShareLink} target="_blank" className={`${styles.button} ${styles.whatsappButton}`}>
+        <a href={whatsappShareLink} target="_blank" rel="noopener noreferrer" className={`${styles.button} ${styles.whatsappButton}`}>
           <img src="./icons/whatsapp.svg" alt="Trimite pe Whatsapp" className={`${styles.socialIcon} ${styles.whatsappSocialIcon}`} />
           Trimite pe WhatsApp
         </a>
