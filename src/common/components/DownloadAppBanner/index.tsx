@@ -16,39 +16,48 @@ export default function DownloadAppBanner() {
           Descarcă aplicația Radio Creștin
         </h2>
         <p className={styles.sub_heading}>
-          Toate posturile tale preferate într-un singur loc, gratis și fără
+          Toate posturile tale preferate într-un singur loc, gratis, fără
           reclame.
         </p>
-        <div className={styles.link_container}>
-          <div className={styles.link_box}>
-            <Link
-              href="https://apps.apple.com/app/6451270471"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <img
-                loading="lazy"
-                src="/images/download_appstore_ro.svg"
-                alt="AppStore Image Radio Crestin"
-                width={120}
-                height={40}
-              />
-            </Link>
+        <div className={styles.download_links_wrapper}>
+          <div className={styles.link_container}>
+            <div className={styles.link_box}>
+              <Link
+                href="https://apps.apple.com/app/6451270471"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <img
+                  loading="lazy"
+                  src="/images/download_appstore_ro.svg"
+                  alt="AppStore Image Radio Crestin"
+                  width={120}
+                  height={40}
+                />
+              </Link>
+            </div>
+            <div className={styles.link_box}>
+              <Link
+                href="https://play.google.com/store/apps/details?id=com.radiocrestin.radio_crestin&hl=en_US"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <img
+                  loading="lazy"
+                  src="/images/download_playstore_ro.svg"
+                  alt="PlayStore Image Radio Crestin"
+                  width={135}
+                  height={40}
+                />
+              </Link>
+            </div>
           </div>
-          <div className={styles.link_box}>
-            <Link
-              href="https://play.google.com/store/apps/details?id=com.radiocrestin.radio_crestin&hl=en_US"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <img
-                loading="lazy"
-                src="/images/download_playstore_ro.svg"
-                alt="PlayStore Image Radio Crestin"
-                width={135}
-                height={40}
-              />
-            </Link>
+          <div className={styles.reviews_badge}>
+            <span className={styles.stars}>
+              &#9733;&#9733;&#9733;&#9733;&#9733;
+            </span>
+            <span className={styles.rating}>4.9</span>
+            <span className={styles.review_count}>(1767+ recenzii)</span>
           </div>
         </div>
       </div>
