@@ -138,8 +138,10 @@
   position: absolute;
   top: 20px;
   right: 20px;
-  width: 90px;
-  height: 90px;
+  padding: 10px;
+  border-radius: 16px;
+  background: #f5f5f5;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 
   @include mixinHelper.onSmallDesktop {
     display: none;
