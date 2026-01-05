@@ -3,7 +3,7 @@ import styles from "./styles.module.scss";
 
 export default function WhatsAppBibleGroup() {
   const joinGroup = () => {
-    window.open("https://chat.whatsapp.com/EwCXAtxAg7xFShFgjqQ76N", "_blank");
+    window.open("https://chat.whatsapp.com/Fpezp7iQlxT2oexlxs3kN4", "_blank");
   };
 
   return (
