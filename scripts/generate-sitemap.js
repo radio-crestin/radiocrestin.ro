@@ -1,7 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 
-const SITE_URL = "https://radiocrestin.ro";
+const SITE_URL = "https://www.radiocrestin.ro";
 const API_URL = "https://api.radiocrestin.ro/api/v1/stations";
 
 const STATIC_PAGES = [
@@ -9,7 +9,7 @@ const STATIC_PAGES = [
   { path: "/intrebari-frecvente", priority: "0.8" },
   { path: "/privacy-policy", priority: "0.5" },
   { path: "/terms-of-service", priority: "0.5" },
-  { path: "/statistici", priority: "0.7" },
+  { path: "/statistici", priority: "0.5" },
 ];
 
 async function generateSitemap() {
