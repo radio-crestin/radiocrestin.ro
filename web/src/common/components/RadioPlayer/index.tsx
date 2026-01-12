@@ -431,6 +431,7 @@ export default function RadioPlayer() {
               className={styles.slider}
               onChange={(e) => setPlayerVolume(Number(e.target.value))}
               aria-label="Player Volume"
+              style={{ '--fill-percent': `${playerVolume}%` } as React.CSSProperties}
             />
           </div>
 

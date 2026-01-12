@@ -36,17 +36,22 @@
 
   .heart_container {
     position: absolute;
-    bottom: -14px;
-    right: -21px;
+    bottom: -8px;
+    right: -8px;
     cursor: pointer;
-    padding: 8px;
-    color: red;
+    width: 32px;
+    height: 32px;
+    background: var(--radio-player-container-bg);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #393939;
+    color: #a0a0a0;
 
     svg {
-      border-top-left-radius: 10px;
-      border-bottom-right-radius: 10px;
-      background: var(--text-color);
-      padding: 2px;
+      width: 18px;
+      height: 18px;
     }
   }
 }
@@ -87,17 +92,55 @@
 
 .volume_slider {
   display: none;
-  margin-left: 4px;
-  margin-right: 2px;
+  margin-left: auto;
+  margin-right: 8px;
 
   @media (min-width: 768px) {
-    display: block;
+    display: flex;
+    align-items: center;
   }
 }
 
 .slider {
   width: 100px;
   margin-top: 2px;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  border-radius: 3px;
+  outline: none;
+  cursor: pointer;
+  --fill-percent: 50%;
+  background: linear-gradient(to right, #a0a0a0 0%, #a0a0a0 var(--fill-percent), #393939 var(--fill-percent), #393939 100%);
+
+  &::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 14px;
+    height: 14px;
+    background: #ffffff;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: background 0.2s;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  }
+
+  &::-moz-range-thumb {
+    width: 14px;
+    height: 14px;
+    background: #ffffff;
+    border-radius: 50%;
+    cursor: pointer;
+    border: none;
+    transition: background 0.2s;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  }
+
+  &::-moz-range-track {
+    background: transparent;
+    border-radius: 3px;
+    height: 6px;
+  }
 }
 
 .play_button_container {

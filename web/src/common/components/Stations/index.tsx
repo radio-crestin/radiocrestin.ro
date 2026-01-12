@@ -79,7 +79,6 @@ const Stations = () => {
   const handleKeyPress = (event: any) => {
     if (event.key === "Enter") {
       event.preventDefault();
-      event.target.blur(); // Remove focus from the input to close the keyboard
     }
   };
 
@@ -140,6 +139,8 @@ const Stations = () => {
       <div className={`${styles.search_section}`}>
         <div className={`${styles.search_container}`}>
           <input
+            id="station-search"
+            name="station-search"
             type="text"
             placeholder="Caută un radio..."
             value={searchedValue}
