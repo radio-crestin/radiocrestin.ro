@@ -50,3 +50,13 @@ export const SEO_STATISTICI = {
   imageUrl: "/images/android-chrome-512x512.png",
   fullURL: "https://radiocrestin.ro/",
 };
+
+export const SEO_FAQ = {
+  title: "Întrebări Frecvente (FAQ) | Radio Creștin",
+  description:
+    "Răspunsuri la cele mai frecvente întrebări despre Radio Creștin. Află cum să asculți radiouri creștine online, cum să adaugi o stație și multe altele.",
+  keywords:
+    "radio crestin faq, intrebari frecvente, ajutor radio crestin, radiocrestin, radiouri crestine, radio crestin online, radiocrestin.ro",
+  imageUrl: "/images/android-chrome-512x512.png",
+  fullURL: "https://radiocrestin.ro/intrebari-frecvente",
+};
