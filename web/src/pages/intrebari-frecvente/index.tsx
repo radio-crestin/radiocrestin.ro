@@ -143,6 +143,7 @@ export default function FAQPage() {
         <meta property="og:description" content={SEO_FAQ.description} />
         <meta property="og:url" content={SEO_FAQ.fullURL} />
         <meta property="og:type" content="website" />
+        <meta property="og:locale" content="ro_RO" />
         <link rel="canonical" href={SEO_FAQ.fullURL} />
         <script
           type="application/ld+json"

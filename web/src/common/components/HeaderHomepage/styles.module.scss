@@ -46,7 +46,11 @@
     justify-content: center;
     align-items: center;
     gap: 15px;
-    margin-left: 90px;
+    margin-left: 100px;
+
+    @include mixinHelper.onDesktop {
+      margin-left: 20px;
+    }
 
     @include mixinHelper.onTablet {
       margin-left: 0;

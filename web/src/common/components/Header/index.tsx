@@ -19,7 +19,7 @@ const Navigation = () => (
           height={40}
           alt={"AppStore Image Radio Crestin"}
         />
-        <h1>Radio Creștin</h1>
+        <span>Radio Creștin</span>
       </Link>
     </div>
     <div className={styles.right_content}>

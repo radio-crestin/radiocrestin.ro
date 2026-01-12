@@ -34,6 +34,6 @@ Interfața și conținutul sunt în limba română.
 
 ## Contact
 
-Website: https://radiocrestin.ro
+Website: https://www.radiocrestin.ro
 Android: https://play.google.com/store/apps/details?id=com.radiocrestin.radio_crestin
 iOS: https://apps.apple.com/ro/app/radio-crestin/id6451270471

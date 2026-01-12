@@ -50,16 +50,16 @@
       padding: 10px;
     }
 
-    h1 {
-      color: var(--text-color);
-    }
-
     .logo {
       @include mixinHelper.center-content;
       font-size: 20px;
       font-weight: bold;
       gap: 0 15px;
       padding: 0;
+
+      span {
+        color: var(--text-color);
+      }
     }
   }
 
