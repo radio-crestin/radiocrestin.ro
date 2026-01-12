@@ -3,11 +3,10 @@ import React, { useContext } from "react";
 
 import styles from "./styles.module.scss";
 import { Context } from "@/context/ContextProvider";
-import Rating from "@/components/Rating";
-import { getStationRating } from "@/utils";
 import ShareOnSocial from "@/components/ShareOnSocial";
 import ThemeToggle from "@/components/ThemeToggle";
 import WhatsAppButton from "@/components/WhatsAppButton";
+import StationRating from "@/components/Reviews/StationRating";
 
 const Navigation = () => (
   <nav className={styles.nav}>
@@ -108,13 +107,15 @@ const ContentRight = () => {
           />
           <h1 className={styles.station_title}>{ctx.selectedStation?.title}</h1>
         </div>
-        <div className={styles.rating_wrapper}>
-          <Rating
-            score={getStationRating(ctx.selectedStation?.reviews)}
-            starHeight={22}
+
+        {ctx.selectedStation && (
+          <StationRating
+            stationId={ctx.selectedStation.id}
+            stationTitle={ctx.selectedStation.title}
+            reviewsStats={ctx.selectedStation.reviews_stats}
           />
-          <span>({ctx.selectedStation?.reviews?.length || 0} recenzii)</span>
-        </div>
+        )}
+
         {ctx.selectedStation?.total_listeners !== 0 && (
           <>
             <p className={styles.nr_listeners_desktop}>
