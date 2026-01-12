@@ -1,0 +1,40 @@
+@use "public/styles/mixinHelper";
+
+.offline_status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #f87171;
+  margin-top: 2px;
+  opacity: 0.85;
+
+  &::before {
+    content: '';
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: #f87171;
+    flex-shrink: 0;
+  }
+
+  &[data-size="small"] {
+    font-size: 0.775rem;
+    margin-top: 0;
+
+    &::before {
+      width: 7px;
+      height: 7px;
+    }
+  }
+
+  @include mixinHelper.onTablet {
+    font-size: 0.8rem;
+
+    &::before {
+      width: 6px;
+      height: 6px;
+    }
+  }
+}
