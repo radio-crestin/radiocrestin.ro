@@ -116,17 +116,13 @@ const ContentRight = () => {
           />
         )}
 
-        {ctx.selectedStation?.total_listeners !== 0 && (
-          <>
-            <p className={styles.nr_listeners_desktop}>
-              {ctx.selectedStation?.total_listeners} persoane ascultă împreună
-              cu tine acest radio
-            </p>
-            <p className={styles.nr_listeners_mobile}>
-              {ctx.selectedStation?.total_listeners} ascultători
-            </p>
-          </>
-        )}
+        <p className={styles.nr_listeners_desktop}>
+          {ctx.selectedStation?.total_listeners || 1} persoane ascultă împreună
+          cu tine acest radio
+        </p>
+        <p className={styles.nr_listeners_mobile}>
+          {ctx.selectedStation?.total_listeners || 1} ascultători
+        </p>
         <p className={styles.station_description}>
           {ctx.selectedStation?.description}
         </p>
