@@ -1,4 +1,5 @@
 import { IStation } from "@/models/Station";
+import { SITE_URL } from "@/constants/constants";
 
 export const seoStation = (station: IStation) => {
   return {
@@ -13,7 +14,7 @@ export const seoStation = (station: IStation) => {
       : SEO_DEFAULT.keywords,
     imageUrl: station?.thumbnail_url || SEO_DEFAULT.imageUrl,
     fullURL: station?.slug
-      ? `https://radiocrestin.ro/${station.slug}`
+      ? `${SITE_URL}/${station.slug}`
       : SEO_DEFAULT.fullURL,
   };
 };
@@ -25,7 +26,7 @@ export const SEO_DEFAULT = {
   keywords:
     "radio crestin, radiocrestin, radiouri crestine, radio crestin online, radiouri crestine online, radio crestine, radiocrestin.ro, online",
   imageUrl: "/images/android-chrome-512x512.png",
-  fullURL: "https://radiocrestin.ro/",
+  fullURL: SITE_URL,
 };
 
 export const SEO_404 = {
@@ -35,7 +36,7 @@ export const SEO_404 = {
   keywords:
     "radio crestin, radiocrestin, radiouri crestine, radio crestin online, radiouri crestine online, radio crestine, radiocrestin.ro, online",
   imageUrl: "/images/android-chrome-512x512.png",
-  fullURL: "https://radiocrestin.ro/",
+  fullURL: SITE_URL,
 };
 
 export const seoInternalErrorPage = {
@@ -48,7 +49,7 @@ export const SEO_STATISTICI = {
   keywords:
     "radio crestin, statistici, radiocrestin, radiouri crestine, radio crestin online, radiouri crestine online, radio crestine, radiocrestin.ro, online",
   imageUrl: "/images/android-chrome-512x512.png",
-  fullURL: "https://radiocrestin.ro/",
+  fullURL: `${SITE_URL}/statistici`,
 };
 
 export const SEO_FAQ = {
@@ -58,5 +59,5 @@ export const SEO_FAQ = {
   keywords:
     "radio crestin faq, intrebari frecvente, ajutor radio crestin, radiocrestin, radiouri crestine, radio crestin online, radiocrestin.ro",
   imageUrl: "/images/android-chrome-512x512.png",
-  fullURL: "https://radiocrestin.ro/intrebari-frecvente",
+  fullURL: `${SITE_URL}/intrebari-frecvente`,
 };

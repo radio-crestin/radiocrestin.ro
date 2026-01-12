@@ -1,3 +1,6 @@
+export const SITE_URL = "https://www.radiocrestin.ro";
+export const SHARE_URL = "https://share.radiocrestin.ro";
+
 export const CONSTANTS = {
   DEFAULT_COVER: "",
   API_ENDPOINT: process.env.NEXT_PUBLIC_API_ENDPOINT || "https://api.radiocrestin.ro/api/v1/stations",

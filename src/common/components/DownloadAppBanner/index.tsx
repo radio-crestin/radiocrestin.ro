@@ -3,11 +3,12 @@ import Link from "next/link";
 import { QRCodeSVG } from "qrcode.react";
 import styles from "./styles.module.scss";
 import { Context } from "@/context/ContextProvider";
+import { SHARE_URL } from "@/constants/constants";
 
 export default function DownloadAppBanner() {
   const { ctx } = useContext(Context);
   const stationSlug = ctx?.selectedStation?.slug || "";
-  const shareUrl = `https://share.radiocrestin.ro/${stationSlug}`;
+  const shareUrl = `${SHARE_URL}/${stationSlug}`;
 
   return (
     <div className={styles.download_app_banner}>

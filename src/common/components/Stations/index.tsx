@@ -106,7 +106,7 @@ const Stations = () => {
     <div className={styles.container}>
       <WhatsAppBibleGroup />
       <div className={styles.favourite_section} data-info={"favourite-section"}>
-        <h1>Stații favorite:</h1>
+        <h2>Stații favorite:</h2>
         {ctx.favouriteStations?.length > 0 ? (
           <div className={styles.stations_container}>
             {ctx.favouriteStations.map((station: IStation) => {

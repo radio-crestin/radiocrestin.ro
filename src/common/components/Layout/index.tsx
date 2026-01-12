@@ -2,6 +2,7 @@ import Head from "next/head";
 import React, { useContext } from "react";
 import AnalyticsScripts from "@/components/AnalyticsScripts";
 import { Context } from "@/context/ContextProvider";
+import { SHARE_URL } from "@/constants/constants";
 
 const Layout = ({
   title,
@@ -70,6 +71,7 @@ const Layout = ({
         <meta property="og:image" content={imageUrl} />
         <meta property="og:site_name" content="Radio Crestin" />
         <meta property="og:type" content="website" />
+        <meta property="og:locale" content="ro_RO" />
         {/* End Facebook */}
 
         {/* Canonical Urls */}
@@ -83,7 +85,7 @@ const Layout = ({
           name="apple-itunes-app"
           content={`app-id=6451270471${
             selectedStation?.slug
-              ? `, app-argument=https://share.radiocrestin.ro/${selectedStation.slug}`
+              ? `, app-argument=${SHARE_URL}/${selectedStation.slug}`
               : ``
           }`}
         />
