@@ -15,6 +15,7 @@ import Heart from "@/icons/Heart";
 import useFavourite from "@/store/useFavourite";
 import { Bugsnag } from "@/utils/bugsnag";
 import { IStationStreams } from "@/models/Station";
+import OfflineStatus from "@/components/OfflineStatus";
 
 enum STREAM_TYPE {
   HLS = "HLS",
@@ -411,15 +412,19 @@ export default function RadioPlayer() {
 
           <div className={`${styles.station_info} ${styles.two_lines}`}>
             <h2 className={styles.station_title}>{station.title}</h2>
-            <p className={styles.song_name}>
-              {station?.now_playing?.song?.name}
-              {station?.now_playing?.song?.artist?.name && (
-                <span className={styles.artist_name}>
-                  {" · "}
-                  {station?.now_playing?.song?.artist?.name}
-                </span>
-              )}
-            </p>
+            {station.uptime?.is_up !== false ? (
+              <p className={styles.song_name}>
+                {station?.now_playing?.song?.name}
+                {station?.now_playing?.song?.artist?.name && (
+                  <span className={styles.artist_name}>
+                    {" · "}
+                    {station?.now_playing?.song?.artist?.name}
+                  </span>
+                )}
+              </p>
+            ) : (
+              <OfflineStatus size="small" />
+            )}
           </div>
 
           <div className={styles.volume_slider}>

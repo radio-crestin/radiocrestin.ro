@@ -25,6 +25,11 @@ export function cleanStationsMetadata(stations: IStation[]) {
     // Set total_listeners to 0
     station.total_listeners = 0;
 
+    // Set is_up to true (real value will be fetched on client side)
+    if (station.uptime) {
+      station.uptime.is_up = true;
+    }
+
     return station;
   });
 }
