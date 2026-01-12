@@ -38,14 +38,14 @@
 }
 
 .button_text {
-  color: white;
+  color: #ED8A19;
 }
 
 .button_spinner {
   width: 20px;
   height: 20px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-top-color: white;
+  border: 2px solid rgba(237, 138, 25, 0.3);
+  border-top-color: #ED8A19;
   border-radius: 50%;
   animation: spin 0.7s linear infinite;
   display: none;
@@ -201,21 +201,22 @@
   width: 180px;
   height: 48px;
   margin-left: auto;
-  background-color: #ED8A19;
-  color: white;
-  border: none;
+  background-color: transparent;
+  color: #ED8A19;
+  border: 1px solid rgba(237, 138, 25, 0.4);
   border-radius: 10px;
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.2s, transform 0.1s;
+  transition: all 0.2s, transform 0.1s;
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
 
   &:hover:not(:disabled) {
-    background-color: #d67a15;
+    border-color: #ED8A19;
+    background-color: rgba(237, 138, 25, 0.08);
   }
 
   &:active:not(:disabled) {
@@ -223,7 +224,7 @@
   }
 
   &:disabled {
-    opacity: 0.8;
+    opacity: 0.5;
     cursor: not-allowed;
   }
 }

@@ -61,7 +61,7 @@ const StationRating: React.FC<StationRatingProps> = ({
           className={styles.reviews_count}
           onClick={handleOpenReviewsList}
         >
-          ({reviewsStats?.number_of_reviews || 0} recenzii)
+          ({reviewsStats?.number_of_reviews === 1 ? "o recenzie" : `${reviewsStats?.number_of_reviews || 0} recenzii`})
         </button>
         <button
           className={styles.add_review_button}
