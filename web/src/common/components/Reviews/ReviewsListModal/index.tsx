@@ -78,7 +78,7 @@ const ReviewsListModal: React.FC<ReviewsListModalProps> = ({
                 />
               ))}
             </div>
-            <span className={styles.total_reviews}>{totalReviews} recenzii</span>
+            <span className={styles.total_reviews}>{totalReviews === 1 ? "o recenzie" : `${totalReviews} recenzii`}</span>
           </div>
           <button className={styles.write_review_button} onClick={onWriteReview}>
             Scrie o recenzie

@@ -83,7 +83,7 @@
   justify-content: space-between;
   align-items: center;
   padding: 16px 20px;
-  background: rgba(128, 128, 128, 0.08);
+  background: rgba(128, 128, 128, 0.05);
   border-radius: 12px;
   margin-bottom: 24px;
 
@@ -125,17 +125,18 @@
 
 .write_review_button {
   padding: 10px 20px;
-  background-color: #ED8A19;
-  color: white;
-  border: none;
+  background-color: transparent;
+  color: #ED8A19;
+  border: 1px solid rgba(237, 138, 25, 0.4);
   border-radius: 8px;
   font-size: 0.9rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: all 0.2s;
 
   &:hover {
-    background-color: #d67a15;
+    border-color: #ED8A19;
+    background-color: rgba(237, 138, 25, 0.08);
   }
 }
 
@@ -160,9 +161,10 @@
 }
 
 .review_item {
-  background: rgba(128, 128, 128, 0.06);
+  background: transparent;
   padding: 16px;
   border-radius: 10px;
+  border: 1px solid rgba(128, 128, 128, 0.12);
 }
 
 .review_header {
@@ -188,6 +190,7 @@
   color: var(--text-color);
   line-height: 1.6;
   margin: 0;
+  word-break: break-word;
 }
 
 .loading {
