@@ -31,13 +31,15 @@ const Layout = ({
             type="application/ld+json"
             dangerouslySetInnerHTML={{
               __html: JSON.stringify({
-                "@context": "http://schema.org",
-                "@type": "Product",
+                "@context": "https://schema.org",
+                "@type": "RadioStation",
                 name: `${selectedStation.title} - Radio Crestin`,
                 aggregateRating: {
                   "@type": "AggregateRating",
                   ratingValue: getStationRating(ctx.selectedStation?.reviews),
-                  reviewCount: selectedStation.reviews.length
+                  reviewCount: selectedStation.reviews.length,
+                  bestRating: 5,
+                  worstRating: 1
                 }
               })
             }}
