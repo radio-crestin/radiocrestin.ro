@@ -2,7 +2,6 @@ import Head from "next/head";
 import React, { useContext } from "react";
 import AnalyticsScripts from "@/components/AnalyticsScripts";
 import { Context } from "@/context/ContextProvider";
-import { getStationRating } from "@/utils";
 
 const Layout = ({
   title,
@@ -10,7 +9,7 @@ const Layout = ({
   keywords,
   imageUrl,
   children,
-  fullURL
+  fullURL,
 }: {
   title: string;
   description: string;
@@ -26,25 +25,27 @@ const Layout = ({
     <>
       <AnalyticsScripts />
       <Head>
-        {selectedStation && selectedStation?.reviews.length > 0 && (
-          <script
-            type="application/ld+json"
-            dangerouslySetInnerHTML={{
-              __html: JSON.stringify({
-                "@context": "https://schema.org",
-                "@type": "RadioStation",
-                name: `${selectedStation.title} - Radio Crestin`,
-                aggregateRating: {
-                  "@type": "AggregateRating",
-                  ratingValue: getStationRating(ctx.selectedStation?.reviews),
-                  reviewCount: selectedStation.reviews.length,
-                  bestRating: 5,
-                  worstRating: 1
-                }
-              })
-            }}
-          />
-        )}
+        {selectedStation &&
+          selectedStation.reviews_stats?.number_of_reviews > 0 && (
+            <script
+              type="application/ld+json"
+              dangerouslySetInnerHTML={{
+                __html: JSON.stringify({
+                  "@context": "https://schema.org",
+                  "@type": "RadioStation",
+                  name: `${selectedStation.title} - Radio Crestin`,
+                  aggregateRating: {
+                    "@type": "AggregateRating",
+                    ratingValue: selectedStation.reviews_stats.average_rating,
+                    reviewCount:
+                      selectedStation.reviews_stats.number_of_reviews,
+                    bestRating: 5,
+                    worstRating: 1,
+                  },
+                }),
+              }}
+            />
+          )}
         <link rel="image_src" href={imageUrl} />
 
         {/* Metatags */}
@@ -78,10 +79,22 @@ const Layout = ({
         <meta name="HandheldFriendly" content="true" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-        <meta name="apple-itunes-app"
-          content={`app-id=6451270471${selectedStation?.slug ? `, app-argument=https://share.radiocrestin.ro/${selectedStation.slug}` : ``}`} />
-        <meta name="google-play-app" content="app-id=com.radiocrestin.radio_crestin" />
-        <link rel="alternate" href="https://play.google.com/store/apps/details?id=com.radiocrestin.radio_crestin" />
+        <meta
+          name="apple-itunes-app"
+          content={`app-id=6451270471${
+            selectedStation?.slug
+              ? `, app-argument=https://share.radiocrestin.ro/${selectedStation.slug}`
+              : ``
+          }`}
+        />
+        <meta
+          name="google-play-app"
+          content="app-id=com.radiocrestin.radio_crestin"
+        />
+        <link
+          rel="alternate"
+          href="https://play.google.com/store/apps/details?id=com.radiocrestin.radio_crestin"
+        />
       </Head>
       <main>{children}</main>
     </>

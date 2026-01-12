@@ -29,14 +29,6 @@ export function cleanStationsMetadata(stations: IStation[]) {
   });
 }
 
-export function getStationRating(reviews: any[]) {
-  const average = (arr: any[]) => arr.reduce((a, b) => a + b, 0) / arr.length;
-  return (
-    Math.round((average(reviews?.map((i: any) => i.stars) || []) || 0) * 10) /
-    10
-  );
-}
-
 export function getValidImageUrl(url: string | null | undefined, fallback: string = "/images/radio-white-default.jpg"): string {
   if (!url || url === "null" || url === "undefined" || url.trim() === "") {
     return fallback;
