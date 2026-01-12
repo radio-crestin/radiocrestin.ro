@@ -6,6 +6,9 @@ export default function FooterLinks() {
   return (
     <div className={styles.container}>
       <div className={styles.external_links}>
+        <Link href="/intrebari-frecvente" className={styles.statistics_link}>
+          Întrebări frecvente
+        </Link>
         <Link href="/statistici" className={styles.statistics_link} target="_blank" rel="noopener noreferrer">
           Statistici
         </Link>
