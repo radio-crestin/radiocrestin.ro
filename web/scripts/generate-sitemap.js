@@ -29,7 +29,7 @@ async function generateSitemap() {
     (page) => `  <url>
     <loc>${SITE_URL}${page.path}</loc>
     <lastmod>${today}</lastmod>
-    <changefreq>daily</changefreq>
+    <changefreq>monthly</changefreq>
     <priority>${page.priority}</priority>
   </url>`
   );
@@ -38,7 +38,7 @@ async function generateSitemap() {
     (station) => `  <url>
     <loc>${SITE_URL}/${station.slug}</loc>
     <lastmod>${today}</lastmod>
-    <changefreq>daily</changefreq>
+    <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>`
   );
