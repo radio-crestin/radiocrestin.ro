@@ -47,13 +47,13 @@
 
   .search_container {
     display: flex;
-    border: 1px solid gray;
+    border: 1px solid #393939;
     border-radius: 20px;
     max-width: 250px;
     width: 100%;
     margin-top: 25px;
     background: var(--bg-search-a-radio);
-    color: var(--text-color);
+    color: #a0a0a0;
 
     &:hover, &:focus-within {
       max-width: 260px;
@@ -65,9 +65,10 @@
       height: 40px;
       padding: 0 15px;
       background: transparent;
+      color: #a0a0a0;
 
       &::placeholder {
-        color: var(--text-color);
+        color: #a0a0a0;
       }
 
       &:focus {
