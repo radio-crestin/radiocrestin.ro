@@ -58,7 +58,7 @@ export default function DownloadAppBanner() {
               &#9733;&#9733;&#9733;&#9733;&#9733;
             </span>
             <span className={styles.rating}>4.9</span>
-            <span className={styles.review_count}>(1767+ recenzii)</span>
+            <span className={styles.review_count}>(1800+ recenzii)</span>
           </div>
         </div>
       </div>
