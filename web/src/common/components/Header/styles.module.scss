@@ -270,7 +270,7 @@
     }
 
     p {
-      color: var(--text-color);
+      color: var(--header-subtext-color);
     }
   }
 }
@@ -317,7 +317,7 @@
       font-size: 1rem;
       font-weight: 400;
       margin-bottom: 20px;
-      color: var(--text-color);
+      color: var(--header-subtext-color);
 
       @include mixinHelper.onTablet {
         display: none;
@@ -330,7 +330,7 @@
       font-weight: 400;
       margin-bottom: 20px;
       text-align: center;
-      color: var(--text-color);
+      color: var(--header-subtext-color);
 
       @include mixinHelper.onTablet {
         display: block;
@@ -342,7 +342,7 @@
       line-height: 25px;
       font-weight: 400;
       margin-bottom: 30px;
-      color: var(--text-color);
+      color: var(--header-subtext-color);
 
       display: -webkit-box;
       -webkit-line-clamp: 5;

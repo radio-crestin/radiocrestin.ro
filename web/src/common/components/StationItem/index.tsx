@@ -11,6 +11,7 @@ import { useContext, useEffect, useState } from "react";
 import { Context } from "@/context/ContextProvider";
 import { getValidImageUrl } from "@/utils";
 import OfflineStatus from "@/components/OfflineStatus";
+import PlayingIndicator from "@/components/PlayingIndicator";
 
 const StationItem = (data: IStation) => {
   const { ctx } = useContext(Context);
@@ -43,7 +44,10 @@ const StationItem = (data: IStation) => {
         />
       </div>
       <div className={styles.station_details}>
-        <p className={styles.station_name}>{data.title}</p>
+        <p className={styles.station_name}>
+          <PlayingIndicator />
+          {data.title}
+        </p>
         {data.uptime?.is_up !== false ? (
           <p className={styles.song_name}>
             {data?.now_playing?.song?.name}

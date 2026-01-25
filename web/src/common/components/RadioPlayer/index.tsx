@@ -383,8 +383,10 @@ export default function RadioPlayer() {
   };
 
   return (
-    <div className={styles.radio_player_container}>
-      <div className={styles.radio_player}>
+    <>
+      <div className={styles.player_gradient_overlay} />
+      <div className={styles.radio_player_container}>
+        <div className={styles.radio_player}>
         <div className={styles.player_container}>
           <div className={styles.image_container}>
             <img
@@ -497,6 +499,7 @@ export default function RadioPlayer() {
           }}
         />
       </div>
-    </div>
+      </div>
+    </>
   );
 }

@@ -1,7 +1,12 @@
 import React from "react";
 import Link from "next/link";
 import styles from "./styles.module.scss";
-import { APP_RATING, APP_REVIEW_COUNT, getIOSStoreLink, getAndroidStoreLink } from "@/constants/constants";
+import {
+  APP_RATING,
+  APP_REVIEW_COUNT,
+  getAndroidStoreLink,
+  getIOSStoreLink,
+} from "@/constants/constants";
 
 export default function MobileAppBanner() {
   return (
@@ -17,10 +22,14 @@ export default function MobileAppBanner() {
 
       <div className={styles.app_info}>
         <span className={styles.app_name}>Radio Creștin</span>
-        <span className={styles.app_subtitle}>Radiouri creștine online</span>
+        <span className={styles.app_subtitle}>
+          Peste 50 de radiouri creștine
+        </span>
         <div className={styles.app_rating}>
           <span className={styles.stars}>★★★★★</span>
-          <span className={styles.rating_text}>{APP_RATING} ({APP_REVIEW_COUNT}+)</span>
+          <span className={styles.rating_text}>
+            {APP_RATING} ({APP_REVIEW_COUNT}+)
+          </span>
         </div>
       </div>
 
