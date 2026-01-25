@@ -7,6 +7,7 @@ const API_URL = "https://api.radiocrestin.ro/api/v1/stations";
 const STATIC_PAGES = [
   { path: "", priority: "1.0" },
   { path: "/intrebari-frecvente", priority: "0.8" },
+  { path: "/descarca-aplicatia-radio-crestin", priority: "0.8" },
   { path: "/privacy-policy", priority: "0.5" },
   { path: "/terms-of-service", priority: "0.5" },
   { path: "/statistici", priority: "0.5" },
