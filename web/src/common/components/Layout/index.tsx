@@ -1,8 +1,8 @@
 import Head from "next/head";
 import React, { useContext } from "react";
 import AnalyticsScripts from "@/components/AnalyticsScripts";
+import MobileAppBanner from "@/components/MobileAppBanner";
 import { Context } from "@/context/ContextProvider";
-import { SHARE_URL } from "@/constants/constants";
 
 const Layout = ({
   title,
@@ -11,6 +11,7 @@ const Layout = ({
   imageUrl,
   children,
   fullURL,
+  hideAppBanner = false,
 }: {
   title: string;
   description: string;
@@ -18,6 +19,7 @@ const Layout = ({
   imageUrl: string;
   children: React.ReactNode;
   fullURL: string;
+  hideAppBanner?: boolean;
 }) => {
   const { ctx } = useContext(Context);
   const { selectedStation } = ctx;
@@ -80,24 +82,8 @@ const Layout = ({
         <meta name="MobileOptimized" content="width" />
         <meta name="HandheldFriendly" content="true" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-
-        <meta
-          name="apple-itunes-app"
-          content={`app-id=6451270471${
-            selectedStation?.slug
-              ? `, app-argument=${SHARE_URL}/${selectedStation.slug}`
-              : ``
-          }`}
-        />
-        <meta
-          name="google-play-app"
-          content="app-id=com.radiocrestin.radio_crestin"
-        />
-        <link
-          rel="alternate"
-          href="https://play.google.com/store/apps/details?id=com.radiocrestin.radio_crestin"
-        />
       </Head>
+      {!hideAppBanner && <MobileAppBanner />}
       <main>{children}</main>
     </>
   );

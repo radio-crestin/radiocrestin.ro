@@ -3,7 +3,7 @@ import Link from "next/link";
 import { QRCodeSVG } from "qrcode.react";
 import styles from "./styles.module.scss";
 import { Context } from "@/context/ContextProvider";
-import { SHARE_URL } from "@/constants/constants";
+import { SHARE_URL, APP_RATING, APP_REVIEW_COUNT } from "@/constants/constants";
 
 export default function DownloadAppBanner() {
   const { ctx } = useContext(Context);
@@ -57,8 +57,8 @@ export default function DownloadAppBanner() {
             <span className={styles.stars}>
               &#9733;&#9733;&#9733;&#9733;&#9733;
             </span>
-            <span className={styles.rating}>4.9</span>
-            <span className={styles.review_count}>(1800+ recenzii)</span>
+            <span className={styles.rating}>{APP_RATING}</span>
+            <span className={styles.review_count}>({APP_REVIEW_COUNT}+ recenzii)</span>
           </div>
         </div>
       </div>
