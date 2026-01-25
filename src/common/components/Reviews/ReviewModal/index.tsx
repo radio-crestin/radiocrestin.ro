@@ -100,6 +100,7 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
 
   const handleStarSelect = (starIndex: number) => {
     setSelectedStars(starIndex);
+    setHoveredStars(0);
     setStarsError(false);
   };
 
@@ -115,6 +116,10 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
           className={styles.star_button}
           onMouseEnter={() => setHoveredStars(i)}
           onMouseLeave={() => setHoveredStars(0)}
+          onTouchEnd={(e) => {
+            e.preventDefault();
+            handleStarSelect(i);
+          }}
           onClick={() => handleStarSelect(i)}
           aria-label={`${i} stele`}
         >
