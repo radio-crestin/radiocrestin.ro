@@ -8,6 +8,7 @@ import { seoStation } from "@/utils/seo";
 import Header from "@/components/Header";
 import Stations from "@/components/Stations";
 import DownloadAppBanner from "@/components/DownloadAppBanner";
+import WhatsAppBibleGroup from "@/components/WhatsAppBibleGroup";
 import useUpdateContextMetadata from "@/hooks/useUpdateStationsMetadata";
 import useFavouriteStations from "@/hooks/useFavouriteStations";
 import RadioPlayer from "@/components/RadioPlayer";
@@ -22,6 +23,7 @@ export default function StationPage({ seo }: { seo: any }) {
   return (
     <Layout {...seo}>
       <Header />
+      <WhatsAppBibleGroup />
       <Stations />
       <DownloadAppBanner />
       <FooterLinks />

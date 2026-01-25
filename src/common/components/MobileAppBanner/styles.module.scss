@@ -1,0 +1,118 @@
+@use "public/styles/mixinHelper";
+
+.banner {
+  display: none;
+  background: linear-gradient(to bottom, #f8f8f8 0%, #e8e8e8 100%);
+  border-bottom: 1px solid #c9c9c9;
+  padding: 10px 14px;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+
+  @include mixinHelper.onTablet {
+    display: flex;
+  }
+
+  &:hover {
+    background: linear-gradient(to bottom, #f0f0f0 0%, #e0e0e0 100%);
+  }
+}
+
+.app_icon {
+  flex-shrink: 0;
+  width: 52px;
+  height: 52px;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+.app_info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.app_name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #000;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.app_subtitle {
+  font-size: 11px;
+  color: #8e8e93;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.app_rating {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 2px;
+
+  .stars {
+    color: #ff9500;
+    font-size: 10px;
+    letter-spacing: -1px;
+  }
+
+  .rating_text {
+    font-size: 10px;
+    color: #8e8e93;
+  }
+}
+
+.store_buttons {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+
+  @include mixinHelper.onTablet {
+    display: none;
+  }
+}
+
+.store_button {
+  display: block;
+  transition: transform 0.2s ease;
+
+  &:hover {
+    transform: scale(1.05);
+  }
+
+  img {
+    height: 36px;
+    width: auto;
+  }
+}
+
+.view_button {
+  display: none;
+  flex-shrink: 0;
+  background: #007aff;
+  color: #fff;
+  border: none;
+  border-radius: 16px;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+
+  @include mixinHelper.onTablet {
+    display: block;
+  }
+}
