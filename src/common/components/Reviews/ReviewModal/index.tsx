@@ -141,7 +141,7 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
           </svg>
         </button>
 
-        <h2 className={styles.modal_title}>Lasa o recenzie</h2>
+        <h2 className={styles.modal_title}>Adaugă o recenzie</h2>
         <p className={styles.station_name}>{stationTitle}</p>
 
         <form onSubmit={handleSubmit} className={styles.form}>

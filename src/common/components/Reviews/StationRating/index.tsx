@@ -67,7 +67,7 @@ const StationRating: React.FC<StationRatingProps> = ({
           className={styles.add_review_button}
           onClick={() => setIsReviewModalOpen(true)}
         >
-          Lasa un review
+          Adaugă o recenzie
         </button>
       </div>
 
