@@ -9,6 +9,7 @@ import { CONSTANTS } from "@/constants/constants";
 import styles from "./styles.module.scss";
 import { Context } from "@/context/ContextProvider";
 import usePlayer from "@/store/usePlayer";
+import usePlaybackState from "@/store/usePlaybackState";
 import { PLAYBACK_STATE } from "@/models/enum";
 import { toast } from "react-toastify";
 import Heart from "@/icons/Heart";
@@ -28,7 +29,7 @@ const MAX_MEDIA_RETRIES = 20;
 export default function RadioPlayer() {
   const { ctx } = useContext(Context);
   const { playerVolume, setPlayerVolume } = usePlayer();
-  const [playbackState, setPlaybackState] = useState(PLAYBACK_STATE.STOPPED);
+  const { playbackState, setPlaybackState, setHasError } = usePlaybackState();
   const station = ctx.selectedStation;
   const router = useRouter();
   const [retries, setRetries] = useState(MAX_MEDIA_RETRIES);
@@ -479,9 +480,11 @@ export default function RadioPlayer() {
           id="audioPlayer"
           onPlaying={() => {
             setPlaybackState(PLAYBACK_STATE.PLAYING);
+            setHasError(false);
           }}
           onPlay={() => {
             setPlaybackState(PLAYBACK_STATE.PLAYING);
+            setHasError(false);
           }}
           onPause={() => {
             setPlaybackState(PLAYBACK_STATE.STOPPED);
@@ -490,6 +493,7 @@ export default function RadioPlayer() {
             setPlaybackState(PLAYBACK_STATE.BUFFERING);
           }}
           onError={(error) => {
+            setHasError(true);
             Bugsnag.notify(
               new Error(
                 `Audio error:414 - station.title: ${station.title}, error: ${error}`,
