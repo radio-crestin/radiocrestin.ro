@@ -23,13 +23,12 @@ const ReviewsListModal: React.FC<ReviewsListModalProps> = ({
   onWriteReview,
 }) => {
   useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "unset";
-    }
+    if (!isOpen) return;
+    const scrollY = window.scrollY;
+    document.body.style.cssText = `overflow-y: scroll; position: fixed; width: 100%; top: -${scrollY}px`;
     return () => {
-      document.body.style.overflow = "unset";
+      document.body.style.cssText = "";
+      window.scrollTo(0, scrollY);
     };
   }, [isOpen]);
 
