@@ -120,10 +120,7 @@ const Stations = () => {
             className={`${styles.stations_container} ${styles.favourite_cont}`}
           >
             <div className={styles.favorite_card}>
-              <img src="./icons/diamond.svg" alt="Diamond icon" height={24} />
-              <p>
-                Adaugă un radio în lista de favorite pentru a-l accesa mai ușor.
-              </p>
+              <p>Adaugă prima ta stație.</p>
               <button
                 onClick={() => handleNoStationClicked()}
                 aria-label="Add to favourite"
