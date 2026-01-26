@@ -120,7 +120,7 @@ const Stations = () => {
             className={`${styles.stations_container} ${styles.favourite_cont}`}
           >
             <div className={styles.favorite_card}>
-              <p>Adaugă prima ta stație.</p>
+              <p>Adaugă prima ta stație la favorite.</p>
               <button
                 onClick={() => handleNoStationClicked()}
                 aria-label="Add to favourite"
