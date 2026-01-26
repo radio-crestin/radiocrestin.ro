@@ -309,6 +309,8 @@
 
         @include mixinHelper.onTablet {
           font-size: 1.7rem;
+          justify-content: center;
+          text-align: center;
         }
       }
     }
