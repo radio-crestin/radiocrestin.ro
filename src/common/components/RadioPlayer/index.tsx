@@ -9,12 +9,14 @@ import { CONSTANTS } from "@/constants/constants";
 import styles from "./styles.module.scss";
 import { Context } from "@/context/ContextProvider";
 import usePlayer from "@/store/usePlayer";
+import usePlaybackState from "@/store/usePlaybackState";
 import { PLAYBACK_STATE } from "@/models/enum";
 import { toast } from "react-toastify";
 import Heart from "@/icons/Heart";
 import useFavourite from "@/store/useFavourite";
 import { Bugsnag } from "@/utils/bugsnag";
 import { IStationStreams } from "@/models/Station";
+import OfflineStatus from "@/components/OfflineStatus";
 
 enum STREAM_TYPE {
   HLS = "HLS",
@@ -27,7 +29,7 @@ const MAX_MEDIA_RETRIES = 20;
 export default function RadioPlayer() {
   const { ctx } = useContext(Context);
   const { playerVolume, setPlayerVolume } = usePlayer();
-  const [playbackState, setPlaybackState] = useState(PLAYBACK_STATE.STOPPED);
+  const { playbackState, setPlaybackState, setHasError } = usePlaybackState();
   const station = ctx.selectedStation;
   const router = useRouter();
   const [retries, setRetries] = useState(MAX_MEDIA_RETRIES);
@@ -382,8 +384,10 @@ export default function RadioPlayer() {
   };
 
   return (
-    <div className={styles.radio_player_container}>
-      <div className={styles.radio_player}>
+    <>
+      <div className={styles.player_gradient_overlay} />
+      <div className={styles.radio_player_container}>
+        <div className={styles.radio_player}>
         <div className={styles.player_container}>
           <div className={styles.image_container}>
             <img
@@ -411,15 +415,19 @@ export default function RadioPlayer() {
 
           <div className={`${styles.station_info} ${styles.two_lines}`}>
             <h2 className={styles.station_title}>{station.title}</h2>
-            <p className={styles.song_name}>
-              {station?.now_playing?.song?.name}
-              {station?.now_playing?.song?.artist?.name && (
-                <span className={styles.artist_name}>
-                  {" · "}
-                  {station?.now_playing?.song?.artist?.name}
-                </span>
-              )}
-            </p>
+            {station.uptime?.is_up !== false ? (
+              <p className={styles.song_name}>
+                {station?.now_playing?.song?.name}
+                {station?.now_playing?.song?.artist?.name && (
+                  <span className={styles.artist_name}>
+                    {" · "}
+                    {station?.now_playing?.song?.artist?.name}
+                  </span>
+                )}
+              </p>
+            ) : (
+              <OfflineStatus size="small" />
+            )}
           </div>
 
           <div className={styles.volume_slider}>
@@ -431,6 +439,7 @@ export default function RadioPlayer() {
               className={styles.slider}
               onChange={(e) => setPlayerVolume(Number(e.target.value))}
               aria-label="Player Volume"
+              style={{ '--fill-percent': `${playerVolume}%` } as React.CSSProperties}
             />
           </div>
 
@@ -471,9 +480,11 @@ export default function RadioPlayer() {
           id="audioPlayer"
           onPlaying={() => {
             setPlaybackState(PLAYBACK_STATE.PLAYING);
+            setHasError(false);
           }}
           onPlay={() => {
             setPlaybackState(PLAYBACK_STATE.PLAYING);
+            setHasError(false);
           }}
           onPause={() => {
             setPlaybackState(PLAYBACK_STATE.STOPPED);
@@ -482,6 +493,7 @@ export default function RadioPlayer() {
             setPlaybackState(PLAYBACK_STATE.BUFFERING);
           }}
           onError={(error) => {
+            setHasError(true);
             Bugsnag.notify(
               new Error(
                 `Audio error:414 - station.title: ${station.title}, error: ${error}`,
@@ -491,6 +503,7 @@ export default function RadioPlayer() {
           }}
         />
       </div>
-    </div>
+      </div>
+    </>
   );
 }

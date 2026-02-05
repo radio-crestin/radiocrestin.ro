@@ -1,0 +1,30 @@
+.playing_indicator {
+  display: flex;
+  align-items: flex-end;
+  flex-shrink: 0;
+  gap: 2px;
+  height: 14px;
+  min-height: 14px;
+  width: 0;
+  margin-right: 0;
+  opacity: 0;
+  overflow: hidden;
+  transition: width 0.3s ease, margin-right 0.3s ease, opacity 0.3s ease;
+  will-change: width, margin-right, opacity;
+
+  span {
+    width: 3px;
+    min-height: 4px;
+    flex-shrink: 0;
+    background: var(--text-color);
+    border-radius: 2px;
+    transition: height 0.15s ease-out;
+    will-change: height;
+  }
+}
+
+:global([data-active="true"]) .playing_indicator {
+  width: 18px;
+  margin-right: 8px;
+  opacity: 1;
+}

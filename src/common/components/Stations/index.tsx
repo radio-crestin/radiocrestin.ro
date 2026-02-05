@@ -8,7 +8,6 @@ import FavoriteItem from "@/components/FavoriteItem";
 import StationItem from "@/components/StationItem";
 import { Magnify } from "@/icons/Magnify";
 import CloseIcon from "@/icons/CloseIcon";
-import WhatsAppBibleGroup from "@/components/WhatsAppBibleGroup";
 
 const Stations = () => {
   const { ctx } = useContext(Context);
@@ -79,7 +78,6 @@ const Stations = () => {
   const handleKeyPress = (event: any) => {
     if (event.key === "Enter") {
       event.preventDefault();
-      event.target.blur(); // Remove focus from the input to close the keyboard
     }
   };
 
@@ -105,9 +103,8 @@ const Stations = () => {
 
   return (
     <div className={styles.container}>
-      <WhatsAppBibleGroup />
       <div className={styles.favourite_section} data-info={"favourite-section"}>
-        <h1>Stații favorite:</h1>
+        <h2>Stații favorite:</h2>
         {ctx.favouriteStations?.length > 0 ? (
           <div className={styles.stations_container}>
             {ctx.favouriteStations.map((station: IStation) => {
@@ -123,10 +120,7 @@ const Stations = () => {
             className={`${styles.stations_container} ${styles.favourite_cont}`}
           >
             <div className={styles.favorite_card}>
-              <img src="./icons/diamond.svg" alt="Diamond icon" height={24} />
-              <p>
-                Adaugă un radio în lista de favorite pentru a-l accesa mai ușor.
-              </p>
+              <p>Adaugă prima ta stație la favorite.</p>
               <button
                 onClick={() => handleNoStationClicked()}
                 aria-label="Add to favourite"
@@ -140,6 +134,8 @@ const Stations = () => {
       <div className={`${styles.search_section}`}>
         <div className={`${styles.search_container}`}>
           <input
+            id="station-search"
+            name="station-search"
             type="text"
             placeholder="Caută un radio..."
             value={searchedValue}

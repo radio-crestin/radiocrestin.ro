@@ -9,6 +9,8 @@ import React, { useContext, useEffect, useState } from "react";
 import Heart from "@/icons/Heart";
 import { Context } from "@/context/ContextProvider";
 import { getValidImageUrl } from "@/utils";
+import OfflineStatus from "@/components/OfflineStatus";
+import PlayingIndicator from "@/components/PlayingIndicator";
 
 interface FavouriteItemProps extends IStation {
   animationDelay?: number;
@@ -51,16 +53,23 @@ const FavouriteItem = (data: FavouriteItemProps) => {
           }}
         />
         <div className={styles.station_details}>
-          <p className={styles.station_name}>{data.title}</p>
-          <p className={styles.song_name}>
-            {data?.now_playing?.song?.name}
-            {data?.now_playing?.song?.artist?.name && (
-              <span className={styles.artist_name}>
-                {" · "}
-                {data?.now_playing?.song?.artist?.name}
-              </span>
-            )}
+          <p className={styles.station_name}>
+            <PlayingIndicator />
+            {data.title}
           </p>
+          {data.uptime?.is_up !== false ? (
+            <p className={styles.song_name}>
+              {data?.now_playing?.song?.name}
+              {data?.now_playing?.song?.artist?.name && (
+                <span className={styles.artist_name}>
+                  {" · "}
+                  {data?.now_playing?.song?.artist?.name}
+                </span>
+              )}
+            </p>
+          ) : (
+            <OfflineStatus />
+          )}
         </div>
       </div>
       <div

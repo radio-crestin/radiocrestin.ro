@@ -12,7 +12,7 @@ export default function WhatsAppBibleGroup() {
         Versetul zilei pe WhatsApp zilnic la ora 7:30
       </h2>
       <button className={styles.joinButton} onClick={joinGroup}>
-        Primește versetul zilnic pe WhatsApp
+        Primește versetul zilei
         <svg
           width="16"
           viewBox="0 0 360 362"
