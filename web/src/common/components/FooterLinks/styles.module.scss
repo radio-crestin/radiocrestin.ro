@@ -8,6 +8,7 @@
   position: relative;
   max-width: 1499px;
   margin: 20px auto 150px;
+  gap: 16px;
 
   .external_links {
     display: flex;
@@ -42,6 +43,32 @@
     img {
       height: 50px;
       width: 50px;
+    }
+  }
+
+  .legal_links {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+
+    a {
+      color: var(--text-color);
+      text-decoration: none;
+      font-size: 0.85rem;
+      opacity: 0.6;
+      transition: opacity 0.2s ease;
+
+      &:hover {
+        opacity: 1;
+      }
+    }
+
+    .separator {
+      color: var(--text-color);
+      opacity: 0.3;
+      font-size: 0.85rem;
     }
   }
 }
