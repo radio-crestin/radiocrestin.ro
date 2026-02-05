@@ -6,8 +6,8 @@ export default function PrivacyPolicyPage() {
             <h1>Terms and Conditions</h1>
             <p>These terms and conditions outline the rules and regulations for the use
             of Cauta versete in Biblie&#x27;s Website, located
-            at https://radiocrestin.ro.</p><p>By accessing this website we assume you accept these terms
-            and conditions. Do not continue to use https://radiocrestin.ro if you do not agree to take
+            at https://www.radiocrestin.ro.</p><p>By accessing this website we assume you accept these terms
+            and conditions. Do not continue to use https://www.radiocrestin.ro if you do not agree to take
             all of the terms and conditions stated on this page.</p><p>The following terminology applies to these Terms
             and Conditions, Privacy Statement and Disclaimer Notice and all
             Agreements: &quot;Client&quot;, &quot;You&quot; and &quot;Your&quot; refers to you, the person log on this
@@ -19,21 +19,21 @@ export default function PrivacyPolicyPage() {
             needs in respect of provision of the Company’s stated services, in accordance with and subject to,
             prevailing law of Netherlands. Any use of the above terminology or other words in the singular, plural,
             capitalization and/or he/she or they, are taken as interchangeable and therefore as referring to same.</p>
-            <h3>Cookies</h3><p>We employ the use of cookies. By accessing https://radiocrestin.ro, you
+            <h3>Cookies</h3><p>We employ the use of cookies. By accessing https://www.radiocrestin.ro, you
             agreed to use cookies in agreement with the Cauta versete in Biblie&#x27;s Privacy
             Policy. </p><p>Most interactive websites use cookies to let us retrieve the user’s details for each
             visit. Cookies are used by our website to enable the functionality of certain areas to make it easier for
             people visiting our website. Some of our affiliate/advertising partners may also use cookies.</p>
             <h3>License</h3><p>Unless otherwise stated, Cauta versete in Biblie and/or its licensors own
-            the intellectual property rights for all material on https://radiocrestin.ro. All
+            the intellectual property rights for all material on https://www.radiocrestin.ro. All
             intellectual property rights are reserved. You may access this
-            from https://radiocrestin.ro for your own personal use subjected to restrictions set in
+            from https://www.radiocrestin.ro for your own personal use subjected to restrictions set in
             these terms and conditions.</p><p>You must not:</p>
             <ul>
-                <li>Republish material from https://radiocrestin.ro</li>
-                <li>Sell, rent or sub-license material from https://radiocrestin.ro</li>
-                <li>Reproduce, duplicate or copy material from https://radiocrestin.ro</li>
-                <li>Redistribute content from https://radiocrestin.ro</li>
+                <li>Republish material from https://www.radiocrestin.ro</li>
+                <li>Sell, rent or sub-license material from https://www.radiocrestin.ro</li>
+                <li>Reproduce, duplicate or copy material from https://www.radiocrestin.ro</li>
+                <li>Redistribute content from https://www.radiocrestin.ro</li>
             </ul>
             <p>Parts of this website offer an opportunity for users to post and exchange opinions and information in
                 certain areas of the website. Cauta versete in Bibliedoes not filter, edit, publish or

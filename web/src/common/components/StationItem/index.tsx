@@ -10,6 +10,8 @@ import useFavourite from "@/store/useFavourite";
 import { useContext, useEffect, useState } from "react";
 import { Context } from "@/context/ContextProvider";
 import { getValidImageUrl } from "@/utils";
+import OfflineStatus from "@/components/OfflineStatus";
+import PlayingIndicator from "@/components/PlayingIndicator";
 
 const StationItem = (data: IStation) => {
   const { ctx } = useContext(Context);
@@ -42,16 +44,23 @@ const StationItem = (data: IStation) => {
         />
       </div>
       <div className={styles.station_details}>
-        <p className={styles.station_name}>{data.title}</p>
-        <p className={styles.song_name}>
-          {data?.now_playing?.song?.name}
-          {data?.now_playing?.song?.artist?.name && (
-            <span className={styles.artist_name}>
-              {" · "}
-              {data?.now_playing?.song?.artist?.name}
-            </span>
-          )}
+        <p className={styles.station_name}>
+          <PlayingIndicator />
+          {data.title}
         </p>
+        {data.uptime?.is_up !== false ? (
+          <p className={styles.song_name}>
+            {data?.now_playing?.song?.name}
+            {data?.now_playing?.song?.artist?.name && (
+              <span className={styles.artist_name}>
+                {" · "}
+                {data?.now_playing?.song?.artist?.name}
+              </span>
+            )}
+          </p>
+        ) : (
+          <OfflineStatus />
+        )}
       </div>
       {data.total_listeners > 0 && (
         <div className={styles.total_listeners}>

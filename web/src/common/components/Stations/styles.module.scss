@@ -18,7 +18,7 @@
     margin-bottom: 10px;
   }
 
-  h1 {
+  h2 {
     margin: 50px auto 15px;
     font-size: 22px;
     font-weight: 700;
@@ -47,13 +47,13 @@
 
   .search_container {
     display: flex;
-    border: 1px solid gray;
+    border: 1px solid #393939;
     border-radius: 20px;
     max-width: 250px;
     width: 100%;
     margin-top: 25px;
     background: var(--bg-search-a-radio);
-    color: var(--text-color);
+    color: #a0a0a0;
 
     &:hover, &:focus-within {
       max-width: 260px;
@@ -65,9 +65,10 @@
       height: 40px;
       padding: 0 15px;
       background: transparent;
+      color: #a0a0a0;
 
       &::placeholder {
-        color: var(--text-color);
+        color: #a0a0a0;
       }
 
       &:focus {
@@ -117,37 +118,30 @@
 .favourite_cont {
   .favorite_card {
     display: flex;
-    max-width: 545px;
-    gap: 8px;
-    width: 100%;
-    padding: 1rem 1.5rem;
-    position: relative;
-    font-size: 16px;
-    line-height: 22px;
-    background: var(--bg-favourite-intro);
-    border: 1px solid #fdae1c;
-    border-radius: .75rem;
+    gap: 12px;
     align-items: center;
-
-    @include mixinHelper.onTablet {
-      margin-left: 0;
-    }
 
     p {
       color: var(--text-color);
-      font-size: 1rem;
-      max-width: 400px;
-      margin-right: auto;
+      font-size: 0.9rem;
+      opacity: 0.5;
     }
 
     button {
-      padding: 10px;
+      padding: 8px 14px;
       cursor: pointer;
-      background: #fdae1c;
-      color: #000;
-      border: unset;
-      border-radius: .375rem;
-      font-weight: bold;
+      background: transparent;
+      color: var(--text-color);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 6px;
+      font-size: 0.85rem;
+      opacity: 0.6;
+      transition: opacity 0.2s, border-color 0.2s;
+
+      &:hover {
+        opacity: 1;
+        border-color: rgba(255, 255, 255, 0.4);
+      }
     }
   }
 }

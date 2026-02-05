@@ -1,34 +1,90 @@
 import Link from "next/link";
-import React, { useContext } from "react";
+import React, { useContext, useState, useEffect, useRef } from "react";
 
 import styles from "./styles.module.scss";
 import { Context } from "@/context/ContextProvider";
-import Rating from "@/components/Rating";
-import { getStationRating } from "@/utils";
 import ShareOnSocial from "@/components/ShareOnSocial";
 import ThemeToggle from "@/components/ThemeToggle";
 import WhatsAppButton from "@/components/WhatsAppButton";
+import StationRating from "@/components/Reviews/StationRating";
 
-const Navigation = () => (
-  <nav className={styles.nav}>
-    <div className={styles.internal_links}>
-      <Link href={"/"} className={styles.logo}>
-        <img
-          loading={"lazy"}
-          src={"/images/radiocrestin_logo.png"}
-          width={40}
-          height={40}
-          alt={"AppStore Image Radio Crestin"}
-        />
-        <h1>Radio Creștin</h1>
-      </Link>
-    </div>
-    <div className={styles.right_content}>
-      <ThemeToggle />
-      <WhatsAppButton />
-    </div>
-  </nav>
-);
+const Navigation = () => {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const themeToggleRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+
+    if (menuOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [menuOpen]);
+
+  const handleThemeClick = () => {
+    const button = themeToggleRef.current?.querySelector("button");
+    button?.click();
+  };
+
+  return (
+    <nav className={styles.nav}>
+      <div className={styles.internal_links}>
+        <Link href={"/"} className={styles.logo}>
+          <img
+            loading={"lazy"}
+            src={"/images/radiocrestin_logo.png"}
+            width={40}
+            height={40}
+            alt={"AppStore Image Radio Crestin"}
+          />
+          <span>Radio Creștin</span>
+        </Link>
+      </div>
+      <div className={styles.right_content}>
+        <ThemeToggle />
+        <WhatsAppButton />
+      </div>
+      <div className={styles.mobile_menu} ref={menuRef}>
+        <button
+          className={styles.hamburger}
+          onClick={() => setMenuOpen(!menuOpen)}
+          aria-label="Menu"
+          aria-expanded={menuOpen}
+        >
+          <span className={`${styles.hamburger_line} ${menuOpen ? styles.open : ""}`}></span>
+          <span className={`${styles.hamburger_line} ${menuOpen ? styles.open : ""}`}></span>
+          <span className={`${styles.hamburger_line} ${menuOpen ? styles.open : ""}`}></span>
+        </button>
+        {menuOpen && (
+          <div className={styles.mobile_dropdown}>
+            <div className={styles.menu_item} onClick={handleThemeClick}>
+              <span>Temă</span>
+              <div ref={themeToggleRef}>
+                <ThemeToggle />
+              </div>
+            </div>
+            <a
+              href="https://wa.me/40766338046?text=Buna%20ziua%20[radiocrestin.ro]%0A"
+              target="_blank"
+              rel="noopener noreferrer"
+              className={styles.contact_link}
+            >
+              <span>Contact</span>
+              <img src="/icons/whatsapp.svg" alt="WhatsApp" width={20} height={20} />
+            </a>
+          </div>
+        )}
+      </div>
+    </nav>
+  );
+};
 
 const ContentLeft = () => {
   const { ctx } = useContext(Context);
@@ -108,24 +164,22 @@ const ContentRight = () => {
           />
           <h1 className={styles.station_title}>{ctx.selectedStation?.title}</h1>
         </div>
-        <div className={styles.rating_wrapper}>
-          <Rating
-            score={getStationRating(ctx.selectedStation?.reviews)}
-            starHeight={22}
+
+        {ctx.selectedStation && (
+          <StationRating
+            stationId={ctx.selectedStation.id}
+            stationTitle={ctx.selectedStation.title}
+            reviewsStats={ctx.selectedStation.reviews_stats}
           />
-          <span>({ctx.selectedStation?.reviews?.length || 0} recenzii)</span>
-        </div>
-        {ctx.selectedStation?.total_listeners !== 0 && (
-          <>
-            <p className={styles.nr_listeners_desktop}>
-              {ctx.selectedStation?.total_listeners} persoane ascultă împreună
-              cu tine acest radio
-            </p>
-            <p className={styles.nr_listeners_mobile}>
-              {ctx.selectedStation?.total_listeners} ascultători
-            </p>
-          </>
         )}
+
+        <p className={styles.nr_listeners_desktop}>
+          {ctx.selectedStation?.total_listeners || 1} persoane ascultă împreună
+          cu tine acest radio
+        </p>
+        <p className={styles.nr_listeners_mobile}>
+          {ctx.selectedStation?.total_listeners || 1} ascultători
+        </p>
         <p className={styles.station_description}>
           {ctx.selectedStation?.description}
         </p>

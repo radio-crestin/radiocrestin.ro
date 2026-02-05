@@ -25,16 +25,13 @@ export function cleanStationsMetadata(stations: IStation[]) {
     // Set total_listeners to 0
     station.total_listeners = 0;
 
+    // Set is_up to true (real value will be fetched on client side)
+    if (station.uptime) {
+      station.uptime.is_up = true;
+    }
+
     return station;
   });
-}
-
-export function getStationRating(reviews: any[]) {
-  const average = (arr: any[]) => arr.reduce((a, b) => a + b, 0) / arr.length;
-  return (
-    Math.round((average(reviews?.map((i: any) => i.stars) || []) || 0) * 10) /
-    10
-  );
 }
 
 export function getValidImageUrl(url: string | null | undefined, fallback: string = "/images/radio-white-default.jpg"): string {

@@ -24,7 +24,7 @@ const ContentLeft = () => {
   return (
     <div className={styles.station}>
       <div className={styles.station_details}>
-        <h1 className={styles.station_title}>Bine ați venit</h1>
+        <h2 className={styles.station_title}>Bine ați venit</h2>
         <p className={styles.station_description}>
           „Iubesc pe Domnul, căci El aude glasul meu, cererile mele. Da, El Și-a
           plecat urechea spre mine, de aceea-L voi chema toată viața mea.”

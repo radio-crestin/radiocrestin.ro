@@ -2,7 +2,7 @@
 
 body {
   background: var(--bg-body);
-  font-family: globalVariables.$dm-sans, serif;
+  font-family: globalVariables.$inter;
 }
 
 .apasa_aici_move {
@@ -44,15 +44,21 @@ body {
   --bg-header-container: #1E1E1E;
   --bg-favourite-intro: #1A1A1A;
   --bg-search-a-radio: #121212;
-  --station-card-color: #2A2A2A;
+  --station-card-color: #1e1e1e;
   --text-color: #E0E0E0;
+  --text-hover-color: #c0c0c0;
   --subtext-metadata-color: #A8A8A8;
+  --header-subtext-color: #BEBEBE;
   --text-player-title: #FFFFFF;
-  --bg-active-station: #333333;
+  --bg-active-station: #2a2a2a;
+  --bg-active-station-border: #3a3a3a;
   --radio-player-container-bg: #121212;
+  --player-gradient-color: 0, 0, 0;
   --banner-install-app-bg: #1E1E1E;
-  --radio-player-border: #4D4D4D;
+  --radio-player-border: #393939;
   --star-color: #FFD700;
+  --link-color: #D4A017;
+  --link-hover-color: #E6B422;
 }
 
 
@@ -62,13 +68,19 @@ body {
   --bg-header-container: #FFFBEF;
   --bg-favourite-intro: #FFFBEF;
   --bg-search-a-radio: #fff;
-  --bg-active-station: #f3f2f2;
+  --bg-active-station: #f0f0f0;
+  --bg-active-station-border: #e0e0e0;
   --station-card-color: #ffffff;
   --text-color: #000000;
+  --text-hover-color: #444444;
   --subtext-metadata-color: #656565;
+  --header-subtext-color: #555555;
   --text-player-title: #fff;
   --radio-player-container-bg: #232321;
+  --player-gradient-color: 255, 255, 255;
   --banner-install-app-bg: #c6eaff;
   --radio-player-border: transparent;
   --star-color: #E67E22;
+  --link-color: #0066CC;
+  --link-hover-color: #004C99;
 }

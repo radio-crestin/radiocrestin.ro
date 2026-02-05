@@ -1,0 +1,43 @@
+# RadioCrestin.ro
+
+> Platformă online pentru ascultarea posturilor de radio creștine din România
+
+## Ce este RadioCrestin.ro?
+
+RadioCrestin.ro este o platformă gratuită care reunește cele mai importante posturi de radio creștine din România într-un singur loc. Utilizatorii pot asculta muzică creștină, predici și emisiuni creștine de la multiple posturi, direct din browser sau prin aplicația mobilă.
+
+## Pentru cine este?
+
+Platforma este deschisă oricui dorește să asculte muzică creștină în limba română, atât pentru românii din țară, cât și pentru cei din diaspora.
+
+## Ce pot face utilizatorii?
+
+- Să asculte live posturi de radio creștine românești
+- Să vadă ce melodie și ce artist cântă în timp real (la anumite posturi)
+- Să adauge radiourile preferate în lista de favorite
+- Să evalueze și să lase recenzii pentru posturi
+- Să vadă câți ascultători are fiecare post (la anumite posturi)
+- Să instaleze aplicația pe telefon (Android și iOS)
+- Să partajeze posturile preferate pe WhatsApp și rețele sociale
+
+## Posturi de radio disponibile
+
+Platforma include peste 60 de posturi de radio creștine, printre care Radio Vocea Evangheliei (cu stații regionale în toată țara), Aripi Spre Cer, Radio Emanuel, Radio Filadelfia, Radio Elim, Radio Vocea Speranței și multe altele.
+
+## Cum funcționează?
+
+Utilizatorul accesează site-ul, alege un post de radio din listă și apasă pe el pentru a începe ascultarea. Poate căuta posturi după nume sau după melodia care cântă. Nu este necesară crearea unui cont.
+
+## Limbă
+
+Interfața și conținutul sunt în limba română.
+
+## Aplicația mobilă
+
+Aplicația Radio Creștin este disponibilă gratuit pe Android și iOS, cu un rating de 4.9 stele din 5 și peste 1800 de recenzii.
+
+## Contact
+
+Website: https://www.radiocrestin.ro
+Android: https://play.google.com/store/apps/details?id=com.radiocrestin.radio_crestin
+iOS: https://apps.apple.com/ro/app/radio-crestin/id6451270471
