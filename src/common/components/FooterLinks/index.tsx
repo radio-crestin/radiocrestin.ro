@@ -27,6 +27,13 @@ export default function FooterLinks() {
           <img src="./icons/FigmaIcon2.png" alt="Figma icon" />
         </Link>
       </div>
+      <div className={styles.legal_links}>
+        <Link href="/privacy-policy">Politica de Confidentialitate</Link>
+        <span className={styles.separator}>|</span>
+        <Link href="/terms-of-service">Termeni si Conditii</Link>
+        <span className={styles.separator}>|</span>
+        <Link href="/church-hub">Church Hub</Link>
+      </div>
     </div>
   );
 }
