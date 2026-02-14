@@ -1,7 +1,5 @@
 "use client";
 
-import Link from "next/link";
-
 import { IStation } from "@/models/Station";
 import styles from "./styles.module.scss";
 import useFavourite from "@/store/useFavourite";
@@ -32,18 +30,19 @@ const FavouriteItem = (data: FavouriteItemProps) => {
     toggleFavourite(data.slug);
   };
 
-  const handleStationClick = () => {
+  const handleStationClick = (e: React.MouseEvent) => {
+    e.preventDefault();
     const station = ctx.stations?.find((s: IStation) => s.slug === data.slug);
     if (station) {
       setCtx({ selectedStation: station });
+      window.history.pushState(null, "", `/${data.slug}`);
     }
   };
 
   return (
-    <Link
+    <a
       className={styles.station_item}
-      href={data.slug}
-      scroll={false}
+      href={`/${data.slug}`}
       data-active={isActive}
       draggable={false}
       onClick={handleStationClick}
@@ -86,7 +85,7 @@ const FavouriteItem = (data: FavouriteItemProps) => {
       >
         <Heart color={"red"} />
       </div>
-    </Link>
+    </a>
   );
 };
 

@@ -1,7 +1,5 @@
 "use client";
 
-import Link from "next/link";
-
 import { IStation } from "@/models/Station";
 import styles from "./styles.module.scss";
 import HeadphoneIcon from "@/icons/Headphone";
@@ -40,22 +38,21 @@ const StationItem = ({ badgeType, ...data }: StationItemProps) => {
     setIsStationFavourite(favouriteItems.includes(data.slug));
   }, [data.slug, favouriteItems]);
 
-  const handleStationClick = () => {
-    // Immediately set selectedStation from already-loaded stations data
-    // so the audio player starts without waiting for Next.js page data fetch
+  const handleStationClick = (e: React.MouseEvent) => {
+    e.preventDefault();
     const station = ctx.stations?.find((s: IStation) => s.slug === data.slug);
     if (station) {
       setCtx({ selectedStation: station });
+      window.history.pushState(null, "", `/${data.slug}`);
     }
   };
 
   return (
-    <Link
+    <a
       className={styles.station_item}
       data-station={"station-item"}
       data-active={isActive}
-      href={data.slug}
-      scroll={false}
+      href={`/${data.slug}`}
       draggable={false}
       onClick={handleStationClick}
     >
@@ -122,7 +119,7 @@ const StationItem = ({ badgeType, ...data }: StationItemProps) => {
       >
         <Heart color={isStationFavourite ? "red" : "white"} />
       </div>
-    </Link>
+    </a>
   );
 };
 

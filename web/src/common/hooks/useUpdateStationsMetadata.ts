@@ -23,19 +23,19 @@ const fetchAndUpdateStations = async (setCtx: (ctx: any) => void) => {
 
 export const useRefreshStations = () => {
   const { ctx, setCtx } = useContext(Context);
-  const selectedStationId = ctx.selectedStation?.id;
+  const selectedStationSlug = ctx.selectedStation?.slug;
 
   const refreshStations = useCallback(async () => {
     const stations = await fetchAndUpdateStations(setCtx);
-    if (stations && selectedStationId) {
+    if (stations && selectedStationSlug) {
       const updatedStation = stations.find(
-        (s: IStation) => s.id === selectedStationId
+        (s: IStation) => s.slug === selectedStationSlug
       );
       if (updatedStation) {
         setCtx({ selectedStation: updatedStation });
       }
     }
-  }, [selectedStationId, setCtx]);
+  }, [selectedStationSlug, setCtx]);
 
   return { refreshStations };
 };
@@ -47,15 +47,14 @@ const useUpdateStationsMetadata = () => {
   useEffect(() => {
     const { station_slug } = router.query;
     if (station_slug && ctx?.stations) {
-      const selectedStationIndex = ctx.stations.findIndex(
+      const station = ctx.stations.find(
         (s: IStation) => s.slug === station_slug,
       );
-
-      setCtx({
-        selectedStation: ctx.stations[selectedStationIndex],
-      });
+      if (station) {
+        setCtx({ selectedStation: station });
+      }
     }
-  }, [router.query.station_slug, ctx.stations]);
+  }, [router.query.station_slug]);
 
   useEffect(() => {
     fetchAndUpdateStations(setCtx);

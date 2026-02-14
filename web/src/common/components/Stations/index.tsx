@@ -67,15 +67,28 @@ function getReviewScore(station: IStation): number {
   return avgRating * numReviews;
 }
 
-function sortByScore(stations: IStation[]): IStation[] {
+interface StationSnapshot {
+  score: number;
+  listeners: number;
+  rating: number;
+}
+
+function buildScoreSnapshot(stations: IStation[]): Record<string, StationSnapshot> {
   const maxReview = Math.max(...stations.map(getReviewScore), 1);
   const maxListeners = Math.max(...stations.map((s) => s.total_listeners || 0), 1);
+  const snapshot: Record<string, StationSnapshot> = {};
+  for (const s of stations) {
+    snapshot[s.slug] = {
+      score: (getReviewScore(s) / maxReview) * 0.5 + ((s.total_listeners || 0) / maxListeners) * 0.5,
+      listeners: s.total_listeners || 0,
+      rating: getReviewScore(s),
+    };
+  }
+  return snapshot;
+}
 
-  return [...stations].sort((a, b) => {
-    const scoreA = (getReviewScore(a) / maxReview) * 0.5 + ((a.total_listeners || 0) / maxListeners) * 0.5;
-    const scoreB = (getReviewScore(b) / maxReview) * 0.5 + ((b.total_listeners || 0) / maxListeners) * 0.5;
-    return scoreB - scoreA;
-  });
+function sortByScore(stations: IStation[], scoreSnapshot: Record<string, StationSnapshot>): IStation[] {
+  return [...stations].sort((a, b) => (scoreSnapshot[b.slug]?.score || 0) - (scoreSnapshot[a.slug]?.score || 0));
 }
 
 function getDayOfYear(): number {
@@ -102,6 +115,7 @@ function sortStations(
   sortBy: SortOption,
   playCounts: Record<string, number>,
   favouriteSlugs: string[],
+  scoreSnapshot: Record<string, StationSnapshot>,
 ): SortResult {
   const list = [...stations];
   let stationOfDaySlug: string | null = null;
@@ -126,7 +140,7 @@ function sortStations(
       // Backfill with top-scored stations if user has played fewer than 3
       if (mostPlayed.length < 3) {
         const alreadyPlaced = new Set(Array.from(placedSlugs).concat(mostPlayed));
-        const topByScore = sortByScore(stations.filter((s) => !alreadyPlaced.has(s.slug)));
+        const topByScore = sortByScore(stations.filter((s) => !alreadyPlaced.has(s.slug)), scoreSnapshot);
         for (const s of topByScore) {
           if (mostPlayed.length >= 3) break;
           mostPlayed.push(s.slug);
@@ -139,7 +153,7 @@ function sortStations(
         ...(stationOfDaySlug ? [stationOfDaySlug] : []),
         ...mostPlayed,
       ]);
-      const remaining = sortByScore(stations.filter((s) => !allSpecialSlugs.has(s.slug)));
+      const remaining = sortByScore(stations.filter((s) => !allSpecialSlugs.has(s.slug)), scoreSnapshot);
       const findStation = (slug: string) => stations.find((s) => s.slug === slug);
 
       const result: IStation[] = [];
@@ -162,10 +176,10 @@ function sortStations(
       return { sorted: result, stationOfDaySlug, mostPlayedSlugs };
     }
     case "listeners":
-      list.sort((a, b) => (b.total_listeners || 0) - (a.total_listeners || 0));
+      list.sort((a, b) => (scoreSnapshot[b.slug]?.listeners || 0) - (scoreSnapshot[a.slug]?.listeners || 0));
       break;
     case "rating":
-      list.sort((a, b) => (b.reviews_stats?.average_rating || 0) - (a.reviews_stats?.average_rating || 0));
+      list.sort((a, b) => (scoreSnapshot[b.slug]?.rating || 0) - (scoreSnapshot[a.slug]?.rating || 0));
       break;
     case "alphabetical":
       list.sort((a, b) => a.title.localeCompare(b.title, "ro"));
@@ -202,6 +216,13 @@ const Stations = () => {
   const sortRef = useRef<HTMLDivElement>(null);
   const { playCounts } = usePlayCount();
   const { favouriteItems } = useFavourite();
+  const scoreSnapshotRef = useRef<Record<string, StationSnapshot> | null>(null);
+
+  // Capture a score snapshot once on first load — sorting always uses this
+  // so that live changes to listeners/ratings don't reshuffle the list.
+  if (!scoreSnapshotRef.current && ctx.stations?.length) {
+    scoreSnapshotRef.current = buildScoreSnapshot(ctx.stations);
+  }
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -214,7 +235,8 @@ const Stations = () => {
   }, []);
 
   const applySort = (stations: IStation[]) => {
-    const result = sortStations(stations, sortBy, playCounts, favouriteItems);
+    const snapshot = scoreSnapshotRef.current || buildScoreSnapshot(stations);
+    const result = sortStations(stations, sortBy, playCounts, favouriteItems, snapshot);
     setStationOfDaySlug(result.stationOfDaySlug);
     setMostPlayedSlugs(result.mostPlayedSlugs);
     return result.sorted;
