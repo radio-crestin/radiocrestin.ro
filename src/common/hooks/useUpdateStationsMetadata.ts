@@ -63,11 +63,14 @@ const useUpdateStationsMetadata = () => {
     return () => clearInterval(intervalId);
   }, [setCtx]);
 
+  const selectedStationSlug = ctx.selectedStation?.slug;
+  const selectedStationTitle = ctx.selectedStation?.title;
+
   useEffect(() => {
-    if (ctx.selectedStation?.title) {
-      document.title = `${ctx.selectedStation.title} | Caută şi ascultă Radiouri Creştine online`;
+    if (selectedStationTitle) {
+      document.title = `${selectedStationTitle} | Caută şi ascultă Radiouri Creştine online`;
     }
-  }, [ctx.selectedStation?.slug]);
+  }, [selectedStationSlug, selectedStationTitle]);
 };
 
 export default useUpdateStationsMetadata;
