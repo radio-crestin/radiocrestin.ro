@@ -14,6 +14,7 @@ import useFavouriteStations from "@/hooks/useFavouriteStations";
 import RadioPlayer from "@/components/RadioPlayer";
 import { Context } from "@/context/ContextProvider";
 import FooterLinks from "@/components/FooterLinks";
+import StationReviewsSection from "@/components/Reviews/StationReviewsSection";
 
 export default function StationPage({ seo }: { seo: any }) {
   const { ctx } = useContext(Context);
@@ -25,6 +26,14 @@ export default function StationPage({ seo }: { seo: any }) {
       <Header />
       <WhatsAppBibleGroup />
       <Stations />
+      {ctx.selectedStation && (
+        <StationReviewsSection
+          stationId={ctx.selectedStation.id}
+          stationTitle={ctx.selectedStation.title}
+          stationSlug={ctx.selectedStation.slug}
+          reviewsStats={ctx.selectedStation.reviews_stats}
+        />
+      )}
       <DownloadAppBanner />
       <FooterLinks />
       {ctx.selectedStation && <RadioPlayer />}

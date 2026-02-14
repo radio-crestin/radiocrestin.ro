@@ -3,6 +3,7 @@ import Link from "next/link";
 import Head from "next/head";
 
 import styles from "./styles.module.scss";
+import { SEO_CHURCH_HUB } from "@/utils/seo";
 
 const features = [
   {
@@ -93,11 +94,22 @@ export default function ChurchHubPage() {
   return (
     <>
       <Head>
-        <title>Church Hub - Software pentru Biserica | Radio Crestin</title>
-        <meta
-          name="description"
-          content="Church Hub - Sistem modern de prezentare si management pentru livestream-uri de inchinare. Gestioneaza cantari, versete biblice, programe si transmiteri live."
-        />
+        <title>{SEO_CHURCH_HUB.title}</title>
+        <meta name="description" content={SEO_CHURCH_HUB.description} />
+        <meta name="keywords" content={SEO_CHURCH_HUB.keywords} />
+        <meta name="robots" content="index, follow" />
+        <link rel="canonical" href={SEO_CHURCH_HUB.fullURL} />
+        <meta property="og:title" content={SEO_CHURCH_HUB.title} />
+        <meta property="og:description" content={SEO_CHURCH_HUB.description} />
+        <meta property="og:url" content={SEO_CHURCH_HUB.fullURL} />
+        <meta property="og:image" content={SEO_CHURCH_HUB.imageUrl} />
+        <meta property="og:type" content="website" />
+        <meta property="og:locale" content="ro_RO" />
+        <meta property="og:site_name" content="Radio Creștin" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={SEO_CHURCH_HUB.title} />
+        <meta name="twitter:description" content={SEO_CHURCH_HUB.description} />
+        <meta name="twitter:image" content={SEO_CHURCH_HUB.imageUrl} />
       </Head>
       <main className={styles.page}>
         <section className={styles.hero}>
