@@ -44,7 +44,6 @@ const StationItem = ({ badgeType, ...data }: StationItemProps) => {
     if (station) {
       setCtx({ selectedStation: station });
       window.history.pushState(null, "", `/${data.slug}`);
-      document.title = `${station.title} | Caută şi ascultă Radiouri Creştine online`;
     }
   };
 

@@ -5,13 +5,18 @@ import styles from "./styles.module.scss";
 export default function FooterLinks() {
   return (
     <div className={styles.container}>
-      <div className={styles.external_links}>
-        <Link href="/intrebari-frecvente" className={styles.statistics_link}>
-          Întrebări frecvente
-        </Link>
-        <Link href="/statistici" className={styles.statistics_link} target="_blank" rel="noopener noreferrer">
-          Statistici
-        </Link>
+      <div className={styles.links}>
+        <Link href="/church-hub">Church Hub</Link>
+        <span className={styles.separator}>|</span>
+        <Link href="/statistici">Statistici</Link>
+        <span className={styles.separator}>|</span>
+        <Link href="/intrebari-frecvente">Întrebări frecvente</Link>
+        <span className={styles.separator}>|</span>
+        <Link href="/privacy-policy">Politica de Confidentialitate</Link>
+        <span className={styles.separator}>|</span>
+        <Link href="/terms-of-service">Termeni si Conditii</Link>
+      </div>
+      <div className={styles.icon_links}>
         <Link href="https://github.com/radio-crestin" target="_blank" rel="noopener noreferrer">
           <img src="./icons/Github.png" alt="Github icon" />
         </Link>
@@ -29,13 +34,6 @@ export default function FooterLinks() {
         >
           <img src="./icons/FigmaIcon2.png" alt="Figma icon" />
         </Link>
-      </div>
-      <div className={styles.legal_links}>
-        <Link href="/privacy-policy">Politica de Confidentialitate</Link>
-        <span className={styles.separator}>|</span>
-        <Link href="/terms-of-service">Termeni si Conditii</Link>
-        <span className={styles.separator}>|</span>
-        <Link href="/church-hub">Church Hub</Link>
       </div>
     </div>
   );

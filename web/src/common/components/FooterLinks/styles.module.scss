@@ -1,74 +1,58 @@
 @use "public/styles/mixinHelper";
-@use "public/styles/globalVariables";
-
 
 .container {
   display: flex;
-  flex-direction: column;
-  position: relative;
-  max-width: 1499px;
-  margin: 20px auto 150px;
-  gap: 16px;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  max-width: 1440px;
+  margin: 70px auto 150px;
+  padding: 0 30px;
 
-  .external_links {
-    display: flex;
-    gap: 5px;
-    z-index: 2;
-    position: relative;
-    justify-content: end;
-    align-items: center;
+  @include mixinHelper.onDesktop {
+    padding: 0 15px;
+  }
 
-    .statistics_link {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 12px 20px;
-      border-radius: 50px;
-      background-color: var(--background-secondary-color);
-      color: var(--text-color);
-      font-weight: 500;
-      text-decoration: none;
-      border: 1px solid var(--border-color);
-      transition: all 0.3s ease;
+  @include mixinHelper.onTablet {
+    flex-direction: column;
+    gap: 16px;
+    margin-top: 30px;
+    padding: 0 16px;
+  }
+}
 
-      &:hover {
-        transform: translateY(-1px);
-      }
+.links {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
 
-      &:active {
-        transform: translateY(0);
-      }
-    }
+  a {
+    color: var(--text-color);
+    text-decoration: none;
+    font-size: 0.85rem;
+    opacity: 0.6;
+    transition: opacity 0.2s ease;
 
-    img {
-      height: 50px;
-      width: 50px;
+    &:hover {
+      opacity: 1;
     }
   }
 
-  .legal_links {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 12px;
-    flex-wrap: wrap;
+  .separator {
+    color: var(--text-color);
+    opacity: 0.3;
+    font-size: 0.85rem;
+  }
+}
 
-    a {
-      color: var(--text-color);
-      text-decoration: none;
-      font-size: 0.85rem;
-      opacity: 0.6;
-      transition: opacity 0.2s ease;
+.icon_links {
+  display: flex;
+  gap: 5px;
+  align-items: center;
 
-      &:hover {
-        opacity: 1;
-      }
-    }
-
-    .separator {
-      color: var(--text-color);
-      opacity: 0.3;
-      font-size: 0.85rem;
-    }
+  img {
+    height: 50px;
+    width: 50px;
   }
 }

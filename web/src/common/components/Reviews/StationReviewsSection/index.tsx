@@ -13,8 +13,6 @@ interface StationReviewsSectionProps {
   reviewsStats?: IReviewsStats;
 }
 
-const MAX_VISIBLE_REVIEWS = 5;
-
 const StationReviewsSection: React.FC<StationReviewsSectionProps> = ({
   stationId,
   stationTitle,
@@ -23,7 +21,6 @@ const StationReviewsSection: React.FC<StationReviewsSectionProps> = ({
 }) => {
   const [reviews, setReviews] = useState<IReview[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [showAll, setShowAll] = useState(false);
 
   useEffect(() => {
     const fetchReviews = async () => {
@@ -34,7 +31,7 @@ const StationReviewsSection: React.FC<StationReviewsSectionProps> = ({
     fetchReviews();
   }, [stationId]);
 
-  const visibleReviews = showAll ? reviews : reviews.slice(0, MAX_VISIBLE_REVIEWS);
+  const visibleReviews = reviews;
 
   // Build Review schema data - all data sourced from our own trusted API
   const reviewSchemaData = reviews.length > 0
@@ -118,14 +115,6 @@ const StationReviewsSection: React.FC<StationReviewsSectionProps> = ({
           </div>
         ))}
       </div>
-      {reviews.length > MAX_VISIBLE_REVIEWS && !showAll && (
-        <button
-          className={styles.show_all_button}
-          onClick={() => setShowAll(true)}
-        >
-          Vezi toate cele {reviews.length} recenzii
-        </button>
-      )}
     </section>
   );
 };
