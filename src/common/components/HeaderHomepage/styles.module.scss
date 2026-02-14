@@ -35,6 +35,8 @@
   display: flex;
   justify-content: space-between;
   gap: 0 30px;
+  position: relative;
+  z-index: 1;
 
   @include mixinHelper.onTablet {
     margin-left: 0;
@@ -70,6 +72,11 @@
       font-weight: bold;
       gap: 0 15px;
       padding: 0;
+      color: var(--text-color);
+
+      span {
+        color: var(--text-color);
+      }
 
       img {
         @include mixinHelper.onTablet {
@@ -89,6 +96,8 @@
   flex-direction: row;
   margin-top: 141px;
   height: 350px;
+  position: relative;
+  z-index: 1;
 
   @include mixinHelper.onTablet {
     margin-top: 50px;
