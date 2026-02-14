@@ -98,6 +98,49 @@
       @include mixinHelper.onTablet {
         font-size: 1.1rem;
       }
+
+      .promoted_badge {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        margin-left: 6px;
+        color: #ED8A19;
+        cursor: default;
+        flex-shrink: 0;
+
+        &.most_played_badge {
+          color: #4FC3F7;
+        }
+
+        .promoted_tooltip {
+          display: none;
+          position: absolute;
+          bottom: calc(100% + 8px);
+          left: 50%;
+          transform: translateX(-50%);
+          background: #2a2a2a;
+          color: #e0e0e0;
+          font-size: 0.7rem;
+          font-weight: 400;
+          padding: 8px 12px;
+          border-radius: 8px;
+          white-space: nowrap;
+          z-index: 10;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+          pointer-events: none;
+
+          @include mixinHelper.onTablet {
+            white-space: normal;
+            width: 200px;
+            left: 0;
+            transform: none;
+          }
+        }
+
+        &:hover .promoted_tooltip {
+          display: block;
+        }
+      }
     }
 
     .song_name, .artist_name {
@@ -120,21 +163,61 @@
     position: absolute;
     top: 15px;
     right: 15px;
-    font-size: 17px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 16px;
     font-weight: 400;
     color: var(--subtext-metadata-color);
 
     svg {
       color: var(--subtext-metadata-color);
+      width: 15px;
+      height: 15px;
     }
 
     @include mixinHelper.onTablet {
-      font-size: 14px;
+      font-size: 13px;
 
       svg {
-        position: relative;
-        top: 3px;
-        width: 15px;
+        width: 13px;
+        height: 13px;
+      }
+    }
+  }
+
+  .average_rating {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 0.75rem;
+    font-weight: 400;
+    color: var(--subtext-metadata-color);
+    margin-top: 6px;
+
+    svg {
+      height: 11px;
+      width: 11px;
+      flex-shrink: 0;
+    }
+
+    .review_count {
+      font-size: 0.7rem;
+      margin-left: 1px;
+      color: #B0B0B0;
+    }
+
+    @include mixinHelper.onTablet {
+      font-size: 0.7rem;
+      margin-top: 4px;
+
+      svg {
+        height: 10px;
+        width: 10px;
+      }
+
+      .review_count {
+        font-size: 0.65rem;
       }
     }
   }

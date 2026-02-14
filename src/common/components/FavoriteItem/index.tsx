@@ -17,7 +17,7 @@ interface FavouriteItemProps extends IStation {
 }
 
 const FavouriteItem = (data: FavouriteItemProps) => {
-  const { ctx } = useContext(Context);
+  const { ctx, setCtx } = useContext(Context);
   const { favouriteItems, toggleFavourite } = useFavourite();
   const [isStationFavourite, setIsStationFavourite] = useState(false);
   const isActive = ctx.selectedStation?.slug === data.slug;
@@ -32,6 +32,13 @@ const FavouriteItem = (data: FavouriteItemProps) => {
     toggleFavourite(data.slug);
   };
 
+  const handleStationClick = () => {
+    const station = ctx.stations?.find((s: IStation) => s.slug === data.slug);
+    if (station) {
+      setCtx({ selectedStation: station });
+    }
+  };
+
   return (
     <Link
       className={styles.station_item}
@@ -39,6 +46,7 @@ const FavouriteItem = (data: FavouriteItemProps) => {
       scroll={false}
       data-active={isActive}
       draggable={false}
+      onClick={handleStationClick}
       style={{ animationDelay: `${data.animationDelay || 0}s` }}
     >
       <div className={styles.image_container}>

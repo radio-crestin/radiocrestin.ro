@@ -17,6 +17,8 @@ import useFavourite from "@/store/useFavourite";
 import { Bugsnag } from "@/utils/bugsnag";
 import { IStationStreams } from "@/models/Station";
 import OfflineStatus from "@/components/OfflineStatus";
+import Star from "@/icons/Star";
+import usePlayCount from "@/store/usePlayCount";
 
 enum STREAM_TYPE {
   HLS = "HLS",
@@ -35,6 +37,7 @@ export default function RadioPlayer() {
   const [retries, setRetries] = useState(MAX_MEDIA_RETRIES);
   const [streamType, setStreamType] = useState<STREAM_TYPE | null>(null);
   const { favouriteItems, toggleFavourite } = useFavourite();
+  const { incrementPlayCount } = usePlayCount();
   const [isFavorite, setIsFavorite] = useState(false);
   const [hlsInstance, setHlsInstance] = useState<Hls | null>(null);
 
@@ -171,6 +174,7 @@ export default function RadioPlayer() {
 
     switch (playbackState) {
       case PLAYBACK_STATE.STARTED:
+        incrementPlayCount(station.slug);
         resetAndReloadStream();
         break;
       case PLAYBACK_STATE.STOPPED:
@@ -427,6 +431,15 @@ export default function RadioPlayer() {
               </p>
             ) : (
               <OfflineStatus size="small" />
+            )}
+            {station.reviews_stats?.average_rating > 0 && (
+              <div className={styles.average_rating}>
+                <Star fillWidth={1} height={10} />
+                {station.reviews_stats.average_rating.toFixed(1)}
+                <span className={styles.review_count}>
+                  ({station.reviews_stats.number_of_reviews} {station.reviews_stats.number_of_reviews === 1 ? 'recenzie' : 'recenzii'})
+                </span>
+              </div>
             )}
           </div>
 

@@ -1,16 +1,19 @@
 import React, { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/router";
 import { flushSync } from "react-dom";
 import styles from "./styles.module.scss";
 import Star from "@/icons/Star";
 import { submitReview } from "@/services/submitReview";
 import { toast } from "react-toastify";
 import { useRefreshStations } from "@/hooks/useUpdateStationsMetadata";
+import { SHARE_URL } from "@/constants/constants";
 
 interface ReviewModalProps {
   isOpen: boolean;
   onClose: () => void;
   stationId: number;
   stationTitle: string;
+  stationSlug?: string;
 }
 
 const getUserIdentifier = (): string => {
@@ -28,19 +31,23 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
   onClose,
   stationId,
   stationTitle,
+  stationSlug,
 }) => {
+  const router = useRouter();
   const { refreshStations } = useRefreshStations();
   const [selectedStars, setSelectedStars] = useState(0);
   const [hoveredStars, setHoveredStars] = useState(0);
   const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [starsError, setStarsError] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     if (!isOpen) return;
     setSelectedStars(0);
     setStarsError(false);
+    setLinkCopied(false);
     const scrollY = window.scrollY;
     document.body.style.cssText = `overflow-y: scroll; position: fixed; width: 100%; top: -${scrollY}px`;
     return () => {
@@ -103,6 +110,28 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
     setStarsError(false);
   };
 
+  const handleShareLink = async () => {
+    const slug = stationSlug || router.query.station_slug;
+    const reviewUrl = `${window.location.origin}/${slug}/adauga-recenzie`;
+
+    try {
+      await navigator.clipboard.writeText(reviewUrl);
+      setLinkCopied(true);
+      setTimeout(() => setLinkCopied(false), 2500);
+    } catch {
+      const textArea = document.createElement("textarea");
+      textArea.value = reviewUrl;
+      textArea.style.position = "fixed";
+      textArea.style.opacity = "0";
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textArea);
+      setLinkCopied(true);
+      setTimeout(() => setLinkCopied(false), 2500);
+    }
+  };
+
   const renderStarSelector = () => {
     const stars = [];
     const displayStars = hoveredStars || selectedStars;
@@ -155,7 +184,7 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
               {renderStarSelector()}
             </div>
             {starsError ? (
-              <span className={styles.stars_error}>⚠️ Te rugăm să selectezi o evaluare</span>
+              <span className={styles.stars_error}>Te rugăm să selectezi o evaluare</span>
             ) : (
               <span className={styles.stars_text}>
                 {selectedStars > 0 ? `${selectedStars} din 5 stele` : "Selectează o evaluare"}
@@ -180,14 +209,37 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
             <span className={styles.char_count}>{message.length}/500</span>
           </div>
 
-          <button
-            type="submit"
-            className={`${styles.submit_button} ${isSubmitting ? styles.submitting : ""}`}
-            disabled={isSubmitting}
-          >
-            <span className={styles.button_text}>Trimite recenzia</span>
-            <span className={styles.button_spinner} />
-          </button>
+          <div className={styles.actions_row}>
+            <button
+              type="button"
+              className={`${styles.share_button} ${linkCopied ? styles.share_copied : ""}`}
+              onClick={handleShareLink}
+              aria-label="Copiază link recenzie"
+              title="Copiază link recenzie"
+            >
+              {linkCopied ? (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M20 6L9 17L4 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              ) : (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M18 8C19.6569 8 21 6.65685 21 5C21 3.34315 19.6569 2 18 2C16.3431 2 15 3.34315 15 5C15 5.12548 15.0077 5.24917 15.0227 5.37061L8.08261 9.19352C7.54305 8.46267 6.6792 8 5.70588 8C4.21207 8 3 9.34315 3 11C3 12.6569 4.21207 14 5.70588 14C6.6792 14 7.54305 13.5373 8.08261 12.8065L15.0227 16.6294C15.0077 16.7508 15 16.8745 15 17C15 18.6569 16.3431 20 18 20C19.6569 20 21 18.6569 21 17C21 15.3431 19.6569 14 18 14C16.9948 14 16.1095 14.5305 15.5706 15.3294L8.97727 11.6906C8.99234 11.4628 9 11.2327 9 11C9 10.7673 8.99234 10.5372 8.97727 10.3094L15.5706 6.67061C16.1095 7.46953 16.9948 8 18 8Z" fill="currentColor"/>
+                </svg>
+              )}
+            </button>
+            {linkCopied && (
+              <span className={styles.copied_text}>Link copiat!</span>
+            )}
+
+            <button
+              type="submit"
+              className={`${styles.submit_button} ${isSubmitting ? styles.submitting : ""}`}
+              disabled={isSubmitting}
+            >
+              <span className={styles.button_text}>Trimite recenzia</span>
+              <span className={styles.button_spinner} />
+            </button>
+          </div>
         </form>
       </div>
     </div>

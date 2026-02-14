@@ -1,4 +1,5 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
+import { useRouter } from "next/router";
 import styles from "./styles.module.scss";
 import Star from "@/icons/Star";
 import ReviewModal from "@/components/Reviews/ReviewModal";
@@ -9,14 +10,17 @@ import { IReview, IReviewsStats } from "@/models/Station";
 interface StationRatingProps {
   stationId: number;
   stationTitle: string;
+  stationSlug?: string;
   reviewsStats?: IReviewsStats;
 }
 
 const StationRating: React.FC<StationRatingProps> = ({
   stationId,
   stationTitle,
+  stationSlug,
   reviewsStats,
 }) => {
+  const router = useRouter();
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [isReviewsListModalOpen, setIsReviewsListModalOpen] = useState(false);
   const [reviews, setReviews] = useState<IReview[]>([]);
@@ -24,9 +28,33 @@ const StationRating: React.FC<StationRatingProps> = ({
 
   const score = reviewsStats?.average_rating || 0;
 
+  // Auto-open review modal when on /adauga-recenzie page
+  useEffect(() => {
+    const path = window.location.pathname;
+    if (path.endsWith("/adauga-recenzie")) {
+      setIsReviewModalOpen(true);
+    }
+  }, []);
+
+  const handleOpenReviewModal = () => {
+    setIsReviewModalOpen(true);
+    const slug = stationSlug || router.query.station_slug;
+    if (!window.location.pathname.endsWith("/adauga-recenzie")) {
+      window.history.pushState(null, "", `/${slug}/adauga-recenzie`);
+    }
+  };
+
+  const handleReviewModalClose = () => {
+    setIsReviewModalOpen(false);
+    if (window.location.pathname.endsWith("/adauga-recenzie")) {
+      const slug = stationSlug || router.query.station_slug;
+      window.history.replaceState(null, "", `/${slug}`);
+    }
+  };
+
   const handleWriteReviewFromList = () => {
     setIsReviewsListModalOpen(false);
-    setIsReviewModalOpen(true);
+    handleOpenReviewModal();
   };
 
   const handleOpenReviewsList = useCallback(async () => {
@@ -65,7 +93,7 @@ const StationRating: React.FC<StationRatingProps> = ({
         </button>
         <button
           className={styles.add_review_button}
-          onClick={() => setIsReviewModalOpen(true)}
+          onClick={handleOpenReviewModal}
         >
           Adaugă o recenzie
         </button>
@@ -73,9 +101,10 @@ const StationRating: React.FC<StationRatingProps> = ({
 
       <ReviewModal
         isOpen={isReviewModalOpen}
-        onClose={() => setIsReviewModalOpen(false)}
+        onClose={handleReviewModalClose}
         stationId={stationId}
         stationTitle={stationTitle}
+        stationSlug={stationSlug}
       />
       <ReviewsListModal
         isOpen={isReviewsListModalOpen}
