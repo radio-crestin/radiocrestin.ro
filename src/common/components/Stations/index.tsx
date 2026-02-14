@@ -12,10 +12,11 @@ import usePlayCount from "@/store/usePlayCount";
 import useFavourite from "@/store/useFavourite";
 import SparklesStar from "@/icons/SparklesStar";
 
-type SortOption = "recommended" | "listeners" | "rating" | "alphabetical";
+type SortOption = "recommended" | "most_played" | "listeners" | "rating" | "alphabetical";
 
 const SORT_LABELS: Record<SortOption, string> = {
   recommended: "Recomandate",
+  most_played: "Cele mai ascultate de mine",
   listeners: "Cei mai mulți ascultători",
   rating: "Cel mai mare rating",
   alphabetical: "Alfabetic",
@@ -28,6 +29,13 @@ const SortIcons: Record<SortOption, (props: { size?: number }) => React.ReactEle
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
       <path d="M12 2l2.4 7.2L22 12l-7.6 2.8L12 22l-2.4-7.2L2 12l7.6-2.8L12 2z" fill="#F59E0B" />
       <circle cx="19" cy="5" r="1.5" fill="#F59E0B" />
+    </svg>
+  ),
+  most_played: ({ size = 15 }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" xmlns="http://www.w3.org/2000/svg">
+      <path d="M9 18V5l12-2v13" />
+      <circle cx="6" cy="18" r="3" />
+      <circle cx="18" cy="16" r="3" />
     </svg>
   ),
   listeners: ({ size = 15 }) => (
@@ -130,17 +138,18 @@ function sortStations(
       const placedSlugs = new Set<string>();
       if (stationOfDaySlug) placedSlugs.add(stationOfDaySlug);
 
+      const favouriteSet = new Set(favouriteSlugs);
       const mostPlayed = Object.entries(playCounts)
-        .filter(([slug]) => !placedSlugs.has(slug))
+        .filter(([slug]) => !placedSlugs.has(slug) && !favouriteSet.has(slug))
         .filter(([slug]) => stations.some((s) => s.slug === slug))
         .sort((a, b) => b[1] - a[1])
         .slice(0, 3)
         .map(([slug]) => slug);
 
-      // Backfill with top-scored stations if user has played fewer than 3
+      // Backfill with top-scored non-favourite stations if fewer than 3
       if (mostPlayed.length < 3) {
         const alreadyPlaced = new Set(Array.from(placedSlugs).concat(mostPlayed));
-        const topByScore = sortByScore(stations.filter((s) => !alreadyPlaced.has(s.slug)), scoreSnapshot);
+        const topByScore = sortByScore(stations.filter((s) => !alreadyPlaced.has(s.slug) && !favouriteSet.has(s.slug)), scoreSnapshot);
         for (const s of topByScore) {
           if (mostPlayed.length >= 3) break;
           mostPlayed.push(s.slug);
@@ -174,6 +183,13 @@ function sortStations(
       result.push(...remaining);
 
       return { sorted: result, stationOfDaySlug, mostPlayedSlugs };
+    }
+    case "most_played": {
+      const played = list.filter((s) => (playCounts[s.slug] || 0) > 0);
+      const notPlayed = list.filter((s) => !playCounts[s.slug]);
+      played.sort((a, b) => (playCounts[b.slug] || 0) - (playCounts[a.slug] || 0));
+      const sortedNotPlayed = sortByScore(notPlayed, scoreSnapshot);
+      return { sorted: [...played, ...sortedNotPlayed], stationOfDaySlug: null, mostPlayedSlugs: [] };
     }
     case "listeners":
       list.sort((a, b) => (scoreSnapshot[b.slug]?.listeners || 0) - (scoreSnapshot[a.slug]?.listeners || 0));
@@ -218,10 +234,14 @@ const Stations = () => {
   const { favouriteItems } = useFavourite();
   const scoreSnapshotRef = useRef<Record<string, StationSnapshot> | null>(null);
 
-  // Capture a score snapshot once on first load — sorting always uses this
-  // so that live changes to listeners/ratings don't reshuffle the list.
+  // Capture a score snapshot once stations have real listener data (the
+  // initial static props set total_listeners to 0, so we wait for the
+  // first client-side API fetch before locking in the snapshot).
   if (!scoreSnapshotRef.current && ctx.stations?.length) {
-    scoreSnapshotRef.current = buildScoreSnapshot(ctx.stations);
+    const hasListenerData = ctx.stations.some((s: IStation) => (s.total_listeners || 0) > 0);
+    if (hasListenerData) {
+      scoreSnapshotRef.current = buildScoreSnapshot(ctx.stations);
+    }
   }
 
   useEffect(() => {

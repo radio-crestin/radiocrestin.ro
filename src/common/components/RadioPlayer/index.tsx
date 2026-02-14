@@ -361,6 +361,7 @@ export default function RadioPlayer() {
     if (nextStation) {
       setCtx({ selectedStation: nextStation });
       window.history.pushState(null, "", `/${nextStation.slug}`);
+      document.title = `${nextStation.title} | Caută şi ascultă Radiouri Creştine online`;
     }
   };
 
