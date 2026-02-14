@@ -61,7 +61,7 @@ export async function getStaticProps(context: any) {
     (s: IStation) => s.slug === station_slug,
   );
   const selectedStation: IStation = stations_without_meta[selectedStationIndex];
-  const seo = seoStation(selectedStation);
+  const seo = { ...seoStation(selectedStation), noindex: true };
 
   if (!stationData) {
     return {

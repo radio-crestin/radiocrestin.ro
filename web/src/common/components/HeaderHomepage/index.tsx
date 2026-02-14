@@ -12,9 +12,9 @@ const Navigation = () => (
           src={"/images/radiocrestin_logo.png"}
           width={40}
           height={40}
-          alt={"AppStore Image Radio Crestin"}
+          alt={"Logo Radio Creștin"}
         />
-        <h1>Radio Creștin</h1>
+        <span>Radio Creștin</span>
       </Link>
     </div>
   </nav>
@@ -24,11 +24,11 @@ const ContentLeft = () => {
   return (
     <div className={styles.station}>
       <div className={styles.station_details}>
-        <h2 className={styles.station_title}>Bine ați venit</h2>
+        <h1 className={styles.station_title}>Ascultă Radiouri Creștine Online</h1>
         <p className={styles.station_description}>
-          „Iubesc pe Domnul, căci El aude glasul meu, cererile mele. Da, El Și-a
-          plecat urechea spre mine, de aceea-L voi chema toată viața mea.”
-          <br />- Psalmii 116:1-2
+          {`„Iubesc pe Domnul, căci El aude glasul meu, cererile mele. Da, El Și-a plecat urechea spre mine, de aceea-L voi chema toată viața mea."`}
+          <br />
+          {"- Psalmii 116:1-2"}
         </p>
       </div>
     </div>

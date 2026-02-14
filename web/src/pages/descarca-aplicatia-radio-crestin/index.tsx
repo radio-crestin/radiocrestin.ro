@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import Head from "next/head";
 import { isAndroid, isIOS } from "react-device-detect";
 import Layout from "@/components/Layout";
 import Link from "next/link";
@@ -58,6 +59,33 @@ export default function DescarcaAplicatia() {
 
   return (
     <Layout {...meta} hideAppBanner>
+      {/* SoftwareApplication schema - all values are constants, safe for JSON-LD */}
+      <Head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "SoftwareApplication",
+              name: "Radio Crestin",
+              operatingSystem: "Android, iOS",
+              applicationCategory: "MultimediaApplication",
+              aggregateRating: {
+                "@type": "AggregateRating",
+                ratingValue: APP_RATING,
+                reviewCount: APP_REVIEW_COUNT,
+                bestRating: "5",
+                worstRating: "1",
+              },
+              offers: {
+                "@type": "Offer",
+                price: "0",
+                priceCurrency: "RON",
+              },
+            }),
+          }}
+        />
+      </Head>
       <div className={styles.container}>
         <Link href="/" className={styles.back_button}>
           ← Înapoi la website

@@ -42,7 +42,7 @@ const Navigation = () => {
             src={"/images/radiocrestin_logo.png"}
             width={40}
             height={40}
-            alt={"AppStore Image Radio Crestin"}
+            alt={"Logo Radio Creștin"}
           />
           <span>Radio Creștin</span>
         </Link>
