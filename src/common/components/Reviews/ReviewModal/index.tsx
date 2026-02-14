@@ -39,14 +39,13 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
   const [hoveredStars, setHoveredStars] = useState(0);
   const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [starsSubmitted, setStarsSubmitted] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     if (!isOpen) return;
     setSelectedStars(0);
-    setStarsSubmitted(false);
+    setMessage("");
     setLinkCopied(false);
     const scrollY = window.scrollY;
     document.body.style.cssText = `overflow-y: scroll; position: fixed; width: 100%; top: -${scrollY}px`;
@@ -99,20 +98,13 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
       toast.success("Multumim pentru recenzia ta!");
       setMessage("");
       setSelectedStars(0);
-      setStarsSubmitted(false);
       onClose();
     }
   };
 
-  const handleStarSelect = async (starIndex: number) => {
+  const handleStarSelect = (starIndex: number) => {
     setSelectedStars(starIndex);
     setHoveredStars(0);
-
-    const success = await sendReview(starIndex, "");
-    if (success) {
-      setStarsSubmitted(true);
-      toast.success("Multumim pentru evaluare!");
-    }
   };
 
   const handleShareLink = async () => {
@@ -190,17 +182,15 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
               {renderStarSelector()}
             </div>
             <span className={styles.stars_text}>
-              {starsSubmitted
-                ? `${selectedStars} din 5 stele — evaluare trimisă!`
-                : selectedStars > 0
-                  ? `${selectedStars} din 5 stele`
-                  : "Selectează o evaluare"}
+              {selectedStars > 0
+                ? `${selectedStars} din 5 stele`
+                : "Selectează o evaluare"}
             </span>
           </div>
 
           <div className={styles.message_section}>
             <label htmlFor="review-message" className={styles.label}>
-              Mesaj (optional)
+              Mesaj
             </label>
             <textarea
               ref={textareaRef}
@@ -240,7 +230,7 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
             <button
               type="submit"
               className={`${styles.submit_button} ${isSubmitting ? styles.submitting : ""}`}
-              disabled={isSubmitting || !starsSubmitted || !message.trim()}
+              disabled={isSubmitting || selectedStars < 1 || !message.trim()}
             >
               <span className={styles.button_text}>Trimite mesajul</span>
               <span className={styles.button_spinner} />

@@ -62,6 +62,12 @@ const useUpdateStationsMetadata = () => {
 
     return () => clearInterval(intervalId);
   }, [setCtx]);
+
+  useEffect(() => {
+    if (ctx.selectedStation?.title) {
+      document.title = `${ctx.selectedStation.title} | Caută şi ascultă Radiouri Creştine online`;
+    }
+  }, [ctx.selectedStation?.slug]);
 };
 
 export default useUpdateStationsMetadata;

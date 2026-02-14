@@ -26,6 +26,7 @@ export default function StationPage({ seo }: { seo: any }) {
       <Header />
       <WhatsAppBibleGroup />
       <Stations />
+      <DownloadAppBanner />
       {ctx.selectedStation && (
         <StationReviewsSection
           stationId={ctx.selectedStation.id}
@@ -34,7 +35,6 @@ export default function StationPage({ seo }: { seo: any }) {
           reviewsStats={ctx.selectedStation.reviews_stats}
         />
       )}
-      <DownloadAppBanner />
       <FooterLinks />
       {ctx.selectedStation && <RadioPlayer />}
     </Layout>

@@ -4,6 +4,7 @@ import { QRCodeSVG } from "qrcode.react";
 import styles from "./styles.module.scss";
 import { Context } from "@/context/ContextProvider";
 import { SHARE_URL, APP_RATING, APP_REVIEW_COUNT } from "@/constants/constants";
+import Star from "@/icons/Star";
 
 export default function DownloadAppBanner() {
   const { ctx } = useContext(Context);
@@ -55,7 +56,9 @@ export default function DownloadAppBanner() {
           </div>
           <div className={styles.reviews_badge}>
             <span className={styles.stars}>
-              &#9733;&#9733;&#9733;&#9733;&#9733;
+              {[1, 2, 3, 4, 5].map((i) => (
+                <Star key={i} fillWidth={1} height={18} color="#FFD700" strokeColor="#DAA520" />
+              ))}
             </span>
             <span className={styles.rating}>{APP_RATING}</span>
             <span className={styles.review_count}>({APP_REVIEW_COUNT}+ recenzii)</span>
