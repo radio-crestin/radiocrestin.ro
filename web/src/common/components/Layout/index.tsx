@@ -100,7 +100,7 @@ const Layout = ({
         <meta name="title" content={title} />
         <meta name="description" content={description} />
         <meta name="robots" content={noindex ? "noindex, nofollow" : "index, follow"} />
-        <title>{title}</title>
+        <title>{selectedStation ? `${selectedStation.title} | Caută şi ascultă Radiouri Creştine online` : title}</title>
 
         {/* Twitter */}
         <meta name="twitter:card" content="summary_large_image" />
