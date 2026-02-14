@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useContext, useEffect, useState } from "react";
-import { useRouter } from "next/router";
 import Hls from "hls.js";
 import useSpaceBarPress from "@/hooks/useSpaceBarPress";
 import { Loading } from "@/icons/Loading";
@@ -29,11 +28,10 @@ enum STREAM_TYPE {
 const MAX_MEDIA_RETRIES = 20;
 
 export default function RadioPlayer() {
-  const { ctx } = useContext(Context);
+  const { ctx, setCtx } = useContext(Context);
   const { playerVolume, setPlayerVolume } = usePlayer();
   const { playbackState, setPlaybackState, setHasError } = usePlaybackState();
   const station = ctx.selectedStation;
-  const router = useRouter();
   const [retries, setRetries] = useState(MAX_MEDIA_RETRIES);
   const [streamType, setStreamType] = useState<STREAM_TYPE | null>(null);
   const { favouriteItems, toggleFavourite } = useFavourite();
@@ -353,15 +351,17 @@ export default function RadioPlayer() {
 
   const nextRandomStation = () => {
     const upStations = ctx.stations.filter(
-      (station: any) => station.uptime.is_up === true,
+      (s: any) => s.uptime.is_up === true,
     );
 
-    const currentIndex = upStations.findIndex((s: any) => s.id === station.id);
+    const currentIndex = upStations.findIndex((s: any) => s.slug === station.slug);
+    const nextIndex = (currentIndex + 1) % upStations.length;
+    const nextStation = upStations[nextIndex];
 
-    const nextIndex = currentIndex + 1;
-    const nextStation = upStations[nextIndex % upStations.length];
-
-    router.push(`/${nextStation.slug}`);
+    if (nextStation) {
+      setCtx({ selectedStation: nextStation });
+      window.history.pushState(null, "", `/${nextStation.slug}`);
+    }
   };
 
   const renderPlayButtonSvg = () => {
