@@ -6,7 +6,7 @@ import Star from "@/icons/Star";
 import { submitReview } from "@/services/submitReview";
 import { toast } from "react-toastify";
 import { useRefreshStations } from "@/hooks/useUpdateStationsMetadata";
-import { SHARE_URL } from "@/constants/constants";
+
 
 interface ReviewModalProps {
   isOpen: boolean;
@@ -39,14 +39,14 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
   const [hoveredStars, setHoveredStars] = useState(0);
   const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [starsError, setStarsError] = useState(false);
+  const [starsSubmitted, setStarsSubmitted] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     if (!isOpen) return;
     setSelectedStars(0);
-    setStarsError(false);
+    setStarsSubmitted(false);
     setLinkCopied(false);
     const scrollY = window.scrollY;
     document.body.style.cssText = `overflow-y: scroll; position: fixed; width: 100%; top: -${scrollY}px`;
@@ -66,48 +66,53 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [isOpen, isSubmitting, onClose]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (selectedStars < 1 || selectedStars > 5) {
-      setStarsError(true);
-      return;
-    }
-
+  const sendReview = async (stars: number, msg: string) => {
     flushSync(() => {
       setIsSubmitting(true);
     });
 
     const result = await submitReview({
       station_id: stationId,
-      stars: selectedStars,
-      message: message.trim(),
+      stars,
+      message: msg,
       user_identifier: getUserIdentifier(),
     });
 
     if (result.success && result.data && result.data.__typename === "SubmitReviewResponse") {
       await refreshStations();
-      toast.success("Multumim pentru recenzia ta!");
-      setMessage("");
-      setSelectedStars(0);
       setIsSubmitting(false);
-      onClose();
+      return true;
     } else {
       setIsSubmitting(false);
       toast.error(result.error || "A aparut o eroare. Te rugam sa incerci din nou.");
+      return false;
     }
   };
 
-  const handleBackdropClick = (e: React.MouseEvent) => {
-    if (e.target === e.currentTarget && !isSubmitting) {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (selectedStars < 1 || selectedStars > 5) return;
+
+    const success = await sendReview(selectedStars, message.trim());
+    if (success) {
+      toast.success("Multumim pentru recenzia ta!");
+      setMessage("");
+      setSelectedStars(0);
+      setStarsSubmitted(false);
       onClose();
     }
   };
 
-  const handleStarSelect = (starIndex: number) => {
+  const handleStarSelect = async (starIndex: number) => {
     setSelectedStars(starIndex);
     setHoveredStars(0);
-    setStarsError(false);
+
+    const success = await sendReview(starIndex, "");
+    if (success) {
+      setStarsSubmitted(true);
+      toast.success("Multumim pentru evaluare!");
+    }
   };
 
   const handleShareLink = async () => {
@@ -149,6 +154,7 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
             handleStarSelect(i);
           }}
           onClick={() => handleStarSelect(i)}
+          disabled={isSubmitting}
           aria-label={`${i} stele`}
         >
           <Star fillWidth={i <= displayStars ? 1 : 0} height={32} />
@@ -161,7 +167,7 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className={styles.modal_overlay} onClick={handleBackdropClick}>
+    <div className={styles.modal_overlay}>
       <div className={styles.modal_content}>
         <button
           className={styles.close_button}
@@ -183,13 +189,13 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
             <div className={styles.stars_container}>
               {renderStarSelector()}
             </div>
-            {starsError ? (
-              <span className={styles.stars_error}>Te rugăm să selectezi o evaluare</span>
-            ) : (
-              <span className={styles.stars_text}>
-                {selectedStars > 0 ? `${selectedStars} din 5 stele` : "Selectează o evaluare"}
-              </span>
-            )}
+            <span className={styles.stars_text}>
+              {starsSubmitted
+                ? `${selectedStars} din 5 stele — evaluare trimisă!`
+                : selectedStars > 0
+                  ? `${selectedStars} din 5 stele`
+                  : "Selectează o evaluare"}
+            </span>
           </div>
 
           <div className={styles.message_section}>
@@ -234,9 +240,9 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
             <button
               type="submit"
               className={`${styles.submit_button} ${isSubmitting ? styles.submitting : ""}`}
-              disabled={isSubmitting}
+              disabled={isSubmitting || !starsSubmitted || !message.trim()}
             >
-              <span className={styles.button_text}>Trimite recenzia</span>
+              <span className={styles.button_text}>Trimite mesajul</span>
               <span className={styles.button_spinner} />
             </button>
           </div>
