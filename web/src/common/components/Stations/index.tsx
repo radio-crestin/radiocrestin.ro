@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useContext, useEffect, useState } from "react";
+import React, { useContext, useEffect, useRef, useState } from "react";
 import { IStation } from "@/models/Station";
 import styles from "./styles.module.scss";
 import { Context } from "@/context/ContextProvider";
@@ -8,19 +8,225 @@ import FavoriteItem from "@/components/FavoriteItem";
 import StationItem from "@/components/StationItem";
 import { Magnify } from "@/icons/Magnify";
 import CloseIcon from "@/icons/CloseIcon";
+import usePlayCount from "@/store/usePlayCount";
+import useFavourite from "@/store/useFavourite";
+import SparklesStar from "@/icons/SparklesStar";
+
+type SortOption = "recommended" | "listeners" | "rating" | "alphabetical";
+
+const SORT_LABELS: Record<SortOption, string> = {
+  recommended: "Recomandate",
+  listeners: "Cei mai mulți ascultători",
+  rating: "Cel mai mare rating",
+  alphabetical: "Alfabetic",
+};
+
+const STORAGE_KEY = "station-sort-preference";
+
+const SortIcons: Record<SortOption, (props: { size?: number }) => React.ReactElement> = {
+  recommended: ({ size = 15 }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M12 2l2.4 7.2L22 12l-7.6 2.8L12 22l-2.4-7.2L2 12l7.6-2.8L12 2z" fill="#F59E0B" />
+      <circle cx="19" cy="5" r="1.5" fill="#F59E0B" />
+    </svg>
+  ),
+  listeners: ({ size = 15 }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" xmlns="http://www.w3.org/2000/svg">
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+    </svg>
+  ),
+  rating: ({ size = 15 }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+    </svg>
+  ),
+  alphabetical: ({ size = 15 }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" xmlns="http://www.w3.org/2000/svg">
+      <path d="M3 6h7" />
+      <path d="M3 12h10" />
+      <path d="M3 18h5" />
+      <path d="M18 6v12" />
+      <path d="M15 18l3 3 3-3" />
+    </svg>
+  ),
+};
+
+function getSavedSort(): SortOption {
+  if (typeof window === "undefined") return "recommended";
+  const saved = localStorage.getItem(STORAGE_KEY);
+  if (saved && saved in SORT_LABELS) return saved as SortOption;
+  return "recommended";
+}
+
+function getReviewScore(station: IStation): number {
+  const avgRating = station.reviews_stats?.average_rating || 0;
+  const numReviews = station.reviews_stats?.number_of_reviews || 0;
+  return avgRating * numReviews;
+}
+
+function sortByScore(stations: IStation[]): IStation[] {
+  const maxReview = Math.max(...stations.map(getReviewScore), 1);
+  const maxListeners = Math.max(...stations.map((s) => s.total_listeners || 0), 1);
+
+  return [...stations].sort((a, b) => {
+    const scoreA = (getReviewScore(a) / maxReview) * 0.5 + ((a.total_listeners || 0) / maxListeners) * 0.5;
+    const scoreB = (getReviewScore(b) / maxReview) * 0.5 + ((b.total_listeners || 0) / maxListeners) * 0.5;
+    return scoreB - scoreA;
+  });
+}
+
+function getDayOfYear(): number {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), 0, 0);
+  return Math.floor((now.getTime() - start.getTime()) / 86400000);
+}
+
+function getStationOfTheDay(stations: IStation[]): string | null {
+  if (stations.length === 0) return null;
+  const stableOrder = [...stations].sort((a, b) => a.slug.localeCompare(b.slug));
+  const dayOfYear = getDayOfYear();
+  return stableOrder[dayOfYear % stableOrder.length].slug;
+}
+
+interface SortResult {
+  sorted: IStation[];
+  stationOfDaySlug: string | null;
+  mostPlayedSlugs: string[];
+}
+
+function sortStations(
+  stations: IStation[],
+  sortBy: SortOption,
+  playCounts: Record<string, number>,
+  favouriteSlugs: string[],
+): SortResult {
+  const list = [...stations];
+  let stationOfDaySlug: string | null = null;
+  let mostPlayedSlugs: string[] = [];
+
+  switch (sortBy) {
+    case "recommended": {
+      // Position 1: Station of the day
+      stationOfDaySlug = getStationOfTheDay(stations);
+
+      // Positions 2-4: Top 3 most-played stations by the user
+      const placedSlugs = new Set<string>();
+      if (stationOfDaySlug) placedSlugs.add(stationOfDaySlug);
+
+      const mostPlayed = Object.entries(playCounts)
+        .filter(([slug]) => !placedSlugs.has(slug))
+        .filter(([slug]) => stations.some((s) => s.slug === slug))
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 3)
+        .map(([slug]) => slug);
+
+      // Backfill with top-scored stations if user has played fewer than 3
+      if (mostPlayed.length < 3) {
+        const alreadyPlaced = new Set(Array.from(placedSlugs).concat(mostPlayed));
+        const topByScore = sortByScore(stations.filter((s) => !alreadyPlaced.has(s.slug)));
+        for (const s of topByScore) {
+          if (mostPlayed.length >= 3) break;
+          mostPlayed.push(s.slug);
+        }
+      }
+
+      mostPlayedSlugs = mostPlayed;
+
+      const allSpecialSlugs = new Set([
+        ...(stationOfDaySlug ? [stationOfDaySlug] : []),
+        ...mostPlayed,
+      ]);
+      const remaining = sortByScore(stations.filter((s) => !allSpecialSlugs.has(s.slug)));
+      const findStation = (slug: string) => stations.find((s) => s.slug === slug);
+
+      const result: IStation[] = [];
+
+      // Position 1: Station of the day
+      if (stationOfDaySlug) {
+        const s = findStation(stationOfDaySlug);
+        if (s) result.push(s);
+      }
+
+      // Positions 2-4: Most played by user
+      for (const slug of mostPlayed) {
+        const s = findStation(slug);
+        if (s) result.push(s);
+      }
+
+      // Remaining stations sorted by score (50% reviews + 50% listeners)
+      result.push(...remaining);
+
+      return { sorted: result, stationOfDaySlug, mostPlayedSlugs };
+    }
+    case "listeners":
+      list.sort((a, b) => (b.total_listeners || 0) - (a.total_listeners || 0));
+      break;
+    case "rating":
+      list.sort((a, b) => (b.reviews_stats?.average_rating || 0) - (a.reviews_stats?.average_rating || 0));
+      break;
+    case "alphabetical":
+      list.sort((a, b) => a.title.localeCompare(b.title, "ro"));
+      break;
+  }
+
+  return { sorted: list, stationOfDaySlug: null, mostPlayedSlugs };
+}
+
+const ChevronDown = ({ size = 12 }: { size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M6 9l6 6 6-6" />
+  </svg>
+);
 
 const Stations = () => {
   const { ctx } = useContext(Context);
-  const [filteredStations, setFilteredStations] = useState(ctx.stations || []);
+  const [filteredStations, setFilteredStations] = useState<IStation[]>(ctx.stations || []);
   const [searchedValue, setSearchedValue] = useState("");
+  const [sortBy, setSortByState] = useState<SortOption>("recommended");
+
+  useEffect(() => {
+    setSortByState(getSavedSort());
+  }, []);
+
+  const setSortBy = (option: SortOption) => {
+    setSortByState(option);
+    localStorage.setItem(STORAGE_KEY, option);
+  };
+  const [showSortDropdown, setShowSortDropdown] = useState(false);
+  const [hoveredOption, setHoveredOption] = useState<SortOption | null>(null);
+  const [stationOfDaySlug, setStationOfDaySlug] = useState<string | null>(null);
+  const [mostPlayedSlugs, setMostPlayedSlugs] = useState<string[]>([]);
+  const sortRef = useRef<HTMLDivElement>(null);
+  const { playCounts } = usePlayCount();
+  const { favouriteItems } = useFavourite();
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (sortRef.current && !sortRef.current.contains(e.target as Node)) {
+        setShowSortDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const applySort = (stations: IStation[]) => {
+    const result = sortStations(stations, sortBy, playCounts, favouriteItems);
+    setStationOfDaySlug(result.stationOfDaySlug);
+    setMostPlayedSlugs(result.mostPlayedSlugs);
+    return result.sorted;
+  };
 
   useEffect(() => {
     if (searchedValue) {
       handleSearch();
     } else {
-      setFilteredStations(ctx.stations || []);
+      setFilteredStations(applySort(ctx.stations || []));
     }
-  }, [ctx.stations]);
+  }, [ctx.stations, sortBy]);
 
   useEffect(() => {
     if (
@@ -41,22 +247,19 @@ const Stations = () => {
   }, [searchedValue]);
 
   const handleSearch = () => {
-    let newFilteredStations = [];
-    // Filter by station title
+    let newFilteredStations: IStation[] = [];
     newFilteredStations.push(
       ...(ctx.stations || []).filter((station: IStation) =>
         station.title.toLowerCase().includes(searchedValue),
       ),
     );
 
-    // Filter by song name
     newFilteredStations.push(
       ...(ctx.stations || []).filter((station: IStation) =>
         station.now_playing?.song?.name?.toLowerCase().includes(searchedValue),
       ),
     );
 
-    // Filter by artist name
     newFilteredStations.push(
       ...(ctx.stations || []).filter((station: IStation) =>
         station.now_playing?.song?.artist?.name
@@ -65,14 +268,13 @@ const Stations = () => {
       ),
     );
 
-    // Remove duplicates
     newFilteredStations = newFilteredStations.filter(
       (station, index, self) =>
         index ===
         self.findIndex((t) => t.id === station.id && t.slug === station.slug),
     );
 
-    setFilteredStations(newFilteredStations);
+    setFilteredStations(applySort(newFilteredStations));
   };
 
   const handleKeyPress = (event: any) => {
@@ -91,8 +293,7 @@ const Stations = () => {
     if (!document.querySelector(".apasa_aici_move")) {
       let newElement = document.createElement("div");
       newElement.className = "apasa_aici_move";
-      newElement.innerHTML =
-        'Apasa aici <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 25 25"><path style="fill:#161616FF" d="m17.5 5.999-.707.707 5.293 5.293H1v1h21.086l-5.294 5.295.707.707L24 12.499l-6.5-6.5z" data-name="Right"/></svg>';
+      newElement.textContent = "Apasa aici";
       stationItems[2].appendChild(newElement);
 
       setTimeout(() => {
@@ -132,6 +333,72 @@ const Stations = () => {
         )}
       </div>
       <div className={`${styles.search_section}`}>
+        <div ref={sortRef} className={styles.sort_container}>
+          <button
+            className={`${styles.sort_button} ${showSortDropdown ? styles.sort_button_open : ""}`}
+            onClick={() => setShowSortDropdown(!showSortDropdown)}
+            aria-label="Sort stations"
+          >
+            {SortIcons[sortBy]({ size: 15 })}
+            <span>{SORT_LABELS[sortBy]}</span>
+            <span className={`${styles.chevron} ${showSortDropdown ? styles.chevron_open : ""}`}>
+              <ChevronDown size={12} />
+            </span>
+          </button>
+          <div className={`${styles.sort_dropdown} ${showSortDropdown ? styles.sort_dropdown_open : ""}`}>
+            {(Object.keys(SORT_LABELS) as SortOption[]).map((option) => (
+              <button
+                key={option}
+                className={`${styles.sort_option} ${sortBy === option ? styles.sort_option_active : ""}`}
+                onClick={() => {
+                  setSortBy(option);
+                  setShowSortDropdown(false);
+                  setHoveredOption(null);
+                }}
+                onMouseEnter={() => setHoveredOption(option)}
+                onMouseLeave={() => setHoveredOption(null)}
+              >
+                <span className={option === "recommended" ? styles.sort_icon_recommended : styles.sort_icon}>
+                  {SortIcons[option]({ size: 15 })}
+                </span>
+                {SORT_LABELS[option]}
+                {sortBy === option && (
+                  <span className={styles.check_icon}>
+                    <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M20 6L9 17l-5-5" />
+                    </svg>
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+          {showSortDropdown && hoveredOption === "recommended" && (
+            <div className={styles.info_popup}>
+              <p className={styles.info_title}>Despre sortarea &quot;Recomandate&quot;</p>
+              <ul className={styles.info_list}>
+                <li>
+                  <span className={styles.info_badge_gold}>
+                    <SparklesStar width={12} height={12} />
+                  </span>
+                  <strong>Stația zilei</strong> — în fiecare zi, o stație nouă apare pe primul loc pentru a fi descoperită.
+                </li>
+                <li>
+                  <span className={styles.info_badge_blue}>
+                    <SparklesStar width={12} height={12} />
+                  </span>
+                  <strong>Preferatele tale</strong> — următoarele 3 locuri sunt ocupate de stațiile pe care le asculți cel mai des.
+                </li>
+                <li>
+                  <strong>Celelalte stații</strong> — sunt ordonate după un scor bazat pe:
+                  <ul>
+                    <li>recenziile ascultătorilor (50%)</li>
+                    <li>numărul de ascultători activi (50%)</li>
+                  </ul>
+                </li>
+              </ul>
+            </div>
+          )}
+        </div>
         <div className={`${styles.search_container}`}>
           <input
             id="station-search"
@@ -162,11 +429,18 @@ const Stations = () => {
             <strong>{searchedValue}</strong>.
           </div>
         ) : (
-          filteredStations.map((station: IStation) => (
-            <React.Fragment key={`${station.id}-${station.slug}`}>
-              <StationItem {...station} />
-            </React.Fragment>
-          ))
+          filteredStations.map((station: IStation) => {
+            let badgeType: "station_of_day" | "most_played" | undefined;
+            if (sortBy === "recommended") {
+              if (station.slug === stationOfDaySlug) badgeType = "station_of_day";
+              else if (mostPlayedSlugs.includes(station.slug)) badgeType = "most_played";
+            }
+            return (
+              <React.Fragment key={`${station.id}-${station.slug}`}>
+                <StationItem {...station} badgeType={badgeType} />
+              </React.Fragment>
+            );
+          })
         )}
       </div>
     </div>

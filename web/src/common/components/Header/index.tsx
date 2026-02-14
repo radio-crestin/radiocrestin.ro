@@ -169,6 +169,7 @@ const ContentRight = () => {
           <StationRating
             stationId={ctx.selectedStation.id}
             stationTitle={ctx.selectedStation.title}
+            stationSlug={ctx.selectedStation.slug}
             reviewsStats={ctx.selectedStation.reviews_stats}
           />
         )}

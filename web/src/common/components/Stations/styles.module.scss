@@ -31,6 +31,7 @@
 .search_section {
   display: flex;
   justify-content: flex-end;
+  align-items: flex-end;
   max-width: 1230px;
   margin: 0 auto 0;
   width: 100%;
@@ -43,6 +44,230 @@
 
   @include mixinHelper.onTablet {
     margin-right: 15px;
+  }
+
+  .sort_container {
+    position: relative;
+    margin-top: 25px;
+
+    .sort_button {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid var(--bg-active-station-border);
+      border-radius: 20px;
+      height: 40px;
+      padding: 0 16px;
+      background: var(--bg-search-a-radio);
+      color: var(--text-color);
+      font-size: 14px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: border-color 0.2s, background 0.2s;
+
+      span {
+        color: inherit;
+      }
+
+      svg {
+        flex-shrink: 0;
+      }
+
+      &:hover {
+        border-color: var(--subtext-metadata-color);
+      }
+
+      &.sort_button_open {
+        border-color: var(--subtext-metadata-color);
+      }
+    }
+
+    .chevron {
+      display: inline-flex;
+      align-items: center;
+      transition: transform 0.25s ease;
+      margin-left: -2px;
+
+      &.chevron_open {
+        transform: rotate(180deg);
+      }
+    }
+
+    .sort_dropdown {
+      position: absolute;
+      top: calc(100% + 6px);
+      left: 0;
+      background: var(--station-card-color);
+      border: 1px solid var(--bg-active-station-border);
+      border-radius: 12px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+      z-index: 5;
+      overflow: hidden;
+      min-width: 220px;
+      padding: 4px 0;
+
+      // Animation: hidden by default
+      opacity: 0;
+      transform: translateY(-8px) scale(0.97);
+      pointer-events: none;
+      transition: opacity 0.2s ease, transform 0.2s ease;
+
+      &.sort_dropdown_open {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+        pointer-events: auto;
+      }
+
+      .sort_option {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        width: 100%;
+        padding: 10px 16px;
+        background: transparent;
+        border: none;
+        color: var(--text-color);
+        font-size: 14px;
+        text-align: left;
+        cursor: pointer;
+        transition: background 0.15s ease, color 0.15s ease;
+        position: relative;
+
+        span {
+          color: inherit;
+        }
+
+        &:hover {
+          background: var(--bg-active-station);
+        }
+
+        &.sort_option_active {
+          font-weight: 600;
+          background: var(--bg-active-station);
+        }
+      }
+
+      .sort_icon {
+        display: flex;
+        align-items: center;
+        flex-shrink: 0;
+        color: var(--subtext-metadata-color);
+        transition: color 0.15s ease;
+      }
+
+      .sort_option:hover .sort_icon,
+      .sort_option.sort_option_active .sort_icon {
+        color: var(--text-color);
+      }
+
+      .sort_icon_recommended {
+        display: flex;
+        align-items: center;
+        flex-shrink: 0;
+      }
+
+      .check_icon {
+        display: inline-flex;
+        align-items: center;
+        margin-left: auto;
+        color: var(--text-color);
+        opacity: 0.7;
+      }
+    }
+
+    .info_popup {
+      position: absolute;
+      top: calc(100% + 6px);
+      left: calc(228px + 12px);
+      background: var(--station-card-color);
+      border: 1px solid var(--bg-active-station-border);
+      border-radius: 12px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+      z-index: 10;
+      padding: 16px 20px;
+      width: 320px;
+
+      // Animation
+      animation: fadeSlideIn 0.2s ease forwards;
+
+      @include mixinHelper.onTablet {
+        // On smaller screens, position below the dropdown instead
+        left: 0;
+        top: auto;
+        bottom: calc(100% + 6px);
+        width: 280px;
+      }
+
+      .info_title {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text-color);
+        margin-bottom: 12px;
+      }
+
+      .info_list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+
+        > li {
+          font-size: 13px;
+          color: var(--subtext-metadata-color);
+          line-height: 1.5;
+
+          strong {
+            color: var(--text-color);
+          }
+
+          ul {
+            list-style: none;
+            padding: 0;
+            margin: 4px 0 0 18px;
+
+            li {
+              font-size: 12px;
+              color: var(--subtext-metadata-color);
+              line-height: 1.6;
+
+              &::before {
+                content: "•";
+                margin-right: 6px;
+              }
+            }
+          }
+        }
+      }
+
+      .info_badge_gold {
+        display: inline-flex;
+        align-items: center;
+        color: #ED8A19;
+        margin-right: 4px;
+        vertical-align: middle;
+      }
+
+      .info_badge_blue {
+        display: inline-flex;
+        align-items: center;
+        color: #4FC3F7;
+        margin-right: 4px;
+        vertical-align: middle;
+      }
+    }
+  }
+
+  @keyframes fadeSlideIn {
+    from {
+      opacity: 0;
+      transform: translateX(-8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
   }
 
   .search_container {
