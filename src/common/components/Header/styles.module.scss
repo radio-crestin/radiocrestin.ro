@@ -272,6 +272,23 @@
     p {
       color: var(--header-subtext-color);
     }
+
+    .youtube_link {
+      text-decoration: none;
+      color: inherit;
+
+
+      .youtube_icon {
+        display: inline;
+        margin: 0 0 0 10px;
+        box-shadow: none;
+        border-radius: 0;
+        vertical-align: middle;
+        opacity: 0.5;
+        filter: grayscale(100%);
+        transition: opacity 0.2s ease, filter 0.2s ease;
+      }
+    }
   }
 }
 

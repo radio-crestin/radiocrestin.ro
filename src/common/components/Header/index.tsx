@@ -133,12 +133,32 @@ const ContentLeft = () => {
             />
           )}
           <div className={styles.station_info}>
-            <h2 className={styles.station_title}>
-              {selectedStation.now_playing?.song?.name || selectedStation.title}
-            </h2>
-            <p className={styles.station_artist}>
-              {selectedStation.now_playing?.song?.artist?.name}
-            </p>
+            {selectedStation.now_playing?.song?.name ? (
+              <a
+                href={`https://www.youtube.com/results?search_query=${encodeURIComponent(
+                  `${selectedStation.now_playing.song.name} ${selectedStation.now_playing.song.artist?.name || ""}`
+                )}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={styles.youtube_link}
+                title="Deschide pe YouTube"
+              >
+                <h2 className={styles.station_title}>
+                  {selectedStation.now_playing.song.name}
+                  <img src="/icons/youtube.svg" alt="YouTube" width={22} height={22} className={styles.youtube_icon} />
+                </h2>
+                <p className={styles.station_artist}>
+                  {selectedStation.now_playing.song.artist?.name}
+                </p>
+              </a>
+            ) : (
+              <>
+                <h2 className={styles.station_title}>{selectedStation.title}</h2>
+                <p className={styles.station_artist}>
+                  {selectedStation.now_playing?.song?.artist?.name}
+                </p>
+              </>
+            )}
           </div>
         </>
       )}
