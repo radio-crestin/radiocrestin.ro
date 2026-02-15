@@ -5,11 +5,19 @@ import { Context } from "@/context/ContextProvider";
 import { useRouter } from "next/router";
 import { Bugsnag } from "@/utils/bugsnag";
 
-const fetchAndUpdateStations = async (setCtx: (ctx: any) => void) => {
+const fetchAndUpdateStations = async (setCtx: (ctx: any) => void, selectedStationSlug?: string) => {
   try {
     const data = await getStations();
     if (data?.stations?.length > 0) {
       setCtx({ stations: data.stations });
+      if (selectedStationSlug) {
+        const updatedStation = data.stations.find(
+          (s: IStation) => s.slug === selectedStationSlug
+        );
+        if (updatedStation) {
+          setCtx({ selectedStation: updatedStation });
+        }
+      }
       return data.stations;
     }
     return null;
@@ -26,15 +34,7 @@ export const useRefreshStations = () => {
   const selectedStationSlug = ctx.selectedStation?.slug;
 
   const refreshStations = useCallback(async () => {
-    const stations = await fetchAndUpdateStations(setCtx);
-    if (stations && selectedStationSlug) {
-      const updatedStation = stations.find(
-        (s: IStation) => s.slug === selectedStationSlug
-      );
-      if (updatedStation) {
-        setCtx({ selectedStation: updatedStation });
-      }
-    }
+    await fetchAndUpdateStations(setCtx, selectedStationSlug);
   }, [selectedStationSlug, setCtx]);
 
   return { refreshStations };
@@ -56,12 +56,14 @@ const useUpdateStationsMetadata = () => {
     }
   }, [router.query.station_slug]);
 
+  const selectedStationSlug = ctx.selectedStation?.slug;
+
   useEffect(() => {
-    fetchAndUpdateStations(setCtx);
-    const intervalId = setInterval(() => fetchAndUpdateStations(setCtx), 10000);
+    fetchAndUpdateStations(setCtx, selectedStationSlug);
+    const intervalId = setInterval(() => fetchAndUpdateStations(setCtx, selectedStationSlug), 10000);
 
     return () => clearInterval(intervalId);
-  }, [setCtx]);
+  }, [setCtx, selectedStationSlug]);
 
 };
 

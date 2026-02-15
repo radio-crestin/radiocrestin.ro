@@ -15,7 +15,7 @@ import SparklesStar from "@/icons/SparklesStar";
 type SortOption = "recommended" | "most_played" | "listeners" | "rating" | "alphabetical";
 
 const SORT_LABELS: Record<SortOption, string> = {
-  recommended: "Recomandate",
+  recommended: "Pentru tine",
   most_played: "Cele mai ascultate de mine",
   listeners: "Cei mai mulți ascultători",
   rating: "Cel mai mare rating",
@@ -416,7 +416,7 @@ const Stations = () => {
           </div>
           {showSortDropdown && hoveredOption === "recommended" && (
             <div className={styles.info_popup}>
-              <p className={styles.info_title}>Despre sortarea &quot;Recomandate&quot;</p>
+              <p className={styles.info_title}>Despre sortarea &quot;Pentru tine&quot;</p>
               <ul className={styles.info_list}>
                 <li>
                   <span className={styles.info_badge_gold}>
