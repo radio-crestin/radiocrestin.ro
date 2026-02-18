@@ -1,23 +1,16 @@
-import { useCallback, useContext, useEffect } from "react";
+import { useCallback, useContext, useEffect, useRef } from "react";
 import { getStations } from "@/services/getStations";
 import { IStation } from "@/models/Station";
 import { Context } from "@/context/ContextProvider";
-import { useRouter } from "next/router";
 import { Bugsnag } from "@/utils/bugsnag";
 
-const fetchAndUpdateStations = async (setCtx: (ctx: any) => void, selectedStationSlug?: string) => {
+// Fetches stations and updates the list. Returns the stations array for callers
+// to handle selectedStation updates with their own source of truth.
+const fetchStations = async (setCtx: (ctx: any) => void) => {
   try {
     const data = await getStations();
     if (data?.stations?.length > 0) {
       setCtx({ stations: data.stations });
-      if (selectedStationSlug) {
-        const updatedStation = data.stations.find(
-          (s: IStation) => s.slug === selectedStationSlug
-        );
-        if (updatedStation) {
-          setCtx({ selectedStation: updatedStation });
-        }
-      }
       return data.stations;
     }
     return null;
@@ -29,12 +22,27 @@ const fetchAndUpdateStations = async (setCtx: (ctx: any) => void, selectedStatio
   }
 };
 
+const updateSelectedStation = (
+  stations: IStation[],
+  slug: string | undefined,
+  setCtx: (ctx: any) => void,
+) => {
+  if (!slug) return;
+  const updatedStation = stations.find((s: IStation) => s.slug === slug);
+  if (updatedStation) {
+    setCtx({ selectedStation: updatedStation });
+  }
+};
+
 export const useRefreshStations = () => {
   const { ctx, setCtx } = useContext(Context);
   const selectedStationSlug = ctx.selectedStation?.slug;
 
   const refreshStations = useCallback(async () => {
-    await fetchAndUpdateStations(setCtx, selectedStationSlug);
+    const stations = await fetchStations(setCtx);
+    if (stations) {
+      updateSelectedStation(stations, selectedStationSlug, setCtx);
+    }
   }, [selectedStationSlug, setCtx]);
 
   return { refreshStations };
@@ -42,28 +50,33 @@ export const useRefreshStations = () => {
 
 const useUpdateStationsMetadata = () => {
   const { ctx, setCtx } = useContext(Context);
-  const router = useRouter();
-
-  useEffect(() => {
-    const { station_slug } = router.query;
-    if (station_slug && ctx?.stations) {
-      const station = ctx.stations.find(
-        (s: IStation) => s.slug === station_slug,
-      );
-      if (station) {
-        setCtx({ selectedStation: station });
-      }
-    }
-  }, [router.query.station_slug]);
-
   const selectedStationSlug = ctx.selectedStation?.slug;
+  const selectedStationSlugRef = useRef(selectedStationSlug);
+
+  // Keep the ref in sync so polling always uses the latest slug
+  useEffect(() => {
+    selectedStationSlugRef.current = selectedStationSlug;
+  }, [selectedStationSlug]);
 
   useEffect(() => {
-    fetchAndUpdateStations(setCtx, selectedStationSlug);
-    const intervalId = setInterval(() => fetchAndUpdateStations(setCtx, selectedStationSlug), 10000);
+    let cancelled = false;
 
-    return () => clearInterval(intervalId);
-  }, [setCtx, selectedStationSlug]);
+    const poll = async () => {
+      const stations = await fetchStations(setCtx);
+      // Read the ref AFTER the await — this is the user's latest selection,
+      // not the stale value from when the poll started
+      if (cancelled || !stations) return;
+      updateSelectedStation(stations, selectedStationSlugRef.current, setCtx);
+    };
+
+    poll();
+    const intervalId = setInterval(poll, 10000);
+
+    return () => {
+      cancelled = true;
+      clearInterval(intervalId);
+    };
+  }, [setCtx]);
 
 };
 
