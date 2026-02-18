@@ -1,6 +1,8 @@
 const fs = require("fs");
 const path = require("path");
 
+const fallbackData = require("../src/common/data/fallback-stations.json");
+
 const SITE_URL = "https://www.radiocrestin.ro";
 const API_URL = "https://api.radiocrestin.ro/api/v1/stations";
 
@@ -17,12 +19,30 @@ const STATIC_PAGES = [
 async function generateSitemap() {
   console.log("🔄 Generating sitemap...");
 
-  // Fetch stations from API
-  const response = await fetch(API_URL);
-  const data = await response.json();
-  const stations = data.data?.stations || [];
+  let stations = [];
 
-  console.log(`📻 Found ${stations.length} stations`);
+  try {
+    const response = await fetch(API_URL, {
+      signal: AbortSignal.timeout(5000),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    stations = data.data?.stations || [];
+
+    if (stations.length === 0) {
+      throw new Error("Empty stations list from API");
+    }
+
+    console.log(`📻 Found ${stations.length} stations from API`);
+  } catch (err) {
+    console.warn(`⚠️ API unavailable (${err.message}), using fallback stations`);
+    stations = fallbackData?.data?.stations || [];
+    console.log(`📻 Using ${stations.length} fallback stations`);
+  }
 
   const today = new Date().toISOString().split("T")[0];
 
