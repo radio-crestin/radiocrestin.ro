@@ -21,6 +21,7 @@ export const getStations = async () => {
       headers: {
         accept: "*/*",
       },
+      signal: AbortSignal.timeout(2000),
     });
 
     if (!response.ok) {
@@ -58,6 +59,7 @@ export const getStationReviews = async (
       headers: {
         accept: "*/*",
       },
+      signal: AbortSignal.timeout(3000),
     });
 
     if (!response.ok) {

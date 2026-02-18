@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useContext, useEffect, useState } from "react";
+import React, { useContext, useEffect, useRef, useState } from "react";
 import Hls from "hls.js";
 import useSpaceBarPress from "@/hooks/useSpaceBarPress";
 import { Loading } from "@/icons/Loading";
@@ -32,14 +32,40 @@ export default function RadioPlayer() {
   const { playerVolume, setPlayerVolume } = usePlayer();
   const { playbackState, setPlaybackState, setHasError } = usePlaybackState();
   const station = ctx.selectedStation;
-  const [retries, setRetries] = useState(MAX_MEDIA_RETRIES);
+  const retriesRef = useRef(MAX_MEDIA_RETRIES);
   const [streamType, setStreamType] = useState<STREAM_TYPE | null>(null);
   const { favouriteItems, toggleFavourite } = useFavourite();
   const { incrementPlayCount } = usePlayCount();
   const [isFavorite, setIsFavorite] = useState(false);
-  const [hlsInstance, setHlsInstance] = useState<Hls | null>(null);
+  const hlsInstanceRef = useRef<Hls | null>(null);
+  const retryMechanismRef = useRef<() => void>(() => {});
+  const hlsTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const clearHlsTimeout = () => {
+    if (hlsTimeoutRef.current) {
+      clearTimeout(hlsTimeoutRef.current);
+      hlsTimeoutRef.current = null;
+    }
+  };
+
+  const handlePlayError = (error: any, context: string) => {
+    if (error.name === 'NotAllowedError') {
+      setPlaybackState(PLAYBACK_STATE.STOPPED);
+      return;
+    }
+    Bugsnag.notify(
+      new Error(
+        `${context} - station: ${station.title}, error: ${JSON.stringify(error, null, 2)}`,
+      ),
+    );
+    retryMechanism();
+  };
+
+  // Determine best stream type + reset retries on station change
   useEffect(() => {
+    const audio = document.getElementById("audioPlayer") as HTMLAudioElement;
+    if (audio) audio.volume = playerVolume / 100;
+
     const preferredStreamOrder = [
       STREAM_TYPE.HLS,
       STREAM_TYPE.PROXY,
@@ -53,6 +79,10 @@ export default function RadioPlayer() {
     );
 
     setStreamType(availableStreamType || null);
+
+    return () => {
+      retriesRef.current = MAX_MEDIA_RETRIES;
+    };
   }, [station.slug]);
 
   useEffect(() => {
@@ -74,7 +104,7 @@ export default function RadioPlayer() {
 
     // Add session tracking (only on client side)
     const url = new URL(stream.stream_url);
-    
+
     if (typeof window !== 'undefined') {
       const uuid = localStorage.getItem('radio-crestin-session-uuid') || crypto.randomUUID();
       localStorage.setItem('radio-crestin-session-uuid', uuid);
@@ -85,11 +115,17 @@ export default function RadioPlayer() {
     return url.toString();
   };
 
+  // Returns a cleanup function that removes HLS listeners and timeouts
   const loadHLS = (
     hls_stream_url: string,
     audio: HTMLAudioElement,
     hls: Hls,
-  ) => {
+  ): (() => void) => {
+    let manifestParsed = false;
+    let onCanPlayThrough: (() => void) | null = null;
+
+    clearHlsTimeout();
+
     if (Hls.isSupported()) {
       hls.loadSource(hls_stream_url);
       hls.attachMedia(audio);
@@ -97,25 +133,34 @@ export default function RadioPlayer() {
       audio.src = hls_stream_url;
     }
 
+    // 1-second timeout: if HLS manifest isn't parsed, fall back to next stream type
+    hlsTimeoutRef.current = setTimeout(() => {
+      if (!manifestParsed) {
+        hlsTimeoutRef.current = null;
+        retryMechanismRef.current();
+      }
+    }, 1000);
+
     hls.on(Hls.Events.AUDIO_TRACK_LOADING, function () {
       setPlaybackState(PLAYBACK_STATE.BUFFERING);
     });
 
     hls.on(Hls.Events.MANIFEST_PARSED, () => {
+      manifestParsed = true;
+      clearHlsTimeout();
       setPlaybackState(PLAYBACK_STATE.BUFFERING);
-      audio.addEventListener(
-        "canplaythrough",
-        function () {
-          audio.play().catch(() => {
-            setPlaybackState(PLAYBACK_STATE.STOPPED);
-          });
-        },
-        { once: true },
-      );
+      onCanPlayThrough = () => {
+        onCanPlayThrough = null;
+        audio.play().catch(() => {
+          setPlaybackState(PLAYBACK_STATE.STOPPED);
+        });
+      };
+      audio.addEventListener("canplaythrough", onCanPlayThrough, { once: true });
     });
 
     hls.on(Hls.Events.ERROR, function (event, data) {
       if (data.fatal) {
+        clearHlsTimeout();
         Bugsnag.notify(
           new Error(
             `HLS Fatal error - station.title: ${
@@ -127,18 +172,31 @@ export default function RadioPlayer() {
             )} - event: ${JSON.stringify(event, null, 2)}`,
           ),
         );
-        retryMechanism();
+        retryMechanismRef.current();
       }
     });
+
+    return () => {
+      clearHlsTimeout();
+      if (onCanPlayThrough) {
+        audio.removeEventListener("canplaythrough", onCanPlayThrough);
+      }
+      hls.destroy();
+    };
   };
 
   const resetAndReloadStream = () => {
     const audio = document.getElementById("audioPlayer") as HTMLAudioElement;
     if (!audio || !streamType) return;
 
-    if (hlsInstance) {
-      hlsInstance.destroy();
+    clearHlsTimeout();
+
+    if (hlsInstanceRef.current) {
+      hlsInstanceRef.current.destroy();
+      hlsInstanceRef.current = null;
     }
+
+    setPlaybackState(PLAYBACK_STATE.BUFFERING);
 
     const streamUrl = getStreamUrl(streamType);
     if (!streamUrl) {
@@ -148,21 +206,12 @@ export default function RadioPlayer() {
 
     if (streamType === STREAM_TYPE.HLS) {
       const newHls = new Hls();
-      setHlsInstance(newHls);
+      hlsInstanceRef.current = newHls;
       loadHLS(streamUrl, audio, newHls);
     } else {
       audio.src = streamUrl;
       audio.load();
-      audio.play().catch((error) => {
-        Bugsnag.notify(
-          new Error(
-            `Error reloading stream - station.title: ${
-              station.title
-            }, error: ${JSON.stringify(error, null, 2)}`,
-          ),
-        );
-        retryMechanism();
-      });
+      audio.play().catch((error) => handlePlayError(error, `Stream reload [${streamType}]`));
     }
   };
 
@@ -177,24 +226,15 @@ export default function RadioPlayer() {
         break;
       case PLAYBACK_STATE.STOPPED:
         audio.pause();
-        if (hlsInstance) {
-          hlsInstance.stopLoad();
-          hlsInstance.detachMedia();
+        if (hlsInstanceRef.current) {
+          hlsInstanceRef.current.stopLoad();
+          hlsInstanceRef.current.detachMedia();
         }
         break;
     }
   }, [playbackState]);
 
-  useEffect(() => {
-    const audio = document.getElementById("audioPlayer") as HTMLAudioElement;
-    if (!audio) return;
-    audio.volume = playerVolume / 100;
-
-    return () => {
-      setRetries(20);
-    };
-  }, [station.slug]);
-
+  // Stream loader effect
   useEffect(() => {
     const audio = document.getElementById("audioPlayer") as HTMLAudioElement;
     if (!audio || !streamType) return;
@@ -205,42 +245,24 @@ export default function RadioPlayer() {
       return;
     }
 
-    const hls = new Hls();
-    setHlsInstance(hls);
+    setPlaybackState(PLAYBACK_STATE.BUFFERING);
 
-    switch (streamType) {
-      case STREAM_TYPE.HLS:
-        loadHLS(streamUrl, audio, hls);
-        break;
-      case STREAM_TYPE.PROXY:
-        audio.src = streamUrl;
-        audio.play().catch((error) => {
-          Bugsnag.notify(
-            new Error(
-              `Switching from HLS -> PROXY error:157 - station.title: ${
-                station.title
-              }, error: ${JSON.stringify(error, null, 2)}`,
-            ),
-          );
-          retryMechanism();
-        });
-        break;
-      case STREAM_TYPE.ORIGINAL:
-        audio.src = streamUrl;
-        audio.play().catch((error) => {
-          Bugsnag.notify(
-            new Error(
-              `Switching from PROXY to ORIGINAL error:168 - station.title: ${
-                station.title
-              }, error: ${JSON.stringify(error, null, 2)}`,
-            ),
-          );
-          retryMechanism();
-        });
+    let cleanupHls: (() => void) | null = null;
+
+    if (streamType === STREAM_TYPE.HLS) {
+      const hls = new Hls();
+      hlsInstanceRef.current = hls;
+      cleanupHls = loadHLS(streamUrl, audio, hls);
+    } else {
+      audio.src = streamUrl;
+      audio.play().catch((error) => handlePlayError(error, `Stream error [${streamType}]`));
     }
 
     return () => {
-      hls.destroy();
+      if (cleanupHls) {
+        cleanupHls();
+      }
+      hlsInstanceRef.current = null;
     };
   }, [streamType, station.slug]);
 
@@ -248,8 +270,8 @@ export default function RadioPlayer() {
     const audio = document.getElementById("audioPlayer") as HTMLAudioElement;
     if (!audio) return;
 
-    setRetries(retries - 1);
-    if (retries > 0) {
+    retriesRef.current--;
+    if (retriesRef.current > 0) {
       const availableStreamTypes = station.station_streams.map(
         (s: IStationStreams) => s.type,
       );
@@ -274,6 +296,7 @@ export default function RadioPlayer() {
         setStreamType(streamOrder[nextIndex]);
       }
     } else {
+      setPlaybackState(PLAYBACK_STATE.STOPPED);
       Bugsnag.notify(
         new Error(
           `Hasn't been able to connect to the station - ${station.title}. Tried 20 times :P.`,
@@ -302,6 +325,9 @@ export default function RadioPlayer() {
       );
     }
   };
+
+  // Keep ref in sync so HLS timeout/error callbacks always call the latest version
+  retryMechanismRef.current = retryMechanism;
 
   useEffect(() => {
     if ("mediaSession" in navigator) {
@@ -338,7 +364,8 @@ export default function RadioPlayer() {
   useSpaceBarPress(() => {
     if (
       playbackState === PLAYBACK_STATE.PLAYING ||
-      playbackState === PLAYBACK_STATE.STARTED
+      playbackState === PLAYBACK_STATE.STARTED ||
+      playbackState === PLAYBACK_STATE.BUFFERING
     ) {
       setPlaybackState(PLAYBACK_STATE.STOPPED);
       return;
@@ -463,7 +490,8 @@ export default function RadioPlayer() {
               onClick={() => {
                 if (
                   playbackState === PLAYBACK_STATE.PLAYING ||
-                  playbackState === PLAYBACK_STATE.STARTED
+                  playbackState === PLAYBACK_STATE.STARTED ||
+                  playbackState === PLAYBACK_STATE.BUFFERING
                 ) {
                   setPlaybackState(PLAYBACK_STATE.STOPPED);
                   return;
@@ -489,7 +517,6 @@ export default function RadioPlayer() {
 
         <audio
           preload="true"
-          autoPlay
           id="audioPlayer"
           onPlaying={() => {
             setPlaybackState(PLAYBACK_STATE.PLAYING);
