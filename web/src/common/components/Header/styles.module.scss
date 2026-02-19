@@ -119,9 +119,11 @@
           &:nth-child(1) {
             transform: translateY(7px) rotate(45deg);
           }
+
           &:nth-child(2) {
             opacity: 0;
           }
+
           &:nth-child(3) {
             transform: translateY(-7px) rotate(-45deg);
           }
@@ -284,8 +286,7 @@
         box-shadow: none;
         border-radius: 0;
         vertical-align: middle;
-        opacity: 0.5;
-        filter: grayscale(100%);
+        filter: grayscale(100%) brightness(1.5);
         transition: opacity 0.2s ease, filter 0.2s ease;
       }
     }
