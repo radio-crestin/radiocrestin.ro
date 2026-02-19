@@ -3301,8 +3301,8 @@
         "title": "Radio SOS",
         "website": "https://radiosos.info",
         "email": "radiososploiesti@gmail.com",
-        "stream_url": "http://5.2.180.231:8000/stream",
-        "proxy_stream_url": "https://proxy.radio-crestin.com/http://5.2.180.231:8000/stream",
+        "stream_url": "https://radiosos.eu:8001/stream?type=.aac",
+        "proxy_stream_url": "https://proxy.radio-crestin.com/https://radiosos.eu:8001/stream?type=.aac",
         "hls_stream_url": "https://hls-staging.radio-crestin.com/sos-ploiesti/index.m3u8",
         "thumbnail_url": "https://fsn1.your-objectstorage.com/prod-rke2-radiocrestin-admin-storage/public/stations/sos-ploiesti.png",
         "total_listeners": 0,
@@ -3321,7 +3321,7 @@
           {
             "order": 2,
             "type": "direct_stream",
-            "stream_url": "http://5.2.180.231:8000/stream"
+            "stream_url": "https://radiosos.eu:8001/stream?type=.aac"
           }
         ],
         "posts": [],
