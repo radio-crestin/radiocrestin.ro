@@ -33,7 +33,8 @@ export default function RadioPlayer() {
   const { playbackState, setPlaybackState, setHasError } = usePlaybackState();
   const station = ctx.selectedStation;
   const retriesRef = useRef(MAX_MEDIA_RETRIES);
-  const [streamType, setStreamType] = useState<STREAM_TYPE | null>(null);
+  const [streamState, setStreamState] = useState<{ type: STREAM_TYPE; slug: string } | null>(null);
+  const streamType = streamState?.slug === station.slug ? streamState?.type ?? null : null;
   const { favouriteItems, toggleFavourite } = useFavourite();
   const { incrementPlayCount } = usePlayCount();
   const [isFavorite, setIsFavorite] = useState(false);
@@ -78,9 +79,10 @@ export default function RadioPlayer() {
       ),
     );
 
-    setStreamType(availableStreamType || null);
+    setStreamState(availableStreamType ? { type: availableStreamType, slug: station.slug } : null);
 
     return () => {
+      setStreamState(null);
       retriesRef.current = MAX_MEDIA_RETRIES;
     };
   }, [station.slug]);
@@ -94,6 +96,30 @@ export default function RadioPlayer() {
     if (!audio) return;
     audio.volume = playerVolume / 100;
   }, [playerVolume]);
+
+  const isHttpMixedContent = (url: string) => {
+    return (
+      typeof window !== 'undefined' &&
+      window.location.protocol === 'https:' &&
+      url.startsWith('http://')
+    );
+  };
+
+  const openHttpStream = (streamUrl: string) => {
+    // Position popup at bottom center of screen
+    const popupWidth = 420;
+    const popupHeight = 180;
+    const left = Math.round((screen.width - popupWidth) / 2);
+    const top = Math.round(screen.availHeight - popupHeight - 60);
+
+    window.open(
+      streamUrl,
+      `http-player-${station.slug}`,
+      `width=${popupWidth},height=${popupHeight},left=${left},top=${top},menubar=no,toolbar=no,status=no,resizable=yes`,
+    );
+
+    setPlaybackState(PLAYBACK_STATE.STOPPED);
+  };
 
   const getStreamUrl = (type: STREAM_TYPE | null) => {
     if (!type) return null;
@@ -204,6 +230,11 @@ export default function RadioPlayer() {
       return;
     }
 
+    if (isHttpMixedContent(streamUrl)) {
+      openHttpStream(streamUrl);
+      return;
+    }
+
     if (streamType === STREAM_TYPE.HLS) {
       const newHls = new Hls();
       hlsInstanceRef.current = newHls;
@@ -249,6 +280,11 @@ export default function RadioPlayer() {
 
     let cleanupHls: (() => void) | null = null;
 
+    if (isHttpMixedContent(streamUrl)) {
+      openHttpStream(streamUrl);
+      return;
+    }
+
     if (streamType === STREAM_TYPE.HLS) {
       const hls = new Hls();
       hlsInstanceRef.current = hls;
@@ -287,13 +323,13 @@ export default function RadioPlayer() {
       do {
         nextIndex = (nextIndex + 1) % streamOrder.length;
         if (availableStreamTypes.includes(streamOrder[nextIndex])) {
-          setStreamType(streamOrder[nextIndex]);
+          setStreamState({ type: streamOrder[nextIndex], slug: station.slug });
           break;
         }
       } while (nextIndex !== currentIndex);
 
       if (nextIndex === currentIndex) {
-        setStreamType(streamOrder[nextIndex]);
+        setStreamState({ type: streamOrder[nextIndex], slug: station.slug });
       }
     } else {
       setPlaybackState(PLAYBACK_STATE.STOPPED);
