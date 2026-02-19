@@ -413,7 +413,8 @@ export default function RadioPlayer() {
   });
 
   const nextRandomStation = () => {
-    const upStations = ctx.stations.filter(
+    const stationList = ctx.sortedStations || ctx.stations;
+    const upStations = stationList.filter(
       (s: any) => s.uptime.is_up === true,
     );
 
