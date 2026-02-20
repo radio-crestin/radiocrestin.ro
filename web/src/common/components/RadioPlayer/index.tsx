@@ -241,13 +241,27 @@ export default function RadioPlayer() {
         }
       }
 
-      // Network hiccup — restart segment loading from live edge
-      if (data.type === Hls.ErrorTypes.NETWORK_ERROR && hlsRecoveryRef.current < 3) {
-        hlsRecoveryRef.current++;
-        console.warn(`[HLS] Recovering network error (attempt ${hlsRecoveryRef.current}):`, data.details);
-        hls.startLoad(-1);
-        setTimeout(() => { isRecovering = false; }, 100);
-        return;
+      // Network errors
+      if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+        // Permanent HTTP errors (404, 403, 410) or manifest failures — in-place retry cannot help
+        const httpStatus = data.response?.code;
+        if (httpStatus === 404 || httpStatus === 403 || httpStatus === 410
+          || data.details === Hls.ErrorDetails.MANIFEST_LOAD_ERROR) {
+          console.warn(`[HLS] Permanent network error (HTTP ${httpStatus}, ${data.details}), switching stream`);
+          isRecovering = false;
+          Bugsnag.notify(new Error(errorInfo));
+          retryMechanismRef.current();
+          return;
+        }
+
+        // Transient network hiccup — restart segment loading from live edge
+        if (hlsRecoveryRef.current < 3) {
+          hlsRecoveryRef.current++;
+          console.warn(`[HLS] Recovering network error (attempt ${hlsRecoveryRef.current}):`, data.details);
+          hls.startLoad(-1);
+          setTimeout(() => { isRecovering = false; }, 100);
+          return;
+        }
       }
 
       // Recovery exhausted or unknown error — fall back to stream cycling
