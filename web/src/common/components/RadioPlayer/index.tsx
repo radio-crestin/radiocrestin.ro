@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useContext, useEffect, useRef, useState } from "react";
-import Hls from "hls.js";
+import Hls, { type HlsConfig } from "hls.js";
 import useSpaceBarPress from "@/hooks/useSpaceBarPress";
 import { Loading } from "@/icons/Loading";
 import { CONSTANTS } from "@/constants/constants";
@@ -41,6 +41,7 @@ export default function RadioPlayer() {
   const hlsInstanceRef = useRef<Hls | null>(null);
   const retryMechanismRef = useRef<() => void>(() => {});
   const hlsTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hlsRecoveryRef = useRef(0);
 
   const clearHlsTimeout = () => {
     if (hlsTimeoutRef.current) {
@@ -141,6 +142,33 @@ export default function RadioPlayer() {
     return url.toString();
   };
 
+  const HLS_CONFIG: Partial<HlsConfig> = {
+    manifestLoadPolicy: {
+      default: {
+        maxTimeToFirstByteMs: 2000,
+        maxLoadTimeMs: 3000,
+        timeoutRetry: { maxNumRetry: 1, retryDelayMs: 500, maxRetryDelayMs: 1000 },
+        errorRetry: { maxNumRetry: 1, retryDelayMs: 500, maxRetryDelayMs: 1000 },
+      },
+    },
+    playlistLoadPolicy: {
+      default: {
+        maxTimeToFirstByteMs: 2000,
+        maxLoadTimeMs: 3000,
+        timeoutRetry: { maxNumRetry: 2, retryDelayMs: 500, maxRetryDelayMs: 1000 },
+        errorRetry: { maxNumRetry: 2, retryDelayMs: 500, maxRetryDelayMs: 1000 },
+      },
+    },
+    fragLoadPolicy: {
+      default: {
+        maxTimeToFirstByteMs: 2000,
+        maxLoadTimeMs: 5000,
+        timeoutRetry: { maxNumRetry: 3, retryDelayMs: 500, maxRetryDelayMs: 2000 },
+        errorRetry: { maxNumRetry: 3, retryDelayMs: 500, maxRetryDelayMs: 2000 },
+      },
+    },
+  };
+
   // Returns a cleanup function that removes HLS listeners and timeouts
   const loadHLS = (
     hls_stream_url: string,
@@ -151,6 +179,7 @@ export default function RadioPlayer() {
     let onCanPlayThrough: (() => void) | null = null;
 
     clearHlsTimeout();
+    hlsRecoveryRef.current = 0;
 
     if (Hls.isSupported()) {
       hls.loadSource(hls_stream_url);
@@ -159,13 +188,13 @@ export default function RadioPlayer() {
       audio.src = hls_stream_url;
     }
 
-    // 1-second timeout: if HLS manifest isn't parsed, fall back to next stream type
+    // 2-second timeout: if HLS manifest isn't parsed, fall back to next stream type
     hlsTimeoutRef.current = setTimeout(() => {
       if (!manifestParsed) {
         hlsTimeoutRef.current = null;
         retryMechanismRef.current();
       }
-    }, 1000);
+    }, 2000);
 
     hls.on(Hls.Events.AUDIO_TRACK_LOADING, function () {
       setPlaybackState(PLAYBACK_STATE.BUFFERING);
@@ -184,22 +213,47 @@ export default function RadioPlayer() {
       audio.addEventListener("canplaythrough", onCanPlayThrough, { once: true });
     });
 
+    let isRecovering = false;
     hls.on(Hls.Events.ERROR, function (event, data) {
-      if (data.fatal) {
-        clearHlsTimeout();
-        Bugsnag.notify(
-          new Error(
-            `HLS Fatal error - station.title: ${
-              station.title
-            }, error: ${JSON.stringify(
-              data,
-              null,
-              2,
-            )} - event: ${JSON.stringify(event, null, 2)}`,
-          ),
-        );
-        retryMechanismRef.current();
+      if (!data.fatal || isRecovering) return;
+      isRecovering = true;
+      clearHlsTimeout();
+
+      const errorInfo = `HLS Fatal error - station: ${station.title}, type: ${data.type}, details: ${data.details}`;
+
+      if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
+        // Corrupt segment: recoverMediaError() would re-download the same bad bytes
+        if (data.details === Hls.ErrorDetails.FRAG_PARSING_ERROR) {
+          console.warn(`[HLS] Corrupt segment, switching stream:`, data.details);
+          isRecovering = false;
+          Bugsnag.notify(new Error(errorInfo));
+          retryMechanismRef.current();
+          return;
+        }
+
+        // Other media errors (buffer issues): MediaSource reset helps
+        if (hlsRecoveryRef.current < 3) {
+          hlsRecoveryRef.current++;
+          console.warn(`[HLS] Recovering media error (attempt ${hlsRecoveryRef.current}):`, data.details);
+          hls.recoverMediaError();
+          setTimeout(() => { isRecovering = false; }, 100);
+          return;
+        }
       }
+
+      // Network hiccup — restart segment loading from live edge
+      if (data.type === Hls.ErrorTypes.NETWORK_ERROR && hlsRecoveryRef.current < 3) {
+        hlsRecoveryRef.current++;
+        console.warn(`[HLS] Recovering network error (attempt ${hlsRecoveryRef.current}):`, data.details);
+        hls.startLoad(-1);
+        setTimeout(() => { isRecovering = false; }, 100);
+        return;
+      }
+
+      // Recovery exhausted or unknown error — fall back to stream cycling
+      isRecovering = false;
+      Bugsnag.notify(new Error(errorInfo));
+      retryMechanismRef.current();
     });
 
     return () => {
@@ -236,7 +290,7 @@ export default function RadioPlayer() {
     }
 
     if (streamType === STREAM_TYPE.HLS) {
-      const newHls = new Hls();
+      const newHls = new Hls(HLS_CONFIG);
       hlsInstanceRef.current = newHls;
       loadHLS(streamUrl, audio, newHls);
     } else {
@@ -286,7 +340,7 @@ export default function RadioPlayer() {
     }
 
     if (streamType === STREAM_TYPE.HLS) {
-      const hls = new Hls();
+      const hls = new Hls(HLS_CONFIG);
       hlsInstanceRef.current = hls;
       cleanupHls = loadHLS(streamUrl, audio, hls);
     } else {
@@ -558,6 +612,7 @@ export default function RadioPlayer() {
           onPlaying={() => {
             setPlaybackState(PLAYBACK_STATE.PLAYING);
             setHasError(false);
+            hlsRecoveryRef.current = 0;
           }}
           onPlay={() => {
             setPlaybackState(PLAYBACK_STATE.PLAYING);
