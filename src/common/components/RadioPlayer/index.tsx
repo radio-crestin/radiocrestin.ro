@@ -42,12 +42,39 @@ export default function RadioPlayer() {
   const retryMechanismRef = useRef<() => void>(() => {});
   const hlsTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hlsRecoveryRef = useRef(0);
+  const cleanupRef = useRef<(() => void) | null>(null);
+  const isDestroyingRef = useRef(false);
+  const [loadKey, setLoadKey] = useState(0);
+  const prevLoadKeyRef = useRef(0);
 
   const clearHlsTimeout = () => {
     if (hlsTimeoutRef.current) {
       clearTimeout(hlsTimeoutRef.current);
       hlsTimeoutRef.current = null;
     }
+  };
+
+  // Central cleanup: destroys current HLS instance, clears timeouts and listeners.
+  // Suppresses spurious onPause events fired by hls.destroy() → media.load().
+  const destroyCurrentStream = () => {
+    isDestroyingRef.current = true;
+    clearHlsTimeout();
+    // Null the ref BEFORE destroy — hls.destroy() fires synchronous events,
+    // and HLS callbacks guard with `hls !== hlsInstanceRef.current`.
+    // If the ref still points to the instance, those guards would not suppress callbacks.
+    if (cleanupRef.current) {
+      const cleanup = cleanupRef.current;
+      cleanupRef.current = null;
+      hlsInstanceRef.current = null;
+      cleanup();
+    } else if (hlsInstanceRef.current) {
+      const hls = hlsInstanceRef.current;
+      hlsInstanceRef.current = null;
+      hls.destroy();
+    }
+    // Reset after macrotask — media.load() fires pause synchronously,
+    // but some browsers may queue it. setTimeout ensures we cover both.
+    setTimeout(() => { isDestroyingRef.current = false; }, 0);
   };
 
   const handlePlayError = (error: any, context: string) => {
@@ -190,17 +217,19 @@ export default function RadioPlayer() {
 
     // 2-second timeout: if HLS manifest isn't parsed, fall back to next stream type
     hlsTimeoutRef.current = setTimeout(() => {
-      if (!manifestParsed) {
+      if (!manifestParsed && hls === hlsInstanceRef.current) {
         hlsTimeoutRef.current = null;
         retryMechanismRef.current();
       }
     }, 2000);
 
     hls.on(Hls.Events.AUDIO_TRACK_LOADING, function () {
+      if (hls !== hlsInstanceRef.current) return;
       setPlaybackState(PLAYBACK_STATE.BUFFERING);
     });
 
     hls.on(Hls.Events.MANIFEST_PARSED, () => {
+      if (hls !== hlsInstanceRef.current) return;
       manifestParsed = true;
       clearHlsTimeout();
       setPlaybackState(PLAYBACK_STATE.BUFFERING);
@@ -215,6 +244,7 @@ export default function RadioPlayer() {
 
     let isRecovering = false;
     hls.on(Hls.Events.ERROR, function (event, data) {
+      if (hls !== hlsInstanceRef.current) return;
       if (!data.fatal || isRecovering) return;
       isRecovering = true;
       clearHlsTimeout();
@@ -279,41 +309,6 @@ export default function RadioPlayer() {
     };
   };
 
-  const resetAndReloadStream = () => {
-    const audio = document.getElementById("audioPlayer") as HTMLAudioElement;
-    if (!audio || !streamType) return;
-
-    clearHlsTimeout();
-
-    if (hlsInstanceRef.current) {
-      hlsInstanceRef.current.destroy();
-      hlsInstanceRef.current = null;
-    }
-
-    setPlaybackState(PLAYBACK_STATE.BUFFERING);
-
-    const streamUrl = getStreamUrl(streamType);
-    if (!streamUrl) {
-      retryMechanism();
-      return;
-    }
-
-    if (isHttpMixedContent(streamUrl)) {
-      openHttpStream(streamUrl);
-      return;
-    }
-
-    if (streamType === STREAM_TYPE.HLS) {
-      const newHls = new Hls(HLS_CONFIG);
-      hlsInstanceRef.current = newHls;
-      loadHLS(streamUrl, audio, newHls);
-    } else {
-      audio.src = streamUrl;
-      audio.load();
-      audio.play().catch((error) => handlePlayError(error, `Stream reload [${streamType}]`));
-    }
-  };
-
   useEffect(() => {
     const audio = document.getElementById("audioPlayer") as HTMLAudioElement;
     if (!audio) return;
@@ -321,22 +316,27 @@ export default function RadioPlayer() {
     switch (playbackState) {
       case PLAYBACK_STATE.STARTED:
         incrementPlayCount(station.slug);
-        resetAndReloadStream();
+        // Trigger stream loader effect to re-run and create a fresh HLS instance
+        setLoadKey(k => k + 1);
         break;
       case PLAYBACK_STATE.STOPPED:
         audio.pause();
-        if (hlsInstanceRef.current) {
-          hlsInstanceRef.current.stopLoad();
-          hlsInstanceRef.current.detachMedia();
-        }
+        destroyCurrentStream();
         break;
     }
   }, [playbackState]);
 
-  // Stream loader effect
+  // Stream loader effect — single owner of HLS lifecycle
   useEffect(() => {
+    const loadKeyChanged = loadKey !== prevLoadKeyRef.current;
+    prevLoadKeyRef.current = loadKey;
+
     const audio = document.getElementById("audioPlayer") as HTMLAudioElement;
     if (!audio || !streamType) return;
+
+    // If this re-run was triggered by loadKey (resume) but user already stopped
+    // (e.g. clicked play then immediately paused — React batches both), bail out.
+    if (loadKeyChanged && playbackState === PLAYBACK_STATE.STOPPED) return;
 
     const streamUrl = getStreamUrl(streamType);
     if (!streamUrl) {
@@ -345,8 +345,6 @@ export default function RadioPlayer() {
     }
 
     setPlaybackState(PLAYBACK_STATE.BUFFERING);
-
-    let cleanupHls: (() => void) | null = null;
 
     if (isHttpMixedContent(streamUrl)) {
       openHttpStream(streamUrl);
@@ -356,19 +354,16 @@ export default function RadioPlayer() {
     if (streamType === STREAM_TYPE.HLS) {
       const hls = new Hls(HLS_CONFIG);
       hlsInstanceRef.current = hls;
-      cleanupHls = loadHLS(streamUrl, audio, hls);
+      cleanupRef.current = loadHLS(streamUrl, audio, hls);
     } else {
       audio.src = streamUrl;
       audio.play().catch((error) => handlePlayError(error, `Stream error [${streamType}]`));
     }
 
     return () => {
-      if (cleanupHls) {
-        cleanupHls();
-      }
-      hlsInstanceRef.current = null;
+      destroyCurrentStream();
     };
-  }, [streamType, station.slug]);
+  }, [streamType, station.slug, loadKey]);
 
   const retryMechanism = () => {
     const audio = document.getElementById("audioPlayer") as HTMLAudioElement;
@@ -624,21 +619,26 @@ export default function RadioPlayer() {
           preload="true"
           id="audioPlayer"
           onPlaying={() => {
+            if (isDestroyingRef.current) return;
             setPlaybackState(PLAYBACK_STATE.PLAYING);
             setHasError(false);
             hlsRecoveryRef.current = 0;
           }}
           onPlay={() => {
+            if (isDestroyingRef.current) return;
             setPlaybackState(PLAYBACK_STATE.PLAYING);
             setHasError(false);
           }}
           onPause={() => {
+            if (isDestroyingRef.current) return;
             setPlaybackState(PLAYBACK_STATE.STOPPED);
           }}
           onWaiting={() => {
+            if (isDestroyingRef.current) return;
             setPlaybackState(PLAYBACK_STATE.BUFFERING);
           }}
           onError={(error) => {
+            if (isDestroyingRef.current) return;
             setHasError(true);
             Bugsnag.notify(
               new Error(
