@@ -54,7 +54,8 @@ export default function RadioPlayer() {
     }
   };
 
-  // Central cleanup: destroys current HLS instance, clears timeouts and listeners.
+  // Central cleanup: destroys current HLS instance or cancels non-HLS audio download,
+  // clears timeouts and listeners.
   // Suppresses spurious onPause events fired by hls.destroy() → media.load().
   const destroyCurrentStream = () => {
     isDestroyingRef.current = true;
@@ -71,6 +72,17 @@ export default function RadioPlayer() {
       const hls = hlsInstanceRef.current;
       hlsInstanceRef.current = null;
       hls.destroy();
+    } else {
+      // Non-HLS stream (proxy/direct MP3): pause and cancel the pending download.
+      // Without this, the old audio.src request continues and its events
+      // (onPause, onError) can fire after isDestroyingRef resets, killing the
+      // new station's stream.
+      const audio = document.getElementById("audioPlayer") as HTMLAudioElement;
+      if (audio && audio.src) {
+        audio.pause();
+        audio.removeAttribute("src");
+        audio.load();
+      }
     }
     // Reset after macrotask — media.load() fires pause synchronously,
     // but some browsers may queue it. setTimeout ensures we cover both.
@@ -78,6 +90,8 @@ export default function RadioPlayer() {
   };
 
   const handlePlayError = (error: any, context: string) => {
+    // Ignore errors from intentional cancellation (station switch or user pause)
+    if (error.name === 'AbortError' || isDestroyingRef.current) return;
     if (error.name === 'NotAllowedError') {
       setPlaybackState(PLAYBACK_STATE.STOPPED);
       return;
