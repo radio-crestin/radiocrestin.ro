@@ -41,7 +41,8 @@ const faqData: FaqItem[] = [
       <>
         Da, poți asculta Radio Creștin pe mobil în două moduri: direct din
         browser (site-ul este complet responsiv) sau prin aplicația noastră
-        dedicată. Descarcă aplicația gratuită pentru{" "}
+        dedicată. Aplicația suportă și Apple CarPlay, astfel încât poți asculta
+        radio creștin direct din mașină. Descarcă aplicația gratuită pentru{" "}
         <a
           href="https://play.google.com/store/apps/details?id=com.radiocrestin.radio_crestin"
           target="_blank"
@@ -61,7 +62,7 @@ const faqData: FaqItem[] = [
       </>
     ),
     answerText:
-      "Da, poți asculta Radio Creștin pe mobil în două moduri: direct din browser (site-ul este complet responsiv) sau prin aplicația noastră dedicată. Descarcă aplicația gratuită pentru Android (Google Play) sau iOS (App Store).",
+      "Da, poți asculta Radio Creștin pe mobil în două moduri: direct din browser (site-ul este complet responsiv) sau prin aplicația noastră dedicată. Aplicația suportă și Apple CarPlay, astfel încât poți asculta radio creștin direct din mașină. Descarcă aplicația gratuită pentru Android (Google Play) sau iOS (App Store).",
   },
   {
     question: "Cum pot adăuga o stație radio nouă pe platformă?",
