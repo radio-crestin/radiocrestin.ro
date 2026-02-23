@@ -138,6 +138,7 @@ const DateFilterModal: React.FC<{
               className={styles.filter_input}
               value={date}
               onChange={(e) => setDate(e.target.value)}
+              onClick={(e) => (e.target as HTMLInputElement).showPicker?.()}
               max={new Date().toISOString().slice(0, 10)}
             />
           </div>
@@ -148,6 +149,7 @@ const DateFilterModal: React.FC<{
               className={styles.filter_input}
               value={time}
               onChange={(e) => setTime(e.target.value)}
+              onClick={(e) => (e.target as HTMLInputElement).showPicker?.()}
             />
           </div>
         </div>
@@ -187,75 +189,37 @@ const SongHistory: React.FC<SongHistoryProps> = ({
   const [filterTime, setFilterTime] = useState("");
   const listRef = useRef<HTMLDivElement>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
-  const initialLoadDone = useRef(false);
+  const scrollTargetRef = useRef<string | null>(null);
 
   const updateUrlTimestamp = useCallback((timestamp: string) => {
     const url = new URL(window.location.href);
-    url.searchParams.set("history_t", timestamp);
+    url.searchParams.set("t", timestamp);
     window.history.replaceState(null, "", url.toString());
   }, []);
 
-  const removeUrlTimestamp = useCallback(() => {
-    const url = new URL(window.location.href);
-    url.searchParams.delete("history_t");
-    window.history.replaceState(null, "", url.toString());
-  }, []);
-
-  // Read timestamp from URL on open
-  useEffect(() => {
-    if (!isOpen) return;
-    const url = new URL(window.location.href);
-    const historyT = url.searchParams.get("history_t");
-    if (historyT) {
-      const date = new Date(historyT);
-      if (!isNaN(date.getTime())) {
-        setFilterDate(date.toISOString().slice(0, 10));
-        setFilterTime(
-          `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`
-        );
-      }
-    }
-  }, [isOpen]);
-
-  const fetchHistory = useCallback(
+  const fetchInitial = useCallback(
     async (toTimestamp?: number) => {
-      const data = await getStationSongHistory(stationSlug, undefined, toTimestamp);
+      const nowUnix = Math.floor(Date.now() / 1000);
+      const ts = toTimestamp ?? nowUnix;
+      // Align to hour ceiling for cache efficiency, cap at current time
+      const aligned = Math.min(Math.ceil(ts / 3600) * 3600, nowUnix);
+      const data = await getStationSongHistory(stationSlug, undefined, aligned);
       if (!data) return { items: [], fromTs: null };
       return { items: data.history, fromTs: data.from_timestamp };
     },
     [stationSlug]
   );
 
-  // Initial load
-  useEffect(() => {
-    if (!isOpen || initialLoadDone.current) return;
+  const fetchPage = useCallback(
+    async (from: number, to: number) => {
+      const data = await getStationSongHistory(stationSlug, from, to);
+      if (!data) return { items: [] };
+      return { items: data.history };
+    },
+    [stationSlug]
+  );
 
-    const load = async () => {
-      setIsLoading(true);
-
-      const url = new URL(window.location.href);
-      const historyT = url.searchParams.get("history_t");
-      let targetTs: number | undefined;
-
-      if (historyT) {
-        const date = new Date(historyT);
-        if (!isNaN(date.getTime())) {
-          targetTs = Math.floor(date.getTime() / 1000) + 3600;
-        }
-      }
-
-      const { items, fromTs } = await fetchHistory(targetTs);
-      setHistory(items);
-      if (fromTs) setOldestTimestamp(fromTs);
-      setHasMore(items.length > 0);
-      initialLoadDone.current = true;
-      setIsLoading(false);
-    };
-
-    load();
-  }, [isOpen, fetchHistory]);
-
-  // Reset state when modal closes
+  // Load data when modal opens; reset when it closes
   useEffect(() => {
     if (!isOpen) {
       setHistory([]);
@@ -264,9 +228,93 @@ const SongHistory: React.FC<SongHistoryProps> = ({
       setFilterDate("");
       setFilterTime("");
       setShowDateFilter(false);
-      initialLoadDone.current = false;
+      setIsLoading(false);
+      return;
     }
-  }, [isOpen]);
+
+    let cancelled = false;
+
+    const load = async () => {
+      setIsLoading(true);
+
+      const url = new URL(window.location.href);
+      const tParam = url.searchParams.get("t");
+      let targetTs: number | undefined;
+
+      if (tParam) {
+        const date = new Date(tParam);
+        if (!isNaN(date.getTime())) {
+          targetTs = Math.floor(date.getTime() / 1000);
+          setFilterDate(date.toISOString().slice(0, 10));
+          setFilterTime(
+            `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`
+          );
+        }
+      }
+
+      const { items, fromTs } = await fetchInitial(targetTs);
+      if (cancelled) return;
+
+      // Preload 3 hours in parallel
+      if (fromTs) {
+        const preloadPages = await Promise.all([
+          fetchPage(fromTs - 3600, fromTs),
+          fetchPage(fromTs - 7200, fromTs - 3600),
+          fetchPage(fromTs - 10800, fromTs - 7200),
+        ]);
+        if (cancelled) return;
+
+        const allItems = [...items, ...preloadPages.flatMap((p) => p.items)];
+        const oldest = fromTs - 10800;
+        setHistory(allItems);
+        setOldestTimestamp(oldest);
+        setHasMore(allItems.length > 0);
+      } else {
+        setHistory(items);
+        setHasMore(items.length > 0);
+      }
+      setIsLoading(false);
+
+      if (tParam) {
+        scrollTargetRef.current = tParam;
+      }
+    };
+
+    load();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen, fetchInitial]);
+
+  // Scroll to the t= position after data loads
+  useEffect(() => {
+    if (!scrollTargetRef.current || history.length === 0 || !listRef.current) return;
+    const target = scrollTargetRef.current;
+    scrollTargetRef.current = null;
+
+    requestAnimationFrame(() => {
+      if (!listRef.current) return;
+      const targetTime = new Date(target).getTime();
+      const items = Array.from(listRef.current.querySelectorAll("[data-timestamp]"));
+      let closest: Element | null = null;
+      let closestDiff = Infinity;
+
+      for (const item of items) {
+        const ts = (item as HTMLElement).dataset.timestamp;
+        if (!ts) continue;
+        const diff = Math.abs(new Date(ts).getTime() - targetTime);
+        if (diff < closestDiff) {
+          closestDiff = diff;
+          closest = item;
+        }
+      }
+
+      if (closest) {
+        closest.scrollIntoView({ block: "start" });
+      }
+    });
+  }, [history]);
 
   // Infinite scroll
   useEffect(() => {
@@ -289,13 +337,19 @@ const SongHistory: React.FC<SongHistoryProps> = ({
     if (!oldestTimestamp || isLoadingMore) return;
     setIsLoadingMore(true);
 
-    const { items, fromTs } = await fetchHistory(oldestTimestamp);
+    const PAGE_SIZE = 3600; // 1 hour
+    const from = oldestTimestamp - PAGE_SIZE;
+    const { items } = await fetchPage(from, oldestTimestamp);
     if (items.length === 0) {
       setHasMore(false);
     } else {
-      setHistory((prev) => [...prev, ...items]);
-      if (fromTs) setOldestTimestamp(fromTs);
+      setHistory((prev) => {
+        const existing = new Set(prev.map((s) => s.timestamp));
+        const fresh = items.filter((s) => !existing.has(s.timestamp));
+        return [...prev, ...fresh];
+      });
     }
+    setOldestTimestamp(from);
 
     setIsLoadingMore(false);
   };
@@ -313,17 +367,61 @@ const SongHistory: React.FC<SongHistoryProps> = ({
     setIsLoading(true);
     setHistory([]);
     setHasMore(true);
-    initialLoadDone.current = false;
 
-    const targetTs = Math.floor(targetDate.getTime() / 1000) + 3600;
-    const { items, fromTs } = await fetchHistory(targetTs);
-    setHistory(items);
-    if (fromTs) setOldestTimestamp(fromTs);
-    setHasMore(items.length > 0);
-    initialLoadDone.current = true;
+    const targetTs = Math.floor(targetDate.getTime() / 1000);
+    const { items, fromTs } = await fetchInitial(targetTs);
+
+    if (fromTs) {
+      const preloadPages = await Promise.all([
+        fetchPage(fromTs - 3600, fromTs),
+        fetchPage(fromTs - 7200, fromTs - 3600),
+        fetchPage(fromTs - 10800, fromTs - 7200),
+      ]);
+      const allItems = [...items, ...preloadPages.flatMap((p) => p.items)];
+      setHistory(allItems);
+      setOldestTimestamp(fromTs - 10800);
+      setHasMore(allItems.length > 0);
+    } else {
+      setHistory(items);
+      setHasMore(items.length > 0);
+    }
     setIsLoading(false);
 
     updateUrlTimestamp(targetDate.toISOString());
+
+    if (listRef.current) {
+      listRef.current.scrollTop = 0;
+    }
+  };
+
+  const handleClearFilter = async () => {
+    setFilterDate("");
+    setFilterTime("");
+    setIsLoading(true);
+    setHistory([]);
+    setHasMore(true);
+
+    const { items, fromTs } = await fetchInitial();
+
+    if (fromTs) {
+      const preloadPages = await Promise.all([
+        fetchPage(fromTs - 3600, fromTs),
+        fetchPage(fromTs - 7200, fromTs - 3600),
+        fetchPage(fromTs - 10800, fromTs - 7200),
+      ]);
+      const allItems = [...items, ...preloadPages.flatMap((p) => p.items)];
+      setHistory(allItems);
+      setOldestTimestamp(fromTs - 10800);
+      setHasMore(allItems.length > 0);
+    } else {
+      setHistory(items);
+      setHasMore(items.length > 0);
+    }
+    setIsLoading(false);
+
+    const url = new URL(window.location.href);
+    url.searchParams.delete("t");
+    window.history.replaceState(null, "", url.toString());
 
     if (listRef.current) {
       listRef.current.scrollTop = 0;
@@ -376,23 +474,16 @@ const SongHistory: React.FC<SongHistoryProps> = ({
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape" && isOpen && !showDateFilter) {
         onClose();
-        removeUrlTimestamp();
       }
     };
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, showDateFilter, onClose, removeUrlTimestamp]);
+  }, [isOpen, showDateFilter, onClose]);
 
   const handleBackdropClick = (e: React.MouseEvent) => {
     if (e.target === e.currentTarget) {
       onClose();
-      removeUrlTimestamp();
     }
-  };
-
-  const handleClose = () => {
-    onClose();
-    removeUrlTimestamp();
   };
 
   if (!isOpen) return null;
@@ -405,29 +496,40 @@ const SongHistory: React.FC<SongHistoryProps> = ({
         <div className={styles.modal_content}>
           <div className={styles.modal_header}>
             <div className={styles.header_top}>
-              <div>
-                <h2 className={styles.modal_title}>Melodii redate recent</h2>
-                <p className={styles.station_name}>{stationTitle}</p>
-              </div>
-              <button className={styles.close_button} onClick={handleClose} aria-label="Inchide">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+              <h2 className={styles.modal_title}>Melodii redate recent</h2>
+              <button className={styles.close_button} onClick={onClose} aria-label="Inchide">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
                   <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </button>
             </div>
             <div className={styles.toolbar}>
-              <button
-                className={styles.filter_button}
-                onClick={() => setShowDateFilter(true)}
-              >
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                  <line x1="16" y1="2" x2="16" y2="6" />
-                  <line x1="8" y1="2" x2="8" y2="6" />
-                  <line x1="3" y1="10" x2="21" y2="10" />
-                </svg>
-                Filtreaza dupa data
-              </button>
+              <p className={styles.station_name}>{stationTitle}</p>
+              <div className={styles.toolbar_actions}>
+                {filterDate && (
+                  <button
+                    className={styles.active_filter}
+                    onClick={handleClearFilter}
+                  >
+                    {filterDate}{filterTime ? ` ${filterTime}` : ""}
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M18 6L6 18M6 6L18 18" />
+                    </svg>
+                  </button>
+                )}
+                <button
+                  className={styles.filter_button}
+                  onClick={() => setShowDateFilter(true)}
+                >
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                    <line x1="16" y1="2" x2="16" y2="6" />
+                    <line x1="8" y1="2" x2="8" y2="6" />
+                    <line x1="3" y1="10" x2="21" y2="10" />
+                  </svg>
+                  Filtreaza
+                </button>
+              </div>
             </div>
           </div>
 
