@@ -5,7 +5,7 @@ export const IOS_APP_ID = "6451270471";
 export const ANDROID_PACKAGE = "com.radiocrestin.radio_crestin";
 
 export const APP_RATING = "4.9";
-export const APP_REVIEW_COUNT = "1800";
+export const APP_REVIEW_COUNT = "1900";
 
 export const getIOSStoreLink = (source?: string) => {
   const baseUrl = `https://apps.apple.com/app/${IOS_APP_ID}`;

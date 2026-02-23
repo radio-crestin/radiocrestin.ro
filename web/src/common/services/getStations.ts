@@ -1,12 +1,18 @@
 import { CONSTANTS } from "@/constants/constants";
 import { IReview, IStation } from "@/models/Station";
 import { Bugsnag } from "@/utils/bugsnag";
+import fallbackData from "@/data/fallback-stations.json";
 
 const API_BASE = "https://api.radiocrestin.ro/api/v1";
 
 const getTimestamp = () => Math.floor(Date.now() / 10000) * 10;
 
 export type IStationMetadata = Partial<IStation> & { id: number };
+
+const getFallbackStations = () => ({
+  stations: fallbackData?.data?.stations || [],
+  station_groups: fallbackData?.data?.station_groups || [],
+});
 
 export const getStations = async () => {
   try {
@@ -17,6 +23,7 @@ export const getStations = async () => {
       headers: {
         accept: "*/*",
       },
+      signal: AbortSignal.timeout(2000),
     });
 
     if (!response.ok) {
@@ -25,8 +32,13 @@ export const getStations = async () => {
 
     const data = await response.json();
 
+    const stations = data?.data?.stations || [];
+    if (stations.length === 0) {
+      return getFallbackStations();
+    }
+
     return {
-      stations: data?.data?.stations || [],
+      stations,
       station_groups: data?.data?.station_groups || [],
     };
   } catch (error) {
@@ -34,10 +46,7 @@ export const getStations = async () => {
       new Error("Getting stations error: " + JSON.stringify(error, null, 2)),
     );
 
-    return {
-      stations: [],
-      station_groups: [],
-    };
+    return getFallbackStations();
   }
 };
 
@@ -138,6 +147,7 @@ export const getStationReviews = async (
       headers: {
         accept: "*/*",
       },
+      signal: AbortSignal.timeout(3000),
     });
 
     if (!response.ok) {

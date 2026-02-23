@@ -1,4 +1,4 @@
-import { createContext, useReducer } from "react";
+import { createContext, useEffect, useReducer, useRef } from "react";
 
 const Context = createContext<any>(null);
 
@@ -32,6 +32,28 @@ const ContextProvider = ({
   initialState: any;
 }) => {
   const [ctx, setCtx] = useReducer(reducer, initialState);
+  const stationsRef = useRef(ctx.stations);
+
+  useEffect(() => {
+    stationsRef.current = ctx.stations;
+  }, [ctx.stations]);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      const slug = window.location.pathname.replace(/^\//, "");
+      if (!slug || !stationsRef.current) return;
+
+      const station = stationsRef.current.find(
+        (s: any) => s.slug === slug,
+      );
+      if (station) {
+        setCtx({ selectedStation: station });
+      }
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
 
   return (
     <Context.Provider value={{ ctx, setCtx }}>{children}</Context.Provider>

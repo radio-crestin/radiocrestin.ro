@@ -212,7 +212,7 @@ const ChevronDown = ({ size = 12 }: { size?: number }) => (
 );
 
 const Stations = () => {
-  const { ctx } = useContext(Context);
+  const { ctx, setCtx } = useContext(Context);
   const [filteredStations, setFilteredStations] = useState<IStation[]>(ctx.stations || []);
   const [searchedValue, setSearchedValue] = useState("");
   const [sortBy, setSortByState] = useState<SortOption>("recommended");
@@ -259,6 +259,7 @@ const Stations = () => {
     const result = sortStations(stations, sortBy, playCounts, favouriteItems, snapshot);
     setStationOfDaySlug(result.stationOfDaySlug);
     setMostPlayedSlugs(result.mostPlayedSlugs);
+    setCtx({ sortedStations: result.sorted });
     return result.sorted;
   };
 

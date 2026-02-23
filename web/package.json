@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "next dev -p 3005",
     "generate-sitemap": "node scripts/generate-sitemap.js",
-    "build": "npm run generate-sitemap && next build",
+    "generate-llms-txt": "node scripts/generate-llms-txt.js",
+    "build": "npm run generate-sitemap && npm run generate-llms-txt && next build",
     "start": "npx serve@latest out",
     "lint": "eslint ."
   },
