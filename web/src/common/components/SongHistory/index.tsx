@@ -8,6 +8,7 @@ import styles from "./styles.module.scss";
 interface SongHistoryProps {
   stationSlug: string;
   stationTitle: string;
+  stationThumbnailUrl?: string;
   isOpen: boolean;
   onClose: () => void;
 }
@@ -176,6 +177,7 @@ const DateFilterModal: React.FC<{
 const SongHistory: React.FC<SongHistoryProps> = ({
   stationSlug,
   stationTitle,
+  stationThumbnailUrl,
   isOpen,
   onClose,
 }) => {
@@ -575,11 +577,11 @@ const SongHistory: React.FC<SongHistoryProps> = ({
                             >
                               <img
                                 className={styles.song_thumbnail}
-                                src={item.song.thumbnail_url || "/images/radio-white-default.jpg"}
+                                src={item.song.thumbnail_url || stationThumbnailUrl || "/images/radio-white-default.jpg"}
                                 alt={item.song.name}
                                 loading="lazy"
                                 onError={(e) => {
-                                  e.currentTarget.src = "/images/radio-white-default.jpg";
+                                  e.currentTarget.src = stationThumbnailUrl || "/images/radio-white-default.jpg";
                                 }}
                               />
                               <div className={styles.song_info}>

@@ -51,18 +51,32 @@ async function generateSitemap() {
     (page) => `  <url>
     <loc>${SITE_URL}${page.path}</loc>
     <lastmod>${today}</lastmod>
-    <changefreq>monthly</changefreq>
+    <changefreq>daily</changefreq>
     <priority>${page.priority}</priority>
   </url>`
   );
 
-  const stationUrls = stations.map(
-    (station) => `  <url>
+  const stationUrls = stations.flatMap(
+    (station) => [
+      `  <url>
     <loc>${SITE_URL}/${station.slug}</loc>
     <lastmod>${today}</lastmod>
-    <changefreq>monthly</changefreq>
+    <changefreq>daily</changefreq>
     <priority>0.9</priority>
-  </url>`
+  </url>`,
+      `  <url>
+    <loc>${SITE_URL}/${station.slug}/recent-songs</loc>
+    <lastmod>${today}</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>`,
+      `  <url>
+    <loc>${SITE_URL}/${station.slug}/reviews</loc>
+    <lastmod>${today}</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>`,
+    ]
   );
 
   const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
@@ -77,7 +91,7 @@ ${stationUrls.join("\n")}
   fs.writeFileSync(path.join(publicDir, "sitemap.xml"), sitemap);
 
   console.log(
-    `✅ Sitemap generated with ${STATIC_PAGES.length + stations.length} URLs`
+    `✅ Sitemap generated with ${STATIC_PAGES.length + stations.length * 3} URLs`
   );
 }
 
