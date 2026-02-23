@@ -194,9 +194,13 @@ const ContentLeft = () => {
                 </p>
               </>
             )}
-            <button
+            <a
               className={songHistoryStyles.history_button}
-              onClick={handleOpenHistory}
+              href={`/${selectedStation.slug}/recent-songs`}
+              onClick={(e) => {
+                e.preventDefault();
+                handleOpenHistory();
+              }}
               title="Melodii redate recent"
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -204,10 +208,11 @@ const ContentLeft = () => {
                 <polyline points="12 6 12 12 16 14" />
               </svg>
               Melodii redate recent
-            </button>
+            </a>
             <SongHistory
               stationSlug={selectedStation.slug}
               stationTitle={selectedStation.title}
+              stationThumbnailUrl={selectedStation.thumbnail_url}
               isOpen={isHistoryOpen}
               onClose={handleCloseHistory}
             />

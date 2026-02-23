@@ -27,44 +27,66 @@ const StationRating: React.FC<StationRatingProps> = ({
   const [isLoadingReviews, setIsLoadingReviews] = useState(false);
 
   const score = reviewsStats?.average_rating || 0;
+  const slug = stationSlug || router.query.station_slug;
 
-  // Auto-open review modal when on /adauga-recenzie page
-  useEffect(() => {
-    const path = window.location.pathname;
-    if (path.endsWith("/adauga-recenzie")) {
-      setIsReviewModalOpen(true);
-    }
-  }, []);
-
-  const handleOpenReviewModal = () => {
+  const handleOpenReviewModal = useCallback(() => {
     setIsReviewModalOpen(true);
-    const slug = stationSlug || router.query.station_slug;
     if (!window.location.pathname.endsWith("/adauga-recenzie")) {
       window.history.pushState(null, "", `/${slug}/adauga-recenzie`);
     }
-  };
+  }, [slug]);
 
-  const handleReviewModalClose = () => {
+  const handleReviewModalClose = useCallback(() => {
     setIsReviewModalOpen(false);
     if (window.location.pathname.endsWith("/adauga-recenzie")) {
-      const slug = stationSlug || router.query.station_slug;
       window.history.replaceState(null, "", `/${slug}`);
     }
-  };
-
-  const handleWriteReviewFromList = () => {
-    setIsReviewsListModalOpen(false);
-    handleOpenReviewModal();
-  };
+  }, [slug]);
 
   const handleOpenReviewsList = useCallback(async () => {
     setIsReviewsListModalOpen(true);
+    if (!window.location.pathname.endsWith("/reviews")) {
+      window.history.pushState(null, "", `/${slug}/reviews`);
+    }
     setIsLoadingReviews(true);
 
     const fetchedReviews = await getStationReviews(stationId);
     setReviews(fetchedReviews);
     setIsLoadingReviews(false);
-  }, [stationId]);
+  }, [stationId, slug]);
+
+  const handleCloseReviewsList = useCallback(() => {
+    setIsReviewsListModalOpen(false);
+    if (window.location.pathname.endsWith("/reviews")) {
+      window.history.replaceState(null, "", `/${slug}`);
+    }
+  }, [slug]);
+
+  const handleWriteReviewFromList = useCallback(() => {
+    setIsReviewsListModalOpen(false);
+    handleOpenReviewModal();
+  }, [handleOpenReviewModal]);
+
+  // Auto-open modals based on URL path
+  useEffect(() => {
+    const path = window.location.pathname;
+    if (path.endsWith("/adauga-recenzie")) {
+      setIsReviewModalOpen(true);
+    } else if (path.endsWith("/reviews")) {
+      handleOpenReviewsList();
+    }
+  }, [handleOpenReviewsList]);
+
+  // Handle browser back button
+  useEffect(() => {
+    const handlePopState = () => {
+      const path = window.location.pathname;
+      setIsReviewsListModalOpen(path.endsWith("/reviews"));
+      setIsReviewModalOpen(path.endsWith("/adauga-recenzie"));
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
 
   const renderStars = () => {
     const stars = [];
@@ -85,18 +107,26 @@ const StationRating: React.FC<StationRatingProps> = ({
         <div className={styles.stars_row}>
           {renderStars()}
         </div>
-        <button
+        <a
           className={styles.reviews_count}
-          onClick={handleOpenReviewsList}
+          href={`/${slug}/reviews`}
+          onClick={(e) => {
+            e.preventDefault();
+            handleOpenReviewsList();
+          }}
         >
           ({reviewsStats?.number_of_reviews === 1 ? "o recenzie" : `${reviewsStats?.number_of_reviews || 0} recenzii`})
-        </button>
-        <button
+        </a>
+        <a
           className={styles.add_review_button}
-          onClick={handleOpenReviewModal}
+          href={`/${slug}/adauga-recenzie`}
+          onClick={(e) => {
+            e.preventDefault();
+            handleOpenReviewModal();
+          }}
         >
           Adaugă o recenzie
-        </button>
+        </a>
       </div>
 
       <ReviewModal
@@ -108,7 +138,7 @@ const StationRating: React.FC<StationRatingProps> = ({
       />
       <ReviewsListModal
         isOpen={isReviewsListModalOpen}
-        onClose={() => setIsReviewsListModalOpen(false)}
+        onClose={handleCloseReviewsList}
         stationTitle={stationTitle}
         reviews={reviews}
         reviewsStats={reviewsStats}
