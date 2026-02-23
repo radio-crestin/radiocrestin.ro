@@ -1,0 +1,509 @@
+@use "public/styles/mixinHelper";
+@use "public/styles/globalVariables";
+@use "public/styles/modal";
+
+// --- Trigger button in Header ---
+.history_button {
+  background: none;
+  border: 1px solid rgba(128, 128, 128, 0.25);
+  border-radius: 8px;
+  color: var(--header-subtext-color);
+  cursor: pointer;
+  padding: 6px 14px;
+  font-size: 0.8rem;
+  font-family: globalVariables.$dm-sans;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s;
+  white-space: nowrap;
+  margin-top: 16px;
+
+  &:hover {
+    color: var(--text-color);
+    border-color: rgba(128, 128, 128, 0.5);
+    background: rgba(128, 128, 128, 0.08);
+  }
+
+  svg {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+  }
+}
+
+// --- Main history modal ---
+.modal_overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+  animation: modalFadeIn 0.2s ease-out;
+  font-family: globalVariables.$dm-sans;
+}
+
+.modal_content {
+  background: var(--bg-header-container);
+  border-radius: 16px;
+  max-width: 520px;
+  width: 100%;
+  max-height: 85vh;
+  position: relative;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+  animation: modalSlideDown 0.25s ease-out;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+
+  @include mixinHelper.onTablet {
+    max-width: 100%;
+    border-radius: 12px;
+    max-height: 90vh;
+  }
+}
+
+.modal_header {
+  padding: 24px 24px 12px;
+  flex-shrink: 0;
+  border-bottom: 1px solid rgba(128, 128, 128, 0.1);
+
+  @include mixinHelper.onTablet {
+    padding: 20px 16px 10px;
+  }
+}
+
+.header_top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.close_button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-color);
+  padding: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background-color 0.2s;
+  flex-shrink: 0;
+
+  &:hover {
+    background-color: rgba(128, 128, 128, 0.15);
+  }
+}
+
+.modal_title {
+  font-family: globalVariables.$dm-sans-bold;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-color);
+  margin-bottom: 2px;
+}
+
+.station_name {
+  font-family: globalVariables.$dm-sans;
+  font-size: 0.82rem;
+  color: var(--text-color);
+  opacity: 0.45;
+}
+
+// --- Toolbar ---
+.toolbar {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 10px;
+}
+
+.filter_button {
+  background: none;
+  border: 1px solid rgba(128, 128, 128, 0.18);
+  border-radius: 8px;
+  color: var(--text-color);
+  opacity: 0.6;
+  cursor: pointer;
+  padding: 6px 12px;
+  font-size: 0.75rem;
+  font-family: globalVariables.$dm-sans;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.2s;
+
+  &:hover {
+    opacity: 1;
+    border-color: rgba(128, 128, 128, 0.35);
+    background: rgba(128, 128, 128, 0.06);
+  }
+
+  svg {
+    flex-shrink: 0;
+  }
+}
+
+// --- Song list ---
+.history_list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 24px 24px;
+
+  @include mixinHelper.onTablet {
+    padding: 0 16px 16px;
+  }
+}
+
+.date_group {
+  &:first-child {
+    .date_header {
+      padding-top: 8px;
+    }
+  }
+}
+
+.date_header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--bg-header-container);
+  padding: 12px 0 8px;
+  margin: 0;
+
+  span {
+    display: inline-block;
+    font-family: globalVariables.$dm-sans-bold;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--text-color);
+    background: rgba(128, 128, 128, 0.1);
+    padding: 5px 12px;
+    border-radius: 6px;
+  }
+}
+
+.hour_group {
+  margin-top: 2px;
+}
+
+.hour_header {
+  font-family: globalVariables.$dm-sans;
+  font-size: 0.7rem;
+  color: #ED8A19;
+  font-weight: 600;
+  padding: 6px 0 2px;
+  opacity: 0.8;
+}
+
+.song_item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 8px;
+  border-bottom: 1px solid rgba(128, 128, 128, 0.06);
+  text-decoration: none;
+  color: inherit;
+  border-radius: 8px;
+  transition: background-color 0.15s;
+  cursor: pointer;
+
+  &:hover {
+    background: rgba(128, 128, 128, 0.06);
+
+    .youtube_icon {
+      opacity: 0.8;
+      filter: none;
+    }
+  }
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.song_thumbnail {
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: rgba(128, 128, 128, 0.1);
+}
+
+.song_info {
+  flex: 1;
+  min-width: 0;
+}
+
+.song_name {
+  font-family: globalVariables.$dm-sans;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-color);
+  line-height: 1.35;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.song_artist {
+  font-family: globalVariables.$dm-sans;
+  font-size: 0.8rem;
+  color: var(--text-color);
+  opacity: 0.5;
+  line-height: 1.35;
+  margin-top: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.song_time {
+  font-family: globalVariables.$dm-sans;
+  font-size: 0.7rem;
+  color: var(--text-color);
+  opacity: 0.3;
+  margin-top: 2px;
+}
+
+.song_actions {
+  flex-shrink: 0;
+  padding: 4px;
+}
+
+.youtube_icon {
+  width: 20px;
+  height: 20px;
+  opacity: 0.25;
+  transition: opacity 0.2s, filter 0.2s;
+  filter: grayscale(100%);
+}
+
+// --- Loading / empty ---
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  gap: 12px;
+
+  p {
+    font-size: 0.85rem;
+    color: var(--text-color);
+    opacity: 0.5;
+    margin: 0;
+  }
+}
+
+.loading_spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid rgba(237, 138, 25, 0.2);
+  border-top-color: #ED8A19;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.load_more_trigger {
+  display: flex;
+  justify-content: center;
+  padding: 12px 0;
+}
+
+.empty_state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--text-color);
+  opacity: 0.5;
+  font-size: 0.9rem;
+  min-height: 200px;
+}
+
+// ============================
+// Date filter modal (separate)
+// ============================
+.filter_overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1100;
+  padding: 20px;
+  animation: modalFadeIn 0.15s ease-out;
+  font-family: globalVariables.$dm-sans;
+}
+
+.filter_modal {
+  background: var(--bg-header-container);
+  border-radius: 16px;
+  padding: 28px;
+  max-width: 420px;
+  width: 100%;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+  animation: modalSlideDown 0.2s ease-out;
+
+  @include mixinHelper.onTablet {
+    padding: 24px 20px;
+    max-width: 100%;
+    border-radius: 12px;
+  }
+}
+
+.filter_modal_header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.filter_modal_title {
+  font-family: globalVariables.$dm-sans-bold;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-color);
+}
+
+.filter_close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-color);
+  padding: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background-color 0.2s;
+  opacity: 0.5;
+
+  &:hover {
+    opacity: 1;
+    background-color: rgba(128, 128, 128, 0.15);
+  }
+}
+
+.filter_description {
+  font-size: 0.8rem;
+  color: var(--text-color);
+  opacity: 0.45;
+  line-height: 1.5;
+  margin-bottom: 24px;
+}
+
+.filter_fields {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 28px;
+
+  @include mixinHelper.onTablet {
+    flex-direction: column;
+  }
+}
+
+.filter_field {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.filter_label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-color);
+  opacity: 0.5;
+}
+
+.filter_input {
+  background: rgba(128, 128, 128, 0.08);
+  border: 1px solid rgba(128, 128, 128, 0.2);
+  border-radius: 10px;
+  color: var(--text-color);
+  font-size: 0.88rem;
+  font-family: globalVariables.$dm-sans;
+  padding: 12px 14px;
+  outline: none;
+  transition: border-color 0.2s, background-color 0.2s;
+  width: 100%;
+  box-sizing: border-box;
+
+  &:focus {
+    border-color: rgba(237, 138, 25, 0.5);
+    background: rgba(128, 128, 128, 0.12);
+  }
+
+  &::-webkit-calendar-picker-indicator {
+    filter: invert(0.7);
+    cursor: pointer;
+  }
+}
+
+.filter_actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.filter_cancel_btn {
+  background: none;
+  border: 1px solid rgba(128, 128, 128, 0.15);
+  color: var(--text-color);
+  opacity: 0.6;
+  cursor: pointer;
+  padding: 10px 20px;
+  font-size: 0.82rem;
+  font-family: globalVariables.$dm-sans;
+  border-radius: 10px;
+  transition: all 0.2s;
+
+  &:hover {
+    opacity: 0.9;
+    border-color: rgba(128, 128, 128, 0.3);
+  }
+}
+
+.filter_apply_btn {
+  background: #ED8A19;
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  padding: 10px 22px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  font-family: globalVariables.$dm-sans;
+  border-radius: 10px;
+  transition: all 0.2s;
+
+  &:hover {
+    background: #d67a10;
+  }
+
+  &:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+}

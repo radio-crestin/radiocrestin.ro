@@ -259,7 +259,7 @@
   }
 
   .station_info {
-    max-width: 230px;
+    max-width: 300px;
 
     h2 {
       color: var(--text-color);
@@ -294,8 +294,9 @@
 
 
 .right_content {
-  max-width: 850px;
+  max-width: 950px;
   width: 100%;
+  flex: 1;
 
   .station_details {
     .title_container {

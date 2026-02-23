@@ -7,6 +7,8 @@ import ShareOnSocial from "@/components/ShareOnSocial";
 import ThemeToggle from "@/components/ThemeToggle";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import StationRating from "@/components/Reviews/StationRating";
+import SongHistory from "@/components/SongHistory";
+import songHistoryStyles from "@/components/SongHistory/styles.module.scss";
 
 const Navigation = () => {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -89,6 +91,17 @@ const Navigation = () => {
 const ContentLeft = () => {
   const { ctx } = useContext(Context);
   const { selectedStation } = ctx;
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+
+  // Auto-open history modal if URL has history_t param
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      if (url.searchParams.has("history_t")) {
+        setIsHistoryOpen(true);
+      }
+    }
+  }, []);
 
   if (!selectedStation) return null;
 
@@ -159,6 +172,23 @@ const ContentLeft = () => {
                 </p>
               </>
             )}
+            <button
+              className={songHistoryStyles.history_button}
+              onClick={() => setIsHistoryOpen(true)}
+              title="Melodii redate recent"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <polyline points="12 6 12 12 16 14" />
+              </svg>
+              Melodii redate recent
+            </button>
+            <SongHistory
+              stationSlug={selectedStation.slug}
+              stationTitle={selectedStation.title}
+              isOpen={isHistoryOpen}
+              onClose={() => setIsHistoryOpen(false)}
+            />
           </div>
         </>
       )}
