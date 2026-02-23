@@ -18,6 +18,7 @@ import { IStationStreams } from "@/models/Station";
 import OfflineStatus from "@/components/OfflineStatus";
 import Star from "@/icons/Star";
 import usePlayCount from "@/store/usePlayCount";
+import { useRefreshStations } from "@/hooks/useUpdateStationsMetadata";
 
 enum STREAM_TYPE {
   HLS = "HLS",
@@ -36,6 +37,7 @@ export default function RadioPlayer() {
   const [streamType, setStreamType] = useState<STREAM_TYPE | null>(null);
   const { favouriteItems, toggleFavourite } = useFavourite();
   const { incrementPlayCount } = usePlayCount();
+  const { refreshStations } = useRefreshStations();
   const [isFavorite, setIsFavorite] = useState(false);
   const [hlsInstance, setHlsInstance] = useState<Hls | null>(null);
 
@@ -279,6 +281,8 @@ export default function RadioPlayer() {
           `Hasn't been able to connect to the station - ${station.title}. Tried 20 times :P.`,
         ),
       );
+      // Full refresh to pick up potentially updated stream URLs
+      refreshStations();
       toast.error(
         <div>
           Nu s-a putut stabili o conexiune cu stația:{" "}

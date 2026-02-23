@@ -1,5 +1,6 @@
 import Link from "next/link";
-import React, { useContext, useState, useEffect, useRef } from "react";
+import { useRouter } from "next/router";
+import React, { useContext, useState, useEffect, useRef, useCallback } from "react";
 
 import styles from "./styles.module.scss";
 import { Context } from "@/context/ContextProvider";
@@ -91,16 +92,37 @@ const Navigation = () => {
 const ContentLeft = () => {
   const { ctx } = useContext(Context);
   const { selectedStation } = ctx;
+  const router = useRouter();
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
-  // Auto-open history modal if URL has history_t param
+  // Auto-open history modal if on /recent-songs route (client-side only to avoid hydration mismatch)
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const url = new URL(window.location.href);
-      if (url.searchParams.has("history_t")) {
-        setIsHistoryOpen(true);
-      }
+    if (router.asPath.includes("/recent-songs")) {
+      setIsHistoryOpen(true);
     }
+  }, [router.asPath]);
+
+  const handleOpenHistory = useCallback(() => {
+    if (!selectedStation) return;
+    setIsHistoryOpen(true);
+    window.history.pushState(null, "", `/${selectedStation.slug}/recent-songs`);
+  }, [selectedStation]);
+
+  const handleCloseHistory = useCallback(() => {
+    setIsHistoryOpen(false);
+    if (selectedStation) {
+      window.history.replaceState(null, "", `/${selectedStation.slug}`);
+    }
+  }, [selectedStation]);
+
+  // Handle browser back button
+  useEffect(() => {
+    const handlePopState = () => {
+      const onRecentSongs = window.location.pathname.includes("/recent-songs");
+      setIsHistoryOpen(onRecentSongs);
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
   }, []);
 
   if (!selectedStation) return null;
@@ -174,7 +196,7 @@ const ContentLeft = () => {
             )}
             <button
               className={songHistoryStyles.history_button}
-              onClick={() => setIsHistoryOpen(true)}
+              onClick={handleOpenHistory}
               title="Melodii redate recent"
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -187,7 +209,7 @@ const ContentLeft = () => {
               stationSlug={selectedStation.slug}
               stationTitle={selectedStation.title}
               isOpen={isHistoryOpen}
-              onClose={() => setIsHistoryOpen(false)}
+              onClose={handleCloseHistory}
             />
           </div>
         </>
