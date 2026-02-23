@@ -20,10 +20,6 @@ Platforma este deschisă oricui dorește să asculte muzică creștină în limb
 - Să instaleze aplicația pe telefon (Android și iOS)
 - Să partajeze posturile preferate pe WhatsApp și rețele sociale
 
-## Posturi de radio disponibile
-
-Platforma include peste 60 de posturi de radio creștine, printre care Radio Vocea Evangheliei (cu stații regionale în toată țara), Aripi Spre Cer, Radio Emanuel, Radio Filadelfia, Radio Elim, Radio Vocea Speranței și multe altele.
-
 ## Cum funcționează?
 
 Utilizatorul accesează site-ul, alege un post de radio din listă și apasă pe el pentru a începe ascultarea. Poate căuta posturi după nume sau după melodia care cântă. Nu este necesară crearea unui cont.
@@ -34,10 +30,619 @@ Interfața și conținutul sunt în limba română.
 
 ## Aplicația mobilă
 
-Aplicația Radio Creștin este disponibilă gratuit pe Android și iOS, cu un rating de 4.9 stele din 5 și peste 1800 de recenzii.
+Aplicația Radio Creștin este disponibilă gratuit pe Android și iOS, cu un rating de 4.9 stele din 5 și peste 1900 de recenzii. Aplicația suportă și Apple CarPlay, permițând ascultarea radio creștin direct din mașină.
 
 ## Contact
 
-Website: https://www.radiocrestin.ro
-Android: https://play.google.com/store/apps/details?id=com.radiocrestin.radio_crestin
-iOS: https://apps.apple.com/ro/app/radio-crestin/id6451270471
+- Website: https://www.radiocrestin.ro
+- Android: https://play.google.com/store/apps/details?id=com.radiocrestin.radio_crestin
+- iOS: https://apps.apple.com/ro/app/radio-crestin/id6451270471
+
+## Posturi de radio disponibile (65 posturi)
+
+### Aripi Spre Cer
+- Ascultă live: https://www.radiocrestin.ro/aripi-spre-cer
+- Website oficial: https://aripisprecer.ro
+- Descriere: Radio Crestin Aripi Spre Cer este un post de radio crestin online care a luat ființă în anul 2008 sub numele de Radio Wings2Heaven și a funcționat sub acest nume pana în 2010, când am luat decizia să continuăm sub un alt nume, astfel a luat ființă proiectul Radio Creștin Aripi Spre Cer.
+
+Transmitem muzica crestină contemporană, clasică, worship, gen popular, predici, marturii, interviuri, poezii crestine cât și interviuri, concursuri sau emisiuni în care ascultătorii pot intra în direct, dezbatem subiecte diverse, întrebări referitoare la diferite subiect biblice.
+
+O funcționalitate deosebită este aceea prin care ascultătorii au posibilitatea să aleagă melodii din playlist-ul nostru și să le solicite pentru a fi redate pe canalul de radio sau le pot dedica celor dragi ca și un dar.
+
+### Aripi Spre Cer Instrumental
+- Ascultă live: https://www.radiocrestin.ro/aripi-spre-cer-instrumental
+- Website oficial: https://www.aripisprecer.ro/instrumental/
+- Descriere: Radio Crestin Aripi Spre Cer instrumental se adresează în special iubitorilor de muzica clasica sau instrumentala. Este locul potrivit pentru cei insetati, care cauta o oaza de pace si liniste si speranta pentru trup, suflet si minte. Încercam sa punem la dispoziție un număr cât mai mare de cântece clasice si instrumentale și totodată va oferim posibilitatea de a le alege cântece direct din playlist-ul nostru.
+
+### Aripi Spre Cer Popular
+- Ascultă live: https://www.radiocrestin.ro/aripi-spre-cer-popular
+- Website oficial: https://www.aripisprecer.ro/popular/
+- Descriere: Acest canal se adresează în special celor care îndrăgesc muzica creștina mai veche și a tuturor iubitorilor genului popular. Încercam sa punem la dispoziție un număr cât mai mare de cântări creștine populare, doine, cântări transmise prin viu grai de la înaintașii noștri, imnuri și totodată vă oferim posibilitatea de a alege direct din playlist-ul nostru.
+
+### Aripi Spre Cer Predici
+- Ascultă live: https://www.radiocrestin.ro/aripi-spre-cer-predici
+- Website oficial: https://www.aripisprecer.ro/predici/
+- Descriere: Radio Creștin Aripi Spre Cer Predici este un canal de radio care vă oferă posibilitatea de a asculta zilnic Cuvântul Domnului, vestit de diferiți predicatori din mediul evanghelic. Biblia este citită și predicată în fiecare zi pe acest canal de predici.
+
+### Aripi Spre Cer Special
+- Ascultă live: https://www.radiocrestin.ro/aripi-spre-cer-special
+- Website oficial: https://www.aripisprecer.ro/
+- Descriere: Radio Crestin Aripi Spre Cer este un post de radio crestin online care a luat ființă în anul 2008 sub numele de Radio Wings2Heaven și a funcționat sub acest nume pana în 2010.
+
+Transmitem muzica crestină contemporană, clasică, worship, gen popular, predici, marturii, interviuri, poezii crestine cât și interviuri, concursuri sau emisiuni în care ascultătorii pot intra în direct, dezbatem subiecte diverse, întrebări referitoare la diferite subiect biblice.
+
+O funcționalitate deosebită este aceea prin care ascultătorii au posibilitatea să aleagă melodii din playlist-ul nostru și să le solicite pentru a fi redate pe canalul de radio sau le pot dedica celor dragi ca și un dar.
+
+### Calea Spre Cer Biblia
+- Ascultă live: https://www.radiocrestin.ro/radio-calea-spre-cer-biblia
+- Website oficial: https://radiocaleasprecer.com/
+- Descriere: Radio Calea Spre Cer - Un altfel de Radio, un radio pentru sufletul tau.
+
+### Calea Spre Cer Copii
+- Ascultă live: https://www.radiocrestin.ro/radio-calea-spre-cer-copii
+- Website oficial: https://radiocaleasprecer.com/
+- Descriere: Radio Calea Spre Cer - Un altfel de Radio, un radio pentru sufletul tau.
+
+### Calea Spre Cer Popular
+- Ascultă live: https://www.radiocrestin.ro/radio-calea-spre-cer-popular
+- Website oficial: https://radiocaleasprecer.com/
+- Descriere: Radio Calea Spre Cer - Un altfel de Radio, un radio pentru sufletul tau.
+
+### Cross One
+- Ascultă live: https://www.radiocrestin.ro/cross-one
+- Website oficial: https://www.crossone.ro/
+- Descriere: Suntem o echipă de oameni care doresc să transmită credința în Dumnezeu mai departe prin muzică, meditații și podcasturi creștine. Daca vrei să descoperi mai multe despre Dumnezeu, ești în locul potrivit, iar noi ne-am bucura să te cunoaștem!
+
+### RVE Brasov
+- Ascultă live: https://www.radiocrestin.ro/rve-brasov
+- Website oficial: https://rve-brasov.ro/
+- Descriere: Un radio pentru inima  ta.
+Frecventa FM: 94,6 Mhz
+
+### RVE Bucuresti
+- Ascultă live: https://www.radiocrestin.ro/rve-bucuresti
+- Website oficial: https://rvebucuresti.ro/
+- Descriere: Radio Vocea Evangheliei București este un post de radio creștin care emite pe frecvența de 94.2 FM din 17 aprilie 1994, la început doar două ore în fiecare zi, iar din 16 iunie 1997 şi până în prezent, RVE Bucureşti emite şase ore pe zi, de la 13:00 la 19:00 și non-stop pe internet.
+
+RVE București face parte dintr-o rețea care cuprinde zece stații locale care emit in FM: București (94.2 Mhz), Brașov (94.6Mhz.), Cluj (88.3Mhz), Constanța (104.4), Hunedoara (98.00 Mhz), Oradea (92.1Mhz), Sibiu (89.4 Mhz), Suceava (102.7Mhz), Timișoara (92,2Mhz), Moldova Nouă (106.6Mhz).
+
+### RVE Cluj
+- Ascultă live: https://www.radiocrestin.ro/rve-cluj
+- Website oficial: https://rvecj.ro/
+- Descriere: Radio Vocea Evangheliei Cluj este un post de radio creștin care dorește să aducă vestea bună a împăcării omului cu Dumnezeu prin credinţa în jertfa salvatoare a lui Isus Hristos, Fiul lui Dumnezeu. Această credinţă are ca rezultat naşterea din nou, sfinţirea, trăirea prin călăuzirea Duhului Sfânt şi nădejdea vieţii veşnice. Radio Vocea Evangheliei şi-a propus să contribuie la transformarea spirituală, morală şi culturală a societăţii prin promovarea valorilor eterne ale Bibliei, care este Cuvântul lui Dumnezeu.
+
+### RVE Constanta
+- Ascultă live: https://www.radiocrestin.ro/rve-constanta
+- Website oficial: https://rvect.ro/
+- Descriere: Radio Vocea Evangheliei Constanța este un post de radio creștin contemporan, relevant care își propune să aducă Evanghelia cât mai multor oameni.
+
+### RVE Hunedoara
+- Ascultă live: https://www.radiocrestin.ro/rve-hunedoara
+- Website oficial: https://rvehunedoara.ro/
+- Descriere: Radio Vocea Evangheliei Hunedoara este un post de radio creștin contemporan, relevant care îsi propune să aducă Evanghelia cât mai multor oameni. 
+Frecventa FM: 104.4 MHz
+
+### RVE Oradea
+- Ascultă live: https://www.radiocrestin.ro/rve-oradea
+- Website oficial: https://www.rve-oradea.ro/
+- Descriere: Suntem un RADIO pentru INIMA TA!
+
+Radio Vocea Evangheliei Oradea (RVE Oradea) este un post de radio creștin, contemporan, echilibrat, relevant și practic care aduce Evanghelia românilor ori unde s-ar afla. Ascultând emisiunile noastre, cu ajutorul lui Dumnezeu, poți dobândi comori de mare preț pentru sufletul tău: înțelepciune, bucurie, pace, speranță și dragoste.
+
+### RVE Oradea International
+- Ascultă live: https://www.radiocrestin.ro/rve-oradea-international
+- Website oficial: https://www.rve-oradea.ro/
+- Descriere: Suntem un RADIO pentru INIMA TA!
+
+Radio Vocea Evangheliei Oradea (RVE Oradea) este un post de radio creștin, contemporan, echilibrat, relevant și practic care aduce Evanghelia românilor ori unde s-ar afla. Ascultând emisiunile noastre, cu ajutorul lui Dumnezeu, poți dobândi comori de mare preț pentru sufletul tău: înțelepciune, bucurie, pace, speranță și dragoste.
+
+### RVE Oradea Muzica
+- Ascultă live: https://www.radiocrestin.ro/rve-oradea-muzica
+- Website oficial: https://rve-oradea.ro/
+- Descriere: Obiectivul nostru este să fim Vocea Evangheliei, să prezentăm Vestea Bună în așa fel încât cel care o ascultă să fie transformat prin puterea Duhului Sfânt într-un om după inima lui Dumnezeu.
+În vederea atingerii acestui deziderat, avem câteva obiective intermediare:
+- A învăța despre Dumnezeu din Scriptură, istorie şi natură;
+- Să informeze despre evenimentele religioase științifice, politice, economice, sociale și culturale care se desfășoară pe plan local, național și internațional;
+- Să atenționeze în legătură cu anumite pericole sau să atragă atenția asupra unor nereguli care se produc în societate sau în viața oamenilor;
+- Să motiveze ascultătorii la dragoste și fapte bune, la o viață curată trăită în conformitate cu, Cuvântul Sfânt;
+- Să aducem bucurie în fiecare casă unde se ascultă Radio Vocea Evangheliei
+
+### RVE Predici
+- Ascultă live: https://www.radiocrestin.ro/rve-predici
+- Website oficial: https://www.rve-oradea.ro/
+- Descriere: Misiunea RVE Oradea este să comunice prin radio vestea bună a lui Isus Hristos către societate românească, într-o manieră modernă și relevantă, folosind mijloace profesionale și tehnice adecvate. Prin promovarea valorilor eterne ale Bibliei, RVE Oradea vrea să contribuie la dezvoltarea spirituală, morală și culturală a poporului român.
+
+### RVE Satu Mare
+- Ascultă live: https://www.radiocrestin.ro/rve-satu-mare
+- Website oficial: https://rve-oradea.ro
+- Descriere: Radio Vocea Evangheliei Oradea face parte dintr-o rețea aparținând SC Vocea Evangheliei SRL, care cuprinde zece stații locale care emit în FM și pe internet: Bucuresti ( 94.2 Mhz), Brasov (94.6Mhz.), Cluj ( 88.3Mhz), Constanta ( 104.4), Hunedoara (98.00 Mhz), Oradea ( 92.1Mhz), Sibiu ( 89.4 Mhz), Suceava ( 102.7Mhz), Timisoara (92,2Mhz), Moldova Nouă (106.6Mhz). SC Vocea Evangheliei SRL are trei proprietari cu acțiuni egale.
+
+### RVE Sibiu
+- Ascultă live: https://www.radiocrestin.ro/rve-sibiu
+- Website oficial: https://rvesibiu.ro/
+- Descriere: În 15 august 1994, se auzea la Sibiu pentru prima oară: „Aici Radio Vocea Evangheliei, transmitem pe frecvența de 89,4 Mhz”. Pentru ca și românii din Diaspora să intre în echipa cu realitățile sibiene, din 1999, RVE Sibiu emite și pe Internet.
+
+Află mai multe despre misiunea, valorile și credința noastră și fă cunoștință cu echipa RVE Sibiu.
+
+### RVE Soveja
+- Ascultă live: https://www.radiocrestin.ro/rve-soveja
+- Website oficial: https://rve.ro/
+- Descriere: RVE Soveja – Radio Vocea Evangheliei
+Un reper de lumină și speranță în zona Soveja, RVE transmite mesaje biblice, muzică creștină și programe care aduc încurajare și adevăr. O prezență caldă și constantă, aproape de inimile celor care caută pace și direcție.
+
+### RVE Suceava
+- Ascultă live: https://www.radiocrestin.ro/rve-suceava
+- Website oficial: https://www.rvesv.ro/
+- Descriere: Pentru românii care au trăit în perioada comunistă, gândul de a avea un post de radio creștin pe teritoriul țării reprezenta ceva irealizabil. Totuși, imediat după Revoluția din 1989, câțiva credincioși vizionari din cadrul Alianței Evanghelice din România au făcut demersurile necesare obținerii câtorva licențe pentru stații creștine de radio. Acestea au constituit rețeaua Radio ”Vocea Evangheliei”.
+
+Frecventa FM: 94.2 MHz
+
+### RVE Targoviste
+- Ascultă live: https://www.radiocrestin.ro/rve-targoviste
+- Website oficial: https://rve.ro/
+- Descriere: RVE Târgoviște – Radio Vocea Evangheliei
+Post de radio creștin care aduce în casele oamenilor mesaje biblice, muzică inspirată și programe pentru întreaga familie. RVE Târgoviște transmite speranță, încurajare și adevăr, conectând comunitatea la Evanghelia lui Hristos. În fiecare zi, vocea credinței aproape de tine.
+
+### RVE Timisoara
+- Ascultă live: https://www.radiocrestin.ro/rve-timisoara
+- Website oficial: https://www.rve-timisoara.ro/
+- Descriere: Radio Vocea Evangheliei Timișoara este un post de radio creștin contemporan, relevant care își propune să aducă Evanghelia cât mai multor oameni.
+
+Misiunea postului de Radio Vocea Evangheliei Timișoara este să comunice prin media, într-un mod relevant, valorile Bibliei astfel încât ele să fie cunoscute și trăite de cât mai mulți oameni.
+
+Frecventa FM: 92.2 MHz
+
+### RVE Viena
+- Ascultă live: https://www.radiocrestin.ro/rve-viena
+- Website oficial: https://www.rveviena.at/
+- Descriere: Istoria RVE Viena a început cu un moment în care Redactorul – Șef Ignat Dumitru întâlneste o persoană cu dezabilitați fizice, dar mădular din trupul lui Hristos, parte din Biserica Penticostală Elim Viena. În acel moment primește îndemnul din partea Duhului Sfânt de a-i lansa invitația de a se implica în lucrarea radio. Încrezător în promisiunea lui Dumnezeu și determinat să construiască un început, investește în oameni cu dezabilități fizice, dar cu un mare potențial de a se implica în lucrarea mass media creștină. Aceasta initiativă devine astfel prima piesă a ceea ce mai târziu va reprezenta un grup media creștin sub denumirea „Echipa Răscumpărați prin Har”
+
+Apar primele emisiuni realizate de echipa RpH
+Obtine 6 ore de transmisie, de la ora 12 – 18, la un post de radio laic din Dej, Radio Fir
+Emisiunile sunt preluate și de portalul www.resursecreștine.ro pentru a fi puse la dispoziția doritorilor
+Periodic sunt postate și pe pagina Web a Radio Vocea Evangheliei Viena
+
+### RVE Viena Muzica
+- Ascultă live: https://www.radiocrestin.ro/rve-viena-muzica
+- Website oficial: https://www.rveviena.at/
+- Descriere: Istoria RVE Viena a început cu un moment în care Redactorul – Șef Ignat Dumitru întâlneste o persoană cu dezabilitați fizice, dar mădular din trupul lui Hristos, parte din Biserica Penticostală Elim Viena. În acel moment primește îndemnul din partea Duhului Sfânt de a-i lansa invitația de a se implica în lucrarea radio. Încrezător în promisiunea lui Dumnezeu și determinat să construiască un început, investește în oameni cu dezabilități fizice, dar cu un mare potențial de a se implica în lucrarea mass media creștină. Aceasta initiativă devine astfel prima piesă a ceea ce mai târziu va reprezenta un grup media creștin sub denumirea „Echipa Răscumpărați prin Har”
+
+Apar primele emisiuni realizate de echipa RpH
+Obtine 6 ore de transmisie, de la ora 12 – 18, la un post de radio laic din Dej, Radio Fir
+Emisiunile sunt preluate și de portalul www.resursecreștine.ro pentru a fi puse la dispoziția doritorilor
+Periodic sunt postate și pe pagina Web a Radio Vocea Evangheliei Viena
+
+### RVE Viena Tineri [DE]
+- Ascultă live: https://www.radiocrestin.ro/rve-viena-tineri
+- Website oficial: https://www.rveviena.at/
+- Descriere: Istoria RVE Viena a început cu un moment în care Redactorul – Șef Ignat Dumitru întâlneste o persoană cu dezabilitați fizice, dar mădular din trupul lui Hristos, parte din Biserica Penticostală Elim Viena. În acel moment primește îndemnul din partea Duhului Sfânt de a-i lansa invitația de a se implica în lucrarea radio. Încrezător în promisiunea lui Dumnezeu și determinat să construiască un început, investește în oameni cu dezabilități fizice, dar cu un mare potențial de a se implica în lucrarea mass media creștină. Aceasta initiativă devine astfel prima piesă a ceea ce mai târziu va reprezenta un grup media creștin sub denumirea „Echipa Răscumpărați prin Har”
+
+Apar primele emisiuni realizate de echipa RpH
+Obtine 6 ore de transmisie, de la ora 12 – 18, la un post de radio laic din Dej, Radio Fir
+Emisiunile sunt preluate și de portalul www.resursecreștine.ro pentru a fi puse la dispoziția doritorilor
+Periodic sunt postate și pe pagina Web a Radio Vocea Evangheliei Viena
+
+### RVE Zalau
+- Ascultă live: https://www.radiocrestin.ro/rve-zalau
+- Website oficial: https://rve-zalau.ro/
+- Descriere: Radio Vocea Evangheliei Zalău este un post de radio creștin contemporan, relevant care își propune să aducă Evanghelia cât mai multor oameni.
+
+Frecventa FM: 94.0 MHz
+
+### Radio 9 FM - Moldova Noua
+- Ascultă live: https://www.radiocrestin.ro/radio-9-fm
+- Website oficial: https://www.radio9fm.ro/
+- Descriere: Radio 9FM este un post de radio care emite în zona Clisura Dunării din 18 aprilie 2014.
+
+Frecventa FM: 106.6 MHz
+
+Radioul promovează valorile creștine prin emisiuni, muzică, interviuri.
+
+Publicul țintă îl reprezintă persoanele care vor să cunoască mai multe despre Dumnezeu și să aibă o relație personală cu El, precum și creștinilor care au nevoie de restaurare, creștere spirituală bazată pe valorile Scripturii.
+
+Radioul este coordonat de Radio Vocea Evangheliei Timișoara și face parte din rețeaua Radio Vocea Evangheliei România.
+
+Rețeaua Radio Vocea Evangheliei este proprietatea celor trei culte evanghelice din Romania : Cultul Baptist, Cultul Crestin dupa Evanghelie si Cultul Penticostal (Alianța Evanghelică Romania).
+
+Radio 9 FM este proprietatea celor trei culte evanghelice din Romania : Cultul Baptist, Cultul Crestini după Evanghelie si Cultul Penticostal (Alianta Evanghelica Romania ). Coordonarea administrativă a rețelei Radio Vocea Evangheliei se face de la Sediul Central din Bucuresti. Acesta asigura interfața retelei cu autoritatile si coordoneaza activitatile editoriale si financiare ale retelei. Activitatea Sediului Central este coordonata de directorul general al RVE (dl. Lucian Despa). Acesta se subordoneaza Adunarii Generale a Asociatilor ( AGA) a Radio Vocea Evangheliei. AGA reprezintă proprietarii radioului și instanta suprema decizională in RVE. AGA este alcatuită din câte trei reprezentanti ai fiecăruia din cele trei culte evanghelice asociate.
+
+### Radio ALT FM Arad
+- Ascultă live: https://www.radiocrestin.ro/alt-fm
+- Website oficial: https://www.altfm.ro
+- Descriere: Misiunea noastra este să spunem oamenilor despre dragostea lui Dumnezeu arătată prin Domnul Isus Hristos și să-i invităm să experimenteze o trăire personală cu Tatăl Ceresc.
+
+Suntem prinși cu toții în activitățile lumii în care trăim. Familie, copii, casă, profesie, prieteni, vecini, cumpărături, biserică... Le întelegem pe toate. De aceea, ne străduim să găsim împreună cu ascultătorii noștri, echilibrul în toate, să stabilim priorități și să ne asigurăm că Dumnezeu va ocupa întotdeauna locul întâi.
+
+Pentru că, nu-i așa, ”ce ar folosi unui om să câștige toată lumea, dacă și-ar pierde sufletul?”...
+Așteptăm cu nerăbdare evenimentul glorios când Domnul Isus va reveni pe norii cerului pentru a-Și lua la El pe cei care L-au iubit și au urmat calea trasată de El.
+Vino Doamne Isuse! Amin!
+
+### Radio Allelon
+- Ascultă live: https://www.radiocrestin.ro/radio-allelon
+- Website oficial: https://www.allelon.ro/
+- Descriere: Das Ziel von Radio Allelon ist es die biblischen Werte in einer für die heutige Zeit relevanten For
+
+### Radio Antiohia
+- Ascultă live: https://www.radiocrestin.ro/radio-antiohia
+- Website oficial: https://www.radiofiladelfia.ro/
+- Descriere: Radio Filadelfia s-a născut pe 1 decembrie 2008. Este unda celor ce au urechi să asculte! Muzica şi mesajul care te duc la Cruce!
+„Ți-am pus înainte o ușă deschisă, pe care nimeni n-o poate închide!” (Apocalipsa 3:8)
+
+### Radio Armonia
+- Ascultă live: https://www.radiocrestin.ro/radio-armonia
+- Website oficial: https://www.radioarmonia.ro/
+- Descriere: Misiunea Studioului “Radio Armonia” din Iasi, Romania, este ca prin intermediul undelor radio si, mai nou, al internetului sa vesteasca Evanghelia tuturor celor ce nu L-au cunoscut si nu au intrat intr-o relatie personala cu Acela care este Domnul si Mantuitorul intregii omeniri, si anume, Domnul Isus Cristos.
+
+Aparut in anul 1992 ca un raspuns la rugaciunile multor crestini, dornici de a asculta si a se hrani cu Cuvintul Sfint prin intermediul undelor radio, Studioul “Radio Armonia”, a incercat, in cei 20 ani de activitate prin intermediul undelor scurte, sa promovoze valorile crestine, prezentate in Sfanta Scriptura, in comunitatile romanesti din estul si vestul Europei si in mod deosebit pe teritoriul Romaniei, incercind sa atinga toate categoriile sociale si de virsta, o importanta deosebita acordindu-se generatiei tinere, macinata de framintari si incertitudini.
+
+In incercarea noastra de a implini aceasta misiune cu maxima eficacitate, incercam sa ne adresam si sa avem un dialog deschis cu toate bisericile si confesiunile, existente in tara si in comunitatile romanesti din strainatate.
+
+### Radio Betel Alcala
+- Ascultă live: https://www.radiocrestin.ro/radio-betel-alcala
+- Website oficial: https://betelalcala.com/
+- Descriere: Noi credem într-un singur Dumnezeu, manifestat în trei Persoane: Tatăl, Fiul şi Duhul Sfânt.
+
+Noi credem că Biblia este Cuvântul infailibil al lui Dumnezeu şi că este singura normă de credinţă a credinciosului şi a Bisericii.
+
+Noi credem că Dumnezeu este Creatorul întregului univers, al omului şi al îngerilor.
+
+Noi credem că păcatul a intrat în lume prin neascultarea primului om, Adam, şi că fiecare om se naşte în păcat, având nevoie de mântuire.
+
+Noi credem că doar harul lui Dumnezeu face posibilă mântuirea omului, prin jertfa Domnului Iisus Hristos, şi că beneficiile acestei jertfe sunt însuşite prin credinţă şi pocăinţă.
+
+Noi credem că naşterea din nou a omului este opera Duhului Sfânt şi că Duhul Sfânt continuă să lucreze în viaţa credinciosului dându-i acestuia puterea de a face fapte bune (de a aduce roadă) şi de a trăi o viaţă sfântă.
+
+Noi credem că botezul în apă se acordă celor care s-au întors la Dumnezeu şi au fost născuţi din nou, că trebuie efectuat în Numele Tatălui, al Fiului şi al Duhului Sfânt şi că este actul prin care credinciosul este integrat în Biserică.
+
+Noi credem în botezul cu Duhul Sfânt, ca experienţă distinctă de naşterea din nou şi de botezul în apă, experienţă prin care credinciosul primeşte putere pentru slujire şi care trebuie să fie urmată de umpleri repetate.
+
+Noi credem că actul Euharistiei a fost instituit de Domnul Iisus şi că el este un aşezământ esenţial al Bisericii prin care credincioşii îşi exprimă părtăşia cu ipostaza dumnezeiască a Domnului nostru Iisus Hristos.
+
+Noi credem în continuitatea manifestărilor supranaturale ale Duhului Sfânt, prin darurile pe care le împarte El credincioşilor, spre zidirea Bisericii. Noi credem în preoţia tuturor credincioşilor dar şi în chemarea specială a unor credincioşi de a sluji ca lucrători învestiţi în lucrare prin hirotonisire.
+
+Noi credem în sanctitatea familiei, ca instituţie rânduită de Dumnezeu prin actul căsătoriei.
+
+Noi credem că mandatul suprem al Bisericii este acela de a duce Evanghelia până la marginile pământului şi că acest mandat trebuie dus la îndeplinire prin efortul conjugat al tuturor membrilor ei.
+
+Noi credem în a doua venire a Domnului Iisus Hristos pentru a-şi răpi Biserica, în învierea morţilor, în judecata de apoi şi în răsplătirile divine, în destinul veşnic al omului în Paradisul lui Dumnezeu sau în iad, despărţit pentru totdeauna de Dumnezeu.
+
+### Radio Biserica Penticostala Nadlac
+- Ascultă live: https://www.radiocrestin.ro/radio-biserica-penticostala-nadlac
+- Website oficial: https://pentinadlac.ro/index.php/resurse/resurse-audio-1/radio-pentinadlac
+
+### Radio Calea Spre Cer
+- Ascultă live: https://www.radiocrestin.ro/radio-calea-spre-cer
+- Website oficial: https://radiocaleasprecer.com/
+- Descriere: Radio Calea Spre Cer - Un altfel de Radio, un radio pentru sufletul tau.
+
+### Radio Crestin Autentic
+- Ascultă live: https://www.radiocrestin.ro/radio-crestin-autentic
+- Website oficial: http://crestin-autentic.ro/
+- Descriere: Radioul Crestin Autentic a fost infiintat la data de 15 ianuarie 2012.
+
+Lucrarea noastra are ca scop principal promovarea adevarului biblic cu privire la mintuirea sufletului prin jertfa DOMNULUI ISUS HRISTOS. Radioul nostru poate fi ascultat prin internet, pe intreaga planeta, 24 de ore din 24, 7 zile din 7.
+
+Va stam la dispozitie cu exact 27419 de resurse crestine: 21628 cantari, 2254 poezii, 150 psalmi, 2655 predici, 471 colaje muzicale si 261 resurse diverse. Difuzam muzica crestina veche(predomina) si contemporana, din aproape toate genurile muzicale, in special populara si usoara. Radioul se adreseaza romanilor de pretutindeni, atit crestinilor , cit si celor ce nu-L cunosc pe DUMNEZEU.
+
+Intentionam, cu ajutorul DOMNULUI, in viitorul apropiat sa adaugam in programul radioului nostru sectiunea PUBLICITATE CRESTINA PRIN RADIO.Putem primi anunturi referitoare la:
+Conditiile de admitere in invatamintul superior teologic
+Conditiile de admitere in scoli cu profil teologic
+Comunicate din parte conducerii cultelor evanghelice
+Invitatii din partea pastorilor pentru a participa la servicii divine
+Desfasurarea unor evenimente crestine: evanghelizari, conventii,vizite la spitale, la penitenciare, organizarea de tabere pentru tineret, calatorii cu scop misionar in zone neevanghelizate, s.a.
+Lansari de albume de muzica crestina
+Lansari de albume de poezii
+Lansare de carte
+s.a.
+
+### Radio Ekklesia
+- Ascultă live: https://www.radiocrestin.ro/radio-ekklesia
+- Website oficial: https://radioekklesia.com/
+- Descriere: Radio Ekklesia , un radio pentru Sufletul tau! www.RadioEkklesia.com ... un nou program de ascultare, va asteptam!
+
+### Radio Eldad
+- Ascultă live: https://www.radiocrestin.ro/radio-eldad
+- Website oficial: https://radio.eldad.ro
+- Descriere: Radio Eldad - Muzică creștină și mesaje inspiraționale
+
+### Radio Elim Air
+- Ascultă live: https://www.radiocrestin.ro/radio-elim
+- Website oficial: https://www.radioelim.ro/
+- Descriere: Radio Elim Air - Pentru atunci cand tinzi dupa un moment de relaxare
+
+### Radio Elim Kids
+- Ascultă live: https://www.radiocrestin.ro/radio-elim-kids
+- Website oficial: https://www.radioelim.ro/
+- Descriere: Radio Elim Kids - Te incantam cu o selectie pe gustul celor mici
+
+### Radio Elim Plus
+- Ascultă live: https://www.radiocrestin.ro/radio-elim-plus
+- Website oficial: https://www.radioelim.ro/
+- Descriere: Radio Elim Plus - Rezonezi pe versuri predominant in limba engleza
+
+### Radio Emanuel
+- Ascultă live: https://www.radiocrestin.ro/radio-emanuel
+- Website oficial: https://radioemanuelcrestin.ro/
+- Descriere: Domnul îmi ascultă cererile şi Domnul îmi primeşte rugăciunea! Psalmii 6:9Căci Tu binecuvântezi pe cel neprihănit, Doamne, şi-l înconjori cu bunăvoinţa Ta cum l-ai înconjura cu un scut. Psalmii 5:12
+
+### Radio Filadelfia
+- Ascultă live: https://www.radiocrestin.ro/radio-filadelfia
+- Website oficial: https://www.radiofiladelfia.ro/
+- Descriere: Radio Filadelfia s-a născut pe 1 decembrie 2008. Este unda celor ce au urechi să asculte! Muzica şi mesajul care te duc la Cruce!
+„Ți-am pus înainte o ușă deschisă, pe care nimeni n-o poate închide!” (Apocalipsa 3:8)
+
+### Radio Filadelfia Christmas
+- Ascultă live: https://www.radiocrestin.ro/radio-filadelfia-christmas
+- Website oficial: https://www.radiofiladelfia.ro/
+- Descriere: Radio Filadelfia s-a născut pe 1 decembrie 2008. Este unda celor ce au urechi să asculte! Muzica şi mesajul care te duc la Cruce!
+„Ți-am pus înainte o ușă deschisă, pe care nimeni n-o poate închide!” (Apocalipsa 3:8)
+
+### Radio Filadelfia Special
+- Ascultă live: https://www.radiocrestin.ro/radio-filadelfia-special
+- Website oficial: https://www.radiofiladelfia.ro/
+- Descriere: Radio Filadelfia s-a născut pe 1 decembrie 2008. Este unda celor ce au urechi să asculte! Muzica şi mesajul care te duc la Cruce!
+„Ți-am pus înainte o ușă deschisă, pe care nimeni n-o poate închide!” (Apocalipsa 3:8)
+
+### Radio Flacăra Rusaliilor
+- Ascultă live: https://www.radiocrestin.ro/radio-flacara-rusaliilor
+- Website oficial: https://radio-flacararusaliilor.ro/
+- Descriere: Scopul acestui post de radio este să ajute la răspândirea Evangheliei Domnului nostru Isus Hristos începând din Sebiș și mergând până la marginile pământului. Apoi, se dorește ca prin emisiunile difuzate orice ascultător să se edifice spiritual și să aducă glorie Dumnezeului veșnic.
+
+### Radio Gosen
+- Ascultă live: https://www.radiocrestin.ro/radio-gosen
+- Website oficial: https://www.radiogosen.com/
+- Descriere: Radio Gosen este un radio crestin care emite online non-stop muzica crestina.
+
+### Radio Iubire Fara Margini
+- Ascultă live: https://www.radiocrestin.ro/radio-iubire-fara-margini
+- Website oficial: https://radioiubire.ucoz.net/
+- Descriere: "Radio Iubire Fara Margini" alaturi de voi 24 de ore din 24.
+Va dorim auditie placuta!
+
+### Radio Joy
+- Ascultă live: https://www.radiocrestin.ro/radio-joy
+- Website oficial: https://www.radiojoy.us/
+- Descriere: Radio Joy e un proiect de suflet. AM pornit această stație din dorința de a închega o comunitate de oameni în diaspora americană și de a conecta această comunitate cu „cei de acasă”. Ne dorim mult să fim o sursă de informare corectă și echilibrată dar și un loc din care vin spre voi emisiuni utile, predici motivatoare și muzică înălțătoare.
+
+Și nu doar atât.
+
+Ne dorim și ne planificăm să ne implicăm prin slujire dar și material în poiecte sociale și să provocăm pe cei pe care Dumnezeu i-a binecuvântat mai mult material să susțină pe cei mai încercați dintre semeni.
+
+### Radio Levi
+- Ascultă live: https://www.radiocrestin.ro/radio-levi
+- Website oficial: https://radiolevi.ro/
+- Descriere: In data de  4 decembrie 2013, la 2 ani de la inaugurarea Bisericii Izvorul Vietii din Resita, cu ajutorul lui Dumnezeu RADIO LEVI este online. Este cadoul pe care ni l-am facut ca si comunitate in acel moment aniversar… de ce nu, cadoul nostru pt voi.
+
+### Radio Micul Samaritean
+- Ascultă live: https://www.radiocrestin.ro/radio-micul-samaritean
+- Website oficial: https://www.miculsamaritean.com/
+- Descriere: La 11 iunie 1994, Misiunea Micul Samaritean a deschis primul post de radio din Chișinău, Republica Moldova, difuzat 24 de ore pe zi, 7 zile pe săptămână. Mai multe stații au fost adăugate în Moldova și conectate la satelit, creând o rețea de 11 statii care acoperă întreaga țară din Moldova și chiar părți din Ucraina și din România de Est. Radio Micul Samaritean difuzează și pe internet pentru ascultători din întreaga lume.
+
+Prin programele radio aducem speranța cu Vestea Bună al lui Isus Hristos în case, automobile și instituții. În anii trecuți am instalat sistem de recepție și amplificare în închisori, spitale, orfelinate și chiar școli.
+
+### Radio O Noua Sansa
+- Ascultă live: https://www.radiocrestin.ro/radio-o-noua-sansa
+- Website oficial: https://radioonouasansa.ro/radio/
+
+### Radio Old Christian Radio
+- Ascultă live: https://www.radiocrestin.ro/radio-old-christian-radio
+- Website oficial: https://www.oldchristianradio.com/
+- Descriere: Old Christian Radio is a station that plays great conservative Christian music with NO "Christian Rock".
+The main mission for this station's existence is to be a blessing to the Christian community by playing Godly Christian music that doesn't sound like the devil's music.
+
+### Radio Philadelphia Clasic
+- Ascultă live: https://www.radiocrestin.ro/radio-philadelphia-clasic
+- Website oficial: https://radiophiladelphia.it/
+- Descriere: Mărturisirea de Credinţă 
+
+1. Biblia
+Credem în Cuvântul inspirat al lui Dumnezeu cuprins în Vechiul şi Noul Testament, infailibil în scrierile originale şi credem că acesta reprezintă autoritatea supremă şi finală pentru credinţă şi viaţă.
+
+2. Sfânta Treime
+Credem într-un singur Dumnezeu, manifestat în trei Persoane: Dumnezeu Tatăl, Dumnezeu Fiul şi Dumnezeu Duhul Sfânt.
+
+3. Dumnezeu Tatăl
+Îl recunoaștem că Dumnezeul viu și adevărat creator, susţinător, început şi sfârşit al tuturor lucrurilor, El este vrednic de toata cinstea, lauda și închinarea.
+
+4. Dumnezeu Fiul
+Îl recunoaștem pe Isus Hristos ca pe Mesia, Cuvântul care sa facut trup și a locuit printre noi plin de har și adevăr, a fost zămislit de Duhul Sfânt şi întrupat prin fecioara Maria. El a murit pe cruce, jertfindu-Se pentru păcatele oamenilor. După ce Dumnezeu L-a înviat din morţi, El S-a ridicat la cer şi acum stă la dreapta Tatălui, fiind Preotul și Mijlocitorul nostru.
+
+5. Dumnezeu Duhul Sfînt
+Misiunea Duhului Sfânt este să-L proslăvească pe Isus Hristos pe pământ şi să-i convingă pe oameni de păcatele lor, să-i nască din nou pe cei care se pocăiesc, să fie prezent în cei credincioşi pentru a-i îndruma, învăţa, proteja și călăuzi în tot adevărul, și să le dea putere pentru a fi martori a lui Isus Hristos.
+
+6. Familia
+Credem că familia este instituția înfințată de însuși Dumnezeu, este legământul încheiat pe viaţă din dragoste prin căsătorie între un bărbat și o femeie.
+
+7. Natura omenirii
+Credem că omenirea a fost creată neprihănită după chipul şi asemănarea lui Dumnezeu, dar prin păcat a căzut din această poziţie. Prin urmare, toţi oamenii sunt morţi din punct de vedere spiritual şi au nevoie de mântuirea lui Dumnezeu prin pocăinţă.
+
+8. Pocăinţa, Naşterea din nou și Sfinţirea
+Pocăinţa este actul întoarcerii la Dumnezeu şi părăsirii păcatului. Naşterea din nou este schimbarea supranaturală făcută de Dumnezeu ca rezultat al pocăinţei omului. Sfinţirea este starea de a fi liber de păcat, viaţa trăită după principiile Bibliei, sub călăuzirea Duhului Sfânt.
+
+9. Mântuirea
+Credem că moartea lui Hristos pe cruce a adus mântuire tuturor oamenilor care se căiesc de păcatele lor şi care îşi întorc faţa către Dumnezeu prin credinţa în Isus Hristos, Mântuitorul şi Domnul lor.
+
+10. Biserica
+Adevărata Biserică este formată din cei care prin credinţa în sângele mântuitor al lui Isus Hristos au fost născuţi din nou prin Cuvântul şi Duhul lui Dumnezeu şi sunt uniţi în trupul lui Isus Hristos, al cărui Cap este El. 
+
+11. Calitatea de membru al Bisericii
+Poate fi membru al bisericii orice credincios care dovedeşte că este născut din nou, care se subordonează suveranităţii Bibliei, care ascultă şi respectă conducerea bisericii, trăind viaţa spirituală în ascultare şi sfintire.
+
+12. Viaţa spirituală
+Credem în prezenţa spirituală a lui Hristos care locuieşte în cei credincioşi prin Duhul Sfânt şi care le dă putere să urmeze poruncile lui Dumnezeu, trăind în unitate şi respect, fiind o pildă de dragoste şi neprihănire.
+
+13. Botezul in apă
+Credem că botezul în apă este mărturia unui cuget curat, este actul scufundării în apă oficiat în Numele Tatălui, al Fiului şi al Sfântului Duh, conform poruncii lui Hristos. Cu toate că acest act nu are putere să spele păcatul, el reprezintă moartea, îngroparea şi învierea lui Hristos. Se acordă celor care s-au întors la Dumnezeu şi au fost născuţi din nou prin pocăință.
+
+14. Botezul cu Duhul Sfânt
+Credem în botezul cu Duhul Sfânt, ca experienţă distinctă de naşterea din nou şi de botezul în apă, experienţă prin care credinciosul primeşte putere pentru slujire, sfințire și pentru a fi martor a lui Isus Hristos Domnul.
+
+15. Roada Duhului
+Viaţa plină de Duhul se va manifesta prin dragoste, bucurie, pace, îndelungă răbdare, bunătate, facere de bine, credincioşie, blândeţe, înfrânarea poftelor. 
+
+16. Darurile spirituale
+Credem că au fost și încă sunt acordate Bisericii prin Duhul Sfânt pentru a fi folosite pentru zidirea Trupului lui Isus Hristos. 
+
+17. Cina Domnului
+A fost instituită de Domnul Isus Hristos pentru amintirea morţii Sale. Numai creştinii născuţi din nou, curăţiţi de păcat şi botezaţi în apă se pot împărtăşi cu Cina Domnului. 
+
+18.Lucrarea de slujire
+Credem în preoţia tuturor credincioşilor dar şi în chemarea specială a unor credincioşi de a sluji ca lucrători învestiţi în slujba lui Dumnezeu.
+
+19. Marea trimitere
+Credem că mandatul suprem al Bisericii este acela de a duce Evanghelia până la marginile pământului, de-a face ucenici din toate neamurile și de-ai învăța să păzească toate poruncile Domnului Isus Hristos.
+
+20. Viitorul Bisericii
+Credem în a doua venire a Domnului Isus Hristos pentru a-şi răpi Biserica, în învierea morţilor, în judecata de apoi şi în răsplătirile divine; în destinul veşnic al omului care va fi: în împărăția veșnică a lui Dumnezeu pentru cei credincioși Lui, și în iadul veșnic pentru cei ce nu L-au primit și recunoscut pe Isus Hristos ca Domn și Mîntuitor personal. Amin
+
+21.Rugăciune
+Doamne Dumnezeule, Tu care locuieşti în lumină şi care eşti Tatăl nostru Cel ceresc, Creatorul cerului şi al pământului şi care deţii toată puterea, slava şi cinstea: Te rugăm ajută-ne și dăne putere să onorăm, să cinstim și să ne luptăm pentru această Credință pe care Tu ne-ai dăruito, te mai rugăm dăne tăria și înțelepciunea să o putem transmitem copiilor noștri și generației de după noi, te rugăm în numele scumpului Tău Fiu și al nostru Mântuitor, Domn şi Mijolcitor ISUS HRISTOS, a Ta să fie toată gloria, mărirea şi închinarea în vecii vecilor căci doar Tu eşt vrednic să le primeşti fiindcă doar Tu eşti singurul Dumnezeu viu şi adevăra din univers! Amin.
+
+### Radio Philadelphia Copii
+- Ascultă live: https://www.radiocrestin.ro/radio-philadelphia-copii
+- Website oficial: https://radiophiladelphia.it/
+- Descriere: Mărturisirea de Credinţă 
+
+1. Biblia
+Credem în Cuvântul inspirat al lui Dumnezeu cuprins în Vechiul şi Noul Testament, infailibil în scrierile originale şi credem că acesta reprezintă autoritatea supremă şi finală pentru credinţă şi viaţă.
+
+2. Sfânta Treime
+Credem într-un singur Dumnezeu, manifestat în trei Persoane: Dumnezeu Tatăl, Dumnezeu Fiul şi Dumnezeu Duhul Sfânt.
+
+3. Dumnezeu Tatăl
+Îl recunoaștem că Dumnezeul viu și adevărat creator, susţinător, început şi sfârşit al tuturor lucrurilor, El este vrednic de toata cinstea, lauda și închinarea.
+
+4. Dumnezeu Fiul
+Îl recunoaștem pe Isus Hristos ca pe Mesia, Cuvântul care sa facut trup și a locuit printre noi plin de har și adevăr, a fost zămislit de Duhul Sfânt şi întrupat prin fecioara Maria. El a murit pe cruce, jertfindu-Se pentru păcatele oamenilor. După ce Dumnezeu L-a înviat din morţi, El S-a ridicat la cer şi acum stă la dreapta Tatălui, fiind Preotul și Mijlocitorul nostru.
+
+5. Dumnezeu Duhul Sfînt
+Misiunea Duhului Sfânt este să-L proslăvească pe Isus Hristos pe pământ şi să-i convingă pe oameni de păcatele lor, să-i nască din nou pe cei care se pocăiesc, să fie prezent în cei credincioşi pentru a-i îndruma, învăţa, proteja și călăuzi în tot adevărul, și să le dea putere pentru a fi martori a lui Isus Hristos.
+
+6. Familia
+Credem că familia este instituția înfințată de însuși Dumnezeu, este legământul încheiat pe viaţă din dragoste prin căsătorie între un bărbat și o femeie.
+
+7. Natura omenirii
+Credem că omenirea a fost creată neprihănită după chipul şi asemănarea lui Dumnezeu, dar prin păcat a căzut din această poziţie. Prin urmare, toţi oamenii sunt morţi din punct de vedere spiritual şi au nevoie de mântuirea lui Dumnezeu prin pocăinţă.
+
+8. Pocăinţa, Naşterea din nou și Sfinţirea
+Pocăinţa este actul întoarcerii la Dumnezeu şi părăsirii păcatului. Naşterea din nou este schimbarea supranaturală făcută de Dumnezeu ca rezultat al pocăinţei omului. Sfinţirea este starea de a fi liber de păcat, viaţa trăită după principiile Bibliei, sub călăuzirea Duhului Sfânt.
+
+9. Mântuirea
+Credem că moartea lui Hristos pe cruce a adus mântuire tuturor oamenilor care se căiesc de păcatele lor şi care îşi întorc faţa către Dumnezeu prin credinţa în Isus Hristos, Mântuitorul şi Domnul lor.
+
+10. Biserica
+Adevărata Biserică este formată din cei care prin credinţa în sângele mântuitor al lui Isus Hristos au fost născuţi din nou prin Cuvântul şi Duhul lui Dumnezeu şi sunt uniţi în trupul lui Isus Hristos, al cărui Cap este El. 
+
+11. Calitatea de membru al Bisericii
+Poate fi membru al bisericii orice credincios care dovedeşte că este născut din nou, care se subordonează suveranităţii Bibliei, care ascultă şi respectă conducerea bisericii, trăind viaţa spirituală în ascultare şi sfintire.
+
+12. Viaţa spirituală
+Credem în prezenţa spirituală a lui Hristos care locuieşte în cei credincioşi prin Duhul Sfânt şi care le dă putere să urmeze poruncile lui Dumnezeu, trăind în unitate şi respect, fiind o pildă de dragoste şi neprihănire.
+
+13. Botezul in apă
+Credem că botezul în apă este mărturia unui cuget curat, este actul scufundării în apă oficiat în Numele Tatălui, al Fiului şi al Sfântului Duh, conform poruncii lui Hristos. Cu toate că acest act nu are putere să spele păcatul, el reprezintă moartea, îngroparea şi învierea lui Hristos. Se acordă celor care s-au întors la Dumnezeu şi au fost născuţi din nou prin pocăință.
+
+14. Botezul cu Duhul Sfânt
+Credem în botezul cu Duhul Sfânt, ca experienţă distinctă de naşterea din nou şi de botezul în apă, experienţă prin care credinciosul primeşte putere pentru slujire, sfințire și pentru a fi martor a lui Isus Hristos Domnul.
+
+15. Roada Duhului
+Viaţa plină de Duhul se va manifesta prin dragoste, bucurie, pace, îndelungă răbdare, bunătate, facere de bine, credincioşie, blândeţe, înfrânarea poftelor. 
+
+16. Darurile spirituale
+Credem că au fost și încă sunt acordate Bisericii prin Duhul Sfânt pentru a fi folosite pentru zidirea Trupului lui Isus Hristos. 
+
+17. Cina Domnului
+A fost instituită de Domnul Isus Hristos pentru amintirea morţii Sale. Numai creştinii născuţi din nou, curăţiţi de păcat şi botezaţi în apă se pot împărtăşi cu Cina Domnului. 
+
+18.Lucrarea de slujire
+Credem în preoţia tuturor credincioşilor dar şi în chemarea specială a unor credincioşi de a sluji ca lucrători învestiţi în slujba lui Dumnezeu.
+
+19. Marea trimitere
+Credem că mandatul suprem al Bisericii este acela de a duce Evanghelia până la marginile pământului, de-a face ucenici din toate neamurile și de-ai învăța să păzească toate poruncile Domnului Isus Hristos.
+
+20. Viitorul Bisericii
+Credem în a doua venire a Domnului Isus Hristos pentru a-şi răpi Biserica, în învierea morţilor, în judecata de apoi şi în răsplătirile divine; în destinul veşnic al omului care va fi: în împărăția veșnică a lui Dumnezeu pentru cei credincioși Lui, și în iadul veșnic pentru cei ce nu L-au primit și recunoscut pe Isus Hristos ca Domn și Mîntuitor personal. Amin
+
+21.Rugăciune
+Doamne Dumnezeule, Tu care locuieşti în lumină şi care eşti Tatăl nostru Cel ceresc, Creatorul cerului şi al pământului şi care deţii toată puterea, slava şi cinstea: Te rugăm ajută-ne și dăne putere să onorăm, să cinstim și să ne luptăm pentru această Credință pe care Tu ne-ai dăruito, te mai rugăm dăne tăria și înțelepciunea să o putem transmitem copiilor noștri și generației de după noi, te rugăm în numele scumpului Tău Fiu și al nostru Mântuitor, Domn şi Mijolcitor ISUS HRISTOS, a Ta să fie toată gloria, mărirea şi închinarea în vecii vecilor căci doar Tu eşt vrednic să le primeşti fiindcă doar Tu eşti singurul Dumnezeu viu şi adevăra din univers! Amin.
+
+### Radio Philadelphia Mansuè
+- Ascultă live: https://www.radiocrestin.ro/radio-philadelphia
+- Website oficial: http://www.philadelphiamansue.it/radio-philadelphia/
+- Descriere: La început era Cuvântul, şi Cuvântul era cu Dumnezeu, şi Cuvântul era Dumnezeu. Ioan 1:1
+Şi să-L cunosc pe El şi puterea învierii Lui şi părtăşia suferinţelor Lui, şi să mă fac asemenea cu moartea Lui; ca să ajung cu orice chip, dacă voi putea, la învierea din morţi. Filipeni 3:10-11
+
+### Radio Philadelphia Melbourne
+- Ascultă live: https://www.radiocrestin.ro/radio-philadelphia-melbourne
+- Website oficial: https://www.philadelphiachurch.com.au/radio-philadelphia
+- Descriere: Biserica Crestina Penticostala Romana Philadelphia a fost infiintata in anul 1990 de catre un grup de romani. Scopul bisericii Philadelphia a fost si este de a sluji nevoilor existente in comunitatea Romana din statul Victoria precum si de a proclama Evanghelia Imparatiei lui Dumnezeu astfel incat un numar cat mai mare de romani si alte etnii, sa-l cunoasca si sa-l primesca pe Domnul Isus Cristos ca Domn si Mantuitor.
+
+### Radio Predic
+- Ascultă live: https://www.radiocrestin.ro/radio-predic
+- Website oficial: https://www.predic.ro/livepredicradio.php
+- Descriere: Prin mesajele puse la dispozitia vizitatorilor acestui site, dorim sa venim in sprijinul nevoilor spirituale ale crestinilor, a celor care-L cauta pe Dumnezeu si sa ajutam la raspandirea adevarului biblic si a dragostei lui Hristos. Totodata dorim sa fim glasul care striga in pustiul acestei lumi, glas al pacii, si al impacarii cu Hristos prin credinta in jertfa Lui ...
+
+“Veniţi la Mine voi cei trudiţi şi împovăraţi
+si Eu vă voi da odihna ...”
+Matei:11.28
+
+### Radio SOS
+- Ascultă live: https://www.radiocrestin.ro/sos-ploiesti
+- Website oficial: https://radiosos.info
+- Descriere: După 42 de ani de socialism si aspiratii spre comunism, România primește șansa unor noi începuturi ca o consecință a evenimentelor din decembrie 1989.
+Apăreau noi forme de manifestare a libertății, figuri politice de o altă factură, partide, moduri de proprietate, oportunități diverse.
+Bisericile căutau noi lideri, unii dintre cei vechi fiind murdăriți sau virusați de sistemele orânduirii ostile slujirii Domnului.
+Fără nicio discuție era nevoie de noi modalități de relaționare între biserică și societate, de mesaje care să hrănească foamea de Dumnezeu reprimată de opresorii ideologiei comuniste.
+Fundația Help Ministries România a apărut ca un instrument util în Evanghelizarea Celor Pierduți (Help Evangelize Lost People) utilizând mijloace media, organizând evanghelizări, cursuri de ucenicizare, training în conducere, cursuri mass-media și ajutând acolo unde era nevoie inclusiv material.
+Richard Ellison din S.U.A. și Mihail Măndoiu din România au înfințat Fundația Help Ministries România, după ce în anul 1991 s-au întâlnit la București. Organizația non-profit a fost înregistrată legal în anul 1992 conform sentinței civile a Judecătoriei Ploiești nr.9/26 din Februarie 1992. A fost punctul de plecare pentru acțiuni concrete.
+În anul 1993, se înființează societatea H&H Media s.r.l. care în același an primește licența pentru Radio S.O.S. din Ploiești.
+La 1 octombrie 1995, Radio S.O.S. începe oficial emisia pe 101,7 FM. Beneficiază de studiouri proiectate special de Arh. Dumitru Bunescu, de echipament profesional adus de partenerii noștri din S.U.A., de emițător Crown donat tot de peste ocean. Turnul de emisie este unic pentru un post de radio în urbea noastră si reprezintă o carte de vizită a seriozității cu care privim acest proiect.
+Au fost ajutate victimele războiului din Kosovo, cei afectați de inundații din România și Republica Moldova, copiii din orfelinate, cei cu nevoi speciale, spitale, persoane fizice, misionari.
+
+### Radio Vestea Buna
+- Ascultă live: https://www.radiocrestin.ro/radio-vestea-buna
+- Website oficial: https://radiovesteabuna.ro/
+- Descriere: Radio Vestea Bună este primul post de radio creștin online pentru copii și părinți.
+
+Noi promovăm Vestea Bună, adică pe Isus .
+
+Ea vă pune la dispoziție streamingul radioului 24h/24h.
+
+În timp real veți putea vedea melodia care rulează pe Radio Vestea Bună și o listă cu ultimele 9 melodii și ora la care ele fost pe post. Puteți marca fără efort titlul melodiilor preferate, și revizualiza oricând lista lor.
+
+În aplicație veți găsi informații despre emisiunile noastre și programul lor.
+
+Tot în aplicație găsiți informatii despre ultimele noutăți, curiozități, articole care se desfășoară în cadrul radioului.
+
+Cel mai atractiv lucru este sitemul de notificări prin care vă vom informa despre emisiunile LIVE, concursuri și tot ce se întâmplă în universul nostru.
+
+Ascultă zilnic, și fi înconjurat de vești bune.
+
+### Radio Vocea Credintei
+- Ascultă live: https://www.radiocrestin.ro/radio-vocea-credintei
+- Website oficial: https://voceacredintei.ro/
+- Descriere: Un radio despre suflet, inima si minte. Resurse utile pentru cei ce vor sa traiasca frumos si linist
+
+### Radio Vocea Creștinilor
+- Ascultă live: https://www.radiocrestin.ro/radio-vocea-crestinilor
+- Website oficial: https://radio.voceacrestinilor.com/
+- Descriere: Vocea Creștinilor este o Asociație Creștină care are ca scop producerea, editarea, promovarea și distribuirea de materiale scrise, (literatură) audio și video de promovare a valorilor și principiilor creștine.
+
+### Radio Vocea Sperantei
+- Ascultă live: https://www.radiocrestin.ro/radio-vocea-sperantei
+- Website oficial: https://rvs.ro/
+- Descriere: Radio Vocea Sperantei este radio-ul oficial al Bisericii Adventiste de Ziua a Saptea din Romania.
+
+Radio Vocea Sperantei face parte din reteaua mondiala Adventist World Radio, infiintata in anul 1971, care transmite programe in intreaga lume, in peste 100 de limbi, insumand mii de ore de emisie zilnic.
+
+În Romania, Radio Vocea Speranței emite începând cu anul 1993. În prezent, există o retea de 46 de stații locale, dintre care 41 cu emisie de 24 de ore pe zi și 5 stații locale cu program de două până la 18 ore pe zi. Radio Vocea Speranței poate fi recepționat și prin satelit și  internet.
+ 
+
+Programele transmise din studiourile Radio Vocea Sperantei transmit mesajul Bibliei tuturor celor care doresc sa il cunoasca si au o tematica sociala, medicala, educativa, culturala si religioasa.
+
+Intr-o lume indiferenta, confuza si cu valori rasturnate, Vocea Sperantei este un altfel de radio, avand un altfel de mesaj. Prin subiectele de actualitate, prin tonul cald si optimist al realizatorilor si prin interesul pentru problemele ascultatorilor, radio Vocea Sperantei este alaturi de toti cei care au nevoie de un prieten, de putere si de speranta.
+
+### Radio de Cuvant
+- Ascultă live: https://www.radiocrestin.ro/radio-de-cuvant
+- Website oficial: https://radiodecuvant.ro/
+- Descriere: Radio de Cuvânt emite online din februarie 2008. Cuvântul este al Scripturii. Iar radioul e al dumneavoastră.

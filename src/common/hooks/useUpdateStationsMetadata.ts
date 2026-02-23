@@ -1,8 +1,8 @@
 import { useCallback, useContext, useEffect, useRef } from "react";
+import { useRouter } from "next/router";
 import { getStations, getStationsMetadata, IStationMetadata } from "@/services/getStations";
 import { IStation } from "@/models/Station";
 import { Context } from "@/context/ContextProvider";
-import { useRouter } from "next/router";
 import { Bugsnag } from "@/utils/bugsnag";
 
 const FULL_REFRESH_INTERVAL = 5 * 60 * 1000; // 5 minutes
@@ -33,6 +33,18 @@ const applyMetadataToStations = (stations: IStation[], metadata: IStationMetadat
     if (!meta) return station;
     return deepMerge(station, meta);
   });
+};
+
+const updateSelectedStation = (
+  stations: IStation[],
+  slug: string | undefined,
+  setCtx: (ctx: any) => void,
+) => {
+  if (!slug) return;
+  const updatedStation = stations.find((s: IStation) => s.slug === slug);
+  if (updatedStation) {
+    setCtx({ selectedStation: updatedStation });
+  }
 };
 
 export const useRefreshStations = () => {
