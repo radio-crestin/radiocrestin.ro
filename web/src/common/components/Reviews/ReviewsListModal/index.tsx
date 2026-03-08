@@ -86,9 +86,22 @@ const ReviewsListModal: React.FC<ReviewsListModalProps> = ({
 
         <div className={styles.reviews_list}>
           {isLoading ? (
-            <div className={styles.loading}>
-              <div className={styles.loading_spinner}></div>
-              <p>Se incarca recenziile...</p>
+            <div className={styles.skeleton_list}>
+              {Array.from({ length: 11 }).map((_, i) => (
+                <div key={i} className={styles.skeleton_review}>
+                  <div className={styles.skeleton_review_header}>
+                    <div className={styles.skeleton_stars}>
+                      {[1, 2, 3, 4, 5].map((s) => (
+                        <div key={s} className={styles.skeleton_star} />
+                      ))}
+                    </div>
+                    <div className={styles.skeleton_date} />
+                  </div>
+                  <div className={styles.skeleton_message}>
+                    <div className={styles.skeleton_text_line} style={{ width: `${60 + (i % 3) * 15}%` }} />
+                  </div>
+                </div>
+              ))}
             </div>
           ) : reviews.length === 0 ? (
             <p className={styles.no_reviews}>Nu exista recenzii inca. Fii primul care lasa o recenzie!</p>

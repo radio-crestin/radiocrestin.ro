@@ -15,7 +15,6 @@
   justify-content: center;
   z-index: 1000;
   padding: 20px;
-  animation: modalFadeIn 0.2s ease-out;
 }
 
 .modal_content {
@@ -24,12 +23,10 @@
   padding: 32px;
   max-width: 550px;
   width: 100%;
-  min-height: 450px;
-  max-height: 85vh;
+  height: 85vh;
   overflow-y: auto;
   position: relative;
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
-  animation: modalSlideDown 0.25s ease-out;
   display: flex;
   flex-direction: column;
 
@@ -37,8 +34,7 @@
     padding: 24px 20px;
     max-width: 100%;
     border-radius: 12px;
-    max-height: 90vh;
-    min-height: 400px;
+    height: 90vh;
   }
 }
 
@@ -224,4 +220,100 @@
   to {
     transform: rotate(360deg);
   }
+}
+
+// --- Skeleton loading ---
+.skeleton_list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+}
+
+.skeleton_review {
+  padding: 16px;
+  border-radius: 10px;
+  border: 1px solid rgba(128, 128, 128, 0.12);
+}
+
+.skeleton_review_header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.skeleton_stars {
+  display: flex;
+  gap: 2px;
+}
+
+.skeleton_star {
+  width: 16px;
+  height: 16px;
+  background: rgba(128, 128, 128, 0.08);
+  overflow: hidden;
+  position: relative;
+  clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, transparent, rgba(128, 128, 128, 0.15), transparent);
+    animation: shimmer-wave 1.5s ease-in-out infinite;
+  }
+}
+
+.skeleton_date {
+  width: 80px;
+  height: 12px;
+  border-radius: 4px;
+  background: rgba(128, 128, 128, 0.06);
+  overflow: hidden;
+  position: relative;
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, transparent, rgba(128, 128, 128, 0.08), transparent);
+    animation: shimmer-wave 1.5s ease-in-out infinite;
+  }
+}
+
+.skeleton_message {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.skeleton_text_line {
+  height: 14px;
+  border-radius: 6px;
+  background: rgba(128, 128, 128, 0.07);
+  overflow: hidden;
+  position: relative;
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, transparent, rgba(128, 128, 128, 0.1), transparent);
+    animation: shimmer-wave 1.5s ease-in-out infinite;
+  }
+}
+
+@keyframes shimmer-wave {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
 }
