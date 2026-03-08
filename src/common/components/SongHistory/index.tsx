@@ -537,9 +537,29 @@ const SongHistory: React.FC<SongHistoryProps> = ({
 
           <div className={styles.history_list} ref={listRef}>
             {isLoading ? (
-              <div className={styles.loading}>
-                <div className={styles.loading_spinner} />
-                <p>Se incarca istoricul...</p>
+              <div className={styles.skeleton_list}>
+                <div className={styles.date_group}>
+                  <div className={styles.date_header}>
+                    <span className={styles.skeleton_date_pill} />
+                  </div>
+                  {[6, 5, 5].map((count, gi) => (
+                    <div key={gi} className={styles.hour_group}>
+                      <div className={styles.hour_header}>
+                        <span className={styles.skeleton_hour_pill} />
+                      </div>
+                      {Array.from({ length: count }).map((_, i) => (
+                        <div key={i} className={styles.skeleton_item}>
+                          <div className={styles.skeleton_thumbnail} />
+                          <div className={styles.skeleton_info}>
+                            <div className={styles.skeleton_line} style={{ width: `${55 + ((i + gi) % 3) * 15}%` }} />
+                            <div className={styles.skeleton_line_short} style={{ width: `${35 + ((i + gi) % 4) * 10}%` }} />
+                            <div className={styles.skeleton_line_short} style={{ width: '30px' }} />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ))}
+                </div>
               </div>
             ) : grouped.length === 0 ? (
               <div className={styles.empty_state}>
