@@ -2,12 +2,13 @@
 @use "public/styles/globalVariables";
 
 .container {
-  max-width: 1440px;
-  padding: 95px 70px;
+  max-width: 1350px;
+  padding: 95px 35px;
   background: var(--bg-header-container);
   height: 462px;
   border-radius: 50px;
   margin: 15px auto 0;
+  position: relative;
 
   @include mixinHelper.onTablet {
     padding: 35px 20px;
@@ -21,11 +22,14 @@
   display: flex;
   justify-content: space-between;
   gap: 0 30px;
+  max-width: 1230px;
+  margin: 0 auto;
 
   @include mixinHelper.onTablet {
-    margin-left: 0;
+    margin: 0;
     align-items: center;
     gap: 10px;
+    max-width: 100%;
   }
 
 
@@ -34,11 +38,6 @@
     justify-content: center;
     align-items: center;
     gap: 15px;
-    margin-left: 100px;
-
-    @include mixinHelper.onDesktop {
-      margin-left: 20px;
-    }
 
     @include mixinHelper.onTablet {
       margin-left: 0;
@@ -214,10 +213,14 @@
   display: flex;
   flex-direction: row;
   margin-top: 86px;
-  gap: 30px;
+  gap: 90px;
+  max-width: 1230px;
+  margin-left: auto;
+  margin-right: auto;
 
   @include mixinHelper.onTablet {
     margin-top: 50px;
+    max-width: 100%;
   }
 }
 
@@ -225,7 +228,6 @@
   display: flex;
   flex-direction: column;
   height: fit-content;
-  margin: 0 100px;
 
   @include mixinHelper.onDesktop {
     margin: 0 20px
@@ -300,6 +302,22 @@
   }
 }
 
+
+.share_on_social {
+  position: absolute;
+  bottom: 60px;
+  right: max(35px, calc(50% - 615px));
+  width: fit-content;
+
+  @include mixinHelper.onTablet {
+    position: static;
+    transform: none;
+    width: auto;
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 10px;
+  }
+}
 
 .right_content {
   max-width: 850px;
@@ -385,4 +403,5 @@
       }
     }
   }
+
 }

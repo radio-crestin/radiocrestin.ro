@@ -3,54 +3,42 @@
 
 .buttonContainer {
   display: flex;
+  align-items: center;
   gap: 6px;
-  bottom: 0;
-  @include mixinHelper.onTablet {
-    width: 100%;
-    justify-content: space-between;
-    gap: 12px;
-  }
+}
+
+.label {
+  font-size: 0.8rem;
+  color: var(--header-subtext-color);
+  margin-right: 2px;
 }
 
 .button {
   display: flex;
   align-items: center;
   justify-content: center;
-  text-align: center;
-  background-color: #007bff;
-  color: #ffffff;
   border: none;
-  border-radius: 5px;
+  border-radius: 50%;
   cursor: pointer;
-  padding: 12px 25px;
-  font-size: 0.8rem;
+  padding: 8px;
+  transition: opacity 0.2s;
+  opacity: 0.6;
 
-  @include mixinHelper.onTablet {
-    padding: 10px 5px;
-    width: 50%;
-    font-size: 0.75rem;
+  &:hover {
+    opacity: 1;
   }
 }
 
 .facebookButton {
   background-color: #2d4373;
-  border-radius: 10px;
 }
 
 .whatsappButton {
   background-color: #1da851;
-  border-radius: 10px;
 }
 
 .socialIcon {
   width: 16px;
   height: 16px;
-}
-
-.facebookSocialIcon {
-  margin-right: 3px;
-}
-
-.whatsappSocialIcon {
-  margin-right: 5px;
+  display: block;
 }

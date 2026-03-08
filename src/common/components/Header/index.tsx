@@ -262,9 +262,6 @@ const ContentRight = () => {
           {ctx.selectedStation?.description}
         </p>
 
-        <div className={styles.share_on_social}>
-          <ShareOnSocial />
-        </div>
       </div>
     </div>
   );
@@ -278,6 +275,9 @@ const Header = () => {
         <div className={styles.content_section}>
           <ContentLeft />
           <ContentRight />
+        </div>
+        <div className={styles.share_on_social}>
+          <ShareOnSocial />
         </div>
       </header>
     </>
