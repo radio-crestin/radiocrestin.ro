@@ -2,8 +2,8 @@
 @use "public/styles/globalVariables";
 
 .container {
-  max-width: 1440px;
-  padding: 95px 70px;
+  max-width: 1350px;
+  padding: 95px 35px;
   background: var(--bg-header-container);
   height: 462px;
   border-radius: 50px;
@@ -37,11 +37,14 @@
   gap: 0 30px;
   position: relative;
   z-index: 1;
+  max-width: 1230px;
+  margin: 0 auto;
 
   @include mixinHelper.onTablet {
-    margin-left: 0;
+    margin: 0;
     align-items: center;
     gap: 10px;
+    max-width: 100%;
   }
 
   .internal_links {
@@ -49,11 +52,6 @@
     justify-content: center;
     align-items: center;
     gap: 15px;
-    margin-left: 100px;
-
-    @include mixinHelper.onDesktop {
-      margin-left: 20px;
-    }
 
     @include mixinHelper.onTablet {
       margin-left: 0;
@@ -98,16 +96,18 @@
   height: 350px;
   position: relative;
   z-index: 1;
+  max-width: 1230px;
+  margin-left: auto;
+  margin-right: auto;
 
   @include mixinHelper.onTablet {
     margin-top: 50px;
+    max-width: 100%;
   }
 }
 
 .station {
   .station_details {
-    margin-left: 100px;
-
     @include mixinHelper.onTablet {
       margin-left: 20px;
     }
