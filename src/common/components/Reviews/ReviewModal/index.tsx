@@ -6,7 +6,7 @@ import Star from "@/icons/Star";
 import { submitReview } from "@/services/submitReview";
 import { toast } from "react-toastify";
 import { useRefreshStations } from "@/hooks/useUpdateStationsMetadata";
-import { trackReviewSubmitted } from "@/utils/posthog";
+import { getUserId, trackReviewSubmitted } from "@/utils/posthog";
 
 
 interface ReviewModalProps {
@@ -16,16 +16,6 @@ interface ReviewModalProps {
   stationTitle: string;
   stationSlug?: string;
 }
-
-const getUserIdentifier = (): string => {
-  const storageKey = "radio_crestin_user_id";
-  let userId = localStorage.getItem(storageKey);
-  if (!userId) {
-    userId = `user_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-    localStorage.setItem(storageKey, userId);
-  }
-  return userId;
-};
 
 const ReviewModal: React.FC<ReviewModalProps> = ({
   isOpen,
@@ -75,7 +65,7 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
       station_id: stationId,
       stars,
       message: msg,
-      user_identifier: getUserIdentifier(),
+      user_identifier: getUserId(),
     });
 
     if (result.success && result.data && result.data.__typename === "SubmitReviewResponse") {
