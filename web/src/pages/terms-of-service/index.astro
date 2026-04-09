@@ -1,0 +1,63 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { SITE_URL } from "@/constants/constants";
+
+const seo = {
+  title: "Terms and Conditions | Radio Creștin",
+  description: "Termenii și condițiile Radio Creștin",
+  keywords: "terms, conditions, radio crestin, termeni",
+  imageUrl: `${SITE_URL}/images/android-chrome-512x512.png`,
+  fullURL: `${SITE_URL}/terms-of-service`,
+};
+---
+
+<BaseLayout {...seo}>
+  <div class="legal-container">
+    <h1>Terms and Conditions</h1>
+    <p>These terms and conditions outline the rules and regulations for the use of Cauta versete in Biblie's Website, located at https://www.radiocrestin.ro.</p>
+    <p>By accessing this website we assume you accept these terms and conditions. Do not continue to use https://www.radiocrestin.ro if you do not agree to take all of the terms and conditions stated on this page.</p>
+    <h3>Cookies</h3>
+    <p>We employ the use of cookies. By accessing https://www.radiocrestin.ro, you agreed to use cookies in agreement with the Cauta versete in Biblie's Privacy Policy.</p>
+    <h3>License</h3>
+    <p>Unless otherwise stated, Cauta versete in Biblie and/or its licensors own the intellectual property rights for all material on https://www.radiocrestin.ro. All intellectual property rights are reserved.</p>
+    <p>You must not:</p>
+    <ul>
+      <li>Republish material from https://www.radiocrestin.ro</li>
+      <li>Sell, rent or sub-license material from https://www.radiocrestin.ro</li>
+      <li>Reproduce, duplicate or copy material from https://www.radiocrestin.ro</li>
+      <li>Redistribute content from https://www.radiocrestin.ro</li>
+    </ul>
+    <h3>Disclaimer</h3>
+    <p>To the maximum extent permitted by applicable law, we exclude all representations, warranties and conditions relating to our website and the use of this website.</p>
+    <p>As long as the website and the information and services on the website are provided free of charge, we will not be liable for any loss or damage of any nature.</p>
+  </div>
+</BaseLayout>
+
+<style is:global>
+  .legal-container {
+    max-width: 800px;
+    margin: 5vh auto;
+    padding: 40px;
+    background: var(--bg-header-container);
+    color: var(--text-color);
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    line-height: 1.6;
+  }
+  .legal-container * { color: var(--text-color); }
+  .legal-container h1 { font-size: 2.5rem; margin-bottom: 1.5rem; }
+  .legal-container h2 { font-size: 1.8rem; margin: 2rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid var(--link-color); }
+  .legal-container h3 { font-size: 1.4rem; margin: 1.5rem 0 0.8rem; }
+  .legal-container h4 { font-size: 1.2rem; margin: 1.2rem 0 0.6rem; }
+  .legal-container p { margin: 1rem 0; font-size: 1rem; }
+  .legal-container ul { margin: 1rem 0; padding-left: 1.5rem; }
+  .legal-container ul li { margin: 0.5rem 0; list-style-type: disc; }
+  .legal-container a { color: var(--link-color); text-decoration: underline; }
+  .legal-container a:hover { opacity: 0.8; }
+  @media (max-width: 768px) {
+    .legal-container { padding: 20px; margin: 2vh auto; }
+    .legal-container h1 { font-size: 2rem; }
+    .legal-container h2 { font-size: 1.6rem; }
+    .legal-container h3 { font-size: 1.3rem; }
+  }
+</style>

@@ -1,9 +1,5 @@
-import { useState } from "react";
-import Link from "next/link";
-import Head from "next/head";
-
-import styles from "./styles.module.scss";
-import { SEO_CHURCH_HUB } from "@/utils/seo";
+import React, { useState } from "react";
+import styles from "../../pages/church-hub/styles.module.scss";
 
 const features = [
   {
@@ -88,29 +84,11 @@ const features = [
   },
 ];
 
-export default function ChurchHubPage() {
+export default function ChurchHubApp() {
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
 
   return (
     <>
-      <Head>
-        <title>{SEO_CHURCH_HUB.title}</title>
-        <meta name="description" content={SEO_CHURCH_HUB.description} />
-        <meta name="keywords" content={SEO_CHURCH_HUB.keywords} />
-        <meta name="robots" content="index, follow" />
-        <link rel="canonical" href={SEO_CHURCH_HUB.fullURL} />
-        <meta property="og:title" content={SEO_CHURCH_HUB.title} />
-        <meta property="og:description" content={SEO_CHURCH_HUB.description} />
-        <meta property="og:url" content={SEO_CHURCH_HUB.fullURL} />
-        <meta property="og:image" content={SEO_CHURCH_HUB.imageUrl} />
-        <meta property="og:type" content="website" />
-        <meta property="og:locale" content="ro_RO" />
-        <meta property="og:site_name" content="Radio Creștin" />
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content={SEO_CHURCH_HUB.title} />
-        <meta name="twitter:description" content={SEO_CHURCH_HUB.description} />
-        <meta name="twitter:image" content={SEO_CHURCH_HUB.imageUrl} />
-      </Head>
       <main className={styles.page}>
         <section className={styles.hero}>
           <h1>Church Hub</h1>
@@ -187,11 +165,11 @@ export default function ChurchHubPage() {
 
         <footer className={styles.footer}>
           <div className={styles.footer_links}>
-            <Link href="/">Radio Crestin</Link>
+            <a href="/">Radio Crestin</a>
             <span className={styles.separator}>|</span>
-            <Link href="/privacy-policy">Politica de Confidentialitate</Link>
+            <a href="/privacy-policy">Politica de Confidentialitate</a>
             <span className={styles.separator}>|</span>
-            <Link href="/terms-of-service">Termeni si Conditii</Link>
+            <a href="/terms-of-service">Termeni si Conditii</a>
           </div>
         </footer>
       </main>

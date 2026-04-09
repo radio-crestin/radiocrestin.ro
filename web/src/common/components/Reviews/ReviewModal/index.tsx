@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/router";
 import { flushSync } from "react-dom";
 import styles from "./styles.module.scss";
 import Star from "@/icons/Star";
@@ -24,7 +23,6 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
   stationTitle,
   stationSlug,
 }) => {
-  const router = useRouter();
   const { refreshStations } = useRefreshStations();
   const [selectedStars, setSelectedStars] = useState(0);
   const [hoveredStars, setHoveredStars] = useState(0);
@@ -100,7 +98,7 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
   };
 
   const handleShareLink = async () => {
-    const slug = stationSlug || router.query.station_slug;
+    const slug = stationSlug || window.location.pathname.split("/")[1];
     const reviewUrl = `${window.location.origin}/${slug}/adauga-recenzie`;
 
     try {
