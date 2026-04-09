@@ -13,7 +13,7 @@ import { PLAYBACK_STATE } from "@/models/enum";
 import { toast } from "react-toastify";
 import Heart from "@/icons/Heart";
 import useFavourite from "@/store/useFavourite";
-import { Bugsnag } from "@/utils/bugsnag";
+import { captureException, trackListeningStart, trackListeningStop, trackStationOpened } from "@/utils/posthog";
 import { IStationStreams } from "@/models/Station";
 import OfflineStatus from "@/components/OfflineStatus";
 import Star from "@/icons/Star";
@@ -48,6 +48,7 @@ export default function RadioPlayer() {
   const isDestroyingRef = useRef(false);
   const [loadKey, setLoadKey] = useState(0);
   const prevLoadKeyRef = useRef(0);
+  const listeningStartRef = useRef<{ time: number; slug: string; title: string } | null>(null);
 
   const clearHlsTimeout = () => {
     if (hlsTimeoutRef.current) {
@@ -98,7 +99,7 @@ export default function RadioPlayer() {
       setPlaybackState(PLAYBACK_STATE.STOPPED);
       return;
     }
-    Bugsnag.notify(
+    captureException(
       new Error(
         `${context} - station: ${station.title}, error: ${JSON.stringify(error, null, 2)}`,
       ),
@@ -108,6 +109,15 @@ export default function RadioPlayer() {
 
   // Determine best stream type + reset retries on station change
   useEffect(() => {
+    trackStationOpened(station.slug, station.title);
+
+    // End previous listening session if station changed while playing
+    if (listeningStartRef.current && listeningStartRef.current.slug !== station.slug) {
+      const durationSeconds = (Date.now() - listeningStartRef.current.time) / 1000;
+      trackListeningStop(listeningStartRef.current.slug, listeningStartRef.current.title, durationSeconds);
+      listeningStartRef.current = null;
+    }
+
     const audio = document.getElementById("audioPlayer") as HTMLAudioElement;
     if (audio) audio.volume = playerVolume / 100;
 
@@ -272,7 +282,7 @@ export default function RadioPlayer() {
         if (data.details === Hls.ErrorDetails.FRAG_PARSING_ERROR) {
           console.warn(`[HLS] Corrupt segment, switching stream:`, data.details);
           isRecovering = false;
-          Bugsnag.notify(new Error(errorInfo));
+          captureException(new Error(errorInfo));
           retryMechanismRef.current();
           return;
         }
@@ -295,7 +305,7 @@ export default function RadioPlayer() {
           || data.details === Hls.ErrorDetails.MANIFEST_LOAD_ERROR) {
           console.warn(`[HLS] Permanent network error (HTTP ${httpStatus}, ${data.details}), switching stream`);
           isRecovering = false;
-          Bugsnag.notify(new Error(errorInfo));
+          captureException(new Error(errorInfo));
           retryMechanismRef.current();
           return;
         }
@@ -312,7 +322,7 @@ export default function RadioPlayer() {
 
       // Recovery exhausted or unknown error — fall back to stream cycling
       isRecovering = false;
-      Bugsnag.notify(new Error(errorInfo));
+      captureException(new Error(errorInfo));
       retryMechanismRef.current();
     });
 
@@ -332,10 +342,17 @@ export default function RadioPlayer() {
     switch (playbackState) {
       case PLAYBACK_STATE.STARTED:
         incrementPlayCount(station.slug);
+        trackListeningStart(station.slug, station.title);
+        listeningStartRef.current = { time: Date.now(), slug: station.slug, title: station.title };
         // Trigger stream loader effect to re-run and create a fresh HLS instance
         setLoadKey(k => k + 1);
         break;
       case PLAYBACK_STATE.STOPPED:
+        if (listeningStartRef.current) {
+          const durationSeconds = (Date.now() - listeningStartRef.current.time) / 1000;
+          trackListeningStop(listeningStartRef.current.slug, listeningStartRef.current.title, durationSeconds);
+          listeningStartRef.current = null;
+        }
         audio.pause();
         destroyCurrentStream();
         break;
@@ -412,7 +429,7 @@ export default function RadioPlayer() {
       }
     } else {
       setPlaybackState(PLAYBACK_STATE.STOPPED);
-      Bugsnag.notify(
+      captureException(
         new Error(
           `Hasn't been able to connect to the station - ${station.title}. Tried 20 times :P.`,
         ),
@@ -658,7 +675,7 @@ export default function RadioPlayer() {
           onError={(error) => {
             if (isDestroyingRef.current) return;
             setHasError(true);
-            Bugsnag.notify(
+            captureException(
               new Error(
                 `Audio error:414 - station.title: ${station.title}, error: ${error}`,
               ),

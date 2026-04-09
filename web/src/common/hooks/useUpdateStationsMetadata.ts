@@ -3,7 +3,7 @@ import { useRouter } from "next/router";
 import { getStations, getStationsMetadata, IStationMetadata } from "@/services/getStations";
 import { IStation } from "@/models/Station";
 import { Context } from "@/context/ContextProvider";
-import { Bugsnag } from "@/utils/bugsnag";
+import { captureException } from "@/utils/posthog";
 
 const FULL_REFRESH_INTERVAL = 5 * 60 * 1000; // 5 minutes
 
@@ -66,7 +66,7 @@ export const useRefreshStations = () => {
         }
       }
     } catch (error) {
-      Bugsnag.notify(
+      captureException(
         new Error(`Failed to refresh stations - error: ${JSON.stringify(error, null, 2)}`)
       );
     }
@@ -120,7 +120,7 @@ const useUpdateStationsMetadata = () => {
           }
         }
       } catch (error) {
-        Bugsnag.notify(
+        captureException(
           new Error(`Failed to fetch stations - error: ${JSON.stringify(error, null, 2)}`)
         );
       }
@@ -155,7 +155,7 @@ const useUpdateStationsMetadata = () => {
           }
         }
       } catch (error) {
-        Bugsnag.notify(
+        captureException(
           new Error(`Failed to fetch stations metadata - error: ${JSON.stringify(error, null, 2)}`)
         );
         // On metadata fetch failure, do a full refresh to recover

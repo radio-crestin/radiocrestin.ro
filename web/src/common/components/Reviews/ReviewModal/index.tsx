@@ -6,6 +6,7 @@ import Star from "@/icons/Star";
 import { submitReview } from "@/services/submitReview";
 import { toast } from "react-toastify";
 import { useRefreshStations } from "@/hooks/useUpdateStationsMetadata";
+import { trackReviewSubmitted } from "@/utils/posthog";
 
 
 interface ReviewModalProps {
@@ -95,6 +96,7 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
 
     const success = await sendReview(selectedStars, message.trim());
     if (success) {
+      trackReviewSubmitted(stationSlug || "", stationTitle, selectedStars);
       toast.success("Multumim pentru recenzia ta!");
       setMessage("");
       setSelectedStars(0);

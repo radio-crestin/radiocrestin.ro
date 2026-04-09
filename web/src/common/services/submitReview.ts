@@ -1,5 +1,5 @@
 import { CONSTANTS } from "@/constants/constants";
-import { Bugsnag } from "@/utils/bugsnag";
+import { captureException } from "@/utils/posthog";
 import { IReview } from "@/models/Station";
 
 interface SubmitReviewInput {
@@ -74,7 +74,7 @@ export const submitReview = async (
       data: submitReviewData,
     };
   } catch (error) {
-    Bugsnag.notify(
+    captureException(
       new Error("Submit review error: " + JSON.stringify(error, null, 2))
     );
 

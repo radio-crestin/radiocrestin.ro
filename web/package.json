@@ -11,12 +11,10 @@
     "lint": "eslint ."
   },
   "dependencies": {
-    "@bugsnag/browser-performance": "^3.0.0",
-    "@bugsnag/js": "^8.2.0",
-    "@bugsnag/plugin-react": "^8.2.0",
     "hls.js": "^1.6.10",
     "next": "^16.1.6",
     "next-themes": "^0.4.6",
+    "posthog-js": "^1.365.5",
     "qrcode.react": "^4.2.0",
     "react": "^19.2.4",
     "react-device-detect": "^2.2.3",
