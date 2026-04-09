@@ -13,6 +13,9 @@ export default defineConfig({
         "@/": new URL("./src/common/", import.meta.url).pathname,
       },
     },
+    optimizeDeps: {
+      include: ["react-dom/client"],
+    },
     css: {
       preprocessorOptions: {
         scss: {

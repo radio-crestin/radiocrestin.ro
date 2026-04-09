@@ -1,7 +1,16 @@
 "use client";
 
 import React, { useContext, useEffect, useRef, useState } from "react";
-import Hls, { type HlsConfig } from "hls.js";
+import type HlsType from "hls.js";
+import type { HlsConfig } from "hls.js";
+
+let HlsModule: typeof import("hls.js") | null = null;
+const getHls = async () => {
+  if (!HlsModule) {
+    HlsModule = await import("hls.js");
+  }
+  return HlsModule.default;
+};
 import useSpaceBarPress from "@/hooks/useSpaceBarPress";
 import { Loading } from "@/icons/Loading";
 import { CONSTANTS } from "@/constants/constants";
@@ -28,6 +37,10 @@ enum STREAM_TYPE {
 
 const MAX_MEDIA_RETRIES = 20;
 
+// No silent audio hack needed — we keep the HLS instance alive on pause
+// (with hls.stopLoad() to stop bandwidth) so the audio element stays
+// connected to MediaSession and retains media key focus.
+
 export default function RadioPlayer() {
   const { ctx, setCtx } = useContext(Context);
   const { playerVolume, setPlayerVolume } = usePlayer();
@@ -40,7 +53,8 @@ export default function RadioPlayer() {
   const { incrementPlayCount } = usePlayCount();
   const { refreshStations } = useRefreshStations();
   const [isFavorite, setIsFavorite] = useState(false);
-  const hlsInstanceRef = useRef<Hls | null>(null);
+  const hlsInstanceRef = useRef<HlsType | null>(null);
+  const isPausedRef = useRef(false); // true = HLS paused with stopLoad(), resumable
   const retryMechanismRef = useRef<() => void>(() => {});
   const hlsTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hlsRecoveryRef = useRef(0);
@@ -134,6 +148,7 @@ export default function RadioPlayer() {
     return () => {
       setStreamState(null);
       retriesRef.current = MAX_MEDIA_RETRIES;
+      isPausedRef.current = false;
     };
   }, [station.slug]);
 
@@ -220,7 +235,8 @@ export default function RadioPlayer() {
   const loadHLS = (
     hls_stream_url: string,
     audio: HTMLAudioElement,
-    hls: Hls,
+    hls: HlsType,
+    Hls: typeof HlsType,
   ): (() => void) => {
     let manifestParsed = false;
     let onCanPlayThrough: (() => void) | null = null;
@@ -335,11 +351,22 @@ export default function RadioPlayer() {
 
     switch (playbackState) {
       case PLAYBACK_STATE.STARTED:
-        incrementPlayCount(station.slug);
-        trackListeningStarted(station.slug, station.title, station.id);
-        listeningStartRef.current = { time: Date.now(), slug: station.slug, title: station.title, id: station.id };
-        // Trigger stream loader effect to re-run and create a fresh HLS instance
-        setLoadKey(k => k + 1);
+        // If HLS is paused (stopLoad), resume it instead of rebuilding
+        if (isPausedRef.current && hlsInstanceRef.current) {
+          isPausedRef.current = false;
+          hlsInstanceRef.current.startLoad(-1);
+          audio.play().catch((error) => handlePlayError(error, "Resume from pause"));
+          incrementPlayCount(station.slug);
+          trackListeningStarted(station.slug, station.title, station.id);
+          listeningStartRef.current = { time: Date.now(), slug: station.slug, title: station.title, id: station.id };
+        } else {
+          isPausedRef.current = false;
+          incrementPlayCount(station.slug);
+          trackListeningStarted(station.slug, station.title, station.id);
+          listeningStartRef.current = { time: Date.now(), slug: station.slug, title: station.title, id: station.id };
+          // Trigger stream loader effect to create a fresh HLS instance
+          setLoadKey(k => k + 1);
+        }
         break;
       case PLAYBACK_STATE.STOPPED:
         if (listeningStartRef.current) {
@@ -347,8 +374,19 @@ export default function RadioPlayer() {
           trackListeningStopped(listeningStartRef.current.slug, listeningStartRef.current.title, durationSeconds, "stop", listeningStartRef.current.id);
           listeningStartRef.current = null;
         }
-        audio.pause();
-        destroyCurrentStream();
+        // If HLS is active, pause without destroying — keeps MediaSession focus
+        if (hlsInstanceRef.current) {
+          isPausedRef.current = true;
+          hlsInstanceRef.current.stopLoad();
+          audio.pause();
+        } else {
+          audio.pause();
+          destroyCurrentStream();
+        }
+        // Tell the OS we're paused so media controls show the play button
+        if ("mediaSession" in navigator) {
+          navigator.mediaSession.playbackState = "paused";
+        }
         break;
     }
   }, [playbackState]);
@@ -399,9 +437,14 @@ export default function RadioPlayer() {
     }
 
     if (streamType === STREAM_TYPE.HLS) {
-      const hls = new Hls(HLS_CONFIG);
-      hlsInstanceRef.current = hls;
-      cleanupRef.current = loadHLS(streamUrl, audio, hls);
+      let cancelled = false;
+      getHls().then((Hls) => {
+        if (cancelled) return;
+        const hls = new Hls(HLS_CONFIG);
+        hlsInstanceRef.current = hls;
+        cleanupRef.current = loadHLS(streamUrl, audio, hls, Hls);
+      });
+      return () => { cancelled = true; destroyCurrentStream(); };
     } else {
       audio.src = streamUrl;
       audio.play().catch((error) => handlePlayError(error, `Stream error [${streamType}]`));
@@ -492,10 +535,12 @@ export default function RadioPlayer() {
       });
 
       navigator.mediaSession.setActionHandler("play", () => {
+
         setPlaybackState(PLAYBACK_STATE.STARTED);
       });
 
       navigator.mediaSession.setActionHandler("pause", () => {
+
         setPlaybackState(PLAYBACK_STATE.STOPPED);
       });
 
@@ -665,24 +710,26 @@ export default function RadioPlayer() {
         </div>
 
         <audio
-          preload="true"
+          preload="none"
           id="audioPlayer"
-          onPlaying={() => {
+          onPlaying={(e) => {
             if (isDestroyingRef.current) return;
             setPlaybackState(PLAYBACK_STATE.PLAYING);
             setHasError(false);
             hlsRecoveryRef.current = 0;
+            if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "playing";
           }}
-          onPlay={() => {
+          onPlay={(e) => {
             if (isDestroyingRef.current) return;
             setPlaybackState(PLAYBACK_STATE.PLAYING);
             setHasError(false);
           }}
-          onPause={() => {
+          onPause={(e) => {
             if (isDestroyingRef.current) return;
+            if (isPausedRef.current) return; // We initiated the pause via stopLoad — don't re-trigger STOPPED
             setPlaybackState(PLAYBACK_STATE.STOPPED);
           }}
-          onWaiting={() => {
+          onWaiting={(e) => {
             if (isDestroyingRef.current) return;
             setPlaybackState(PLAYBACK_STATE.BUFFERING);
           }}
