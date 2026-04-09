@@ -89,6 +89,22 @@ export const trackListeningStopped = (
 /** @deprecated Use trackListeningStopped */
 export const trackListeningStop = trackListeningStopped;
 
+export const trackListeningStoppedBeacon = (
+  stationSlug: string,
+  stationName: string,
+  durationSeconds: number,
+  reason: string = "tab_closed",
+  stationId?: number,
+) => {
+  posthog.capture("listening_stopped", {
+    station_slug: stationSlug,
+    station_name: stationName,
+    duration_seconds: Math.round(durationSeconds),
+    reason,
+    ...(stationId != null && { station_id: stationId }),
+  }, { transport: "sendBeacon" });
+};
+
 
 export const trackReviewSubmitted = (
   stationSlug: string,
