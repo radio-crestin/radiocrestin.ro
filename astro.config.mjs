@@ -4,6 +4,9 @@ import react from "@astrojs/react";
 export default defineConfig({
   output: "static",
   integrations: [react()],
+  image: {
+    domains: ["fsn1.your-objectstorage.com"],
+  },
   vite: {
     resolve: {
       alias: {

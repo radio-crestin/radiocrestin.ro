@@ -1,16 +1,10 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 import RadioApp from "@/components/RadioApp";
-import { getStations } from "@/services/getStations";
-import { cleanStationsMetadata } from "@/utils";
+import { getOptimizedStations } from "@/utils/getOptimizedStations";
 import { SEO_404 } from "@/utils/seo";
-import type { IStation } from "@/models/Station";
 
-const { stations: rawStations } = await getStations();
-rawStations.forEach((station: IStation) => {
-  station.is_favorite = false;
-});
-const stations = cleanStationsMetadata(rawStations);
+const stations = await getOptimizedStations();
 ---
 
 <BaseLayout {...SEO_404}>

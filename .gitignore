@@ -22,7 +22,7 @@
 # cloudflare
 /.wrangler/
 
-# generated sitemap
+# generated at build time
 /public/sitemap.xml
 
 # production
