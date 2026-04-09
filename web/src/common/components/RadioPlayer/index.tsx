@@ -13,7 +13,7 @@ import { PLAYBACK_STATE } from "@/models/enum";
 import { toast } from "react-toastify";
 import Heart from "@/icons/Heart";
 import useFavourite from "@/store/useFavourite";
-import { captureException, trackListeningStarted, trackListeningHeartbeat, trackListeningStopped, trackStationOpened } from "@/utils/posthog";
+import { captureException, trackListeningStarted, trackListeningStopped, trackStationOpened } from "@/utils/posthog";
 import { IStationStreams } from "@/models/Station";
 import OfflineStatus from "@/components/OfflineStatus";
 import Star from "@/icons/Star";
@@ -357,25 +357,6 @@ export default function RadioPlayer() {
         destroyCurrentStream();
         break;
     }
-  }, [playbackState]);
-
-  // Heartbeat: keep PostHog session alive while listening (every 5 min)
-  useEffect(() => {
-    if (playbackState !== PLAYBACK_STATE.PLAYING && playbackState !== PLAYBACK_STATE.BUFFERING) return;
-
-    const intervalId = setInterval(() => {
-      if (listeningStartRef.current) {
-        const durationSeconds = (Date.now() - listeningStartRef.current.time) / 1000;
-        trackListeningHeartbeat(
-          listeningStartRef.current.slug,
-          listeningStartRef.current.title,
-          durationSeconds,
-          listeningStartRef.current.id,
-        );
-      }
-    }, 5 * 60 * 1000);
-
-    return () => clearInterval(intervalId);
   }, [playbackState]);
 
   // Stream loader effect — single owner of HLS lifecycle
