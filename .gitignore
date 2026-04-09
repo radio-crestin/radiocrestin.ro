@@ -24,6 +24,7 @@
 
 # generated at build time
 /public/sitemap.xml
+/public/station-thumbnails/
 
 # production
 /build

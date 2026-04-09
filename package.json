@@ -7,7 +7,8 @@
     "dev": "astro dev --port 3005",
     "generate-sitemap": "node scripts/generate-sitemap.cjs",
     "generate-llms-txt": "node scripts/generate-llms-txt.cjs",
-    "build": "npm run generate-sitemap && npm run generate-llms-txt && astro build",
+    "download-thumbnails": "node scripts/download-thumbnails.cjs",
+    "build": "npm run download-thumbnails && npm run generate-sitemap && npm run generate-llms-txt && astro build",
     "preview": "astro preview --port 3005",
     "start": "npx serve@latest dist",
     "lint": "eslint ."
@@ -32,6 +33,7 @@
     "eslint": "^9",
     "prettier": "^3.6.2",
     "sass": "^1.87.0",
+    "sharp": "^0.34.5",
     "typescript": "^5",
     "wrangler": "^4.0.0"
   }

@@ -6,6 +6,9 @@ import type { IStation } from "@/models/Station";
  */
 export function cleanStationsMetadata(stations: IStation[]) {
   return stations.map((station: IStation) => {
+    // Use local optimized WebP thumbnail for static render
+    station.thumbnail_url = `/station-thumbnails/${station.slug}.webp`;
+
     // Set song's thumbnail_url and name
     if (station.now_playing && station.now_playing.song) {
       station.now_playing.song.thumbnail_url = null;

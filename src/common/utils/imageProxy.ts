@@ -1,0 +1,17 @@
+const PROXIED_DOMAINS = [
+  "fsn1.your-objectstorage.com",
+  "radio-crestin.s3.eu-central-1.amazonaws.com",
+];
+
+export function proxyImageUrl(url: string | null | undefined): string | null {
+  if (!url) return null;
+  try {
+    const parsed = new URL(url);
+    if (PROXIED_DOMAINS.includes(parsed.hostname)) {
+      return `/api/image-proxy?url=${encodeURIComponent(url)}`;
+    }
+  } catch {
+    // Not a valid URL, return as-is
+  }
+  return url;
+}
