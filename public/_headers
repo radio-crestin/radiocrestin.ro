@@ -1,0 +1,27 @@
+# HTML pages — never cache, always fetch the latest version
+/*.html
+  Cache-Control: public, max-age=0, must-revalidate
+
+/
+  Cache-Control: public, max-age=0, must-revalidate
+
+# Hashed static assets — immutable, cache forever
+/_next/static/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Fonts — cache for 1 year
+/fonts/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Images — cache for 1 week
+/images/*
+  Cache-Control: public, max-age=604800
+
+/icons/*
+  Cache-Control: public, max-age=604800
+
+# Security headers for all pages
+/*
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
