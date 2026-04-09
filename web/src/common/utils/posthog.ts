@@ -36,11 +36,7 @@ const getUserId = (): string => {
 };
 
 export const captureException = (error: Error) => {
-  posthog.capture("$exception", {
-    $exception_message: error.message,
-    $exception_type: error.name,
-    $exception_stack_trace_raw: error.stack,
-  });
+  posthog.captureException(error);
 };
 
 export const trackStationOpened = (stationSlug: string, stationTitle: string) => {
