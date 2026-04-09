@@ -10,7 +10,7 @@ export function proxyImageUrl(url: string | null | undefined): string | null {
   try {
     const parsed = new URL(url);
     if (PROXIED_DOMAINS.includes(parsed.hostname)) {
-      return `${PROXY_BASE}/${encodeURIComponent(url)}`;
+      return `${PROXY_BASE}/?url=${encodeURIComponent(url)}`;
     }
   } catch {
     // Not a valid URL, return as-is
