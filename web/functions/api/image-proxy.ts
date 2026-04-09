@@ -6,8 +6,7 @@ const ALLOWED_DOMAINS = [
 const ONE_MONTH = 60 * 60 * 24 * 30;
 
 export const onRequest: PagesFunction = async (context) => {
-  const { request } = context;
-  const url = new URL(request.url);
+  const url = new URL(context.request.url);
   const imageUrl = url.searchParams.get("url");
 
   if (!imageUrl) {
@@ -25,19 +24,13 @@ export const onRequest: PagesFunction = async (context) => {
     return new Response("Domain not allowed", { status: 403 });
   }
 
-  // Use the request URL as cache key so identical proxy requests hit cache
-  const cache = caches.default;
-  const cacheKey = new Request(url.toString(), { method: "GET" });
-
-  // Check Cloudflare edge cache
-  const cached = await cache.match(cacheKey);
-  if (cached) {
-    return cached;
-  }
-
-  // Fetch from origin
+  // Use Cloudflare's cf options to cache at the edge
   const originResponse = await fetch(imageUrl, {
     headers: { Accept: "image/*" },
+    cf: {
+      cacheTtl: ONE_MONTH,
+      cacheEverything: true,
+    },
   });
 
   if (!originResponse.ok) {
@@ -49,17 +42,12 @@ export const onRequest: PagesFunction = async (context) => {
   const contentType =
     originResponse.headers.get("content-type") || "image/jpeg";
 
-  const response = new Response(originResponse.body, {
+  return new Response(originResponse.body, {
     headers: {
       "Content-Type": contentType,
-      "Cache-Control": `public, max-age=${ONE_MONTH}, s-maxage=${ONE_MONTH}, immutable`,
-      "CDN-Cache-Control": `public, max-age=${ONE_MONTH}`,
+      "Cache-Control": `public, max-age=${ONE_MONTH}, immutable`,
       "Access-Control-Allow-Origin": "*",
+      "CF-Cache-Status": originResponse.headers.get("cf-cache-status") || "MISS",
     },
   });
-
-  // Store in Cloudflare edge cache (non-blocking)
-  context.waitUntil(cache.put(cacheKey, response.clone()));
-
-  return response;
 };
