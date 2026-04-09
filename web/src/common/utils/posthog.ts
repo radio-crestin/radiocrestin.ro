@@ -88,6 +88,20 @@ export const trackListeningStopped = (
 /** @deprecated Use trackListeningStopped */
 export const trackListeningStop = trackListeningStopped;
 
+export const trackListeningHeartbeat = (
+  stationSlug: string,
+  stationName: string,
+  durationSeconds: number,
+  stationId?: number,
+) => {
+  posthog.capture("listening_heartbeat", {
+    station_slug: stationSlug,
+    station_name: stationName,
+    duration_seconds: Math.round(durationSeconds),
+    ...(stationId != null && { station_id: stationId }),
+  });
+};
+
 export const trackReviewSubmitted = (
   stationSlug: string,
   stationName: string,
