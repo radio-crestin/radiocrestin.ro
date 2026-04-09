@@ -62,6 +62,8 @@ export const getStationsMetadata = async (changesFromTimestamp?: number): Promis
     });
 
     if (!response.ok) {
+      // 400 usually means client clock is skewed — skip silently
+      if (response.status === 400) return [];
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
