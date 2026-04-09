@@ -119,8 +119,8 @@ const useUpdateStationsMetadata = () => {
             }
           }
         }
-      } catch (error) {
-        captureException(error, "Failed to fetch stations");
+      } catch {
+        // Transient failures are silenced in getStations — only unexpected errors bubble here
       }
     };
 
@@ -152,8 +152,7 @@ const useUpdateStationsMetadata = () => {
             }
           }
         }
-      } catch (error) {
-        captureException(error, "Failed to fetch stations metadata");
+      } catch {
         // On metadata fetch failure, do a full refresh to recover
         await doFullRefresh();
       }

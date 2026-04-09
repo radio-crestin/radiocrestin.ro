@@ -7,6 +7,18 @@ const API_BASE = "https://api.radiocrestin.ro/api/v1";
 
 const getTimestamp = () => Math.floor(Date.now() / 10000) * 10;
 
+// Transient network errors (iOS background suspension, intermittent connectivity)
+// are expected during long listening sessions — don't report them to PostHog.
+const isTransientNetworkError = (error: unknown): boolean => {
+  if (!(error instanceof Error)) return false;
+  const msg = error.message;
+  return msg === "Load failed"              // Safari/iOS fetch failure
+    || msg === "Failed to fetch"            // Chrome offline/network error
+    || msg === "NetworkError when attempting to fetch resource." // Firefox
+    || error.name === "AbortError"          // Request aborted
+    || error.name === "TimeoutError";       // AbortSignal.timeout
+};
+
 export type IStationMetadata = Partial<IStation> & { id: number };
 
 const getFallbackStations = () => ({
@@ -16,13 +28,14 @@ const getFallbackStations = () => ({
 
 export const getStations = async () => {
   const endpoint = `${CONSTANTS.API_ENDPOINT}?timestamp=${getTimestamp()}`;
+  const isClient = typeof window !== "undefined";
   try {
     const response = await fetch(endpoint, {
       method: "GET",
       headers: {
         accept: "*/*",
       },
-      signal: AbortSignal.timeout(2000),
+      signal: AbortSignal.timeout(isClient ? 5000 : 2000),
     });
 
     if (!response.ok) {
@@ -42,7 +55,9 @@ export const getStations = async () => {
       station_groups: data?.data?.station_groups || [],
     };
   } catch (error) {
-    captureException(error, `getStations failed [${endpoint}]`);
+    if (!isTransientNetworkError(error)) {
+      captureException(error, `getStations failed [${endpoint}]`);
+    }
     return getFallbackStations();
   }
 };
@@ -70,7 +85,9 @@ export const getStationsMetadata = async (changesFromTimestamp?: number): Promis
     const data = await response.json();
     return data?.data?.stations_metadata || [];
   } catch (error) {
-    captureException(error, `getStationsMetadata failed [${endpoint}]`);
+    if (!isTransientNetworkError(error)) {
+      captureException(error, `getStationsMetadata failed [${endpoint}]`);
+    }
     return [];
   }
 };
@@ -126,7 +143,9 @@ export const getStationSongHistory = async (
     const data = await response.json();
     return data?.data?.stations_metadata_history || null;
   } catch (error) {
-    captureException(error, `getStationSongHistory failed [${stationSlug}]`);
+    if (!isTransientNetworkError(error)) {
+      captureException(error, `getStationSongHistory failed [${stationSlug}]`);
+    }
     return null;
   }
 };
@@ -152,7 +171,9 @@ export const getStationReviews = async (
     const data = await response.json();
     return data?.data?.reviews || [];
   } catch (error) {
-    captureException(error, `getStationReviews failed [stationId=${stationId}]`);
+    if (!isTransientNetworkError(error)) {
+      captureException(error, `getStationReviews failed [stationId=${stationId}]`);
+    }
     return [];
   }
 };
