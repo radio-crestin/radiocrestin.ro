@@ -13,7 +13,6 @@
     "lint": "eslint ."
   },
   "dependencies": {
-    "@astrojs/cloudflare": "^13.0.0",
     "@astrojs/react": "^4.0.0",
     "astro": "^6.0.0",
     "hls.js": "^1.6.10",
