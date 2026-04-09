@@ -686,12 +686,13 @@ export default function RadioPlayer() {
             if (isDestroyingRef.current) return;
             setPlaybackState(PLAYBACK_STATE.BUFFERING);
           }}
-          onError={(error) => {
+          onError={(e) => {
             if (isDestroyingRef.current) return;
             setHasError(true);
+            const mediaError = (e.target as HTMLAudioElement)?.error;
             captureException(
               new Error(
-                `Audio error:414 - station.title: ${station.title}, error: ${error}`,
+                `Audio error - station: ${station.title}, code: ${mediaError?.code}, message: ${mediaError?.message || "unknown"}`,
               ),
             );
             retryMechanism();

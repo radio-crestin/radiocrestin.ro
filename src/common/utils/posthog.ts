@@ -38,11 +38,27 @@ export const getUserId = (): string => {
   return userId;
 };
 
+const NETWORK_ERROR_PATTERNS = [
+  "Failed to fetch",
+  "NetworkError",
+  "Load failed",
+  "network error",
+  "The operation was aborted",
+  "AbortError",
+];
+
 export const captureException = (error: unknown, context?: string) => {
-  const err = error instanceof Error ? error : new Error(String(error));
-  if (context) {
-    err.message = `${context}: ${err.message}`;
-  }
+  const original = error instanceof Error ? error : new Error(String(error));
+
+  // Skip network errors — users going offline is expected
+  if (NETWORK_ERROR_PATTERNS.some((p) => original.message.includes(p))) return;
+
+  const message = context ? `${context}: ${original.message}` : original.message;
+
+  // Some Error subclasses have read-only message — always create a new Error
+  const err = new Error(message);
+  err.stack = original.stack;
+  err.name = original.name;
   posthog.captureException(err);
 };
 
