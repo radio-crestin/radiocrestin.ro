@@ -53,10 +53,11 @@ export const captureException = (error: unknown, context?: string) => {
   const original = error instanceof Error ? error : new Error(serializeError(error));
   const message = context ? `${context}: ${original.message}` : original.message;
 
-  // Some Error subclasses have read-only message — always create a new Error
+  // Create a new Error at this call site so PostHog gets a useful stack trace.
+  // The original error (e.g. TypeError from fetch) often has an empty/browser-internal stack.
   const err = new Error(message, { cause: original });
-  err.stack = original.stack;
   err.name = original.name;
+  // Keep the NEW error's stack (points to our code) — don't overwrite with the original's
   posthog.captureException(err);
 };
 
