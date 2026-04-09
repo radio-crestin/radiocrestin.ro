@@ -6,23 +6,12 @@ const ALLOWED_DOMAINS = [
 const ONE_MONTH = 60 * 60 * 24 * 30;
 
 export default {
-  async fetch(request: Request): Promise<Response> {
+  async fetch(request: Request, env: unknown, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
-
-    // Extract image URL from path: /https://domain/path → fetch that URL
-    // Or from query param: /?url=https://...
-    let imageUrl = url.searchParams.get("url");
+    const imageUrl = url.searchParams.get("url");
 
     if (!imageUrl) {
-      // Try path-based: /image-proxy/https://domain/path
-      const pathMatch = url.pathname.match(/^\/(.+)$/);
-      if (pathMatch) {
-        imageUrl = decodeURIComponent(pathMatch[1]);
-      }
-    }
-
-    if (!imageUrl) {
-      return new Response("Missing image URL", { status: 400 });
+      return new Response("Missing 'url' parameter", { status: 400 });
     }
 
     let parsed: URL;
@@ -36,31 +25,37 @@ export default {
       return new Response("Domain not allowed", { status: 403 });
     }
 
-    // Fetch with Cloudflare caching — this caches the subrequest at the edge
-    const response = await fetch(imageUrl, {
+    // Check edge cache for this exact proxy request
+    const cache = caches.default;
+    const cacheKey = new Request(url.toString(), { method: "GET" });
+    const cached = await cache.match(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
+    // Fetch from origin
+    const originResponse = await fetch(imageUrl, {
       headers: { Accept: "image/*" },
-      cf: {
-        cacheTtl: ONE_MONTH,
-        cacheEverything: true,
-      },
     });
 
-    if (!response.ok) {
-      return new Response("Image not found", { status: response.status });
+    if (!originResponse.ok) {
+      return new Response("Image not found", { status: originResponse.status });
     }
 
     const contentType =
-      response.headers.get("content-type") || "image/jpeg";
+      originResponse.headers.get("content-type") || "image/jpeg";
 
-    // Return with long cache headers — Cloudflare CDN caches this response
-    // because it comes from a Worker on a zone route (not Pages Function)
-    return new Response(response.body, {
+    const response = new Response(originResponse.body, {
       headers: {
         "Content-Type": contentType,
         "Cache-Control": `public, max-age=${ONE_MONTH}, s-maxage=${ONE_MONTH}, immutable`,
         "Access-Control-Allow-Origin": "*",
-        "Vary": "Accept",
       },
     });
+
+    // Cache the response at the edge (non-blocking)
+    ctx.waitUntil(cache.put(cacheKey, response.clone()));
+
+    return response;
   },
 };
