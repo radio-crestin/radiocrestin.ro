@@ -99,11 +99,7 @@ export default function RadioPlayer() {
       setPlaybackState(PLAYBACK_STATE.STOPPED);
       return;
     }
-    captureException(
-      new Error(
-        `${context} - station: ${station.title}, error: ${JSON.stringify(error, null, 2)}`,
-      ),
-    );
+    captureException(error, `${context} - station: ${station.title}`);
     retryMechanism();
   };
 

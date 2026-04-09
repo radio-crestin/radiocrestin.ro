@@ -74,9 +74,7 @@ export const submitReview = async (
       data: submitReviewData,
     };
   } catch (error) {
-    captureException(
-      new Error("Submit review error: " + JSON.stringify(error, null, 2))
-    );
+    captureException(error, "Submit review error");
 
     return {
       success: false,

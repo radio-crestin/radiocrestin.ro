@@ -38,8 +38,12 @@ export const getUserId = (): string => {
   return userId;
 };
 
-export const captureException = (error: Error) => {
-  posthog.captureException(error);
+export const captureException = (error: unknown, context?: string) => {
+  const err = error instanceof Error ? error : new Error(String(error));
+  if (context) {
+    err.message = `${context}: ${err.message}`;
+  }
+  posthog.captureException(err);
 };
 
 export const trackStationOpened = (stationSlug: string, stationName: string, stationId?: number) => {
