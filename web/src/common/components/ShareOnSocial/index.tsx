@@ -18,10 +18,10 @@ export default function ShareOnSocial() {
       <div className={styles.buttonContainer}>
         <span className={styles.label}>Distribuie</span>
         <a href={facebookShareLink} target="_blank" rel="noopener noreferrer" className={`${styles.button} ${styles.facebookButton}`} title="Trimite pe Facebook">
-            <img src="./icons/facebook.svg" alt="Facebook" className={styles.socialIcon} />
+            <img src="/icons/facebook.svg" alt="Facebook" className={styles.socialIcon} />
         </a>
         <a href={whatsappShareLink} target="_blank" rel="noopener noreferrer" className={`${styles.button} ${styles.whatsappButton}`} title="Trimite pe WhatsApp">
-          <img src="./icons/whatsapp.svg" alt="WhatsApp" className={styles.socialIcon} />
+          <img src="/icons/whatsapp.svg" alt="WhatsApp" className={styles.socialIcon} />
         </a>
       </div>
   );
