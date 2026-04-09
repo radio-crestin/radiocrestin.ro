@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
-import { trackFavouriteToggled } from "@/utils/posthog";
+import { trackFavoriteToggled } from "@/utils/posthog";
 
 export interface IStore {
   favouriteItems: string[];
@@ -16,7 +16,7 @@ const useFavourite = create<IStore>()(
       toggleFavourite: (slug: string) => {
         set((state) => {
           const isFavourite = state.favouriteItems.includes(slug);
-          trackFavouriteToggled(slug, !isFavourite);
+          trackFavoriteToggled(slug, !isFavourite);
           if (isFavourite) {
             return {
               favouriteItems: state.favouriteItems.filter(

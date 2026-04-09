@@ -96,7 +96,7 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
 
     const success = await sendReview(selectedStars, message.trim());
     if (success) {
-      trackReviewSubmitted(stationSlug || "", stationTitle, selectedStars);
+      trackReviewSubmitted(stationSlug || "", stationTitle, selectedStars, stationId);
       toast.success("Multumim pentru recenzia ta!");
       setMessage("");
       setSelectedStars(0);
