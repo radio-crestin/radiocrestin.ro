@@ -4,6 +4,7 @@ import type { IStationMetadata } from "@/services/getStations";
 import type { IStation } from "@/models/Station";
 import { Context } from "@/context/ContextProvider";
 import { captureException } from "@/utils/posthog";
+import { proxyImageUrl } from "@/utils/imageProxy";
 
 const FULL_REFRESH_INTERVAL = 5 * 60 * 1000; // 5 minutes
 
@@ -23,6 +24,17 @@ function deepMerge<T extends Record<string, any>>(target: T, source: Partial<T>)
   return output;
 }
 
+function proxyStationImages(station: IStation): IStation {
+  station.thumbnail_url = proxyImageUrl(station.thumbnail_url) || station.thumbnail_url;
+  if (station.now_playing?.song?.thumbnail_url) {
+    station.now_playing.song.thumbnail_url = proxyImageUrl(station.now_playing.song.thumbnail_url);
+  }
+  if (station.now_playing?.song?.artist?.thumbnail_url) {
+    station.now_playing.song.artist.thumbnail_url = proxyImageUrl(station.now_playing.song.artist.thumbnail_url);
+  }
+  return station;
+}
+
 const applyMetadataToStations = (stations: IStation[], metadata: IStationMetadata[]): IStation[] => {
   if (!metadata.length) return stations;
 
@@ -31,7 +43,7 @@ const applyMetadataToStations = (stations: IStation[], metadata: IStationMetadat
   return stations.map(station => {
     const meta = metadataMap.get(station.id);
     if (!meta) return station;
-    return deepMerge(station, meta);
+    return proxyStationImages(deepMerge(station, meta));
   });
 };
 
@@ -55,9 +67,10 @@ export const useRefreshStations = () => {
     try {
       const data = await getStations();
       if (data?.stations?.length > 0) {
-        setCtx({ stations: data.stations });
+        const proxied = data.stations.map(proxyStationImages);
+        setCtx({ stations: proxied });
         if (selectedStationSlug) {
-          const updatedStation = data.stations.find(
+          const updatedStation = proxied.find(
             (s: IStation) => s.slug === selectedStationSlug
           );
           if (updatedStation) {
@@ -106,12 +119,13 @@ const useUpdateStationsMetadata = () => {
           lastFetchTimestamp.current = Math.floor(Date.now() / 10000) * 10;
           lastFullRefreshTimestamp.current = Date.now();
           initialFetchDone.current = true;
-          setCtx({ stations: data.stations });
+          const proxiedStations = data.stations.map(proxyStationImages);
+          setCtx({ stations: proxiedStations });
           // Use selected station slug, or fall back to URL path for new stations not in build
           const slug = selectedStationSlugRef.current
             || window.location.pathname.replace(/^\//, "").split("/")[0];
           if (slug) {
-            const updatedStation = data.stations.find(
+            const updatedStation = proxiedStations.find(
               (s: IStation) => s.slug === slug
             );
             if (updatedStation) {
