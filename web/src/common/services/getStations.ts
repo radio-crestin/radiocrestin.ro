@@ -42,10 +42,7 @@ export const getStations = async () => {
       station_groups: data?.data?.station_groups || [],
     };
   } catch (error) {
-    captureException(
-      new Error("Getting stations error: " + JSON.stringify(error, null, 2)),
-    );
-
+    captureException(error, "Getting stations error");
     return getFallbackStations();
   }
 };
@@ -71,9 +68,7 @@ export const getStationsMetadata = async (changesFromTimestamp?: number): Promis
     const data = await response.json();
     return data?.data?.stations_metadata || [];
   } catch (error) {
-    captureException(
-      new Error("Getting stations metadata error: " + JSON.stringify(error, null, 2)),
-    );
+    captureException(error, "Getting stations metadata error");
     return [];
   }
 };
@@ -129,9 +124,7 @@ export const getStationSongHistory = async (
     const data = await response.json();
     return data?.data?.stations_metadata_history || null;
   } catch (error) {
-    captureException(
-      new Error("Getting station song history error: " + JSON.stringify(error, null, 2)),
-    );
+    captureException(error, "Getting station song history error");
     return null;
   }
 };
@@ -157,11 +150,7 @@ export const getStationReviews = async (
     const data = await response.json();
     return data?.data?.reviews || [];
   } catch (error) {
-    captureException(
-      new Error(
-        `Getting station reviews error: ${JSON.stringify(error, null, 2)}`,
-      ),
-    );
+    captureException(error, "Getting station reviews error");
     return [];
   }
 };

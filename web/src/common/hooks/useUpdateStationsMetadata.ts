@@ -66,9 +66,7 @@ export const useRefreshStations = () => {
         }
       }
     } catch (error) {
-      captureException(
-        new Error(`Failed to refresh stations - error: ${JSON.stringify(error, null, 2)}`)
-      );
+      captureException(error, "Failed to refresh stations");
     }
   }, [selectedStationSlug, setCtx]);
 
@@ -120,9 +118,7 @@ const useUpdateStationsMetadata = () => {
           }
         }
       } catch (error) {
-        captureException(
-          new Error(`Failed to fetch stations - error: ${JSON.stringify(error, null, 2)}`)
-        );
+        captureException(error, "Failed to fetch stations");
       }
     };
 
@@ -155,9 +151,7 @@ const useUpdateStationsMetadata = () => {
           }
         }
       } catch (error) {
-        captureException(
-          new Error(`Failed to fetch stations metadata - error: ${JSON.stringify(error, null, 2)}`)
-        );
+        captureException(error, "Failed to fetch stations metadata");
         // On metadata fetch failure, do a full refresh to recover
         await doFullRefresh();
       }
