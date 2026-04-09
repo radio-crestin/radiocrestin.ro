@@ -3,12 +3,14 @@ const PROXIED_DOMAINS = [
   "radio-crestin.s3.eu-central-1.amazonaws.com",
 ];
 
+const PROXY_BASE = "https://img.radiocrestin.ro";
+
 export function proxyImageUrl(url: string | null | undefined): string | null {
   if (!url) return null;
   try {
     const parsed = new URL(url);
     if (PROXIED_DOMAINS.includes(parsed.hostname)) {
-      return `/api/image-proxy?url=${encodeURIComponent(url)}`;
+      return `${PROXY_BASE}/${encodeURIComponent(url)}`;
     }
   } catch {
     // Not a valid URL, return as-is
