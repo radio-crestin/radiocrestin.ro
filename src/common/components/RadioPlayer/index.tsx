@@ -13,7 +13,7 @@ import { PLAYBACK_STATE } from "@/models/enum";
 import { toast } from "react-toastify";
 import Heart from "@/icons/Heart";
 import useFavourite from "@/store/useFavourite";
-import { captureException, trackListeningStarted, trackListeningStopped, trackStationOpened } from "@/utils/posthog";
+import { captureException, trackListeningStarted, trackListeningStopped, trackListeningStoppedBeacon, trackStationOpened } from "@/utils/posthog";
 import { IStationStreams } from "@/models/Station";
 import OfflineStatus from "@/components/OfflineStatus";
 import Star from "@/icons/Star";
@@ -358,6 +358,26 @@ export default function RadioPlayer() {
         break;
     }
   }, [playbackState]);
+
+  // Send listening_stopped on tab close/navigate away
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (listeningStartRef.current) {
+        const durationSeconds = (Date.now() - listeningStartRef.current.time) / 1000;
+        trackListeningStoppedBeacon(
+          listeningStartRef.current.slug,
+          listeningStartRef.current.title,
+          durationSeconds,
+          "tab_closed",
+          listeningStartRef.current.id,
+        );
+        listeningStartRef.current = null;
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, []);
 
   // Stream loader effect — single owner of HLS lifecycle
   useEffect(() => {
