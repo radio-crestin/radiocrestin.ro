@@ -1,7 +1,7 @@
 import { useCallback, useContext, useEffect, useRef } from "react";
-import { useRouter } from "next/router";
-import { getStations, getStationsMetadata, IStationMetadata } from "@/services/getStations";
-import { IStation } from "@/models/Station";
+import { getStations, getStationsMetadata } from "@/services/getStations";
+import type { IStationMetadata } from "@/services/getStations";
+import type { IStation } from "@/models/Station";
 import { Context } from "@/context/ContextProvider";
 import { captureException } from "@/utils/posthog";
 
@@ -75,7 +75,6 @@ export const useRefreshStations = () => {
 
 const useUpdateStationsMetadata = () => {
   const { ctx, setCtx } = useContext(Context);
-  const router = useRouter();
   const lastFetchTimestamp = useRef<number>(0);
   const lastFullRefreshTimestamp = useRef<number>(0);
   const initialFetchDone = useRef(false);
@@ -86,17 +85,18 @@ const useUpdateStationsMetadata = () => {
   const selectedStationSlugRef = useRef(ctx.selectedStation?.slug);
   selectedStationSlugRef.current = ctx.selectedStation?.slug;
 
+  // Set selectedStation from URL on mount
   useEffect(() => {
-    const { station_slug } = router.query;
-    if (station_slug && ctx?.stations) {
+    const pathSlug = window.location.pathname.replace(/^\//, "").split("/")[0];
+    if (pathSlug && ctx?.stations) {
       const station = ctx.stations.find(
-        (s: IStation) => s.slug === station_slug,
+        (s: IStation) => s.slug === pathSlug,
       );
       if (station) {
         setCtx({ selectedStation: station });
       }
     }
-  }, [router.query.station_slug]);
+  }, []);
 
   useEffect(() => {
     const doFullRefresh = async () => {
@@ -107,7 +107,9 @@ const useUpdateStationsMetadata = () => {
           lastFullRefreshTimestamp.current = Date.now();
           initialFetchDone.current = true;
           setCtx({ stations: data.stations });
-          const slug = selectedStationSlugRef.current;
+          // Use selected station slug, or fall back to URL path for new stations not in build
+          const slug = selectedStationSlugRef.current
+            || window.location.pathname.replace(/^\//, "").split("/")[0];
           if (slug) {
             const updatedStation = data.stations.find(
               (s: IStation) => s.slug === slug

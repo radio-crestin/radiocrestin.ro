@@ -1,4 +1,3 @@
-import Link from "next/link";
 import React from "react";
 
 import styles from "./styles.module.scss";
@@ -6,7 +5,7 @@ import styles from "./styles.module.scss";
 const Navigation = () => (
   <nav className={styles.nav}>
     <div className={styles.internal_links}>
-      <Link href={"/"} className={styles.logo}>
+      <a href={"/"} className={styles.logo}>
         <img
           loading={"lazy"}
           src={"/images/radiocrestin_logo.png"}
@@ -15,7 +14,7 @@ const Navigation = () => (
           alt={"Logo Radio Creștin"}
         />
         <span>Radio Creștin</span>
-      </Link>
+      </a>
     </div>
   </nav>
 );

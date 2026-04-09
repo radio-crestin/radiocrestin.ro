@@ -1,0 +1,9 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import ChurchHubApp from "@/components/ChurchHubApp";
+import { SEO_CHURCH_HUB } from "@/utils/seo";
+---
+
+<BaseLayout {...SEO_CHURCH_HUB}>
+  <ChurchHubApp client:load />
+</BaseLayout>

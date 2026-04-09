@@ -1,0 +1,26 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import RadioApp from "@/components/RadioApp";
+import { getStations } from "@/services/getStations";
+import { cleanStationsMetadata } from "@/utils";
+import { seoStation } from "@/utils/seo";
+import type { IStation } from "@/models/Station";
+
+export async function getStaticPaths() {
+  const { stations } = await getStations();
+  return stations.map((station: IStation) => ({
+    params: { station_slug: station.slug },
+  }));
+}
+
+const { station_slug } = Astro.params;
+const { stations: rawStations } = await getStations();
+rawStations.forEach((station: IStation) => { station.is_favorite = false; });
+const stations = cleanStationsMetadata(rawStations);
+const selectedStation = stations.find((s: IStation) => s.slug === station_slug)!;
+const seo = seoStation(selectedStation);
+---
+
+<BaseLayout {...seo}>
+  <RadioApp client:load stations={stations} selectedStation={selectedStation} showReviews={true} />
+</BaseLayout>

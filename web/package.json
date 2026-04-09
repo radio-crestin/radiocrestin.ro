@@ -2,18 +2,20 @@
   "name": "radiocrestin.ro",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "scripts": {
-    "dev": "next dev -p 3005",
-    "generate-sitemap": "node scripts/generate-sitemap.js",
-    "generate-llms-txt": "node scripts/generate-llms-txt.js",
-    "build": "npm run generate-sitemap && npm run generate-llms-txt && next build && cp public/_headers out/_headers",
-    "start": "npx serve@latest out",
+    "dev": "astro dev --port 3005",
+    "generate-sitemap": "node scripts/generate-sitemap.cjs",
+    "generate-llms-txt": "node scripts/generate-llms-txt.cjs",
+    "build": "npm run generate-sitemap && npm run generate-llms-txt && astro build",
+    "preview": "astro preview --port 3005",
+    "start": "npx serve@latest dist",
     "lint": "eslint ."
   },
   "dependencies": {
+    "@astrojs/react": "^4.0.0",
+    "astro": "^6.0.0",
     "hls.js": "^1.6.10",
-    "next": "^16.1.6",
-    "next-themes": "^0.4.6",
     "posthog-js": "^1.365.5",
     "qrcode.react": "^4.2.0",
     "react": "^19.2.4",
@@ -23,15 +25,14 @@
     "zustand": "^5.0.3"
   },
   "devDependencies": {
-    "@posthog/nextjs-config": "^1.9.2",
     "@types/node": "^24.3.0",
     "@types/qrcode.react": "^1.0.5",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "eslint": "^9",
-    "eslint-config-next": "^16.1.6",
     "prettier": "^3.6.2",
     "sass": "^1.87.0",
-    "typescript": "^5"
+    "typescript": "^5",
+    "wrangler": "^4.0.0"
   }
 }

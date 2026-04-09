@@ -1,6 +1,6 @@
 "use client";
 
-import { IStation } from "@/models/Station";
+import type { IStation } from "@/models/Station";
 import styles from "./styles.module.scss";
 import HeadphoneIcon from "@/icons/Headphone";
 import Star from "@/icons/Star";

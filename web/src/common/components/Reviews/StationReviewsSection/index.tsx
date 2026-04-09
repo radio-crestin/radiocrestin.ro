@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from "react";
-import Head from "next/head";
 import styles from "./styles.module.scss";
 import Star from "@/icons/Star";
 import { getStationReviews } from "@/services/getStations";
-import { IReview, IReviewsStats } from "@/models/Station";
+import type { IReview, IReviewsStats } from "@/models/Station";
 import { SITE_URL } from "@/constants/constants";
 
 interface StationReviewsSectionProps {
@@ -31,37 +30,51 @@ const StationReviewsSection: React.FC<StationReviewsSectionProps> = ({
     fetchReviews();
   }, [stationId]);
 
-  const visibleReviews = reviews;
+  // Inject Review JSON-LD schema dynamically
+  useEffect(() => {
+    if (reviews.length === 0) return;
 
-  // Build Review schema data - all data sourced from our own trusted API
-  const reviewSchemaData = reviews.length > 0
-    ? {
-        "@context": "https://schema.org",
-        "@type": "RadioStation",
-        name: stationTitle,
-        url: `${SITE_URL}/${stationSlug}`,
-        ...(reviewsStats && reviewsStats.number_of_reviews > 0 && {
-          aggregateRating: {
-            "@type": "AggregateRating",
-            ratingValue: reviewsStats.average_rating,
-            reviewCount: reviewsStats.number_of_reviews,
-            bestRating: 5,
-            worstRating: 1,
-          },
-        }),
-        review: reviews.slice(0, 10).map((review) => ({
-          "@type": "Review",
-          reviewRating: {
-            "@type": "Rating",
-            ratingValue: review.stars,
-            bestRating: 5,
-            worstRating: 1,
-          },
-          datePublished: review.created_at.split("T")[0],
-          ...(review.message && { reviewBody: review.message }),
-        })),
-      }
-    : null;
+    const reviewSchemaData = {
+      "@context": "https://schema.org",
+      "@type": "RadioStation",
+      name: stationTitle,
+      url: `${SITE_URL}/${stationSlug}`,
+      ...(reviewsStats && reviewsStats.number_of_reviews > 0 && {
+        aggregateRating: {
+          "@type": "AggregateRating",
+          ratingValue: reviewsStats.average_rating,
+          reviewCount: reviewsStats.number_of_reviews,
+          bestRating: 5,
+          worstRating: 1,
+        },
+      }),
+      review: reviews.slice(0, 10).map((review) => ({
+        "@type": "Review",
+        reviewRating: {
+          "@type": "Rating",
+          ratingValue: review.stars,
+          bestRating: 5,
+          worstRating: 1,
+        },
+        datePublished: review.created_at.split("T")[0],
+        ...(review.message && { reviewBody: review.message }),
+      })),
+    };
+
+    const script = document.createElement("script");
+    script.type = "application/ld+json";
+    script.textContent = JSON.stringify(reviewSchemaData);
+    script.id = "review-schema";
+    // Remove existing one if present
+    const existing = document.getElementById("review-schema");
+    if (existing) existing.remove();
+    document.head.appendChild(script);
+
+    return () => {
+      const el = document.getElementById("review-schema");
+      if (el) el.remove();
+    };
+  }, [reviews, stationTitle, stationSlug, reviewsStats]);
 
   if (isLoading) {
     return (
@@ -78,22 +91,11 @@ const StationReviewsSection: React.FC<StationReviewsSectionProps> = ({
 
   return (
     <section className={styles.reviews_section}>
-      {/* Inject Review JSON-LD schema once reviews load - data from our own API */}
-      {reviewSchemaData && (
-        <Head>
-          <script
-            type="application/ld+json"
-            dangerouslySetInnerHTML={{
-              __html: JSON.stringify(reviewSchemaData),
-            }}
-          />
-        </Head>
-      )}
       <h2 className={styles.section_title}>
         Recenzii {stationTitle} ({reviewsStats?.number_of_reviews || reviews.length})
       </h2>
       <div className={styles.reviews_list}>
-        {visibleReviews.map((review) => (
+        {reviews.map((review) => (
           <div key={review.id} className={styles.review_item}>
             <div className={styles.review_header}>
               <div className={styles.review_stars}>

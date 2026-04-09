@@ -1,33 +1,31 @@
-import Link from "next/link";
-
 import styles from "./styles.module.scss";
 
 export default function FooterLinks() {
   return (
     <div className={styles.container}>
       <div className={styles.links}>
-        <Link href="/church-hub">Church Hub</Link>
+        <a href="/church-hub">Church Hub</a>
         <span className={styles.separator}>|</span>
-        <Link href="/statistici">Statistici</Link>
+        <a href="/statistici">Statistici</a>
         <span className={styles.separator}>|</span>
-        <Link href="/intrebari-frecvente">Întrebări frecvente</Link>
+        <a href="/intrebari-frecvente">Întrebări frecvente</a>
         <span className={styles.separator}>|</span>
-        <Link href="/privacy-policy">Politica de Confidentialitate</Link>
+        <a href="/privacy-policy">Politica de Confidentialitate</a>
         <span className={styles.separator}>|</span>
-        <Link href="/terms-of-service">Termeni si Conditii</Link>
+        <a href="/terms-of-service">Termeni si Conditii</a>
       </div>
       <div className={styles.links}>
-        <Link href="https://www.figma.com/file/iXXR3dhUjwfDDZH4FlEZgx/radio_crestin_com" target="_blank" rel="noopener noreferrer">
+        <a href="https://www.figma.com/file/iXXR3dhUjwfDDZH4FlEZgx/radio_crestin_com" target="_blank" rel="noopener noreferrer">
           Figma
-        </Link>
+        </a>
         <span className={styles.separator}>|</span>
-        <Link href="https://github.com/radio-crestin" target="_blank" rel="noopener noreferrer">
+        <a href="https://github.com/radio-crestin" target="_blank" rel="noopener noreferrer">
           Github
-        </Link>
+        </a>
         <span className={styles.separator}>|</span>
-        <Link href="https://api.radiocrestin.ro/api/" target="_blank" rel="noopener noreferrer">
+        <a href="https://api.radiocrestin.ro/api/" target="_blank" rel="noopener noreferrer">
           API
-        </Link>
+        </a>
       </div>
     </div>
   );
