@@ -1,6 +1,6 @@
 import { CONSTANTS } from "@/constants/constants";
 import { IReview, IStation } from "@/models/Station";
-import { Bugsnag } from "@/utils/bugsnag";
+import { captureException } from "@/utils/posthog";
 import fallbackData from "@/data/fallback-stations.json";
 
 const API_BASE = "https://api.radiocrestin.ro/api/v1";
@@ -42,7 +42,7 @@ export const getStations = async () => {
       station_groups: data?.data?.station_groups || [],
     };
   } catch (error) {
-    Bugsnag.notify(
+    captureException(
       new Error("Getting stations error: " + JSON.stringify(error, null, 2)),
     );
 
@@ -71,7 +71,7 @@ export const getStationsMetadata = async (changesFromTimestamp?: number): Promis
     const data = await response.json();
     return data?.data?.stations_metadata || [];
   } catch (error) {
-    Bugsnag.notify(
+    captureException(
       new Error("Getting stations metadata error: " + JSON.stringify(error, null, 2)),
     );
     return [];
@@ -129,7 +129,7 @@ export const getStationSongHistory = async (
     const data = await response.json();
     return data?.data?.stations_metadata_history || null;
   } catch (error) {
-    Bugsnag.notify(
+    captureException(
       new Error("Getting station song history error: " + JSON.stringify(error, null, 2)),
     );
     return null;
@@ -157,7 +157,7 @@ export const getStationReviews = async (
     const data = await response.json();
     return data?.data?.reviews || [];
   } catch (error) {
-    Bugsnag.notify(
+    captureException(
       new Error(
         `Getting station reviews error: ${JSON.stringify(error, null, 2)}`,
       ),
