@@ -15,9 +15,8 @@ const getFallbackStations = () => ({
 });
 
 export const getStations = async () => {
+  const endpoint = `${CONSTANTS.API_ENDPOINT}?timestamp=${getTimestamp()}`;
   try {
-    const endpoint = `${CONSTANTS.API_ENDPOINT}?timestamp=${getTimestamp()}`;
-
     const response = await fetch(endpoint, {
       method: "GET",
       headers: {
@@ -27,7 +26,8 @@ export const getStations = async () => {
     });
 
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      const body = await response.text().catch(() => "(unreadable)");
+      throw new Error(`HTTP ${response.status} from ${endpoint}: ${body}`);
     }
 
     const data = await response.json();
@@ -42,18 +42,17 @@ export const getStations = async () => {
       station_groups: data?.data?.station_groups || [],
     };
   } catch (error) {
-    captureException(error, "Getting stations error");
+    captureException(error, `getStations failed [${endpoint}]`);
     return getFallbackStations();
   }
 };
 
 export const getStationsMetadata = async (changesFromTimestamp?: number): Promise<IStationMetadata[]> => {
+  let endpoint = `${API_BASE}/stations-metadata?timestamp=${getTimestamp()}`;
+  if (changesFromTimestamp) {
+    endpoint += `&changes_from_timestamp=${changesFromTimestamp}`;
+  }
   try {
-    let endpoint = `${API_BASE}/stations-metadata?timestamp=${getTimestamp()}`;
-    if (changesFromTimestamp) {
-      endpoint += `&changes_from_timestamp=${changesFromTimestamp}`;
-    }
-
     const response = await fetch(endpoint, {
       method: "GET",
       headers: {
@@ -64,13 +63,14 @@ export const getStationsMetadata = async (changesFromTimestamp?: number): Promis
     if (!response.ok) {
       // 400 usually means client clock is skewed — skip silently
       if (response.status === 400) return [];
-      throw new Error(`HTTP error! status: ${response.status}`);
+      const body = await response.text().catch(() => "(unreadable)");
+      throw new Error(`HTTP ${response.status} from ${endpoint}: ${body}`);
     }
 
     const data = await response.json();
     return data?.data?.stations_metadata || [];
   } catch (error) {
-    captureException(error, "Getting stations metadata error");
+    captureException(error, `getStationsMetadata failed [${endpoint}]`);
     return [];
   }
 };
@@ -105,28 +105,28 @@ export const getStationSongHistory = async (
   fromTimestamp?: number,
   toTimestamp?: number,
 ): Promise<ISongHistoryResponse | null> => {
+  let endpoint = `${API_BASE}/stations-metadata-history?station_slug=${encodeURIComponent(stationSlug)}`;
+  if (fromTimestamp) {
+    endpoint += `&from_timestamp=${fromTimestamp}`;
+  }
+  if (toTimestamp) {
+    endpoint += `&to_timestamp=${toTimestamp}`;
+  }
   try {
-    let endpoint = `${API_BASE}/stations-metadata-history?station_slug=${encodeURIComponent(stationSlug)}`;
-    if (fromTimestamp) {
-      endpoint += `&from_timestamp=${fromTimestamp}`;
-    }
-    if (toTimestamp) {
-      endpoint += `&to_timestamp=${toTimestamp}`;
-    }
-
     const response = await fetch(endpoint, {
       method: "GET",
       headers: { accept: "*/*" },
     });
 
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      const body = await response.text().catch(() => "(unreadable)");
+      throw new Error(`HTTP ${response.status} from ${endpoint}: ${body}`);
     }
 
     const data = await response.json();
     return data?.data?.stations_metadata_history || null;
   } catch (error) {
-    captureException(error, "Getting station song history error");
+    captureException(error, `getStationSongHistory failed [${stationSlug}]`);
     return null;
   }
 };
@@ -134,9 +134,8 @@ export const getStationSongHistory = async (
 export const getStationReviews = async (
   stationId: number,
 ): Promise<IReview[]> => {
+  const endpoint = `${API_BASE}/reviews?station_id=${stationId}&timestamp=${getTimestamp()}`;
   try {
-    const endpoint = `${API_BASE}/reviews?station_id=${stationId}&timestamp=${getTimestamp()}`;
-
     const response = await fetch(endpoint, {
       method: "GET",
       headers: {
@@ -146,13 +145,14 @@ export const getStationReviews = async (
     });
 
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      const body = await response.text().catch(() => "(unreadable)");
+      throw new Error(`HTTP ${response.status} from ${endpoint}: ${body}`);
     }
 
     const data = await response.json();
     return data?.data?.reviews || [];
   } catch (error) {
-    captureException(error, "Getting station reviews error");
+    captureException(error, `getStationReviews failed [stationId=${stationId}]`);
     return [];
   }
 };

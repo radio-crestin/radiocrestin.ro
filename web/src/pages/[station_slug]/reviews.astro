@@ -10,11 +10,12 @@ export async function getStaticPaths() {
   const { stations } = await getStations();
   return stations.map((station: IStation) => ({
     params: { station_slug: station.slug },
+    props: { stations },
   }));
 }
 
 const { station_slug } = Astro.params;
-const { stations: rawStations } = await getStations();
+const rawStations = Astro.props.stations as IStation[];
 rawStations.forEach((station: IStation) => { station.is_favorite = false; });
 const stations = cleanStationsMetadata(rawStations);
 const selectedStation = stations.find((s: IStation) => s.slug === station_slug)!;

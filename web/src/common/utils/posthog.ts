@@ -38,12 +38,23 @@ export const getUserId = (): string => {
   return userId;
 };
 
+const serializeError = (error: unknown): string => {
+  if (error instanceof Error) return error.message;
+  if (typeof error === "string") return error;
+  try {
+    const json = JSON.stringify(error);
+    return json === "{}" ? `[${typeof error}] (empty object)` : json;
+  } catch {
+    return String(error);
+  }
+};
+
 export const captureException = (error: unknown, context?: string) => {
-  const original = error instanceof Error ? error : new Error(String(error));
+  const original = error instanceof Error ? error : new Error(serializeError(error));
   const message = context ? `${context}: ${original.message}` : original.message;
 
   // Some Error subclasses have read-only message — always create a new Error
-  const err = new Error(message);
+  const err = new Error(message, { cause: original });
   err.stack = original.stack;
   err.name = original.name;
   posthog.captureException(err);
