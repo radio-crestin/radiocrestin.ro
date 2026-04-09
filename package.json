@@ -23,6 +23,7 @@
     "zustand": "^5.0.3"
   },
   "devDependencies": {
+    "@posthog/nextjs-config": "^1.9.2",
     "@types/node": "^24.3.0",
     "@types/qrcode.react": "^1.0.5",
     "@types/react": "^19.2.14",
