@@ -13,7 +13,7 @@ import { PLAYBACK_STATE } from "@/models/enum";
 import { toast } from "react-toastify";
 import Heart from "@/icons/Heart";
 import useFavourite from "@/store/useFavourite";
-import { captureException, trackListeningStart, trackListeningStop, trackStationOpened } from "@/utils/posthog";
+import { captureException, trackListeningStarted, trackListeningStopped, trackStationOpened } from "@/utils/posthog";
 import { IStationStreams } from "@/models/Station";
 import OfflineStatus from "@/components/OfflineStatus";
 import Star from "@/icons/Star";
@@ -48,7 +48,7 @@ export default function RadioPlayer() {
   const isDestroyingRef = useRef(false);
   const [loadKey, setLoadKey] = useState(0);
   const prevLoadKeyRef = useRef(0);
-  const listeningStartRef = useRef<{ time: number; slug: string; title: string } | null>(null);
+  const listeningStartRef = useRef<{ time: number; slug: string; title: string; id: number } | null>(null);
 
   const clearHlsTimeout = () => {
     if (hlsTimeoutRef.current) {
@@ -109,12 +109,12 @@ export default function RadioPlayer() {
 
   // Determine best stream type + reset retries on station change
   useEffect(() => {
-    trackStationOpened(station.slug, station.title);
+    trackStationOpened(station.slug, station.title, station.id);
 
     // End previous listening session if station changed while playing
     if (listeningStartRef.current && listeningStartRef.current.slug !== station.slug) {
       const durationSeconds = (Date.now() - listeningStartRef.current.time) / 1000;
-      trackListeningStop(listeningStartRef.current.slug, listeningStartRef.current.title, durationSeconds);
+      trackListeningStopped(listeningStartRef.current.slug, listeningStartRef.current.title, durationSeconds, "station_switch", listeningStartRef.current.id);
       listeningStartRef.current = null;
     }
 
@@ -342,15 +342,15 @@ export default function RadioPlayer() {
     switch (playbackState) {
       case PLAYBACK_STATE.STARTED:
         incrementPlayCount(station.slug);
-        trackListeningStart(station.slug, station.title);
-        listeningStartRef.current = { time: Date.now(), slug: station.slug, title: station.title };
+        trackListeningStarted(station.slug, station.title, station.id);
+        listeningStartRef.current = { time: Date.now(), slug: station.slug, title: station.title, id: station.id };
         // Trigger stream loader effect to re-run and create a fresh HLS instance
         setLoadKey(k => k + 1);
         break;
       case PLAYBACK_STATE.STOPPED:
         if (listeningStartRef.current) {
           const durationSeconds = (Date.now() - listeningStartRef.current.time) / 1000;
-          trackListeningStop(listeningStartRef.current.slug, listeningStartRef.current.title, durationSeconds);
+          trackListeningStopped(listeningStartRef.current.slug, listeningStartRef.current.title, durationSeconds, "stop", listeningStartRef.current.id);
           listeningStartRef.current = null;
         }
         audio.pause();

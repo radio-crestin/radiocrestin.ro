@@ -39,48 +39,68 @@ export const captureException = (error: Error) => {
   posthog.captureException(error);
 };
 
-export const trackStationOpened = (stationSlug: string, stationTitle: string) => {
+export const trackStationOpened = (stationSlug: string, stationName: string, stationId?: number) => {
   posthog.capture("station_opened", {
     station_slug: stationSlug,
-    station_title: stationTitle,
+    station_name: stationName,
+    ...(stationId != null && { station_id: stationId }),
   });
 };
 
-export const trackFavouriteToggled = (stationSlug: string, isFavourite: boolean) => {
-  posthog.capture("favourite_toggled", {
+export const trackFavoriteToggled = (stationSlug: string, isFavorite: boolean, stationId?: number) => {
+  posthog.capture("favorite_toggled", {
     station_slug: stationSlug,
-    is_favourite: isFavourite,
+    is_favorite: isFavorite,
+    ...(stationId != null && { station_id: stationId }),
   });
 };
 
-export const trackListeningStart = (stationSlug: string, stationTitle: string) => {
-  posthog.capture("listening_start", {
+/** @deprecated Use trackFavoriteToggled */
+export const trackFavouriteToggled = trackFavoriteToggled;
+
+export const trackListeningStarted = (stationSlug: string, stationName: string, stationId?: number) => {
+  posthog.capture("listening_started", {
     station_slug: stationSlug,
-    station_title: stationTitle,
+    station_name: stationName,
+    ...(stationId != null && { station_id: stationId }),
   });
 };
 
-export const trackListeningStop = (
+/** @deprecated Use trackListeningStarted */
+export const trackListeningStart = trackListeningStarted;
+
+export const trackListeningStopped = (
   stationSlug: string,
-  stationTitle: string,
+  stationName: string,
   durationSeconds: number,
+  reason: string = "stop",
+  stationId?: number,
 ) => {
-  posthog.capture("listening_stop", {
+  posthog.capture("listening_stopped", {
     station_slug: stationSlug,
-    station_title: stationTitle,
+    station_name: stationName,
     duration_seconds: Math.round(durationSeconds),
+    reason,
+    ...(stationId != null && { station_id: stationId }),
   });
 };
+
+/** @deprecated Use trackListeningStopped */
+export const trackListeningStop = trackListeningStopped;
 
 export const trackReviewSubmitted = (
   stationSlug: string,
-  stationTitle: string,
+  stationName: string,
   stars: number,
+  stationId?: number,
+  songId?: number,
 ) => {
   posthog.capture("review_submitted", {
     station_slug: stationSlug,
-    station_title: stationTitle,
+    station_name: stationName,
     stars,
+    ...(stationId != null && { station_id: stationId }),
+    ...(songId != null && { song_id: songId }),
   });
 };
 
