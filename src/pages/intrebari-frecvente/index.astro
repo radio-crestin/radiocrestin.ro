@@ -1,0 +1,57 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import FAQApp from "@/components/FAQApp";
+import { SEO_FAQ } from "@/utils/seo";
+
+const faqSchemaData = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: [
+    {
+      "@type": "Question",
+      name: "Ce este Radio Creștin?",
+      acceptedAnswer: { "@type": "Answer", text: "Radio Creștin (radiocrestin.ro) este o platformă online gratuită care îți permite să asculți o varietate de stații radio creștine din România și din întreaga lume. Oferim acces rapid și ușor la muzică creștină, predici, emisiuni și conținut spiritual." },
+    },
+    {
+      "@type": "Question",
+      name: "Este gratuit să ascult radio pe această platformă?",
+      acceptedAnswer: { "@type": "Answer", text: "Da, Radio Creștin este complet gratuit. Nu este nevoie de înregistrare sau abonament pentru a asculta oricare dintre stațiile radio disponibile pe platformă." },
+    },
+    {
+      "@type": "Question",
+      name: "Cum pot asculta un post de radio?",
+      acceptedAnswer: { "@type": "Answer", text: "Pentru a asculta un post de radio, pur și simplu accesează pagina principală și apasă pe stația dorită. Redarea va începe automat. Poți folosi controalele de redare pentru a opri, relua sau ajusta volumul." },
+    },
+    {
+      "@type": "Question",
+      name: "Pot asculta Radio Creștin pe dispozitivul mobil?",
+      acceptedAnswer: { "@type": "Answer", text: "Da, poți asculta Radio Creștin pe mobil în două moduri: direct din browser (site-ul este complet responsiv) sau prin aplicația noastră dedicată. Aplicația suportă și Apple CarPlay, astfel încât poți asculta radio creștin direct din mașină. Descarcă aplicația gratuită pentru Android (Google Play) sau iOS (App Store)." },
+    },
+    {
+      "@type": "Question",
+      name: "Cum pot adăuga o stație radio nouă pe platformă?",
+      acceptedAnswer: { "@type": "Answer", text: "Dacă dorești să adaugi o stație radio creștină pe platformă, te rugăm să ne contactezi pe WhatsApp cu detaliile stației (nume, link stream, descriere). Vom analiza cererea și vom reveni cu un răspuns." },
+    },
+    {
+      "@type": "Question",
+      name: "Ce fac dacă un post de radio nu funcționează?",
+      acceptedAnswer: { "@type": "Answer", text: "Dacă întâmpini probleme cu un post de radio (nu se încarcă, se oprește frecvent), încearcă să reîncarci pagina sau să verifici conexiunea ta la internet. Dacă problema persistă, te rugăm să ne semnalezi pe WhatsApp." },
+    },
+    {
+      "@type": "Question",
+      name: "Pot asculta Radio Creștin în fundal?",
+      acceptedAnswer: { "@type": "Answer", text: "Da, poți asculta Radio Creștin în fundal în timp ce folosești alte aplicații sau navigezi pe alte site-uri. Pe dispozitivele mobile, redarea continuă chiar și când ecranul este blocat." },
+    },
+    {
+      "@type": "Question",
+      name: "Cum pot vedea ce melodie se redă în acest moment?",
+      acceptedAnswer: { "@type": "Answer", text: "Informațiile despre melodia curentă (titlu, artist) sunt afișate direct pe player-ul stației, dacă stația radio transmite aceste date. Nu toate stațiile oferă această funcționalitate." },
+    },
+  ],
+};
+---
+
+<BaseLayout {...SEO_FAQ}>
+  <script type="application/ld+json" set:html={JSON.stringify(faqSchemaData)} slot="head" />
+  <FAQApp client:load />
+</BaseLayout>

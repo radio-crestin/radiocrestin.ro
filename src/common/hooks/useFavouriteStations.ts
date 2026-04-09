@@ -1,5 +1,5 @@
 import { useContext, useEffect } from "react";
-import { IStation } from "@/models/Station";
+import type { IStation } from "@/models/Station";
 import { Context } from "@/context/ContextProvider";
 import useFavourite from "@/store/useFavourite";
 

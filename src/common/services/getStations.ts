@@ -1,5 +1,5 @@
 import { CONSTANTS } from "@/constants/constants";
-import { IReview, IStation } from "@/models/Station";
+import type { IReview, IStation } from "@/models/Station";
 import { captureException } from "@/utils/posthog";
 import fallbackData from "@/data/fallback-stations.json";
 

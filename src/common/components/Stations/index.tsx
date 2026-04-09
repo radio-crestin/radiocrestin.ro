@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useContext, useEffect, useRef, useState } from "react";
-import { IStation } from "@/models/Station";
+import type { IStation } from "@/models/Station";
 import styles from "./styles.module.scss";
 import { Context } from "@/context/ContextProvider";
 import FavoriteItem from "@/components/FavoriteItem";

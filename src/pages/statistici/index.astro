@@ -1,0 +1,16 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import StatisticiApp from "@/components/StatisticiApp";
+import { getStations } from "@/services/getStations";
+import { cleanStationsMetadata } from "@/utils";
+import { SEO_STATISTICI } from "@/utils/seo";
+import type { IStation } from "@/models/Station";
+
+const { stations: rawStations } = await getStations();
+rawStations.forEach((station: IStation) => { station.is_favorite = false; });
+const stations = cleanStationsMetadata(rawStations);
+---
+
+<BaseLayout {...SEO_STATISTICI}>
+  <StatisticiApp client:load stations={stations} />
+</BaseLayout>

@@ -1,5 +1,4 @@
 import React from "react";
-import Link from "next/link";
 import styles from "./styles.module.scss";
 import {
   APP_RATING,
@@ -34,7 +33,7 @@ export default function MobileAppBanner() {
       </div>
 
       <div className={styles.store_buttons}>
-        <Link
+        <a
           href={getIOSStoreLink()}
           target="_blank"
           rel="noopener noreferrer"
@@ -45,8 +44,8 @@ export default function MobileAppBanner() {
             alt="App Store"
             height={40}
           />
-        </Link>
-        <Link
+        </a>
+        <a
           href={getAndroidStoreLink()}
           target="_blank"
           rel="noopener noreferrer"
@@ -57,16 +56,16 @@ export default function MobileAppBanner() {
             alt="Google Play"
             height={40}
           />
-        </Link>
+        </a>
       </div>
 
-      <Link
+      <a
         href="/descarca-aplicatia-radio-crestin"
         target="_blank"
         className={styles.view_button}
       >
         Descarcă
-      </Link>
+      </a>
     </div>
   );
 }

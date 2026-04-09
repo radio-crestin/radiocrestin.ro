@@ -1,6 +1,6 @@
 import { CONSTANTS } from "@/constants/constants";
 import { captureException } from "@/utils/posthog";
-import { IReview } from "@/models/Station";
+import type { IReview } from "@/models/Station";
 
 interface SubmitReviewInput {
   station_id: number;

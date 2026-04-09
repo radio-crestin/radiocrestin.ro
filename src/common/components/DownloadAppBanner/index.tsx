@@ -1,5 +1,4 @@
 import React, { useContext } from "react";
-import Link from "next/link";
 import { QRCodeSVG } from "qrcode.react";
 import styles from "./styles.module.scss";
 import { Context } from "@/context/ContextProvider";
@@ -24,7 +23,7 @@ export default function DownloadAppBanner() {
         <div className={styles.download_links_wrapper}>
           <div className={styles.link_container}>
             <div className={styles.link_box}>
-              <Link
+              <a
                 href="https://apps.apple.com/app/6451270471"
                 target="_blank"
                 rel="noopener noreferrer"
@@ -36,10 +35,10 @@ export default function DownloadAppBanner() {
                   width={120}
                   height={40}
                 />
-              </Link>
+              </a>
             </div>
             <div className={styles.link_box}>
-              <Link
+              <a
                 href="https://play.google.com/store/apps/details?id=com.radiocrestin.radio_crestin&hl=en_US"
                 target="_blank"
                 rel="noopener noreferrer"
@@ -51,7 +50,7 @@ export default function DownloadAppBanner() {
                   width={135}
                   height={40}
                 />
-              </Link>
+              </a>
             </div>
           </div>
           <div className={styles.reviews_badge}>

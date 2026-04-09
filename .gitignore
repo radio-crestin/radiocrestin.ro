@@ -11,9 +11,16 @@
 # testing
 /coverage
 
-# next.js
+# next.js (legacy)
 /.next/
 /out/
+
+# astro
+/.astro/
+/dist/
+
+# cloudflare
+/.wrangler/
 
 # generated sitemap
 /public/sitemap.xml

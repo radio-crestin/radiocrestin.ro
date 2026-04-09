@@ -1,5 +1,3 @@
-import Link from "next/link";
-import { useRouter } from "next/router";
 import React, { useContext, useState, useEffect, useRef, useCallback } from "react";
 
 import styles from "./styles.module.scss";
@@ -39,7 +37,7 @@ const Navigation = () => {
   return (
     <nav className={styles.nav}>
       <div className={styles.internal_links}>
-        <Link href={"/"} className={styles.logo}>
+        <a href={"/"} className={styles.logo}>
           <img
             loading={"lazy"}
             src={"/images/radiocrestin_logo.png"}
@@ -48,7 +46,7 @@ const Navigation = () => {
             alt={"Logo Radio Creștin"}
           />
           <span>Radio Creștin</span>
-        </Link>
+        </a>
       </div>
       <div className={styles.right_content}>
         <ThemeToggle />
@@ -92,15 +90,14 @@ const Navigation = () => {
 const ContentLeft = () => {
   const { ctx } = useContext(Context);
   const { selectedStation } = ctx;
-  const router = useRouter();
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
-  // Auto-open history modal if on /recent-songs route (client-side only to avoid hydration mismatch)
+  // Auto-open history modal if on /recent-songs route
   useEffect(() => {
-    if (router.asPath.includes("/recent-songs")) {
+    if (window.location.pathname.includes("/recent-songs")) {
       setIsHistoryOpen(true);
     }
-  }, [router.asPath]);
+  }, []);
 
   const handleOpenHistory = useCallback(() => {
     if (!selectedStation) return;
