@@ -13,7 +13,7 @@ import { PLAYBACK_STATE } from "@/models/enum";
 import { toast } from "react-toastify";
 import Heart from "@/icons/Heart";
 import useFavourite from "@/store/useFavourite";
-import { captureException, trackListeningStarted, trackListeningStopped, trackListeningStoppedBeacon, trackStationOpened } from "@/utils/posthog";
+import { captureException, getUserId, trackListeningStarted, trackListeningStopped, trackListeningStoppedBeacon, trackStationOpened } from "@/utils/posthog";
 import { IStationStreams } from "@/models/Station";
 import OfflineStatus from "@/components/OfflineStatus";
 import Star from "@/icons/Star";
@@ -186,10 +186,8 @@ export default function RadioPlayer() {
     const url = new URL(stream.stream_url);
 
     if (typeof window !== 'undefined') {
-      const uuid = localStorage.getItem('radio-crestin-session-uuid') || crypto.randomUUID();
-      localStorage.setItem('radio-crestin-session-uuid', uuid);
       url.searchParams.set('ref', window.location.hostname);
-      url.searchParams.set('s', uuid);
+      url.searchParams.set('s', getUserId());
     }
 
     return url.toString();

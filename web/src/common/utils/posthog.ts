@@ -26,12 +26,14 @@ export const initPostHog = () => {
   initialized = true;
 };
 
-const getUserId = (): string => {
-  const storageKey = "radio_crestin_user_id";
-  let userId = localStorage.getItem(storageKey);
+const USER_ID_KEY = "radio_crestin_user_id";
+
+export const getUserId = (): string => {
+  if (typeof window === "undefined") return "";
+  let userId = localStorage.getItem(USER_ID_KEY);
   if (!userId) {
     userId = `user_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-    localStorage.setItem(storageKey, userId);
+    localStorage.setItem(USER_ID_KEY, userId);
   }
   return userId;
 };
