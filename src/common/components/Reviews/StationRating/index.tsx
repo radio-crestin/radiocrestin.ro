@@ -1,11 +1,10 @@
 import React, { useState, useCallback, useEffect } from "react";
-import { useRouter } from "next/router";
 import styles from "./styles.module.scss";
 import Star from "@/icons/Star";
 import ReviewModal from "@/components/Reviews/ReviewModal";
 import ReviewsListModal from "@/components/Reviews/ReviewsListModal";
 import { getStationReviews } from "@/services/getStations";
-import { IReview, IReviewsStats } from "@/models/Station";
+import type { IReview, IReviewsStats } from "@/models/Station";
 
 interface StationRatingProps {
   stationId: number;
@@ -20,14 +19,13 @@ const StationRating: React.FC<StationRatingProps> = ({
   stationSlug,
   reviewsStats,
 }) => {
-  const router = useRouter();
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [isReviewsListModalOpen, setIsReviewsListModalOpen] = useState(false);
   const [reviews, setReviews] = useState<IReview[]>([]);
   const [isLoadingReviews, setIsLoadingReviews] = useState(false);
 
   const score = reviewsStats?.average_rating || 0;
-  const slug = stationSlug || router.query.station_slug;
+  const slug = stationSlug || window.location.pathname.split("/")[1];
 
   const handleOpenReviewModal = useCallback(() => {
     setIsReviewModalOpen(true);

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { useTheme } from "next-themes";
+import { useTheme } from "@/hooks/useTheme";
 import styles from "./styles.module.scss";
 
 const ThemeToggle: React.FC = () => {

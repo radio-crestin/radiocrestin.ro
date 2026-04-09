@@ -1,0 +1,38 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import DescarcaApp from "@/components/DescarcaApp";
+import { SITE_URL, APP_RATING, APP_REVIEW_COUNT } from "@/constants/constants";
+
+const meta = {
+  title: "Descarcă Aplicația Radio Crestin | iOS și Android",
+  description: "Descarcă gratuit aplicația Radio Crestin pe iPhone sau Android. Ascultă cele mai bune posturi de radio crestine din România, fără reclame.",
+  keywords: "descarcă radio crestin, aplicație radio crestin, radio crestin ios, radio crestin android",
+  imageUrl: "https://radio-crestin.s3.eu-central-1.amazonaws.com/media/public/iphone_desktop_size.png",
+  fullURL: `${SITE_URL}/descarca-aplicatia-radio-crestin`,
+};
+
+const appSchema = JSON.stringify({
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  name: "Radio Crestin",
+  operatingSystem: "Android, iOS",
+  applicationCategory: "MultimediaApplication",
+  aggregateRating: {
+    "@type": "AggregateRating",
+    ratingValue: APP_RATING,
+    reviewCount: APP_REVIEW_COUNT,
+    bestRating: "5",
+    worstRating: "1",
+  },
+  offers: {
+    "@type": "Offer",
+    price: "0",
+    priceCurrency: "RON",
+  },
+});
+---
+
+<BaseLayout {...meta} noindex={false}>
+  <script type="application/ld+json" set:html={appSchema} slot="head" />
+  <DescarcaApp client:load />
+</BaseLayout>

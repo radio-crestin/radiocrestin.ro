@@ -1,7 +1,7 @@
 import React, { useContext } from "react";
 
 import styles from "./styles.module.scss";
-import { IStation } from "@/models/Station";
+import type { IStation } from "@/models/Station";
 import { Context } from "@/context/ContextProvider";
 import { SHARE_URL } from "@/constants/constants";
 

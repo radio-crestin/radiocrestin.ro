@@ -2,7 +2,8 @@
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { getStationSongHistory, ISongHistoryItem } from "@/services/getStations";
+import { getStationSongHistory } from "@/services/getStations";
+import type { ISongHistoryItem } from "@/services/getStations";
 import styles from "./styles.module.scss";
 
 interface SongHistoryProps {

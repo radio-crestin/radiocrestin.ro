@@ -1,7 +1,7 @@
 import React, { useEffect } from "react";
 import styles from "./styles.module.scss";
 import Star from "@/icons/Star";
-import { IReview, IReviewsStats } from "@/models/Station";
+import type { IReview, IReviewsStats } from "@/models/Station";
 
 interface ReviewsListModalProps {
   isOpen: boolean;

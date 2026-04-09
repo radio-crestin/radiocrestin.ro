@@ -1,4 +1,4 @@
-import { IStation } from "@/models/Station";
+import type { IStation } from "@/models/Station";
 import { SITE_URL } from "@/constants/constants";
 
 const absoluteImageUrl = (path: string) => {
