@@ -3,7 +3,7 @@ const PROXIED_DOMAINS = [
   "radio-crestin.s3.eu-central-1.amazonaws.com",
 ];
 
-const PROXY_BASE = "https://img.radiocrestin.ro";
+const PROXY_BASE = "https://cdn.radiocrestin.ro";
 
 export function proxyImageUrl(url: string | null | undefined): string | null {
   if (!url) return null;
