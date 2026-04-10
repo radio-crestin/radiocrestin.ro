@@ -8,7 +8,8 @@
     "generate-sitemap": "node scripts/generate-sitemap.cjs",
     "generate-llms-txt": "node scripts/generate-llms-txt.cjs",
     "download-thumbnails": "node scripts/download-thumbnails.cjs",
-    "build": "npm run download-thumbnails && npm run generate-sitemap && npm run generate-llms-txt && astro build",
+    "build": "npm run download-thumbnails && npm run generate-sitemap && npm run generate-llms-txt && astro build && npm run upload-sourcemaps",
+    "upload-sourcemaps": "POSTHOG_CLI_API_KEY=${POSTHOG_API_KEY} POSTHOG_CLI_PROJECT_ID=${POSTHOG_PROJECT_ID} posthog-cli --host https://eu.posthog.com sourcemap process --directory ./dist/_astro --delete-after",
     "preview": "astro preview --port 3005",
     "start": "npx serve@latest dist",
     "lint": "eslint ."
@@ -26,6 +27,7 @@
     "zustand": "^5.0.3"
   },
   "devDependencies": {
+    "@posthog/cli": "^0.7.5",
     "@types/node": "^24.3.0",
     "@types/qrcode.react": "^1.0.5",
     "@types/react": "^19.2.14",
