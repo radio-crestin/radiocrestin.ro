@@ -8,6 +8,13 @@ export default defineConfig({
     domains: ["fsn1.your-objectstorage.com"],
   },
   vite: {
+    environments: {
+      client: {
+        build: {
+          sourcemap: "hidden",
+        },
+      },
+    },
     resolve: {
       alias: {
         "@/": new URL("./src/common/", import.meta.url).pathname,
