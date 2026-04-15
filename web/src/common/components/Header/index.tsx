@@ -8,6 +8,7 @@ import WhatsAppButton from "@/components/WhatsAppButton";
 import StationRating from "@/components/Reviews/StationRating";
 import SongHistory from "@/components/SongHistory";
 import songHistoryStyles from "@/components/SongHistory/styles.module.scss";
+import { getValidImageUrl } from "@/utils";
 
 const Navigation = () => {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -128,11 +129,11 @@ const ContentLeft = () => {
     <div className={styles.left_content}>
       {ctx.selectedStation && (
         <>
-          {selectedStation.now_playing?.song?.thumbnail_url ? (
+          {selectedStation.now_playing?.song?.thumbnail_url && getValidImageUrl(selectedStation.now_playing.song.thumbnail_url) !== "/images/radio-white-default.jpg" ? (
             <div className={styles.container_img_plus_thumb}>
               <img
                 loading={"lazy"}
-                src={selectedStation.now_playing?.song?.thumbnail_url}
+                src={getValidImageUrl(selectedStation.now_playing.song.thumbnail_url)}
                 alt={selectedStation.title}
                 width={230}
                 height={230}
@@ -142,7 +143,7 @@ const ContentLeft = () => {
               />
               <img
                 loading={"lazy"}
-                src={selectedStation?.thumbnail_url}
+                src={getValidImageUrl(selectedStation?.thumbnail_url)}
                 alt={selectedStation.title}
                 className={styles.img_thumb}
                 width={230}
@@ -155,7 +156,7 @@ const ContentLeft = () => {
           ) : (
             <img
               loading={"lazy"}
-              src={selectedStation?.thumbnail_url}
+              src={getValidImageUrl(selectedStation?.thumbnail_url)}
               alt={selectedStation.title}
               width={230}
               height={230}
@@ -228,7 +229,7 @@ const ContentRight = () => {
       <div className={styles.station_details}>
         <div className={styles.title_container}>
           <img
-            src={ctx.selectedStation?.thumbnail_url}
+            src={getValidImageUrl(ctx.selectedStation?.thumbnail_url)}
             alt="Radio Crestin"
             height={100}
             width={100}

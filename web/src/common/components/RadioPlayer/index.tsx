@@ -17,7 +17,7 @@ import { CONSTANTS } from "@/constants/constants";
 import styles from "./styles.module.scss";
 import { Context } from "@/context/ContextProvider";
 import usePlayer from "@/store/usePlayer";
-import usePlaybackState from "@/store/usePlaybackState";
+import usePlaybackState, { HLS_OFFSET_SECONDS } from "@/store/usePlaybackState";
 import { PLAYBACK_STATE } from "@/models/enum";
 import { toast } from "react-toastify";
 import Heart from "@/icons/Heart";
@@ -28,6 +28,7 @@ import OfflineStatus from "@/components/OfflineStatus";
 import Star from "@/icons/Star";
 import usePlayCount from "@/store/usePlayCount";
 import { useRefreshStations } from "@/hooks/useUpdateStationsMetadata";
+import { getValidImageUrl } from "@/utils";
 
 enum STREAM_TYPE {
   HLS = "HLS",
@@ -44,7 +45,7 @@ const MAX_MEDIA_RETRIES = 20;
 export default function RadioPlayer() {
   const { ctx, setCtx } = useContext(Context);
   const { playerVolume, setPlayerVolume } = usePlayer();
-  const { playbackState, setPlaybackState, setHasError } = usePlaybackState();
+  const { playbackState, setPlaybackState, setHasError, setHlsActive, setHlsPlaybackTimestamp, setHlsSongId } = usePlaybackState();
   const station = ctx.selectedStation;
   const retriesRef = useRef(MAX_MEDIA_RETRIES);
   const [streamState, setStreamState] = useState<{ type: STREAM_TYPE; slug: string } | null>(null);
@@ -144,9 +145,13 @@ export default function RadioPlayer() {
     );
 
     setStreamState(availableStreamType ? { type: availableStreamType, slug: station.slug } : null);
+    setHlsActive(availableStreamType === STREAM_TYPE.HLS);
 
     return () => {
       setStreamState(null);
+      setHlsActive(false);
+      setHlsPlaybackTimestamp(null);
+      setHlsSongId(null);
       retriesRef.current = MAX_MEDIA_RETRIES;
       isPausedRef.current = false;
     };
@@ -204,29 +209,40 @@ export default function RadioPlayer() {
     return url.toString();
   };
 
+  // Maximum seconds without a new fragment loaded before we consider HLS stuck
+  // (e.g. transcoder restart producing a broken m3u8). After this, fall back.
+  const HLS_STUCK_TIMEOUT_MS = 15_000;
+
   const HLS_CONFIG: Partial<HlsConfig> = {
+    // Play 2 minutes behind the live edge so metadata (fetched with the
+    // same offset) matches the audio the user actually hears.
+    // Same approach as the mobile app's SeekModeManager.
+    liveSyncDuration: HLS_OFFSET_SECONDS,
+    liveMaxLatencyDuration: HLS_OFFSET_SECONDS + 30,
+    // All policies: 3 retries with backoff. Handles transient 400s from
+    // transcoder restarts producing new m3u8 playlists.
     manifestLoadPolicy: {
       default: {
-        maxTimeToFirstByteMs: 2000,
-        maxLoadTimeMs: 3000,
-        timeoutRetry: { maxNumRetry: 1, retryDelayMs: 500, maxRetryDelayMs: 1000 },
-        errorRetry: { maxNumRetry: 1, retryDelayMs: 500, maxRetryDelayMs: 1000 },
+        maxTimeToFirstByteMs: 3000,
+        maxLoadTimeMs: 5000,
+        timeoutRetry: { maxNumRetry: 3, retryDelayMs: 1000, maxRetryDelayMs: 3000 },
+        errorRetry: { maxNumRetry: 3, retryDelayMs: 1000, maxRetryDelayMs: 3000 },
       },
     },
     playlistLoadPolicy: {
       default: {
-        maxTimeToFirstByteMs: 2000,
-        maxLoadTimeMs: 3000,
-        timeoutRetry: { maxNumRetry: 2, retryDelayMs: 500, maxRetryDelayMs: 1000 },
-        errorRetry: { maxNumRetry: 2, retryDelayMs: 500, maxRetryDelayMs: 1000 },
+        maxTimeToFirstByteMs: 3000,
+        maxLoadTimeMs: 5000,
+        timeoutRetry: { maxNumRetry: 3, retryDelayMs: 1000, maxRetryDelayMs: 3000 },
+        errorRetry: { maxNumRetry: 3, retryDelayMs: 1000, maxRetryDelayMs: 3000 },
       },
     },
     fragLoadPolicy: {
       default: {
-        maxTimeToFirstByteMs: 2000,
-        maxLoadTimeMs: 5000,
-        timeoutRetry: { maxNumRetry: 3, retryDelayMs: 500, maxRetryDelayMs: 2000 },
-        errorRetry: { maxNumRetry: 3, retryDelayMs: 500, maxRetryDelayMs: 2000 },
+        maxTimeToFirstByteMs: 3000,
+        maxLoadTimeMs: 8000,
+        timeoutRetry: { maxNumRetry: 3, retryDelayMs: 1000, maxRetryDelayMs: 4000 },
+        errorRetry: { maxNumRetry: 3, retryDelayMs: 1000, maxRetryDelayMs: 4000 },
       },
     },
   };
@@ -240,6 +256,18 @@ export default function RadioPlayer() {
   ): (() => void) => {
     let manifestParsed = false;
     let onCanPlayThrough: (() => void) | null = null;
+    let stuckTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const resetStuckTimer = () => {
+      if (stuckTimer) clearTimeout(stuckTimer);
+      stuckTimer = setTimeout(() => {
+        if (hls === hlsInstanceRef.current) {
+          console.warn("[HLS] Stuck — no fragment loaded for", HLS_STUCK_TIMEOUT_MS, "ms, switching stream");
+          captureException(new Error(`HLS stuck timeout - station: ${station.title}`));
+          retryMechanismRef.current();
+        }
+      }, HLS_STUCK_TIMEOUT_MS);
+    };
 
     clearHlsTimeout();
     hlsRecoveryRef.current = 0;
@@ -251,13 +279,13 @@ export default function RadioPlayer() {
       audio.src = hls_stream_url;
     }
 
-    // 2-second timeout: if HLS manifest isn't parsed, fall back to next stream type
+    // 3-second timeout: if HLS manifest isn't parsed, fall back to next stream type
     hlsTimeoutRef.current = setTimeout(() => {
       if (!manifestParsed && hls === hlsInstanceRef.current) {
         hlsTimeoutRef.current = null;
         retryMechanismRef.current();
       }
-    }, 2000);
+    }, 3000);
 
     hls.on(Hls.Events.AUDIO_TRACK_LOADING, function () {
       if (hls !== hlsInstanceRef.current) return;
@@ -269,6 +297,8 @@ export default function RadioPlayer() {
       manifestParsed = true;
       clearHlsTimeout();
       setPlaybackState(PLAYBACK_STATE.BUFFERING);
+      // Start stuck detection — if no fragment loads within the timeout, bail
+      resetStuckTimer();
       onCanPlayThrough = () => {
         onCanPlayThrough = null;
         audio.play().catch(() => {
@@ -276,6 +306,47 @@ export default function RadioPlayer() {
         });
       };
       audio.addEventListener("canplaythrough", onCanPlayThrough, { once: true });
+    });
+
+    // Each loaded fragment resets the stuck timer
+    hls.on(Hls.Events.FRAG_LOADED, () => {
+      if (hls !== hlsInstanceRef.current) return;
+      resetStuckTimer();
+    });
+
+    // Track the actual playback timestamp from EXT-X-PROGRAM-DATE-TIME.
+    // This is the authoritative source for "what time is the audio I'm hearing?"
+    // and is used by the metadata hook to fetch the matching song info.
+    hls.on(Hls.Events.FRAG_CHANGED, (_event, data) => {
+      if (hls !== hlsInstanceRef.current) return;
+      const pdt = data.frag.programDateTime;
+      if (pdt) {
+        // pdt is milliseconds since epoch — convert to 10s-aligned Unix seconds
+        const epochSec = Math.floor(pdt / 10000) * 10;
+        setHlsPlaybackTimestamp(epochSec);
+      }
+    });
+
+    // ID3 metadata from HLS segments — detect song changes for immediate refresh.
+    // The backend injects TXXX frames with "song_id\0<id>" into every .ts segment.
+    hls.on(Hls.Events.FRAG_PARSING_METADATA, (_event, data) => {
+      if (hls !== hlsInstanceRef.current) return;
+      for (const sample of data.samples) {
+        try {
+          // hls.js decodes ID3 frames — each sample.data is a Uint8Array with
+          // the full ID3 tag. We scan for TXXX frames containing "song_id".
+          const text = new TextDecoder("utf-8", { fatal: false }).decode(sample.data);
+          const match = text.match(/song_id\0(\d+)/);
+          if (match) {
+            const songId = parseInt(match[1], 10);
+            if (!isNaN(songId)) {
+              setHlsSongId(songId);
+            }
+          }
+        } catch {
+          // Ignore parse errors from non-text ID3 frames
+        }
+      }
     });
 
     let isRecovering = false;
@@ -309,10 +380,9 @@ export default function RadioPlayer() {
 
       // Network errors
       if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
-        // Permanent HTTP errors (404, 403, 410) or manifest failures — in-place retry cannot help
         const httpStatus = data.response?.code;
-        if (httpStatus === 404 || httpStatus === 403 || httpStatus === 410
-          || data.details === Hls.ErrorDetails.MANIFEST_LOAD_ERROR) {
+        // Permanent HTTP errors — in-place retry cannot help
+        if (httpStatus === 403 || httpStatus === 410) {
           console.warn(`[HLS] Permanent network error (HTTP ${httpStatus}, ${data.details}), switching stream`);
           isRecovering = false;
           captureException(new Error(errorInfo));
@@ -320,11 +390,14 @@ export default function RadioPlayer() {
           return;
         }
 
-        // Transient network hiccup — restart segment loading from live edge
+        // Transient errors (400, 404, timeouts, network hiccups) — recoverable.
+        // 400/404 often happen during transcoder restarts when a new m3u8 arrives
+        // referencing segments that don't exist yet. Restarting from live edge helps.
         if (hlsRecoveryRef.current < 3) {
           hlsRecoveryRef.current++;
-          console.warn(`[HLS] Recovering network error (attempt ${hlsRecoveryRef.current}):`, data.details);
+          console.warn(`[HLS] Recovering network error (attempt ${hlsRecoveryRef.current}, HTTP ${httpStatus}):`, data.details);
           hls.startLoad(-1);
+          resetStuckTimer();
           setTimeout(() => { isRecovering = false; }, 100);
           return;
         }
@@ -338,6 +411,7 @@ export default function RadioPlayer() {
 
     return () => {
       clearHlsTimeout();
+      if (stuckTimer) clearTimeout(stuckTimer);
       if (onCanPlayThrough) {
         audio.removeEventListener("canplaythrough", onCanPlayThrough);
       }
@@ -477,12 +551,14 @@ export default function RadioPlayer() {
         nextIndex = (nextIndex + 1) % streamOrder.length;
         if (availableStreamTypes.includes(streamOrder[nextIndex])) {
           setStreamState({ type: streamOrder[nextIndex], slug: station.slug });
+          setHlsActive(streamOrder[nextIndex] === STREAM_TYPE.HLS);
           break;
         }
       } while (nextIndex !== currentIndex);
 
       if (nextIndex === currentIndex) {
         setStreamState({ type: streamOrder[nextIndex], slug: station.slug });
+        setHlsActive(streamOrder[nextIndex] === STREAM_TYPE.HLS);
       }
     } else {
       setPlaybackState(PLAYBACK_STATE.STOPPED);
@@ -527,7 +603,7 @@ export default function RadioPlayer() {
         artist: station.now_playing?.song?.artist?.name || "",
         artwork: [
           {
-            src: station.thumbnail_url || CONSTANTS.DEFAULT_COVER,
+            src: getValidImageUrl(station.thumbnail_url),
             sizes: "512x512",
             type: "image/png",
           },
@@ -616,11 +692,9 @@ export default function RadioPlayer() {
         <div className={styles.player_container}>
           <div className={styles.image_container}>
             <img
-              src={
-                station.now_playing?.song?.thumbnail_url ||
-                station.thumbnail_url ||
-                CONSTANTS.DEFAULT_COVER
-              }
+              src={getValidImageUrl(
+                station.now_playing?.song?.thumbnail_url || station.thumbnail_url
+              )}
               alt={`${station.title} | Radio Crestin`}
               className={styles.station_thumbnail}
               onError={(e) => {

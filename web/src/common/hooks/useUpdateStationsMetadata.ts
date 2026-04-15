@@ -4,8 +4,17 @@ import type { IStationMetadata } from "@/services/getStations";
 import type { IStation } from "@/models/Station";
 import { Context } from "@/context/ContextProvider";
 import { captureException } from "@/utils/posthog";
+import usePlaybackState from "@/store/usePlaybackState";
 
 const FULL_REFRESH_INTERVAL = 5 * 60 * 1000; // 5 minutes
+
+/** Compute the same 10-second-aligned Unix timestamp the API expects. */
+const getTimestamp = (offsetSeconds = 0) =>
+  Math.floor((Date.now() / 1000 - offsetSeconds) / 10) * 10;
+
+/** Check if a station's primary stream is HLS. */
+const isStationHls = (station: IStation): boolean =>
+  station.station_streams?.some(s => s.type === "HLS") ?? false;
 
 function isObject(item: any): item is Record<string, any> {
   return item && typeof item === "object" && !Array.isArray(item);
@@ -32,6 +41,41 @@ const applyMetadataToStations = (stations: IStation[], metadata: IStationMetadat
     const meta = metadataMap.get(station.id);
     if (!meta) return station;
     return deepMerge(station, meta);
+  });
+};
+
+/**
+ * Merge live + offset metadata into the station list, matching the mobile
+ * app's approach: HLS stations get now_playing from the offset fetch (matches
+ * the delayed audio), non-HLS stations get live metadata. Listener counts
+ * always come from the live fetch.
+ */
+const applyDualMetadata = (
+  stations: IStation[],
+  liveMetadata: IStationMetadata[],
+  offsetMetadata: IStationMetadata[],
+): IStation[] => {
+  if (!liveMetadata.length && !offsetMetadata.length) return stations;
+
+  const liveMap = new Map(liveMetadata.map(m => [m.id, m]));
+  const offsetMap = new Map(offsetMetadata.map(m => [m.id, m]));
+
+  return stations.map(station => {
+    const useOffset = isStationHls(station);
+    const primary = useOffset ? offsetMap.get(station.id) : liveMap.get(station.id);
+    const fallback = useOffset ? liveMap.get(station.id) : offsetMap.get(station.id);
+    const meta = primary ?? fallback;
+    if (!meta) return station;
+
+    let merged = deepMerge(station, meta);
+
+    // Always use live listener count (offset metadata has stale counts)
+    const liveMeta = liveMap.get(station.id);
+    if (liveMeta?.now_playing && typeof (liveMeta.now_playing as any).listeners === "number") {
+      merged = deepMerge(merged, { total_listeners: (liveMeta.now_playing as any).listeners });
+    }
+
+    return merged;
   });
 };
 
@@ -78,6 +122,15 @@ const useUpdateStationsMetadata = () => {
   const lastFetchTimestamp = useRef<number>(0);
   const lastFullRefreshTimestamp = useRef<number>(0);
   const initialFetchDone = useRef(false);
+  const hlsActive = usePlaybackState(s => s.hlsActive);
+  const hlsActiveRef = useRef(hlsActive);
+  hlsActiveRef.current = hlsActive;
+  const hlsPlaybackTimestamp = usePlaybackState(s => s.hlsPlaybackTimestamp);
+  const hlsPlaybackTimestampRef = useRef(hlsPlaybackTimestamp);
+  hlsPlaybackTimestampRef.current = hlsPlaybackTimestamp;
+  const hlsSongId = usePlaybackState(s => s.hlsSongId);
+  /** The song_id we last triggered an immediate fetch for — prevents re-fetching. */
+  const lastFetchedHlsSongIdRef = useRef<number | null>(null);
 
   // Refs to avoid stale closures in the polling interval
   const stationsRef = useRef(ctx.stations);
@@ -98,12 +151,46 @@ const useUpdateStationsMetadata = () => {
     }
   }, []);
 
+  // Immediate metadata refetch when HLS ID3 detects a song change.
+  // Fires ONCE per new hlsSongId — after that the regular 10s poll takes over.
+  useEffect(() => {
+    if (
+      hlsSongId == null ||
+      hlsSongId === lastFetchedHlsSongIdRef.current ||
+      !initialFetchDone.current
+    ) return;
+
+    // Check if the displayed song already matches — no fetch needed
+    const displayedSongId = ctx.selectedStation?.now_playing?.song?.id;
+    if (displayedSongId === hlsSongId) {
+      lastFetchedHlsSongIdRef.current = hlsSongId;
+      return;
+    }
+
+    lastFetchedHlsSongIdRef.current = hlsSongId;
+
+    // Fire-and-forget immediate metadata fetch with the HLS playback timestamp
+    const playbackTs = hlsPlaybackTimestampRef.current;
+    getStationsMetadata(undefined, playbackTs ?? undefined).then(metadata => {
+      if (!metadata.length) return;
+      const stations = stationsRef.current;
+      if (!stations?.length) return;
+      const updatedStations = applyMetadataToStations(stations, metadata);
+      setCtx({ stations: updatedStations });
+      const slug = selectedStationSlugRef.current;
+      if (slug) {
+        const updatedStation = updatedStations.find((s: IStation) => s.slug === slug);
+        if (updatedStation) setCtx({ selectedStation: updatedStation });
+      }
+    }).catch(() => { /* next poll will catch up */ });
+  }, [hlsSongId]);
+
   useEffect(() => {
     const doFullRefresh = async () => {
       try {
         const data = await getStations();
         if (data?.stations?.length > 0) {
-          lastFetchTimestamp.current = Math.floor(Date.now() / 10000) * 10;
+          lastFetchTimestamp.current = getTimestamp();
           lastFullRefreshTimestamp.current = Date.now();
           initialFetchDone.current = true;
           setCtx({ stations: data.stations });
@@ -135,21 +222,42 @@ const useUpdateStationsMetadata = () => {
           return;
         }
 
-        const metadata = await getStationsMetadata(lastFetchTimestamp.current);
-        lastFetchTimestamp.current = Math.floor(Date.now() / 10000) * 10;
+        const playbackTs = hlsActiveRef.current ? hlsPlaybackTimestampRef.current : null;
 
-        if (metadata.length > 0) {
-          const updatedStations = applyMetadataToStations(stationsRef.current, metadata);
-          setCtx({ stations: updatedStations });
+        let updatedStations: IStation[];
 
-          const slug = selectedStationSlugRef.current;
-          if (slug) {
-            const updatedStation = updatedStations.find(
-              (s: IStation) => s.slug === slug
-            );
-            if (updatedStation) {
-              setCtx({ selectedStation: updatedStation });
-            }
+        if (playbackTs) {
+          // Dual-fetch: live (differential) + HLS playback timestamp for HLS stations.
+          // The playback timestamp comes directly from the segment's EXT-X-PROGRAM-DATE-TIME,
+          // so it precisely matches the audio the user is hearing.
+          const [liveMetadata, offsetMetadata] = await Promise.all([
+            getStationsMetadata(lastFetchTimestamp.current),
+            getStationsMetadata(undefined, playbackTs),
+          ]);
+          lastFetchTimestamp.current = getTimestamp();
+
+          if (!liveMetadata.length && !offsetMetadata.length) return;
+
+          updatedStations = applyDualMetadata(stationsRef.current, liveMetadata, offsetMetadata);
+        } else {
+          // No HLS playing — single fetch with live timestamp
+          const metadata = await getStationsMetadata(lastFetchTimestamp.current);
+          lastFetchTimestamp.current = getTimestamp();
+
+          if (!metadata.length) return;
+
+          updatedStations = applyMetadataToStations(stationsRef.current, metadata);
+        }
+
+        setCtx({ stations: updatedStations });
+
+        const slug = selectedStationSlugRef.current;
+        if (slug) {
+          const updatedStation = updatedStations.find(
+            (s: IStation) => s.slug === slug
+          );
+          if (updatedStation) {
+            setCtx({ selectedStation: updatedStation });
           }
         }
       } catch {

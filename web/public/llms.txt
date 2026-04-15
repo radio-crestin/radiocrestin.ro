@@ -38,7 +38,7 @@ Aplicația Radio Creștin este disponibilă gratuit pe Android și iOS, cu un ra
 - Android: https://play.google.com/store/apps/details?id=com.radiocrestin.radio_crestin
 - iOS: https://apps.apple.com/ro/app/radio-crestin/id6451270471
 
-## Posturi de radio disponibile (65 posturi)
+## Posturi de radio disponibile (64 posturi)
 
 ### Aripi Spre Cer
 - Ascultă live: https://www.radiocrestin.ro/aripi-spre-cer
@@ -378,11 +378,6 @@ s.a.
 - Website oficial: https://www.radiofiladelfia.ro/
 - Descriere: Radio Filadelfia s-a născut pe 1 decembrie 2008. Este unda celor ce au urechi să asculte! Muzica şi mesajul care te duc la Cruce!
 „Ți-am pus înainte o ușă deschisă, pe care nimeni n-o poate închide!” (Apocalipsa 3:8)
-
-### Radio Flacăra Rusaliilor
-- Ascultă live: https://www.radiocrestin.ro/radio-flacara-rusaliilor
-- Website oficial: https://radio-flacararusaliilor.ro/
-- Descriere: Scopul acestui post de radio este să ajute la răspândirea Evangheliei Domnului nostru Isus Hristos începând din Sebiș și mergând până la marginile pământului. Apoi, se dorește ca prin emisiunile difuzate orice ascultător să se edifice spiritual și să aducă glorie Dumnezeului veșnic.
 
 ### Radio Gosen
 - Ascultă live: https://www.radiocrestin.ro/radio-gosen

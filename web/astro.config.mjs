@@ -3,6 +3,7 @@ import react from "@astrojs/react";
 
 export default defineConfig({
   output: "static",
+  prefetch: false,
   integrations: [react()],
   image: {
     domains: ["fsn1.your-objectstorage.com"],
