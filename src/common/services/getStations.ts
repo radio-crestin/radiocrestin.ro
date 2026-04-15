@@ -62,8 +62,12 @@ export const getStations = async () => {
   }
 };
 
-export const getStationsMetadata = async (changesFromTimestamp?: number): Promise<IStationMetadata[]> => {
-  let endpoint = `${API_BASE}/stations-metadata?timestamp=${getTimestamp()}`;
+export const getStationsMetadata = async (
+  changesFromTimestamp?: number,
+  explicitTimestamp?: number,
+): Promise<IStationMetadata[]> => {
+  const ts = explicitTimestamp ?? getTimestamp();
+  let endpoint = `${API_BASE}/stations-metadata?timestamp=${ts}`;
   if (changesFromTimestamp) {
     endpoint += `&changes_from_timestamp=${changesFromTimestamp}`;
   }

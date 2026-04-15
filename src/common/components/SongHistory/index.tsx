@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { getStationSongHistory } from "@/services/getStations";
 import type { ISongHistoryItem } from "@/services/getStations";
 import styles from "./styles.module.scss";
+import { getValidImageUrl } from "@/utils";
 
 interface SongHistoryProps {
   stationSlug: string;
@@ -598,11 +599,11 @@ const SongHistory: React.FC<SongHistoryProps> = ({
                             >
                               <img
                                 className={styles.song_thumbnail}
-                                src={item.song.thumbnail_url || stationThumbnailUrl || "/images/radio-white-default.jpg"}
+                                src={getValidImageUrl(item.song.thumbnail_url, getValidImageUrl(stationThumbnailUrl))}
                                 alt={item.song.name}
                                 loading="lazy"
                                 onError={(e) => {
-                                  e.currentTarget.src = stationThumbnailUrl || "/images/radio-white-default.jpg";
+                                  e.currentTarget.src = getValidImageUrl(stationThumbnailUrl);
                                 }}
                               />
                               <div className={styles.song_info}>

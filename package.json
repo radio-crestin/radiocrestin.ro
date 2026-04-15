@@ -12,7 +12,8 @@
     "upload-sourcemaps": "POSTHOG_CLI_API_KEY=${POSTHOG_API_KEY} POSTHOG_CLI_PROJECT_ID=${POSTHOG_PROJECT_ID} posthog-cli --host https://eu.posthog.com sourcemap process --directory ./dist/_astro --delete-after",
     "preview": "astro preview --port 3005",
     "start": "npx serve@latest dist",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "test": "vitest run"
   },
   "dependencies": {
     "@astrojs/react": "^4.0.0",
@@ -37,6 +38,7 @@
     "sass": "^1.87.0",
     "sharp": "^0.34.5",
     "typescript": "^5",
+    "vitest": "^4.1.4",
     "wrangler": "^4.0.0"
   }
 }

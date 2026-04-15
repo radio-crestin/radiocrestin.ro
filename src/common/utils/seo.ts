@@ -1,5 +1,6 @@
 import type { IStation } from "@/models/Station";
 import { SITE_URL } from "@/constants/constants";
+import { getValidImageUrl } from "@/utils";
 
 const absoluteImageUrl = (path: string) => {
   if (path.startsWith("http")) return path;
@@ -17,7 +18,7 @@ export const seoStation = (station: IStation) => {
     keywords: station?.title
       ? `${station.title}, ${station.title} live, radio crestin, radiocrestin, predici crestine, muzica crestina, radiouri crestine, radio crestin online, radiouri crestine online, radiocrestin.ro, online`
       : SEO_DEFAULT.keywords,
-    imageUrl: absoluteImageUrl(station?.thumbnail_url || "/images/android-chrome-512x512.png"),
+    imageUrl: absoluteImageUrl(getValidImageUrl(station?.thumbnail_url, "/images/android-chrome-512x512.png")),
     fullURL: station?.slug
       ? `${SITE_URL}/${station.slug}`
       : SEO_DEFAULT.fullURL,

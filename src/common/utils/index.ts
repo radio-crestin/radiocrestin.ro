@@ -41,5 +41,10 @@ export function getValidImageUrl(url: string | null | undefined, fallback: strin
   if (!url || url === "null" || url === "undefined" || url.trim() === "") {
     return fallback;
   }
+  // Reject non-URL strings like "no_cover_image.jpg" that the API returns
+  // Valid URLs must start with "/" (local) or "http" (remote)
+  if (!url.startsWith("/") && !url.startsWith("http")) {
+    return fallback;
+  }
   return url;
 }
