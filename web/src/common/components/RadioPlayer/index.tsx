@@ -261,7 +261,7 @@ export default function RadioPlayer() {
     const resetStuckTimer = () => {
       if (stuckTimer) clearTimeout(stuckTimer);
       stuckTimer = setTimeout(() => {
-        if (hls === hlsInstanceRef.current) {
+        if (hls === hlsInstanceRef.current && !isPausedRef.current) {
           console.warn("[HLS] Stuck — no fragment loaded for", HLS_STUCK_TIMEOUT_MS, "ms, switching stream");
           captureException(new Error(`HLS stuck timeout - station: ${station.title}`));
           retryMechanismRef.current();
@@ -301,6 +301,7 @@ export default function RadioPlayer() {
       resetStuckTimer();
       onCanPlayThrough = () => {
         onCanPlayThrough = null;
+        if (isPausedRef.current) return;
         audio.play().catch(() => {
           setPlaybackState(PLAYBACK_STATE.STOPPED);
         });
