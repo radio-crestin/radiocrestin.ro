@@ -426,22 +426,16 @@ export default function RadioPlayer() {
 
     switch (playbackState) {
       case PLAYBACK_STATE.STARTED:
-        // If HLS is paused (stopLoad), resume it instead of rebuilding
-        if (isPausedRef.current && hlsInstanceRef.current) {
-          isPausedRef.current = false;
-          hlsInstanceRef.current.startLoad(-1);
-          audio.play().catch((error) => handlePlayError(error, "Resume from pause"));
-          incrementPlayCount(station.slug);
-          trackListeningStarted(station.slug, station.title, station.id);
-          listeningStartRef.current = { time: Date.now(), slug: station.slug, title: station.title, id: station.id };
-        } else {
-          isPausedRef.current = false;
-          incrementPlayCount(station.slug);
-          trackListeningStarted(station.slug, station.title, station.id);
-          listeningStartRef.current = { time: Date.now(), slug: station.slug, title: station.title, id: station.id };
-          // Trigger stream loader effect to create a fresh HLS instance
-          setLoadKey(k => k + 1);
-        }
+        // Always create a fresh HLS instance on resume. The paused instance's
+        // buffer and playlist are stale (segments have rolled off the live
+        // window), so startLoad() would fail and trigger the stuck timer.
+        // The loadKey bump re-runs the stream-loader effect, whose cleanup
+        // destroys the existing HLS before creating a new one.
+        isPausedRef.current = false;
+        incrementPlayCount(station.slug);
+        trackListeningStarted(station.slug, station.title, station.id);
+        listeningStartRef.current = { time: Date.now(), slug: station.slug, title: station.title, id: station.id };
+        setLoadKey(k => k + 1);
         break;
       case PLAYBACK_STATE.STOPPED:
         if (listeningStartRef.current) {
