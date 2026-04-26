@@ -7,6 +7,18 @@ const API_BASE = "https://api.radiocrestin.ro/api/v1";
 
 const getTimestamp = () => Math.floor(Date.now() / 10000) * 10;
 
+// AbortSignal.timeout polyfill for older browsers (Safari < 16, older WebViews)
+const timeoutSignal = (ms: number): AbortSignal => {
+  if (typeof AbortSignal !== "undefined" && typeof AbortSignal.timeout === "function") {
+    return AbortSignal.timeout(ms);
+  }
+  const controller = new AbortController();
+  setTimeout(() => {
+    controller.abort(new DOMException("The operation timed out.", "TimeoutError"));
+  }, ms);
+  return controller.signal;
+};
+
 // Transient network errors (iOS background suspension, intermittent connectivity)
 // are expected during long listening sessions — don't report them to PostHog.
 const isTransientNetworkError = (error: unknown): boolean => {
@@ -35,7 +47,7 @@ export const getStations = async () => {
       headers: {
         accept: "*/*",
       },
-      signal: AbortSignal.timeout(isClient ? 5000 : 2000),
+      signal: timeoutSignal(isClient ? 5000 : 2000),
     });
 
     if (!response.ok) {
@@ -164,7 +176,7 @@ export const getStationReviews = async (
       headers: {
         accept: "*/*",
       },
-      signal: AbortSignal.timeout(3000),
+      signal: timeoutSignal(3000),
     });
 
     if (!response.ok) {
