@@ -257,6 +257,10 @@ export default function RadioPlayer() {
     let manifestParsed = false;
     let onCanPlayThrough: (() => void) | null = null;
     let stuckTimer: ReturnType<typeof setTimeout> | null = null;
+    // audio.currentTime at the last observed progress event. Used as a positive
+    // signal in the stuck-callback: if the audio element is making playback
+    // progress, we are not stuck regardless of whether FRAG_LOADED fired.
+    let lastSeenCurrentTime = 0;
 
     const clearStuckTimer = () => {
       if (stuckTimer) {
@@ -265,29 +269,42 @@ export default function RadioPlayer() {
       }
     };
 
-    const resetStuckTimer = () => {
-      clearStuckTimer();
-      // Mobile browsers throttle JS timers and network when the tab is hidden,
-      // so FRAG_LOADED stops firing — that's expected, not stuck. Skip detection
-      // until the tab is visible again; visibilitychange resets the timer.
+    const checkStuck = () => {
+      stuckTimer = null;
+      if (hls !== hlsInstanceRef.current || isPausedRef.current) return;
+      // Defense against the iOS-freeze race: the timer may have been scheduled
+      // while visible, and the page was suspended before visibilitychange could
+      // dispatch and clear it. When JS resumes, the queued setTimeout fires —
+      // re-check the live visibility state and bail (visibilitychange will rearm).
       if (typeof document !== "undefined" && document.hidden) return;
-      stuckTimer = setTimeout(() => {
-        if (hls === hlsInstanceRef.current && !isPausedRef.current) {
-          console.warn("[HLS] Stuck — no fragment loaded for", HLS_STUCK_TIMEOUT_MS, "ms, switching stream");
-          captureException(new Error(`HLS stuck timeout - station: ${station.title}`));
-          retryMechanismRef.current();
-        }
-      }, HLS_STUCK_TIMEOUT_MS);
+      // Positive progress signal: audio element advancement is the ground truth.
+      // If audio.currentTime advanced since the last reset, the stream is fine
+      // even if FRAG_LOADED was throttled (mobile background, slow network).
+      if (audio.currentTime > lastSeenCurrentTime + 0.1) {
+        lastSeenCurrentTime = audio.currentTime;
+        stuckTimer = setTimeout(checkStuck, HLS_STUCK_TIMEOUT_MS);
+        return;
+      }
+      console.warn("[HLS] Stuck — no fragment loaded for", HLS_STUCK_TIMEOUT_MS, "ms, switching stream");
+      captureException(new Error(`HLS stuck timeout - station: ${station.title}`));
+      retryMechanismRef.current();
+    };
+
+    const resetStuckTimer = () => {
+      lastSeenCurrentTime = audio.currentTime;
+      clearStuckTimer();
+      // Mobile browsers throttle JS timers and network when the tab is hidden.
+      // Skip arming until visible — visibilitychange will rearm with a fresh window.
+      if (typeof document !== "undefined" && document.hidden) return;
+      stuckTimer = setTimeout(checkStuck, HLS_STUCK_TIMEOUT_MS);
     };
 
     const onVisibilityChange = () => {
       if (hls !== hlsInstanceRef.current || isPausedRef.current) return;
       if (document.hidden) {
-        // Throttled — stop measuring progress
         clearStuckTimer();
       } else if (manifestParsed) {
-        // Foreground again — give HLS a fresh 15s window to load a fragment
-        // before we consider the stream stuck
+        // Foreground again — give HLS a fresh window to load a fragment
         resetStuckTimer();
       }
     };
