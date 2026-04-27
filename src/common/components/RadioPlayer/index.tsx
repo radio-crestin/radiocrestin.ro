@@ -258,8 +258,19 @@ export default function RadioPlayer() {
     let onCanPlayThrough: (() => void) | null = null;
     let stuckTimer: ReturnType<typeof setTimeout> | null = null;
 
+    const clearStuckTimer = () => {
+      if (stuckTimer) {
+        clearTimeout(stuckTimer);
+        stuckTimer = null;
+      }
+    };
+
     const resetStuckTimer = () => {
-      if (stuckTimer) clearTimeout(stuckTimer);
+      clearStuckTimer();
+      // Mobile browsers throttle JS timers and network when the tab is hidden,
+      // so FRAG_LOADED stops firing — that's expected, not stuck. Skip detection
+      // until the tab is visible again; visibilitychange resets the timer.
+      if (typeof document !== "undefined" && document.hidden) return;
       stuckTimer = setTimeout(() => {
         if (hls === hlsInstanceRef.current && !isPausedRef.current) {
           console.warn("[HLS] Stuck — no fragment loaded for", HLS_STUCK_TIMEOUT_MS, "ms, switching stream");
@@ -268,6 +279,21 @@ export default function RadioPlayer() {
         }
       }, HLS_STUCK_TIMEOUT_MS);
     };
+
+    const onVisibilityChange = () => {
+      if (hls !== hlsInstanceRef.current || isPausedRef.current) return;
+      if (document.hidden) {
+        // Throttled — stop measuring progress
+        clearStuckTimer();
+      } else if (manifestParsed) {
+        // Foreground again — give HLS a fresh 15s window to load a fragment
+        // before we consider the stream stuck
+        resetStuckTimer();
+      }
+    };
+    if (typeof document !== "undefined") {
+      document.addEventListener("visibilitychange", onVisibilityChange);
+    }
 
     clearHlsTimeout();
     hlsRecoveryRef.current = 0;
@@ -412,7 +438,10 @@ export default function RadioPlayer() {
 
     return () => {
       clearHlsTimeout();
-      if (stuckTimer) clearTimeout(stuckTimer);
+      clearStuckTimer();
+      if (typeof document !== "undefined") {
+        document.removeEventListener("visibilitychange", onVisibilityChange);
+      }
       if (onCanPlayThrough) {
         audio.removeEventListener("canplaythrough", onCanPlayThrough);
       }
