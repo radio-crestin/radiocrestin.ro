@@ -61,6 +61,11 @@ export default function RadioPlayer() {
   const hlsRecoveryRef = useRef(0);
   const cleanupRef = useRef<(() => void) | null>(null);
   const isDestroyingRef = useRef(false);
+  // Maps fragment programDateTime (epoch ms) -> song_id parsed from ID3 frames.
+  // Populated when fragments are parsed (ahead of playback) and read at FRAG_CHANGED
+  // so we attribute song_id to the audio that's actually playing — not to a future
+  // fragment still in the buffer.
+  const fragSongIdsRef = useRef<Map<number, number>>(new Map());
   const [loadKey, setLoadKey] = useState(0);
   const prevLoadKeyRef = useRef(0);
   const listeningStartRef = useRef<{ time: number; slug: string; title: string; id: number } | null>(null);
@@ -358,33 +363,51 @@ export default function RadioPlayer() {
       resetStuckTimer();
     });
 
-    // Track the actual playback timestamp from EXT-X-PROGRAM-DATE-TIME.
-    // This is the authoritative source for "what time is the audio I'm hearing?"
-    // and is used by the metadata hook to fetch the matching song info.
+    // Track the actual playback timestamp from EXT-X-PROGRAM-DATE-TIME, plus
+    // the per-fragment song_id parsed earlier. Use the END of the fragment as
+    // the metadata query timestamp so song boundaries that fall mid-fragment
+    // (or just after the fragment's PDT, i.e. inside the same second) don't
+    // make the API return the previous song.
     hls.on(Hls.Events.FRAG_CHANGED, (_event, data) => {
       if (hls !== hlsInstanceRef.current) return;
       const pdt = data.frag.programDateTime;
       if (pdt) {
-        // pdt is milliseconds since epoch — convert to 10s-aligned Unix seconds
-        const epochSec = Math.floor(pdt / 10000) * 10;
+        const fragMs = (data.frag.duration ?? 0) * 1000;
+        const queryMs = pdt + Math.max(0, fragMs - 1);
+        const epochSec = Math.floor(queryMs / 1000);
         setHlsPlaybackTimestamp(epochSec);
+        const songId = fragSongIdsRef.current.get(pdt);
+        if (songId != null) {
+          // Only fires the metadata hook when the song_id actually changes.
+          setHlsSongId(songId);
+        }
       }
     });
 
-    // ID3 metadata from HLS segments — detect song changes for immediate refresh.
+    // ID3 metadata from HLS segments — store per-fragment song_id keyed by PDT.
     // The backend injects TXXX frames with "song_id\0<id>" into every .ts segment.
+    // We don't push to state here: parsing fires for fragments queued ahead of
+    // the audio, so attributing them to "now playing" causes display to update
+    // before the audio actually reaches that song.
     hls.on(Hls.Events.FRAG_PARSING_METADATA, (_event, data) => {
       if (hls !== hlsInstanceRef.current) return;
+      const pdt = data.frag.programDateTime;
+      if (!pdt) return;
       for (const sample of data.samples) {
         try {
-          // hls.js decodes ID3 frames — each sample.data is a Uint8Array with
-          // the full ID3 tag. We scan for TXXX frames containing "song_id".
           const text = new TextDecoder("utf-8", { fatal: false }).decode(sample.data);
           const match = text.match(/song_id\0(\d+)/);
           if (match) {
             const songId = parseInt(match[1], 10);
             if (!isNaN(songId)) {
-              setHlsSongId(songId);
+              const map = fragSongIdsRef.current;
+              map.set(pdt, songId);
+              // Keep ~20 minutes of fragments at 6s each; evict oldest insertion order
+              while (map.size > 200) {
+                const oldest = map.keys().next().value;
+                if (oldest === undefined) break;
+                map.delete(oldest);
+              }
             }
           }
         } catch {
@@ -462,6 +485,7 @@ export default function RadioPlayer() {
       if (onCanPlayThrough) {
         audio.removeEventListener("canplaythrough", onCanPlayThrough);
       }
+      fragSongIdsRef.current.clear();
       hls.destroy();
     };
   };

@@ -360,58 +360,228 @@ describe("HLS ID3 song change detection (fetch-once logic)", () => {
 });
 
 describe("HLS programDateTime extraction (FRAG_CHANGED)", () => {
-  // Simulates the FRAG_CHANGED handler from RadioPlayer/index.tsx:
-  // const pdt = data.frag.programDateTime;
-  // const epochSec = Math.floor(pdt / 10000) * 10;
-  const extractPlaybackTimestamp = (programDateTime: number | null): number | null => {
+  // Mirrors the FRAG_CHANGED handler in RadioPlayer/index.tsx:
+  // we use the fragment's END time (PDT + duration) at second precision so
+  // an in-fragment song boundary does not cause the metadata API to return
+  // the previous song.
+  const extractPlaybackTimestamp = (
+    programDateTime: number | null,
+    durationSec: number = 6,
+  ): number | null => {
     if (!programDateTime) return null;
-    return Math.floor(programDateTime / 10000) * 10;
+    const fragMs = durationSec * 1000;
+    const queryMs = programDateTime + Math.max(0, fragMs - 1);
+    return Math.floor(queryMs / 1000);
   };
 
-  it("converts programDateTime (ms) to 10s-aligned Unix seconds", () => {
-    // programDateTime = 1776247017000 (ms) → 1776247010 (10s-aligned seconds)
-    const pdt = 1776247017000;
-    const ts = extractPlaybackTimestamp(pdt);
-    expect(ts).toBe(1776247010);
-    expect(ts! % 10).toBe(0);
+  it("uses fragment END (PDT + duration) at second precision", () => {
+    // PDT 1776247020000 ms (= 1776247020 s), 6s fragment → query ts ~ 1776247025
+    const pdt = 1776247020000;
+    const ts = extractPlaybackTimestamp(pdt, 6);
+    expect(ts).toBe(1776247025);
   });
 
-  it("aligns to 10s boundary correctly for mid-interval timestamps", () => {
-    // 1776247025500 ms → 1776247025.5 s → floor to 1776247020 (aligned)
-    const pdt = 1776247025500;
-    const ts = extractPlaybackTimestamp(pdt);
+  it("falls back to PDT when duration is unavailable", () => {
+    const pdt = 1776247020000;
+    const ts = extractPlaybackTimestamp(pdt, 0);
     expect(ts).toBe(1776247020);
-  });
-
-  it("matches the getTimestamp formula for the same epoch", () => {
-    vi.useFakeTimers();
-    // Set wall clock to the same epoch as programDateTime
-    const epochMs = 1776247023000;
-    vi.setSystemTime(new Date(epochMs));
-
-    const fromPdt = extractPlaybackTimestamp(epochMs);
-    const fromGetTimestamp = getTimestamp(0); // live, no offset
-
-    expect(fromPdt).toBe(fromGetTimestamp);
-    vi.useRealTimers();
   });
 
   it("returns null for null programDateTime", () => {
     expect(extractPlaybackTimestamp(null)).toBeNull();
   });
 
-  it("HLS offset: programDateTime is behind wall clock by the seek offset", () => {
+  it("query timestamp lands AFTER an in-fragment song boundary", () => {
+    // Boundary mid-fragment at second .604 of PDT 1777624110000 (the radio-eldad
+    // case observed: fragment PDT 08:28:30, song change at 08:28:32.604, fragment
+    // duration ~6s). With the OLD 10s-aligned PDT we'd query 1777624110 (BEFORE
+    // the boundary). With the new logic we query 1777624115 (AFTER the boundary).
+    const pdt = 1777624110000;
+    const boundarySec = 1777624112.604;
+    const ts = extractPlaybackTimestamp(pdt, 6);
+    expect(ts).toBeGreaterThan(boundarySec);
+  });
+
+  it("HLS offset: query timestamp is roughly the seek offset behind wall clock", () => {
     vi.useFakeTimers();
-    // Wall clock is 2 minutes ahead of the audio being played
-    const liveMs = 1776247140000; // live edge
+    // Audio is 2 minutes behind wall clock (HLS_OFFSET_SECONDS = 120)
+    const liveMs = 1776247140000;
     const hlsMs = 1776247020000; // 2 minutes behind
     vi.setSystemTime(new Date(liveMs));
 
     const liveTs = getTimestamp(0);
-    const hlsTs = extractPlaybackTimestamp(hlsMs);
+    const hlsTs = extractPlaybackTimestamp(hlsMs, 6);
 
-    // The difference should be ~120 seconds (2 minutes)
-    expect(liveTs - hlsTs!).toBe(120);
+    // ~ 120 seconds, minus the few seconds we shift forward toward the fragment end
+    expect(liveTs - hlsTs!).toBeGreaterThanOrEqual(114);
+    expect(liveTs - hlsTs!).toBeLessThanOrEqual(120);
     vi.useRealTimers();
+  });
+});
+
+describe("Per-fragment song_id attribution (FRAG_PARSING vs FRAG_CHANGED)", () => {
+  // Reproduces the bug we fixed:
+  //   FRAG_PARSING_METADATA fires for fragments queued ahead of the audio
+  //   pointer. If we set hlsSongId from parsing (old behaviour), the metadata
+  //   hook fires while playbackTs is still inside the previous song's range —
+  //   the API returns the OLD song, and the dedupe ref blocks a re-fetch when
+  //   the audio actually crosses into the new song.
+  //
+  //   New behaviour: parsing only stores a Map<pdt_ms, song_id>. FRAG_CHANGED
+  //   reads the map for the now-playing fragment and only then bumps hlsSongId.
+
+  const makePipeline = () => {
+    const fragSongIds = new Map<number, number>();
+    let hlsSongId: number | null = null;
+    let hlsPlaybackTimestamp: number | null = null;
+    let lastFetchedSongId: number | null = null;
+    let fetchCount = 0;
+    let lastFetchedAt: number | null = null;
+
+    const onFragParsingMetadata = (pdt: number, songId: number) => {
+      fragSongIds.set(pdt, songId);
+    };
+
+    const onFragChanged = (pdt: number, durationSec = 6) => {
+      const queryMs = pdt + Math.max(0, durationSec * 1000 - 1);
+      hlsPlaybackTimestamp = Math.floor(queryMs / 1000);
+      const songId = fragSongIds.get(pdt);
+      if (songId != null && songId !== hlsSongId) {
+        hlsSongId = songId;
+      }
+    };
+
+    const onHlsSongIdChanged = (displayedSongId: number | null) => {
+      if (hlsSongId == null || hlsSongId === lastFetchedSongId) return;
+      if (displayedSongId === hlsSongId) {
+        lastFetchedSongId = hlsSongId;
+        return;
+      }
+      lastFetchedSongId = hlsSongId;
+      lastFetchedAt = hlsPlaybackTimestamp;
+      fetchCount++;
+    };
+
+    return {
+      onFragParsingMetadata,
+      onFragChanged,
+      onHlsSongIdChanged,
+      get hlsSongId() { return hlsSongId; },
+      get hlsPlaybackTimestamp() { return hlsPlaybackTimestamp; },
+      get fetchCount() { return fetchCount; },
+      get lastFetchedAt() { return lastFetchedAt; },
+    };
+  };
+
+  it("stores parsed song_id in the map without bumping hlsSongId", () => {
+    const p = makePipeline();
+    p.onFragParsingMetadata(1000_000, 42);
+    p.onFragParsingMetadata(1006_000, 42);
+    p.onFragParsingMetadata(1012_000, 99); // future fragment with NEW song
+    expect(p.hlsSongId).toBeNull();
+    p.onHlsSongIdChanged(42);
+    expect(p.fetchCount).toBe(0);
+  });
+
+  it("bumps hlsSongId only when audio enters a fragment with a new song_id", () => {
+    const p = makePipeline();
+    // Three fragments parsed ahead — last one has a new song
+    p.onFragParsingMetadata(1000_000, 42);
+    p.onFragParsingMetadata(1006_000, 42);
+    p.onFragParsingMetadata(1012_000, 99);
+
+    // Initial display from getStations was a different song (e.g. 7).
+    // Audio enters fragment 1 → hlsSongId becomes 42 → fetch fires.
+    p.onFragChanged(1000_000);
+    p.onHlsSongIdChanged(7);
+    expect(p.hlsSongId).toBe(42);
+    expect(p.fetchCount).toBe(1);
+
+    // Audio enters fragment 2 — same song, no extra fetch.
+    p.onFragChanged(1006_000);
+    p.onHlsSongIdChanged(42);
+    expect(p.hlsSongId).toBe(42);
+    expect(p.fetchCount).toBe(1);
+
+    // Audio enters fragment 3 — new song. hlsSongId flips to 99 and fires a
+    // fetch using the playback timestamp captured at the moment of the change
+    // (inside the new song's fragment, not the previous one).
+    p.onFragChanged(1012_000);
+    p.onHlsSongIdChanged(42);
+    expect(p.hlsSongId).toBe(99);
+    expect(p.fetchCount).toBe(2);
+    expect(p.lastFetchedAt).toBeGreaterThanOrEqual(1012);
+  });
+
+  it("does not refetch when the displayed song already matches", () => {
+    const p = makePipeline();
+    p.onFragParsingMetadata(1000_000, 42);
+    p.onFragChanged(1000_000);
+    // Display is already showing 42 (set from the initial getStations payload)
+    p.onHlsSongIdChanged(42);
+    expect(p.fetchCount).toBe(0);
+  });
+
+  it("evicts old map entries beyond ~200 fragments", () => {
+    // Reproduces the bounded LRU-by-insertion-order behaviour we shipped in
+    // RadioPlayer (caps the map at 200 entries to avoid unbounded growth).
+    const map = new Map<number, number>();
+    const insert = (pdt: number, songId: number) => {
+      map.set(pdt, songId);
+      while (map.size > 200) {
+        const oldest = map.keys().next().value;
+        if (oldest === undefined) break;
+        map.delete(oldest);
+      }
+    };
+
+    for (let i = 0; i < 250; i++) {
+      insert(i * 6000, i);
+    }
+    expect(map.size).toBe(200);
+    expect(map.has(0)).toBe(false); // oldest evicted
+    expect(map.has(49 * 6000)).toBe(false); // first 50 evicted
+    expect(map.has(50 * 6000)).toBe(true);
+    expect(map.has(249 * 6000)).toBe(true); // newest preserved
+  });
+});
+
+describe("Song-boundary lag regression (the bug we fixed)", () => {
+  // Reproduces the exact pathological case observed for radio-eldad:
+  //   fragment PDT 08:28:30, song change at 08:28:32.604, audio crosses at
+  //   08:28:32.604 and the OLD 10s-aligned playback timestamp was 08:28:30.
+  //   The API at 08:28:30 returns the previous song.
+
+  const fakeApi = (queryEpochSec: number): string => {
+    const SONG_BOUNDARY_SEC = 1777624112.604;
+    return queryEpochSec >= SONG_BOUNDARY_SEC ? "M-am rătăcit" : "O, nu-s mai tari ispitele ca harul";
+  };
+
+  const oldHandler = (pdtMs: number) => Math.floor(pdtMs / 10000) * 10;
+  const newHandler = (pdtMs: number, durationSec = 6) => {
+    const queryMs = pdtMs + Math.max(0, durationSec * 1000 - 1);
+    return Math.floor(queryMs / 1000);
+  };
+
+  it("OLD logic returns the previous song when audio is past the boundary", () => {
+    // Fragment PDT 1777624110000 ms (08:28:30), audio is in this fragment
+    // when the boundary at 08:28:32.604 happens — the audio is on the new song
+    // but the old 10s-aligned ts queries 08:28:30, which is BEFORE the boundary.
+    const pdtMs = 1777624110000;
+    const old = oldHandler(pdtMs);
+    expect(fakeApi(old)).toBe("O, nu-s mai tari ispitele ca harul"); // wrong
+  });
+
+  it("NEW logic returns the current song for the same fragment", () => {
+    const pdtMs = 1777624110000;
+    const fixed = newHandler(pdtMs, 6);
+    expect(fakeApi(fixed)).toBe("M-am rătăcit"); // correct
+  });
+
+  it("NEW logic still returns the previous song when audio is genuinely on it", () => {
+    // Fragment two earlier — audio is before the boundary. Should still match.
+    const pdtMs = 1777624098000; // PDT 08:28:18, end ~08:28:23.999 (still song A)
+    const fixed = newHandler(pdtMs, 6);
+    expect(fakeApi(fixed)).toBe("O, nu-s mai tari ispitele ca harul");
   });
 });
