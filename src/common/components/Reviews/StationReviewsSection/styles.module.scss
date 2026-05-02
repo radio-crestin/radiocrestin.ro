@@ -42,6 +42,13 @@
   margin: 0;
 }
 
+.section_actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
 .add_review_button {
   background-color: rgba(128, 128, 128, 0.2);
   border: none;
@@ -61,6 +68,40 @@
   @include mixinHelper.onTablet {
     font-size: 0.8rem;
     padding: 6px 12px;
+  }
+}
+
+.share_button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: 1px solid rgba(128, 128, 128, 0.35);
+  cursor: pointer;
+  padding: 7px 14px;
+  border-radius: 20px;
+  color: var(--text-color);
+  font-size: 0.9rem;
+  font-weight: 500;
+  white-space: nowrap;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+
+  svg {
+    flex-shrink: 0;
+  }
+
+  &:hover {
+    background-color: rgba(128, 128, 128, 0.15);
+    border-color: rgba(128, 128, 128, 0.55);
+  }
+
+  @include mixinHelper.onTablet {
+    font-size: 0.8rem;
+    padding: 5px 10px;
+
+    span {
+      display: none;
+    }
   }
 }
 
