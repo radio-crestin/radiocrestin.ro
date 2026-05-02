@@ -30,6 +30,22 @@ const StationReviewsSection: React.FC<StationReviewsSectionProps> = ({
     fetchReviews();
   }, [stationId]);
 
+  // Smooth-scroll to section when URL hash is #reviews (works after async load)
+  useEffect(() => {
+    if (isLoading) return;
+    if (typeof window === "undefined") return;
+    if (window.location.hash !== "#reviews") return;
+    const el = document.getElementById("reviews");
+    if (!el) return;
+    requestAnimationFrame(() => {
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }, [isLoading]);
+
+  const handleOpenAddReview = () => {
+    window.dispatchEvent(new CustomEvent("open-review-modal"));
+  };
+
   // Inject Review JSON-LD schema dynamically
   useEffect(() => {
     if (reviews.length === 0) return;
@@ -78,22 +94,53 @@ const StationReviewsSection: React.FC<StationReviewsSectionProps> = ({
 
   if (isLoading) {
     return (
-      <section className={styles.reviews_section}>
-        <h2 className={styles.section_title}>Recenzii {stationTitle}</h2>
+      <section id="reviews" className={styles.reviews_section}>
+        <div className={styles.section_header}>
+          <h2 className={styles.section_title}>Recenzii {stationTitle}</h2>
+          <button
+            type="button"
+            className={styles.add_review_button}
+            onClick={handleOpenAddReview}
+          >
+            Adaugă o recenzie
+          </button>
+        </div>
         <p className={styles.loading}>Se incarca recenziile...</p>
       </section>
     );
   }
 
   if (reviews.length === 0) {
-    return null;
+    return (
+      <section id="reviews" className={styles.reviews_section}>
+        <div className={styles.section_header}>
+          <h2 className={styles.section_title}>Recenzii {stationTitle}</h2>
+          <button
+            type="button"
+            className={styles.add_review_button}
+            onClick={handleOpenAddReview}
+          >
+            Adaugă o recenzie
+          </button>
+        </div>
+      </section>
+    );
   }
 
   return (
-    <section className={styles.reviews_section}>
-      <h2 className={styles.section_title}>
-        Recenzii {stationTitle} ({reviewsStats?.number_of_reviews || reviews.length})
-      </h2>
+    <section id="reviews" className={styles.reviews_section}>
+      <div className={styles.section_header}>
+        <h2 className={styles.section_title}>
+          Recenzii {stationTitle} ({reviewsStats?.number_of_reviews || reviews.length})
+        </h2>
+        <button
+          type="button"
+          className={styles.add_review_button}
+          onClick={handleOpenAddReview}
+        >
+          Adaugă o recenzie
+        </button>
+      </div>
       <div className={styles.reviews_list}>
         {reviews.map((review) => (
           <div key={review.id} className={styles.review_item}>

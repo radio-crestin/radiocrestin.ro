@@ -86,6 +86,13 @@ const StationRating: React.FC<StationRatingProps> = ({
     return () => window.removeEventListener("popstate", handlePopState);
   }, []);
 
+  // Open review modal in response to a global request (e.g. button in reviews section)
+  useEffect(() => {
+    const handler = () => handleOpenReviewModal();
+    window.addEventListener("open-review-modal", handler);
+    return () => window.removeEventListener("open-review-modal", handler);
+  }, [handleOpenReviewModal]);
+
   const renderStars = () => {
     const stars = [];
     for (let i = 1; i <= 5; i++) {
