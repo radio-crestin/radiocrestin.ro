@@ -31,6 +31,39 @@ const isTransientNetworkError = (error: unknown): boolean => {
     || error.name === "TimeoutError";       // AbortSignal.timeout
 };
 
+// Upstream infrastructure hiccups (nginx 502/503/504 during deploys or restarts,
+// 429 rate limiting, 408 request timeout) are transient and out of the client's
+// control. Like network errors, they should degrade gracefully to fallback data
+// instead of flooding PostHog with thousands of "HTTP 503" exceptions.
+export const isTransientHttpStatus = (status: number): boolean =>
+  status === 408 || status === 425 || status === 429 || status >= 500;
+
+// Thrown for transient upstream conditions (5xx, rate limits, or a 200 response
+// whose body isn't valid JSON — e.g. a captive portal / proxy HTML page). These
+// are swallowed into fallback values and never reported as exceptions.
+class TransientUpstreamError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "TransientUpstreamError";
+  }
+}
+
+const isTransient = (error: unknown): boolean =>
+  error instanceof TransientUpstreamError || isTransientNetworkError(error);
+
+// Parse a successful (2xx) response body as JSON. A 200 with a non-JSON body
+// (HTML from a proxy/captive portal, or an empty body) used to throw a
+// SyntaxError that was reported to PostHog; treat it as transient instead.
+const parseJsonOrThrowTransient = async (response: Response): Promise<any> => {
+  const text = await response.text();
+  if (!text) return null;
+  try {
+    return JSON.parse(text);
+  } catch {
+    throw new TransientUpstreamError("Upstream returned a non-JSON response body");
+  }
+};
+
 export type IStationMetadata = Partial<IStation> & { id: number };
 
 const getFallbackStations = () => ({
@@ -51,11 +84,14 @@ export const getStations = async () => {
     });
 
     if (!response.ok) {
+      if (isTransientHttpStatus(response.status)) {
+        return getFallbackStations();
+      }
       const body = await response.text().catch(() => "(unreadable)");
       throw new Error(`HTTP ${response.status} from ${endpoint}: ${body}`);
     }
 
-    const data = await response.json();
+    const data = await parseJsonOrThrowTransient(response);
 
     const stations = data?.data?.stations || [];
     if (stations.length === 0) {
@@ -67,7 +103,7 @@ export const getStations = async () => {
       station_groups: data?.data?.station_groups || [],
     };
   } catch (error) {
-    if (!isTransientNetworkError(error)) {
+    if (!isTransient(error)) {
       captureException(error, `getStations failed [${endpoint}]`);
     }
     return getFallbackStations();
@@ -94,14 +130,15 @@ export const getStationsMetadata = async (
     if (!response.ok) {
       // 400 usually means client clock is skewed — skip silently
       if (response.status === 400) return [];
+      if (isTransientHttpStatus(response.status)) return [];
       const body = await response.text().catch(() => "(unreadable)");
       throw new Error(`HTTP ${response.status} from ${endpoint}: ${body}`);
     }
 
-    const data = await response.json();
+    const data = await parseJsonOrThrowTransient(response);
     return data?.data?.stations_metadata || [];
   } catch (error) {
-    if (!isTransientNetworkError(error)) {
+    if (!isTransient(error)) {
       captureException(error, `getStationsMetadata failed [${endpoint}]`);
     }
     return [];
@@ -152,14 +189,15 @@ export const getStationSongHistory = async (
     });
 
     if (!response.ok) {
+      if (isTransientHttpStatus(response.status)) return null;
       const body = await response.text().catch(() => "(unreadable)");
       throw new Error(`HTTP ${response.status} from ${endpoint}: ${body}`);
     }
 
-    const data = await response.json();
+    const data = await parseJsonOrThrowTransient(response);
     return data?.data?.stations_metadata_history || null;
   } catch (error) {
-    if (!isTransientNetworkError(error)) {
+    if (!isTransient(error)) {
       captureException(error, `getStationSongHistory failed [${stationSlug}]`);
     }
     return null;
@@ -169,6 +207,9 @@ export const getStationSongHistory = async (
 export const getStationReviews = async (
   stationId: number,
 ): Promise<IReview[]> => {
+  // Reviews for a non-positive / invalid station id can never resolve — skip the
+  // request entirely (avoids pointless calls like station_id=0).
+  if (!Number.isFinite(stationId) || stationId <= 0) return [];
   const endpoint = `${API_BASE}/reviews?station_id=${stationId}&timestamp=${getTimestamp()}`;
   try {
     const response = await fetch(endpoint, {
@@ -180,14 +221,15 @@ export const getStationReviews = async (
     });
 
     if (!response.ok) {
+      if (isTransientHttpStatus(response.status)) return [];
       const body = await response.text().catch(() => "(unreadable)");
       throw new Error(`HTTP ${response.status} from ${endpoint}: ${body}`);
     }
 
-    const data = await response.json();
+    const data = await parseJsonOrThrowTransient(response);
     return data?.data?.reviews || [];
   } catch (error) {
-    if (!isTransientNetworkError(error)) {
+    if (!isTransient(error)) {
       captureException(error, `getStationReviews failed [stationId=${stationId}]`);
     }
     return [];

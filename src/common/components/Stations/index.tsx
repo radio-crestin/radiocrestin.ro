@@ -10,6 +10,7 @@ import { Magnify } from "@/icons/Magnify";
 import CloseIcon from "@/icons/CloseIcon";
 import usePlayCount from "@/store/usePlayCount";
 import useFavourite from "@/store/useFavourite";
+import { pickStationHintTargets } from "@/utils/domHints";
 import SparklesStar from "@/icons/SparklesStar";
 
 type SortOption = "recommended" | "most_played" | "listeners" | "rating" | "alphabetical";
@@ -327,17 +328,18 @@ const Stations = () => {
   };
 
   function handleNoStationClicked() {
-    let stationItems = document.querySelectorAll(
+    const stationItems = document.querySelectorAll(
       '[data-station="station-item"]',
     );
+    const { scrollTarget, appendTarget } = pickStationHintTargets(stationItems);
 
-    stationItems[1].scrollIntoView({ behavior: "smooth" });
+    scrollTarget?.scrollIntoView({ behavior: "smooth" });
 
-    if (!document.querySelector(".apasa_aici_move")) {
+    if (appendTarget && !document.querySelector(".apasa_aici_move")) {
       let newElement = document.createElement("div");
       newElement.className = "apasa_aici_move";
       newElement.textContent = "Apasa aici";
-      stationItems[2].appendChild(newElement);
+      appendTarget.appendChild(newElement);
 
       setTimeout(() => {
         newElement.remove();
