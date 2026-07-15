@@ -722,7 +722,7 @@ export default function RadioPlayer() {
 
     if (nextStation) {
       setCtx({ selectedStation: nextStation });
-      window.history.pushState(null, "", `/${nextStation.slug}`);
+      window.history.pushState(null, "", `/${nextStation.slug}/`);
     }
   };
 

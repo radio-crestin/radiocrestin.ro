@@ -220,6 +220,13 @@ const Stations = () => {
 
   useEffect(() => {
     setSortByState(getSavedSort());
+
+    // Seed the search from ?q= so the SearchAction advertised in the
+    // WebSite JSON-LD (/?q={search_term_string}) actually works.
+    const q = new URLSearchParams(window.location.search).get("q");
+    if (q) {
+      setSearchedValue(q.toLowerCase());
+    }
   }, []);
 
   const setSortBy = (option: SortOption) => {

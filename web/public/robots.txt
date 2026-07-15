@@ -2,8 +2,5 @@
 User-agent: *
 Allow: /
 
-# Host
-Host: https://www.radiocrestin.ro/
-
 # Sitemaps
 Sitemap: https://www.radiocrestin.ro/sitemap.xml

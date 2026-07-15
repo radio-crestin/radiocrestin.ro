@@ -4,15 +4,15 @@ export default function FooterLinks() {
   return (
     <div className={styles.container}>
       <div className={styles.links}>
-        <a href="/church-hub">Church Hub</a>
+        <a href="/church-hub/">Church Hub</a>
         <span className={styles.separator}>|</span>
-        <a href="/statistici">Statistici</a>
+        <a href="/statistici/">Statistici</a>
         <span className={styles.separator}>|</span>
-        <a href="/intrebari-frecvente">Întrebări frecvente</a>
+        <a href="/intrebari-frecvente/">Întrebări frecvente</a>
         <span className={styles.separator}>|</span>
-        <a href="/privacy-policy">Politica de Confidentialitate</a>
+        <a href="/privacy-policy/">Politica de Confidentialitate</a>
         <span className={styles.separator}>|</span>
-        <a href="/terms-of-service">Termeni si Conditii</a>
+        <a href="/terms-of-service/">Termeni si Conditii</a>
       </div>
       <div className={styles.links}>
         <a href="https://www.figma.com/file/iXXR3dhUjwfDDZH4FlEZgx/radio_crestin_com" target="_blank" rel="noopener noreferrer">

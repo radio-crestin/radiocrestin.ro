@@ -5,25 +5,25 @@ import { getIOSStoreLink, getAndroidStoreLink, APP_RATING, APP_REVIEW_COUNT, SHA
 import styles from "../../pages/descarca-aplicatia-radio-crestin/styles.module.scss";
 
 export default function DescarcaApp() {
-  const [isClient, setIsClient] = useState(false);
+  // Rendered fully on the server so crawlers see the content; both store
+  // badges stay visible (mobile users are auto-redirected to their store).
+  const [source, setSource] = useState<string | undefined>(undefined);
   const [showToast, setShowToast] = useState(false);
   const [isToastVisible, setIsToastVisible] = useState(false);
-
-  const source = typeof window !== "undefined"
-    ? new URLSearchParams(window.location.search).get("source") || undefined
-    : undefined;
 
   const qrCodeUrl = source ? `${SHARE_URL}/${source}` : `${SHARE_URL}`;
 
   useEffect(() => {
-    setIsClient(true);
+    const urlSource =
+      new URLSearchParams(window.location.search).get("source") || undefined;
+    setSource(urlSource);
 
     if (isIOS) {
-      window.location.href = getIOSStoreLink(source);
+      window.location.href = getIOSStoreLink(urlSource);
     } else if (isAndroid) {
-      window.location.href = getAndroidStoreLink(source);
+      window.location.href = getAndroidStoreLink(urlSource);
     }
-  }, [source]);
+  }, []);
 
   const handleQRCodeClick = async () => {
     try {
@@ -39,8 +39,6 @@ export default function DescarcaApp() {
     }
   };
 
-  if (!isClient) return null;
-
   return (
     <div className={styles.container}>
       <a href="/" className={styles.back_button}>
@@ -49,7 +47,7 @@ export default function DescarcaApp() {
 
       <div className={styles.content}>
         <h1 className={styles.title}>Descarcă</h1>
-        <h2 className={styles.app_name}>Radio Crestin</h2>
+        <h2 className={styles.app_name}>Radio Creștin</h2>
 
         <div className={styles.qr_wrapper} onClick={handleQRCodeClick}>
           <QRCodeSVG
@@ -62,30 +60,18 @@ export default function DescarcaApp() {
         </div>
 
         <p className={styles.subtitle}>
-          Scanează codul QR sau descarcă direct
+          Scanează codul QR sau descarcă direct. Aplicația Radio Creștin îți
+          oferă gratuit peste 60 de posturi de radio creștine, pe iPhone,
+          Android și Apple CarPlay.
         </p>
 
         <div className={styles.store_links}>
-          {isIOS && (
-            <a href={getIOSStoreLink(source)} target="_blank">
-              <img src="/images/download_appstore_ro.svg" alt="AppStore Image Radio Crestin" className={styles.store_badge} />
-            </a>
-          )}
-          {isAndroid && (
-            <a href={getAndroidStoreLink(source)} target="_blank">
-              <img loading="lazy" src="/images/download_playstore_ro.svg" alt="PlayStore Image Radio Crestin" className={styles.store_badge} />
-            </a>
-          )}
-          {!isIOS && !isAndroid && (
-            <>
-              <a href={getIOSStoreLink(source)} target="_blank">
-                <img src="/images/download_appstore_ro.svg" alt="AppStore Image Radio Crestin" className={styles.store_badge} />
-              </a>
-              <a href={getAndroidStoreLink(source)} target="_blank">
-                <img loading="lazy" src="/images/download_playstore_ro.svg" alt="PlayStore Image Radio Crestin" className={styles.store_badge} />
-              </a>
-            </>
-          )}
+          <a href={getIOSStoreLink(source)} target="_blank">
+            <img src="/images/download_appstore_ro.svg" alt="Descarcă Radio Creștin din App Store" className={styles.store_badge} />
+          </a>
+          <a href={getAndroidStoreLink(source)} target="_blank">
+            <img loading="lazy" src="/images/download_playstore_ro.svg" alt="Descarcă Radio Creștin din Google Play" className={styles.store_badge} />
+          </a>
         </div>
 
         <div className={styles.rating}>

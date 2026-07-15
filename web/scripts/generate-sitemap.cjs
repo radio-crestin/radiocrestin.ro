@@ -6,14 +6,16 @@ const fallbackData = require("../src/common/data/fallback-stations.json");
 const SITE_URL = "https://www.radiocrestin.ro";
 const API_URL = "https://api.radiocrestin.ro/api/v1/stations";
 
+// The host serves directory-format URLs and 308-redirects "/x" to "/x/",
+// so every sitemap URL must use the trailing-slash form (matching canonicals).
 const STATIC_PAGES = [
-  { path: "", priority: "1.0" },
-  { path: "/intrebari-frecvente", priority: "0.8" },
-  { path: "/descarca-aplicatia-radio-crestin", priority: "0.8" },
-  { path: "/church-hub", priority: "0.7" },
-  { path: "/privacy-policy", priority: "0.5" },
-  { path: "/terms-of-service", priority: "0.5" },
-  { path: "/statistici", priority: "0.5" },
+  { path: "/", priority: "1.0", changefreq: "daily" },
+  { path: "/intrebari-frecvente/", priority: "0.8", changefreq: "monthly" },
+  { path: "/descarca-aplicatia-radio-crestin/", priority: "0.8", changefreq: "monthly" },
+  { path: "/church-hub/", priority: "0.7", changefreq: "monthly" },
+  { path: "/privacy-policy/", priority: "0.3", changefreq: "yearly" },
+  { path: "/terms-of-service/", priority: "0.3", changefreq: "yearly" },
+  { path: "/statistici/", priority: "0.5", changefreq: "daily" },
 ];
 
 async function generateSitemap() {
@@ -51,32 +53,21 @@ async function generateSitemap() {
     (page) => `  <url>
     <loc>${SITE_URL}${page.path}</loc>
     <lastmod>${today}</lastmod>
-    <changefreq>daily</changefreq>
+    <changefreq>${page.changefreq}</changefreq>
     <priority>${page.priority}</priority>
   </url>`
   );
 
-  const stationUrls = stations.flatMap(
-    (station) => [
-      `  <url>
-    <loc>${SITE_URL}/${station.slug}</loc>
+  // Only station root pages: /{slug}/recent-songs and /{slug}/reviews are
+  // modal deep-links that canonicalize to the station root, so listing them
+  // in the sitemap would advertise non-canonical URLs.
+  const stationUrls = stations.map(
+    (station) => `  <url>
+    <loc>${SITE_URL}/${station.slug}/</loc>
     <lastmod>${today}</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
-  </url>`,
-      `  <url>
-    <loc>${SITE_URL}/${station.slug}/recent-songs</loc>
-    <lastmod>${today}</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.7</priority>
-  </url>`,
-      `  <url>
-    <loc>${SITE_URL}/${station.slug}/reviews</loc>
-    <lastmod>${today}</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.7</priority>
-  </url>`,
-    ]
+  </url>`
   );
 
   const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
@@ -91,7 +82,7 @@ ${stationUrls.join("\n")}
   fs.writeFileSync(path.join(publicDir, "sitemap.xml"), sitemap);
 
   console.log(
-    `✅ Sitemap generated with ${STATIC_PAGES.length + stations.length * 3} URLs`
+    `✅ Sitemap generated with ${STATIC_PAGES.length + stations.length} URLs`
   );
 }
 

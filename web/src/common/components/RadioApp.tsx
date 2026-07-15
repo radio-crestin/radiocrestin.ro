@@ -16,6 +16,7 @@ import StationReviewsSection from "@/components/Reviews/StationReviewsSection";
 import { Context } from "@/context/ContextProvider";
 import type { IStation } from "@/models/Station";
 import { initPostHog } from "@/utils/posthog";
+import { stationTitle } from "@/utils/seo";
 
 interface RadioAppProps {
   stations: IStation[];
@@ -37,7 +38,7 @@ function RadioContent({ showReviews, hideAppBanner }: { showReviews: boolean; hi
   // Update document title when station changes
   useEffect(() => {
     if (ctx.selectedStation) {
-      document.title = `${ctx.selectedStation.title} | Caută şi ascultă Radiouri Creştine online`;
+      document.title = stationTitle(ctx.selectedStation.title);
     }
   }, [ctx.selectedStation?.title]);
 

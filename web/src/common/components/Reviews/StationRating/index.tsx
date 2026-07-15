@@ -27,24 +27,29 @@ const StationRating: React.FC<StationRatingProps> = ({
   const score = reviewsStats?.average_rating || 0;
   const slug = stationSlug || window.location.pathname.split("/")[1];
 
+  // The host serves URLs with a trailing slash, so path checks must
+  // tolerate both "/x/reviews" and "/x/reviews/".
+  const pathEndsWith = (segment: string) =>
+    window.location.pathname.replace(/\/+$/, "").endsWith(segment);
+
   const handleOpenReviewModal = useCallback(() => {
     setIsReviewModalOpen(true);
-    if (!window.location.pathname.endsWith("/adauga-recenzie")) {
-      window.history.pushState(null, "", `/${slug}/adauga-recenzie`);
+    if (!pathEndsWith("/adauga-recenzie")) {
+      window.history.pushState(null, "", `/${slug}/adauga-recenzie/`);
     }
   }, [slug]);
 
   const handleReviewModalClose = useCallback(() => {
     setIsReviewModalOpen(false);
-    if (window.location.pathname.endsWith("/adauga-recenzie")) {
-      window.history.replaceState(null, "", `/${slug}`);
+    if (pathEndsWith("/adauga-recenzie")) {
+      window.history.replaceState(null, "", `/${slug}/`);
     }
   }, [slug]);
 
   const handleOpenReviewsList = useCallback(async () => {
     setIsReviewsListModalOpen(true);
-    if (!window.location.pathname.endsWith("/reviews")) {
-      window.history.pushState(null, "", `/${slug}/reviews`);
+    if (!pathEndsWith("/reviews")) {
+      window.history.pushState(null, "", `/${slug}/reviews/`);
     }
     setIsLoadingReviews(true);
 
@@ -55,8 +60,8 @@ const StationRating: React.FC<StationRatingProps> = ({
 
   const handleCloseReviewsList = useCallback(() => {
     setIsReviewsListModalOpen(false);
-    if (window.location.pathname.endsWith("/reviews")) {
-      window.history.replaceState(null, "", `/${slug}`);
+    if (pathEndsWith("/reviews")) {
+      window.history.replaceState(null, "", `/${slug}/`);
     }
   }, [slug]);
 
@@ -67,10 +72,9 @@ const StationRating: React.FC<StationRatingProps> = ({
 
   // Auto-open modals based on URL path
   useEffect(() => {
-    const path = window.location.pathname;
-    if (path.endsWith("/adauga-recenzie")) {
+    if (pathEndsWith("/adauga-recenzie")) {
       setIsReviewModalOpen(true);
-    } else if (path.endsWith("/reviews")) {
+    } else if (pathEndsWith("/reviews")) {
       handleOpenReviewsList();
     }
   }, [handleOpenReviewsList]);
@@ -78,9 +82,8 @@ const StationRating: React.FC<StationRatingProps> = ({
   // Handle browser back button
   useEffect(() => {
     const handlePopState = () => {
-      const path = window.location.pathname;
-      setIsReviewsListModalOpen(path.endsWith("/reviews"));
-      setIsReviewModalOpen(path.endsWith("/adauga-recenzie"));
+      setIsReviewsListModalOpen(pathEndsWith("/reviews"));
+      setIsReviewModalOpen(pathEndsWith("/adauga-recenzie"));
     };
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
@@ -114,7 +117,7 @@ const StationRating: React.FC<StationRatingProps> = ({
         </div>
         <a
           className={styles.reviews_count}
-          href={`/${slug}/reviews`}
+          href={`/${slug}/reviews/`}
           onClick={(e) => {
             e.preventDefault();
             handleOpenReviewsList();
@@ -124,7 +127,7 @@ const StationRating: React.FC<StationRatingProps> = ({
         </a>
         <a
           className={styles.add_review_button}
-          href={`/${slug}/adauga-recenzie`}
+          href={`/${slug}/adauga-recenzie/`}
           onClick={(e) => {
             e.preventDefault();
             handleOpenReviewModal();

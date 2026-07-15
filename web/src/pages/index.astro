@@ -4,13 +4,28 @@ import RadioApp from "@/components/RadioApp";
 import { getStations } from "@/services/getStations";
 import { cleanStationsMetadata } from "@/utils";
 import { SEO_DEFAULT } from "@/utils/seo";
+import { SITE_URL } from "@/constants/constants";
 import type { IStation } from "@/models/Station";
 
 const { stations: rawStations } = await getStations();
 rawStations.forEach((station: IStation) => { station.is_favorite = false; });
 const stations = cleanStationsMetadata(rawStations);
+
+const stationListSchema = JSON.stringify({
+  "@context": "https://schema.org",
+  "@type": "ItemList",
+  name: "Radiouri Creștine Online",
+  numberOfItems: stations.length,
+  itemListElement: stations.map((station: IStation, index: number) => ({
+    "@type": "ListItem",
+    position: index + 1,
+    name: station.title,
+    url: `${SITE_URL}/${station.slug}/`,
+  })),
+});
 ---
 
 <BaseLayout {...SEO_DEFAULT}>
+  <script type="application/ld+json" set:html={stationListSchema} slot="head" />
   <RadioApp client:load stations={stations} />
 </BaseLayout>

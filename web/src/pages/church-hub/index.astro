@@ -2,8 +2,25 @@
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import ChurchHubApp from "@/components/ChurchHubApp";
 import { SEO_CHURCH_HUB } from "@/utils/seo";
+
+const appSchema = JSON.stringify({
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  name: "Church Hub",
+  operatingSystem: "Windows, macOS",
+  applicationCategory: "MultimediaApplication",
+  description: SEO_CHURCH_HUB.description,
+  url: SEO_CHURCH_HUB.fullURL,
+  image: SEO_CHURCH_HUB.imageUrl,
+  offers: {
+    "@type": "Offer",
+    price: "0",
+    priceCurrency: "RON",
+  },
+});
 ---
 
-<BaseLayout {...SEO_CHURCH_HUB}>
+<BaseLayout {...SEO_CHURCH_HUB} twitterCard="summary_large_image">
+  <script type="application/ld+json" set:html={appSchema} slot="head" />
   <ChurchHubApp client:load />
 </BaseLayout>

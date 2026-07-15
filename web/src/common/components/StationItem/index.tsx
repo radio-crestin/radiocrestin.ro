@@ -43,7 +43,7 @@ const StationItem = ({ badgeType, ...data }: StationItemProps) => {
     const station = ctx.stations?.find((s: IStation) => s.slug === data.slug);
     if (station) {
       setCtx({ selectedStation: station });
-      window.history.pushState(null, "", `/${data.slug}`);
+      window.history.pushState(null, "", `/${data.slug}/`);
     }
   };
 
@@ -52,7 +52,7 @@ const StationItem = ({ badgeType, ...data }: StationItemProps) => {
       className={styles.station_item}
       data-station={"station-item"}
       data-active={isActive}
-      href={`/${data.slug}`}
+      href={`/${data.slug}/`}
       draggable={false}
       onClick={handleStationClick}
     >
