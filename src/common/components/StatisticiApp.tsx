@@ -10,19 +10,20 @@ import styles from "../../pages/statistici/styles.module.scss";
 
 function StatisticiContent() {
   const { ctx } = useContext(Context);
-  const [isLoading, setIsLoading] = useState(true);
+  // Stations arrive server-side via initialState, so the list renders in the
+  // static HTML too; the spinner only covers a truly empty state. Listener
+  // numbers are shown only once live data arrives (build-time counts are
+  // zeroed/stale — see cleanStationsMetadata), so stale stats never display.
+  const isLoading = !ctx?.stations?.length;
+  const hasLiveData = (ctx?.stations || []).some(
+    (s: IStation) => (s.total_listeners || 0) > 0,
+  );
   useUpdateContextMetadata();
   useFavouriteStations();
 
   useEffect(() => {
     initPostHog();
   }, []);
-
-  useEffect(() => {
-    if (ctx?.stations && ctx.stations.length > 0) {
-      setIsLoading(false);
-    }
-  }, [ctx?.stations]);
 
   const formatNumber = (num: number): string => {
     return num.toLocaleString("ro-RO");
@@ -58,12 +59,15 @@ function StatisticiContent() {
           <a href={"/"} className={styles.logo_link}>
             <img
               src="/images/radiocrestin_logo.png"
-              alt="Radio Crestin"
+              alt="Radio Creștin"
               width={40}
               height={40}
             />
             <span>Radio Creștin</span>
           </a>
+          <h1 className={styles.page_title}>
+            Statistici Ascultători Radiouri Creștine
+          </h1>
         </div>
 
         {isLoading ? (
@@ -73,8 +77,8 @@ function StatisticiContent() {
         ) : (
           <div className={styles.all_stations}>
             <div className={styles.total_listeners}>
-              🎧 Total Ascultători: {formatNumber(totalListeners)}
-              {totalListeners !== radioCrestinTotal && (
+              🎧 Total Ascultători: {hasLiveData ? formatNumber(totalListeners) : "…"}
+              {hasLiveData && totalListeners !== radioCrestinTotal && (
                 <div className={styles.total_detail}>
                   ({formatNumber(radioCrestinTotal)} în RadioCrestin*)
                 </div>
@@ -94,7 +98,7 @@ function StatisticiContent() {
 
                 return (
                   <a
-                    href={station.slug}
+                    href={`/${station.slug}/`}
                     key={station.id}
                     className={styles.station_item}
                   >
@@ -103,9 +107,12 @@ function StatisticiContent() {
                     </span>
                     <div className={styles.listeners_info}>
                       <span className={styles.listeners_count}>
-                        {formatNumber(displayListeners)} ascultători
+                        {hasLiveData
+                          ? `${formatNumber(displayListeners)} ascultători`
+                          : "…"}
                       </span>
-                      {totalListeners > 0 &&
+                      {hasLiveData &&
+                        totalListeners > 0 &&
                         radioCrestinListeners > 0 &&
                         totalListeners !== radioCrestinListeners && (
                           <span className={styles.listeners_detail}>

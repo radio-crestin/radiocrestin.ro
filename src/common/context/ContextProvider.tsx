@@ -40,7 +40,9 @@ const ContextProvider = ({
 
   useEffect(() => {
     const handlePopState = () => {
-      const slug = window.location.pathname.replace(/^\//, "");
+      // Paths are pushed with a trailing slash (/station-slug/), so strip
+      // slashes on both ends before matching against station slugs.
+      const slug = window.location.pathname.replace(/^\/+|\/+$/g, "");
       if (!slug || !stationsRef.current) return;
 
       const station = stationsRef.current.find(

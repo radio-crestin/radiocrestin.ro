@@ -25,10 +25,16 @@ const seo = seoStation(selectedStation);
 const radioStationSchema = JSON.stringify({
   "@context": "https://schema.org",
   "@type": "RadioStation",
+  "@id": `${seo.fullURL}#station`,
   name: selectedStation.title,
-  url: `${SITE_URL}/${selectedStation.slug}`,
-  image: selectedStation.thumbnail_url,
+  url: seo.fullURL,
+  image: seo.imageUrl,
+  genre: "Christian",
   description: selectedStation.description || `Ascultă ${selectedStation.title} live online pe Radio Creștin`,
+  potentialAction: {
+    "@type": "ListenAction",
+    target: seo.fullURL,
+  },
   ...(selectedStation.reviews_stats?.number_of_reviews > 0 && {
     aggregateRating: {
       "@type": "AggregateRating",
@@ -39,9 +45,29 @@ const radioStationSchema = JSON.stringify({
     },
   }),
 });
+
+const breadcrumbSchema = JSON.stringify({
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  itemListElement: [
+    {
+      "@type": "ListItem",
+      position: 1,
+      name: "Radio Creștin",
+      item: `${SITE_URL}/`,
+    },
+    {
+      "@type": "ListItem",
+      position: 2,
+      name: selectedStation.title,
+      item: seo.fullURL,
+    },
+  ],
+});
 ---
 
 <BaseLayout {...seo}>
   <script type="application/ld+json" set:html={radioStationSchema} slot="head" />
+  <script type="application/ld+json" set:html={breadcrumbSchema} slot="head" />
   <RadioApp client:load stations={stations} selectedStation={selectedStation} showReviews={true} />
 </BaseLayout>

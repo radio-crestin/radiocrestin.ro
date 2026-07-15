@@ -35,14 +35,14 @@ const FavouriteItem = (data: FavouriteItemProps) => {
     const station = ctx.stations?.find((s: IStation) => s.slug === data.slug);
     if (station) {
       setCtx({ selectedStation: station });
-      window.history.pushState(null, "", `/${data.slug}`);
+      window.history.pushState(null, "", `/${data.slug}/`);
     }
   };
 
   return (
     <a
       className={styles.station_item}
-      href={`/${data.slug}`}
+      href={`/${data.slug}/`}
       data-active={isActive}
       draggable={false}
       onClick={handleStationClick}

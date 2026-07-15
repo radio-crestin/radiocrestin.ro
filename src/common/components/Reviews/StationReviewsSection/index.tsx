@@ -4,7 +4,6 @@ import styles from "./styles.module.scss";
 import Star from "@/icons/Star";
 import { getStationReviews } from "@/services/getStations";
 import type { IReview, IReviewsStats } from "@/models/Station";
-import { SITE_URL } from "@/constants/constants";
 
 interface StationReviewsSectionProps {
   stationId: number;
@@ -64,51 +63,10 @@ const StationReviewsSection: React.FC<StationReviewsSectionProps> = ({
     toast.success("Link copiat!");
   };
 
-  // Inject Review JSON-LD schema dynamically
-  useEffect(() => {
-    if (reviews.length === 0) return;
-
-    const reviewSchemaData = {
-      "@context": "https://schema.org",
-      "@type": "RadioStation",
-      name: stationTitle,
-      url: `${SITE_URL}/${stationSlug}`,
-      ...(reviewsStats && reviewsStats.number_of_reviews > 0 && {
-        aggregateRating: {
-          "@type": "AggregateRating",
-          ratingValue: reviewsStats.average_rating,
-          reviewCount: reviewsStats.number_of_reviews,
-          bestRating: 5,
-          worstRating: 1,
-        },
-      }),
-      review: reviews.slice(0, 10).map((review) => ({
-        "@type": "Review",
-        reviewRating: {
-          "@type": "Rating",
-          ratingValue: review.stars,
-          bestRating: 5,
-          worstRating: 1,
-        },
-        datePublished: review.created_at.split("T")[0],
-        ...(review.message && { reviewBody: review.message }),
-      })),
-    };
-
-    const script = document.createElement("script");
-    script.type = "application/ld+json";
-    script.textContent = JSON.stringify(reviewSchemaData);
-    script.id = "review-schema";
-    // Remove existing one if present
-    const existing = document.getElementById("review-schema");
-    if (existing) existing.remove();
-    document.head.appendChild(script);
-
-    return () => {
-      const el = document.getElementById("review-schema");
-      if (el) el.remove();
-    };
-  }, [reviews, stationTitle, stationSlug, reviewsStats]);
+  // No client-side Review JSON-LD: reviews are anonymous (no author field,
+  // which Google requires — it flagged these as invalid rich results), and it
+  // duplicated the RadioStation node already server-rendered by the station
+  // page, whose AggregateRating keeps star snippets eligible on its own.
 
   if (isLoading) {
     return (

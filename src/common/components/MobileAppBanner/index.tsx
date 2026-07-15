@@ -60,7 +60,7 @@ export default function MobileAppBanner() {
       </div>
 
       <a
-        href="/descarca-aplicatia-radio-crestin"
+        href="/descarca-aplicatia-radio-crestin/"
         target="_blank"
         className={styles.view_button}
       >

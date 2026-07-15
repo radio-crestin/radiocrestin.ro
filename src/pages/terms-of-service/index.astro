@@ -1,35 +1,80 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import { SITE_URL } from "@/constants/constants";
+import { DEFAULT_SHARE_IMAGE } from "@/utils/seo";
 
 const seo = {
-  title: "Terms and Conditions | Radio Creștin",
-  description: "Termenii și condițiile Radio Creștin",
-  keywords: "terms, conditions, radio crestin, termeni",
-  imageUrl: `${SITE_URL}/images/android-chrome-512x512.png`,
-  fullURL: `${SITE_URL}/terms-of-service`,
+  title: "Termeni și Condiții | Radio Creștin",
+  description:
+    "Termenii și condițiile de utilizare a platformei Radio Creștin (radiocrestin.ro): drepturi de conținut, recenzii, limitarea răspunderii și legea aplicabilă.",
+  imageUrl: DEFAULT_SHARE_IMAGE,
+  fullURL: `${SITE_URL}/terms-of-service/`,
 };
 ---
 
 <BaseLayout {...seo}>
   <div class="legal-container">
-    <h1>Terms and Conditions</h1>
-    <p>These terms and conditions outline the rules and regulations for the use of Cauta versete in Biblie's Website, located at https://www.radiocrestin.ro.</p>
-    <p>By accessing this website we assume you accept these terms and conditions. Do not continue to use https://www.radiocrestin.ro if you do not agree to take all of the terms and conditions stated on this page.</p>
-    <h3>Cookies</h3>
-    <p>We employ the use of cookies. By accessing https://www.radiocrestin.ro, you agreed to use cookies in agreement with the Cauta versete in Biblie's Privacy Policy.</p>
-    <h3>License</h3>
-    <p>Unless otherwise stated, Cauta versete in Biblie and/or its licensors own the intellectual property rights for all material on https://www.radiocrestin.ro. All intellectual property rights are reserved.</p>
-    <p>You must not:</p>
+    <a href="/" class="back-link">← Înapoi la Radio Creștin</a>
+    <h1>Termeni și Condiții</h1>
+    <p>Ultima actualizare: 16 iulie 2026</p>
+    <p>
+      Acești termeni și condiții stabilesc regulile de utilizare a platformei
+      <strong>Radio Creștin</strong>, disponibilă la adresa https://www.radiocrestin.ro
+      și prin aplicațiile mobile asociate.
+    </p>
+    <p>
+      Prin accesarea platformei confirmi că accepți acești termeni. Dacă nu ești de acord cu
+      ei, te rugăm să nu continui utilizarea serviciului.
+    </p>
+
+    <h2>Descrierea serviciului</h2>
+    <p>
+      Radio Creștin este un agregator gratuit de posturi de radio creștine: platforma redă
+      fluxuri audio publice puse la dispoziție de stațiile radio respective și afișează
+      informații despre acestea (nume, logo, descriere, melodia curentă).
+    </p>
+
+    <h2>Drepturi de conținut</h2>
+    <p>
+      Fluxurile audio, numele, siglele și descrierile stațiilor aparțin stațiilor radio
+      respective sau licențiatorilor lor. Radio Creștin nu revendică niciun drept asupra
+      acestui conținut; el este afișat în scopul facilitării accesului ascultătorilor. Dacă
+      reprezinți o stație și dorești modificarea sau eliminarea conținutului, contactează-ne.
+    </p>
+
+    <h2>Recenzii și conținut trimis de utilizatori</h2>
+    <p>
+      Poți publica recenzii pentru stații. Ne rezervăm dreptul de a modera sau elimina
+      recenziile care conțin limbaj ofensator, spam, date personale ale altor persoane sau
+      conținut fără legătură cu stația recenzată. Prin trimiterea unei recenzii ne acorzi
+      dreptul de a o afișa public pe platformă.
+    </p>
+
+    <h2>Cookie-uri</h2>
+    <p>
+      Platforma folosește cookie-uri conform
+      <a href="/privacy-policy/">Politicii de Confidențialitate</a>.
+    </p>
+
+    <h2>Limitarea răspunderii</h2>
+    <p>
+      Serviciul este oferit gratuit, „ca atare". Nu garantăm disponibilitatea neîntreruptă a
+      fluxurilor audio — acestea sunt operate de stațiile radio, nu de noi. În măsura maximă
+      permisă de lege, nu răspundem pentru pierderi sau daune rezultate din utilizarea
+      platformei.
+    </p>
+
+    <h2>Legea aplicabilă</h2>
+    <p>
+      Acești termeni sunt guvernați de legislația din România. Eventualele litigii vor fi
+      soluționate de instanțele competente din România.
+    </p>
+
+    <h2>Contact</h2>
+    <p>Pentru orice întrebări legate de acești termeni, ne poți contacta:</p>
     <ul>
-      <li>Republish material from https://www.radiocrestin.ro</li>
-      <li>Sell, rent or sub-license material from https://www.radiocrestin.ro</li>
-      <li>Reproduce, duplicate or copy material from https://www.radiocrestin.ro</li>
-      <li>Redistribute content from https://www.radiocrestin.ro</li>
+      <li>Prin email: contact@radiocrestin.ro</li>
     </ul>
-    <h3>Disclaimer</h3>
-    <p>To the maximum extent permitted by applicable law, we exclude all representations, warranties and conditions relating to our website and the use of this website.</p>
-    <p>As long as the website and the information and services on the website are provided free of charge, we will not be liable for any loss or damage of any nature.</p>
   </div>
 </BaseLayout>
 
@@ -45,6 +90,8 @@ const seo = {
     line-height: 1.6;
   }
   .legal-container * { color: var(--text-color); }
+  .legal-container .back-link { display: inline-block; margin-bottom: 1.5rem; text-decoration: none; font-weight: 500; }
+  .legal-container .back-link:hover { opacity: 0.8; }
   .legal-container h1 { font-size: 2.5rem; margin-bottom: 1.5rem; }
   .legal-container h2 { font-size: 1.8rem; margin: 2rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid var(--link-color); }
   .legal-container h3 { font-size: 1.4rem; margin: 1.5rem 0 0.8rem; }

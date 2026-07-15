@@ -99,7 +99,7 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
 
   const handleShareLink = async () => {
     const slug = stationSlug || window.location.pathname.split("/")[1];
-    const reviewUrl = `${window.location.origin}/${slug}/adauga-recenzie`;
+    const reviewUrl = `${window.location.origin}/${slug}/adauga-recenzie/`;
 
     try {
       await navigator.clipboard.writeText(reviewUrl);

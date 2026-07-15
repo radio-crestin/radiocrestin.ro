@@ -167,9 +167,9 @@ export default function ChurchHubApp() {
           <div className={styles.footer_links}>
             <a href="/">Radio Crestin</a>
             <span className={styles.separator}>|</span>
-            <a href="/privacy-policy">Politica de Confidentialitate</a>
+            <a href="/privacy-policy/">Politica de Confidentialitate</a>
             <span className={styles.separator}>|</span>
-            <a href="/terms-of-service">Termeni si Conditii</a>
+            <a href="/terms-of-service/">Termeni si Conditii</a>
           </div>
         </footer>
       </main>

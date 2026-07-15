@@ -39,7 +39,7 @@ async function generateLlmsTxt() {
     .map((station) => {
       const lines = [];
       lines.push(`### ${station.title}`);
-      lines.push(`- Ascultă live: ${SITE_URL}/${station.slug}`);
+      lines.push(`- Ascultă live: ${SITE_URL}/${station.slug}/`);
       if (station.website) {
         lines.push(`- Website oficial: ${station.website}`);
       }

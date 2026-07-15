@@ -4,17 +4,16 @@ import DescarcaApp from "@/components/DescarcaApp";
 import { SITE_URL, APP_RATING, APP_REVIEW_COUNT } from "@/constants/constants";
 
 const meta = {
-  title: "Descarcă Aplicația Radio Crestin | iOS și Android",
-  description: "Descarcă gratuit aplicația Radio Crestin pe iPhone sau Android. Ascultă cele mai bune posturi de radio crestine din România, fără reclame.",
-  keywords: "descarcă radio crestin, aplicație radio crestin, radio crestin ios, radio crestin android",
+  title: "Descarcă Aplicația Radio Creștin | iOS și Android",
+  description: "Descarcă gratuit aplicația Radio Creștin pe iPhone sau Android. Ascultă cele mai bune posturi de radio creștine din România, fără reclame.",
   imageUrl: "https://radio-crestin.s3.eu-central-1.amazonaws.com/media/public/iphone_desktop_size.png",
-  fullURL: `${SITE_URL}/descarca-aplicatia-radio-crestin`,
+  fullURL: `${SITE_URL}/descarca-aplicatia-radio-crestin/`,
 };
 
 const appSchema = JSON.stringify({
   "@context": "https://schema.org",
   "@type": "SoftwareApplication",
-  name: "Radio Crestin",
+  name: "Radio Creștin",
   operatingSystem: "Android, iOS",
   applicationCategory: "MultimediaApplication",
   aggregateRating: {
@@ -32,7 +31,7 @@ const appSchema = JSON.stringify({
 });
 ---
 
-<BaseLayout {...meta} noindex={false}>
+<BaseLayout {...meta} twitterCard="summary_large_image">
   <script type="application/ld+json" set:html={appSchema} slot="head" />
   <DescarcaApp client:load />
 </BaseLayout>

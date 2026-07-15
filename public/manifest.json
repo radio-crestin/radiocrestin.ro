@@ -1,7 +1,11 @@
 {
+  "name": "Radio Creștin",
+  "short_name": "Radio Creștin",
+  "description": "Ascultă radiouri creștine online gratuit: muzică creștină, predici și emisiuni live.",
+  "lang": "ro",
   "theme_color": "#2196f3",
   "background_color": "#2196f3",
-  "display": "browser",
+  "display": "standalone",
   "scope": "/",
   "start_url": "/",
   "icons": [
@@ -14,6 +18,12 @@
       "src": "/favicon/android-chrome-512x512.png",
       "sizes": "512x512",
       "type": "image/png"
+    },
+    {
+      "src": "/favicon/android-chrome-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ],
   "related_applications": [{

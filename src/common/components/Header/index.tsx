@@ -103,13 +103,13 @@ const ContentLeft = () => {
   const handleOpenHistory = useCallback(() => {
     if (!selectedStation) return;
     setIsHistoryOpen(true);
-    window.history.pushState(null, "", `/${selectedStation.slug}/recent-songs`);
+    window.history.pushState(null, "", `/${selectedStation.slug}/recent-songs/`);
   }, [selectedStation]);
 
   const handleCloseHistory = useCallback(() => {
     setIsHistoryOpen(false);
     if (selectedStation) {
-      window.history.replaceState(null, "", `/${selectedStation.slug}`);
+      window.history.replaceState(null, "", `/${selectedStation.slug}/`);
     }
   }, [selectedStation]);
 
@@ -194,7 +194,7 @@ const ContentLeft = () => {
             )}
             <a
               className={songHistoryStyles.history_button}
-              href={`/${selectedStation.slug}/recent-songs`}
+              href={`/${selectedStation.slug}/recent-songs/`}
               onClick={(e) => {
                 e.preventDefault();
                 handleOpenHistory();
