@@ -2,7 +2,6 @@
 import BaseLayout from "./BaseLayout.astro";
 import CategoryApp from "@/components/CategoryApp";
 import FooterLinks from "@/components/FooterLinks";
-import ThemeToggle from "@/components/ThemeToggle";
 import { SITE_URL } from "@/constants/constants";
 import type { IStation } from "@/models/Station";
 
@@ -132,7 +131,6 @@ const faqSchema = JSON.stringify({
           />
           <span>Radio Creștin</span>
         </a>
-        <ThemeToggle client:load />
       </nav>
       <div class="hero-text">
         <h1>{h1}</h1>

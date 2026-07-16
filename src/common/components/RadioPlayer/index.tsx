@@ -29,6 +29,7 @@ import Star from "@/icons/Star";
 import HeadphoneIcon from "@/icons/Headphone";
 import { getStationSongHistory } from "@/services/getStations";
 import type { ISongHistoryItem } from "@/services/getStations";
+import { canAutoplayAudio } from "@/utils/autoplay";
 import usePlayCount from "@/store/usePlayCount";
 import { useRefreshStations } from "@/hooks/useUpdateStationsMetadata";
 import { getValidImageUrl } from "@/utils";
@@ -635,6 +636,19 @@ export default function RadioPlayer() {
     ) {
       autoSelectedNoLoadRef.current = station.slug;
       setPlaybackState(PLAYBACK_STATE.STOPPED);
+      // If the browser already allows sound without a gesture (same-origin
+      // click navigation, media engagement, per-site permission), start
+      // playback as if the visitor pressed play. The probe keeps blocked
+      // visitors from loading a stream that could never start.
+      canAutoplayAudio().then((allowed) => {
+        if (!allowed) return;
+        const { playbackState: current } = usePlaybackState.getState();
+        // Bail if the visitor beat the probe to it (played, paused, or
+        // switched station) — their action wins over the auto-start.
+        if (current !== PLAYBACK_STATE.STOPPED) return;
+        if (autoSelectedNoLoadRef.current !== station.slug) return;
+        setPlaybackState(PLAYBACK_STATE.STARTED);
+      });
       return;
     }
 
