@@ -1,26 +1,1652 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
-import ChurchHubApp from "@/components/ChurchHubApp";
+import FooterLinks from "@/components/FooterLinks";
+import { SITE_URL } from "@/constants/constants";
 import { SEO_CHURCH_HUB } from "@/utils/seo";
+
+const GITHUB_REPO = "https://github.com/radio-crestin/church-hub";
+const RELEASES_URL = `${GITHUB_REPO}/releases/latest`;
+const ALL_RELEASES_URL = `${GITHUB_REPO}/releases`;
+
+// Release assets carry the version in the filename, so the stable
+// `releases/latest/download/<name>` URLs do not exist — resolve the real
+// asset URLs at build time, with a verified pinned release as fallback.
+const FALLBACK_DOWNLOADS = {
+  version: "0.1.82",
+  windows: `${GITHUB_REPO}/releases/download/v0.1.82/church-hub-windows-x64-v-0.1.82.exe`,
+  macArm: `${GITHUB_REPO}/releases/download/v0.1.82/church-hub-macos-arm64-v-0.1.82.dmg`,
+  macIntel: `${GITHUB_REPO}/releases/download/v0.1.82/church-hub-macos-x64-v-0.1.82.dmg`,
+};
+
+let downloads = FALLBACK_DOWNLOADS;
+try {
+  const res = await fetch(
+    "https://api.github.com/repos/radio-crestin/church-hub/releases/latest",
+    {
+      headers: { Accept: "application/vnd.github+json" },
+      signal: AbortSignal.timeout(8000),
+    },
+  );
+  if (res.ok) {
+    const release = await res.json();
+    const assets: { name: string; browser_download_url: string }[] =
+      release.assets ?? [];
+    const asset = (re: RegExp) =>
+      assets.find((a) => re.test(a.name))?.browser_download_url;
+    const windows = asset(/^church-hub-windows-x64-v-[\d.]+\.exe$/);
+    const macArm = asset(/^church-hub-macos-arm64-v-[\d.]+\.dmg$/);
+    const macIntel = asset(/^church-hub-macos-x64-v-[\d.]+\.dmg$/);
+    if (windows && macArm && macIntel) {
+      downloads = {
+        version:
+          String(release.tag_name ?? "").replace(/^v/, "") ||
+          FALLBACK_DOWNLOADS.version,
+        windows,
+        macArm,
+        macIntel,
+      };
+    }
+  }
+} catch {
+  // GitHub API unavailable at build time — the pinned release keeps the buttons working.
+}
+
+const features = [
+  {
+    title: "Camera de control",
+    alt: "Church Hub – Camera de control cu previzualizare live și coada de prezentare",
+    image: "/images/church-hub/control-room.png",
+    items: [
+      "Previzualizare live — vezi exact ce apare pe ecran înainte să afișezi",
+      "Coadă de prezentare cu drag & drop pentru reordonare",
+      "Navigare din tastatură pentru control rapid al slide-urilor",
+      "Multi-ecran: principal, scenă, livestream și kiosk",
+    ],
+  },
+  {
+    title: "Bibliotecă de cântări",
+    alt: "Church Hub – biblioteca cu peste 40.000 de cântări cu căutare instant",
+    image: "/images/church-hub/songs-list.png",
+    items: [
+      "Peste 40.000 de cântări incluse, gata de proiectat",
+      "Căutare instant în versuri și titluri",
+      "Import inteligent din OpenSong și PowerPoint, cu detectarea duplicatelor",
+      "Suport CCLI pentru evidența licențelor și copyright",
+    ],
+  },
+  {
+    title: "Modul biblic",
+    alt: "Church Hub – afișarea versetelor biblice pe ecran în timpul predicii",
+    image: "/images/church-hub/bible.png",
+    items: [
+      "Căutare după referință sau cuvinte-cheie",
+      "Mai multe traduceri ale Bibliei, în paralel",
+      "Navigare rapidă prin toate cărțile",
+      "Previzualizare înainte de afișarea pe ecran",
+    ],
+  },
+  {
+    title: "Integrare livestream",
+    alt: "Church Hub – integrare livestream cu OBS Studio și YouTube",
+    image: "/images/church-hub/livestream.png",
+    items: [
+      "Lansare broadcast YouTube cu un singur click",
+      "Comutare scene OBS Studio direct din aplicație",
+      "Mixer audio cu 16+ canale",
+      "Comutare automată a scenelor în funcție de conținut",
+    ],
+  },
+  {
+    title: "Programe de servicii",
+    alt: "Church Hub – constructor de programe pentru serviciile bisericii",
+    image: "/images/church-hub/schedules.png",
+    items: [
+      "Construiește programul serviciului: cântări, versete, slide-uri",
+      "Reordonare intuitivă cu drag & drop",
+      "Import și export de programe pentru partajare între echipe",
+      "Totul pregătit înainte de începerea serviciului",
+    ],
+  },
+  {
+    title: "Editor de ecran",
+    alt: "Church Hub – editor vizual WYSIWYG pentru aspectul textului proiectat",
+    image: "/images/church-hub/screen-editor.png",
+    items: [
+      "Editor vizual WYSIWYG cu drag & resize",
+      "Stilizare text: font, dimensiune, culoare, animații",
+      "Auto-scalare a textului pentru încadrare perfectă",
+      "OBS Browser Source pentru subtitrări live peste transmisiune",
+    ],
+  },
+  {
+    title: "Player de muzică",
+    alt: "Church Hub – player de muzică de fundal pentru servicii",
+    image: "/images/church-hub/music.png",
+    items: [
+      "Muzică de fundal înainte și după program",
+      "Organizare pe foldere și playlisturi",
+      "Mod shuffle pentru redare aleatorie",
+      "Volum controlat independent de prezentare",
+    ],
+  },
+  {
+    title: "Tonalitățile cântărilor",
+    alt: "Church Hub – istoricul cântărilor prezentate cu tonalitățile lor",
+    image: "/images/church-hub/song-key.png",
+    items: [
+      "Istoricul cântărilor prezentate, cu tonalitățile muzicale",
+      "Statistici de utilizare pentru fiecare cântare",
+      "Cronologie organizată pe zile",
+      "Referință rapidă pentru instrumentiști și închinători",
+    ],
+  },
+];
+
+const faqs = [
+  {
+    question:
+      "Ce program pot folosi pentru a proiecta versurile cântărilor la biserică?",
+    answer: `<p>Church Hub este un program gratuit de proiecție pentru biserici, disponibil pe Windows și macOS. Vine cu o bibliotecă de peste 40.000 de cântări gata de proiectat, afișează versete biblice și rulează pe oricâte ecrane ai nevoie: videoproiector, ecran de scenă pentru închinători și ieșire dedicată pentru livestream.</p>`,
+  },
+  {
+    question: "Church Hub este cu adevărat gratuit?",
+    answer: `<p>Da. Church Hub este open-source și complet gratuit — fără abonament, fără licențe per calculator și fără funcții blocate. Este dezvoltat de echipa <a href="/">Radio Creștin</a> ca dar pentru bisericile din România și diaspora, iar codul sursă este public pe <a href="${GITHUB_REPO}" target="_blank" rel="noopener noreferrer">GitHub</a>.</p>`,
+  },
+  {
+    question:
+      "Este Church Hub o alternativă la EasyWorship, ProPresenter sau OpenLP?",
+    answer: `<p>Da. Church Hub acoperă funcțiile principale ale acestor programe — proiecție de cântări și versete, programe de servicii, multi-ecran — și adaugă biblioteca românească de cântări, interfața în limba română și integrarea directă cu OBS Studio și YouTube. Importul din OpenSong și PowerPoint face trecerea ușoară, iar spre deosebire de EasyWorship sau ProPresenter, nu plătești nimic.</p>`,
+  },
+  {
+    question: "Pe ce sisteme funcționează Church Hub?",
+    answer: `<p>Church Hub rulează nativ pe Windows 10/11 (x64) și pe macOS — atât pe Mac-urile cu Apple Silicon (M1–M4), cât și pe cele cu procesor Intel. Suportă mai multe ecrane simultan: ecranul principal de proiecție, ecranul de scenă, ieșirea pentru livestream și modul kiosk.</p>`,
+  },
+  {
+    question: "Pot afișa versete biblice în română în timpul predicii?",
+    answer: `<p>Da. Modulul biblic include mai multe traduceri ale Bibliei și îți permite să cauți după referință (de ex. „Ioan 3:16”) sau după cuvinte-cheie, să previzualizezi textul și să îl afișezi instant pe ecran în timpul predicii.</p>`,
+  },
+  {
+    question: "Cum transmit serviciul bisericii live pe YouTube?",
+    answer: `<p>Church Hub se integrează cu OBS Studio: lansezi broadcastul de YouTube cu un singur click, comuți scenele OBS direct din aplicație și controlezi sunetul din mixerul audio cu 16+ canale. Versurile pot fi suprapuse peste transmisiune ca subtitrări, prin OBS Browser Source.</p>`,
+  },
+  {
+    question:
+      "Ce fac dacă pe macOS apare mesajul „church-hub.app is damaged”?",
+    answer: `<p>Mesajul apare pentru că aplicația nu este încă semnată cu certificat Apple, nu pentru că ar fi deteriorată. Deschide Terminal și rulează comanda: <code>xattr -c /Applications/church-hub.app</code> — apoi pornește aplicația normal.</p>`,
+  },
+];
+
+const screenshotUrls = features.map((f) => `${SITE_URL}${f.image}`);
 
 const appSchema = JSON.stringify({
   "@context": "https://schema.org",
   "@type": "SoftwareApplication",
   name: "Church Hub",
-  operatingSystem: "Windows, macOS",
+  operatingSystem: "Windows 10/11, macOS",
   applicationCategory: "MultimediaApplication",
   description: SEO_CHURCH_HUB.description,
   url: SEO_CHURCH_HUB.fullURL,
   image: SEO_CHURCH_HUB.imageUrl,
-  offers: {
-    "@type": "Offer",
-    price: "0",
-    priceCurrency: "RON",
-  },
+  screenshot: screenshotUrls,
+  softwareVersion: downloads.version,
+  downloadUrl: RELEASES_URL,
+  isAccessibleForFree: true,
+  inLanguage: "ro",
+  featureList: [
+    "Proiecție versuri cântări (bibliotecă cu 40.000+ cântări incluse)",
+    "Afișare versete biblice cu mai multe traduceri",
+    "Prezentare multi-ecran: principal, scenă, livestream, kiosk",
+    "Integrare OBS Studio și lansare broadcast YouTube",
+    "Programe de servicii cu drag & drop",
+    "Editor vizual de ecran (WYSIWYG)",
+    "Player de muzică de fundal",
+    "Evidența tonalităților cântărilor și suport CCLI",
+  ],
+  author: { "@id": `${SITE_URL}/#organization` },
+  publisher: { "@id": `${SITE_URL}/#organization` },
+  offers: { "@type": "Offer", price: "0", priceCurrency: "RON" },
+});
+
+const faqSchema = JSON.stringify({
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: faqs.map((faq) => ({
+    "@type": "Question",
+    name: faq.question,
+    acceptedAnswer: {
+      "@type": "Answer",
+      text: faq.answer,
+    },
+  })),
+});
+
+const breadcrumbSchema = JSON.stringify({
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  itemListElement: [
+    { "@type": "ListItem", position: 1, name: "Radio Creștin", item: `${SITE_URL}/` },
+    { "@type": "ListItem", position: 2, name: "Church Hub", item: SEO_CHURCH_HUB.fullURL },
+  ],
 });
 ---
 
 <BaseLayout {...SEO_CHURCH_HUB} twitterCard="summary_large_image">
   <script type="application/ld+json" set:html={appSchema} slot="head" />
-  <ChurchHubApp client:load />
+  <script type="application/ld+json" set:html={faqSchema} slot="head" />
+  <script type="application/ld+json" set:html={breadcrumbSchema} slot="head" />
+  <link
+    rel="preload"
+    as="image"
+    href="/images/church-hub/songs-view.png"
+    fetchpriority="high"
+    slot="head"
+  />
+
+  <div class="chub-page">
+    <header class="chub-hero">
+      <nav class="chub-nav">
+        <a href="/church-hub/" class="chub-logo">
+          <img
+            src="/images/church-hub/icon.png"
+            alt=""
+            width={28}
+            height={28}
+          />
+          <span>Church Hub</span>
+        </a>
+        <a
+          href={GITHUB_REPO}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="chub-nav-github"
+        >
+            <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+              <path
+                d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"
+              ></path>
+            </svg>
+            <span>GitHub</span>
+        </a>
+      </nav>
+
+      <div class="chub-hero-grid">
+        <div class="chub-hero-text">
+        <h1>
+          Program gratuit de proiecție cântări și Biblie pentru biserică
+        </h1>
+        <p class="chub-lead">
+          Proiectezi versurile cântărilor și versete din Biblie, pregătești
+          programul serviciului și transmiți live pe YouTube — totul
+          într-o singură aplicație, cu peste 40.000 de cântări incluse.
+        </p>
+
+        <div class="chub-downloads">
+          <a
+            href={downloads.windows}
+            class="chub-btn chub-btn-solid"
+            data-os="windows"
+          >
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path
+                d="M3 5.5L10.5 4.4V11.5H3V5.5ZM3 18.5L10.5 19.6V12.5H3V18.5ZM11.5 19.75L21 21V12.5H11.5V19.75ZM11.5 4.25V11.5H21V3L11.5 4.25Z"
+              ></path>
+            </svg>
+            Descarcă pentru Windows
+          </a>
+          <a
+            href={downloads.macArm}
+            class="chub-btn chub-btn-outline"
+            data-os="mac"
+            data-macos-download
+          >
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path
+                d="M17.05 12.54c-.03-2.6 2.12-3.85 2.22-3.91-1.21-1.77-3.09-2.01-3.76-2.04-1.6-.16-3.12.94-3.93.94-.81 0-2.06-.92-3.39-.89-1.74.03-3.35 1.01-4.24 2.57-1.81 3.14-.46 7.78 1.3 10.33.86 1.25 1.89 2.65 3.24 2.6 1.3-.05 1.79-.84 3.36-.84 1.57 0 2.01.84 3.38.81 1.4-.02 2.28-1.27 3.14-2.53.99-1.45 1.39-2.85 1.41-2.92-.03-.01-2.71-1.04-2.73-4.12zM14.46 4.9c.72-.87 1.2-2.08 1.07-3.29-1.03.04-2.29.69-3.03 1.56-.66.77-1.25 2-1.09 3.18 1.15.09 2.33-.58 3.05-1.45z"
+              ></path>
+            </svg>
+            Descarcă pentru macOS
+          </a>
+        </div>
+        <script is:inline>
+          // Parser-blocking on purpose: highlights and puts first the
+          // visitor's platform before first paint, so nothing "jumps".
+          (function () {
+            var ua = navigator.platform || navigator.userAgent;
+            if (!/Mac|iPhone|iPad/i.test(ua)) return;
+            var wrap = document.querySelector(".chub-downloads");
+            if (!wrap) return;
+            var btns = wrap.querySelectorAll(".chub-btn");
+            for (var i = 0; i < btns.length; i++) {
+              var solid = btns[i].getAttribute("data-os") === "mac";
+              btns[i].classList.toggle("chub-btn-solid", solid);
+              btns[i].classList.toggle("chub-btn-outline", !solid);
+            }
+            var mac = wrap.querySelector('[data-os="mac"]');
+            if (mac) wrap.insertBefore(mac, wrap.firstChild);
+          })();
+        </script>
+        <p class="chub-download-meta">
+          <span>Versiunea {downloads.version}</span>
+          <span aria-hidden="true">·</span>
+          <a href={downloads.macIntel} data-macos-download>
+            Mac cu procesor Intel?
+          </a>
+          <span aria-hidden="true">·</span>
+          <a href={ALL_RELEASES_URL} target="_blank" rel="noopener noreferrer">
+            Toate versiunile pe GitHub
+          </a>
+        </p>
+        </div>
+
+        <div class="chub-hero-visual">
+          <div class="chub-window">
+            <div class="chub-window-bar" aria-hidden="true">
+              <span></span><span></span><span></span>
+            </div>
+            <img
+              src="/images/church-hub/songs-view.png"
+              alt="Church Hub – vizualizarea unei cântări: strofele în stânga, previzualizarea live a versurilor proiectate în dreapta"
+              width={1920}
+              height={1080}
+              fetchpriority="high"
+              data-zoom
+            />
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <section class="chub-stats-strip" aria-label="Church Hub pe scurt">
+      <ul class="chub-stats">
+        <li>
+          <strong>40.000+</strong>
+          <span>cântări incluse</span>
+        </li>
+        <li>
+          <strong>4 ecrane</strong>
+          <span>principal, scenă, livestream, kiosk</span>
+        </li>
+        <li>
+          <strong>1 click</strong>
+          <span>până ești live pe YouTube</span>
+        </li>
+        <li>
+          <strong>0 lei</strong>
+          <span>gratuit &amp; open-source</span>
+        </li>
+      </ul>
+    </section>
+
+    <section class="chub-features">
+      <div class="chub-inner">
+        <h2>Tot ce ai nevoie pentru serviciul de închinare</h2>
+        <p class="chub-section-lead">
+          De la prima cântare până la finalul transmisiunii live — fiecare
+          modul este gândit pentru echipa tehnică a bisericii.
+        </p>
+
+        {
+          features.map((feature) => (
+            <article class="chub-feature">
+              <div class="chub-feature-media">
+                <img
+                  src={feature.image}
+                  alt={feature.alt}
+                  width={1920}
+                  height={1080}
+                  loading="lazy"
+                  data-zoom
+                />
+              </div>
+              <div class="chub-feature-copy">
+                <h3>{feature.title}</h3>
+                <ul>
+                  {feature.items.map((item) => (
+                    <li>{item}</li>
+                  ))}
+                </ul>
+              </div>
+            </article>
+          ))
+        }
+      </div>
+    </section>
+
+    <section class="chub-compare">
+      <div class="chub-inner">
+        <h2>Alternativă gratuită la EasyWorship și ProPresenter</h2>
+        <p class="chub-section-lead">
+          Church Hub oferă funcțiile pentru care alte programe de prezentare
+          cer abonament sau licență — gratuit, în limba română. Iar dacă vii
+          de la OpenLP sau VideoPsalm, vei regăsi tot ce știi, plus biblioteca
+          de cântări și integrarea livestream.
+        </p>
+        <div class="chub-table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col"></th>
+                <th scope="col" class="chub-col-hub">Church Hub</th>
+                <th scope="col">EasyWorship</th>
+                <th scope="col">ProPresenter</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th scope="row">Preț</th>
+                <td class="chub-col-hub">Gratuit, fără abonament</td>
+                <td>Abonament plătit</td>
+                <td>Licență plătită</td>
+              </tr>
+              <tr>
+                <th scope="row">Open source</th>
+                <td class="chub-col-hub"><span class="chub-yes">✓</span></td>
+                <td><span class="chub-no">✗</span></td>
+                <td><span class="chub-no">✗</span></td>
+              </tr>
+              <tr>
+                <th scope="row">Interfață în limba română</th>
+                <td class="chub-col-hub"><span class="chub-yes">✓</span></td>
+                <td><span class="chub-no">✗</span></td>
+                <td><span class="chub-no">✗</span></td>
+              </tr>
+              <tr>
+                <th scope="row">40.000+ cântări incluse</th>
+                <td class="chub-col-hub"><span class="chub-yes">✓</span></td>
+                <td><span class="chub-no">✗</span></td>
+                <td><span class="chub-no">✗</span></td>
+              </tr>
+              <tr>
+                <th scope="row">Versete biblice pe ecran</th>
+                <td class="chub-col-hub"><span class="chub-yes">✓</span></td>
+                <td><span class="chub-yes">✓</span></td>
+                <td><span class="chub-yes">✓</span></td>
+              </tr>
+              <tr>
+                <th scope="row">Control OBS + lansare YouTube integrate</th>
+                <td class="chub-col-hub"><span class="chub-yes">✓</span></td>
+                <td><span class="chub-no">✗</span></td>
+                <td><span class="chub-no">✗</span></td>
+              </tr>
+              <tr>
+                <th scope="row">Prezentare multi-ecran</th>
+                <td class="chub-col-hub"><span class="chub-yes">✓</span></td>
+                <td><span class="chub-yes">✓</span></td>
+                <td><span class="chub-yes">✓</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="chub-steps">
+      <div class="chub-inner">
+        <h2>Gata de folosit în 3 pași</h2>
+        <div class="chub-steps-grid">
+          <div class="chub-step">
+            <span class="chub-step-num">1</span>
+            <h3>Descarcă și instalează</h3>
+            <p>
+              Instalează Church Hub pe Windows sau macOS. Fără cont, fără
+              activare — aplicația e gata în câteva minute.
+            </p>
+          </div>
+          <div class="chub-step">
+            <span class="chub-step-num">2</span>
+            <h3>Deschide biblioteca de cântări</h3>
+            <p>
+              Peste 40.000 de cântări sunt deja incluse. Adaugi și colecția
+              bisericii tale prin import din OpenSong sau PowerPoint.
+            </p>
+          </div>
+          <div class="chub-step">
+            <span class="chub-step-num">3</span>
+            <h3>Conectează ecranele și prezintă</h3>
+            <p>
+              Videoproiector, ecran de scenă, livestream — controlezi totul
+              din Camera de control, cu previzualizare live.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="chub-faq-section">
+      <div class="chub-inner">
+        <div class="chub-faq">
+          <h2 class="chub-faq-heading">Întrebări frecvente</h2>
+          <div class="chub-faq-list">
+            {
+              faqs.map((faq) => (
+                <details class="chub-faq-item">
+                  <summary>
+                    <h3>{faq.question}</h3>
+                    <svg
+                      class="chub-faq-chevron"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2.4"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      aria-hidden="true"
+                    >
+                      <path d="M6 9l6 6 6-6" />
+                    </svg>
+                  </summary>
+                  <div class="chub-faq-body" set:html={faq.answer} />
+                </details>
+              ))
+            }
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="chub-oss">
+      <div class="chub-inner">
+        <h2>Construit în open source, pentru biserici</h2>
+        <p>
+          Church Hub este dezvoltat de echipa Radio Creștin și oferit gratuit
+          bisericilor. Codul este public: poți raporta probleme, sugera
+          funcționalități sau contribui direct la dezvoltare.
+        </p>
+        <div class="chub-oss-actions">
+          <a
+            href={GITHUB_REPO}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="chub-github-link"
+          >
+            <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+              <path
+                d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"
+              ></path>
+            </svg>
+            Vezi codul pe GitHub
+          </a>
+          <a
+            href={`${GITHUB_REPO}/issues`}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="chub-oss-secondary"
+          >
+            Raportează o problemă →
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <FooterLinks />
+
+  <dialog
+    class="chub-macos-dialog"
+    id="chub-macos-dialog"
+    aria-labelledby="chub-macos-title"
+  >
+    <button
+      class="chub-dialog-close"
+      data-macos-close
+      aria-label="Închide fereastra"
+    >
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2.2"
+        stroke-linecap="round"
+        aria-hidden="true"
+      >
+        <line x1="18" y1="6" x2="6" y2="18"></line>
+        <line x1="6" y1="6" x2="18" y2="18"></line>
+      </svg>
+    </button>
+    <img
+      class="chub-macos-icon"
+      src="/images/church-hub/icon.png"
+      alt=""
+      width={48}
+      height={48}
+      aria-hidden="true"
+    />
+    <h2 id="chub-macos-title">Descărcarea a început</h2>
+    <p class="chub-macos-text">
+      Dacă la deschidere macOS afișează
+      <em>„church-hub.app is damaged and can't be opened”</em>, aplicația nu
+      e deteriorată — e doar nesemnată încă. Rulează o singură dată comanda de
+      mai jos în <strong>Terminal</strong>, apoi deschide aplicația din nou:
+    </p>
+    <div class="chub-macos-cmd">
+      <code id="chub-macos-cmd-text">xattr -c /Applications/church-hub.app</code>
+      <button class="chub-copy-btn" data-macos-copy>Copiază</button>
+    </div>
+    <p class="chub-macos-hint">
+      Găsești Terminal cu Cmd + Space, apoi scrie „Terminal”.
+    </p>
+    <button class="chub-btn chub-btn-solid chub-macos-ok" data-macos-close>
+      Am înțeles
+    </button>
+  </dialog>
+
+  <dialog class="chub-lightbox" id="chub-lightbox">
+    <button
+      class="chub-lightbox-close"
+      data-lightbox-close
+      aria-label="Închide imaginea"
+    >
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2.5"
+        stroke-linecap="round"
+        aria-hidden="true"
+      >
+        <line x1="18" y1="6" x2="6" y2="18"></line>
+        <line x1="6" y1="6" x2="18" y2="18"></line>
+      </svg>
+    </button>
+    <img src="" alt="" width={1920} height={1080} />
+  </dialog>
+  </div>
+
+  <script>
+    // macOS download dialog: the download itself proceeds via the link's
+    // default navigation; the dialog explains the one-time Gatekeeper fix.
+    const macosDialog = document.getElementById(
+      "chub-macos-dialog",
+    ) as HTMLDialogElement | null;
+    if (macosDialog) {
+      document
+        .querySelectorAll<HTMLAnchorElement>("a[data-macos-download]")
+        .forEach((a) => {
+          a.addEventListener("click", () => macosDialog.showModal());
+        });
+      // Deliberate close only (the X and "Am înțeles") — clicks on the
+      // backdrop or inside the dialog must not dismiss the instructions.
+      macosDialog.addEventListener("click", (e) => {
+        if ((e.target as HTMLElement).closest("[data-macos-close]")) {
+          macosDialog.close();
+        }
+      });
+      const copyBtn = macosDialog.querySelector<HTMLButtonElement>("[data-macos-copy]");
+      const cmdText = document.getElementById("chub-macos-cmd-text");
+      copyBtn?.addEventListener("click", async () => {
+        const cmd = cmdText?.textContent?.trim() ?? "";
+        try {
+          await navigator.clipboard.writeText(cmd);
+          copyBtn.textContent = "Copiat ✓";
+          setTimeout(() => (copyBtn.textContent = "Copiază"), 2000);
+        } catch {
+          // Clipboard unavailable — select the text so the user can copy manually.
+          if (cmdText) {
+            const range = document.createRange();
+            range.selectNodeContents(cmdText);
+            const sel = window.getSelection();
+            sel?.removeAllRanges();
+            sel?.addRange(range);
+          }
+        }
+      });
+    }
+
+    // Screenshot lightbox.
+    const lightbox = document.getElementById("chub-lightbox") as HTMLDialogElement | null;
+    const lightboxImg = lightbox?.querySelector("img");
+    if (lightbox && lightboxImg) {
+      document.querySelectorAll<HTMLImageElement>("img[data-zoom]").forEach((img) => {
+        img.addEventListener("click", () => {
+          lightboxImg.src = img.src;
+          lightboxImg.alt = img.alt;
+          lightbox.showModal();
+        });
+      });
+      lightbox.addEventListener("click", (e) => {
+        // Backdrop or close button — clicks on the image stay open.
+        if (e.target === lightbox || (e.target as HTMLElement).closest("[data-lightbox-close]")) {
+          lightbox.close();
+        }
+      });
+    }
+  </script>
 </BaseLayout>
+
+<style is:global>
+  /* Arial adjusted to Inter's metrics: text laid out with the fallback
+     keeps its geometry when the webfont swaps in — no layout shift. */
+  @font-face {
+    font-family: "Inter Fallback";
+    src: local("Arial");
+    size-adjust: 107.4%;
+    ascent-override: 90.2%;
+    descent-override: 22.48%;
+    line-gap-override: 0%;
+  }
+
+  .chub-page {
+    min-height: 100vh;
+    background: var(--bg-body);
+    font-family:
+      "Inter",
+      "Inter Fallback",
+      -apple-system,
+      BlinkMacSystemFont,
+      "Segoe UI",
+      Roboto,
+      sans-serif;
+  }
+  .chub-inner {
+    max-width: 1230px;
+    margin: 0 auto;
+  }
+
+  /* ── Hero — same visual bones as the category pages ── */
+  .chub-page .chub-hero {
+    position: relative;
+    max-width: 1350px;
+    margin: 15px auto 0;
+    padding: 35px 35px 64px;
+    background:
+      radial-gradient(
+        ellipse 48% 62% at 18% 0%,
+        rgba(33, 150, 243, 0.13),
+        transparent 70%
+      ),
+      radial-gradient(
+        ellipse 50% 55% at 88% 90%,
+        rgba(33, 150, 243, 0.07),
+        transparent 70%
+      ),
+      var(--bg-header-container);
+    border-radius: 50px;
+    overflow: hidden;
+  }
+  :root[data-theme="light"] .chub-page .chub-hero {
+    background:
+      radial-gradient(
+        ellipse 48% 62% at 18% 0%,
+        rgba(33, 150, 243, 0.09),
+        transparent 70%
+      ),
+      radial-gradient(
+        ellipse 50% 55% at 88% 90%,
+        rgba(33, 150, 243, 0.04),
+        transparent 70%
+      ),
+      var(--bg-header-container);
+  }
+  .chub-page .chub-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: relative;
+    z-index: 2;
+    max-width: 1230px;
+    margin: 0 auto;
+  }
+  .chub-page .chub-logo {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-color);
+    text-decoration: none;
+  }
+  .chub-page .chub-logo img {
+    border-radius: 7px;
+  }
+  /* The global reset paints every element black — restate the theme color. */
+  .chub-page .chub-logo span {
+    color: var(--text-color);
+  }
+  .chub-page .chub-nav-github {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 8px 15px;
+    border-radius: 50px;
+    border: 1px solid var(--bg-active-station-border);
+    color: var(--text-color);
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background-color 0.2s ease;
+  }
+  .chub-page .chub-nav-github span {
+    color: var(--text-color);
+  }
+  .chub-page .chub-nav-github svg {
+    width: 16px;
+    height: 16px;
+  }
+  .chub-page .chub-nav-github:hover {
+    background: var(--bg-active-station);
+  }
+
+  .chub-page .chub-hero-grid {
+    display: grid;
+    grid-template-columns: 0.95fr 1.22fr;
+    gap: clamp(36px, 4.8vw, 72px);
+    align-items: center;
+    max-width: 1230px;
+    margin: 0 auto;
+    padding-top: 64px;
+  }
+  .chub-page .chub-hero-text {
+    position: relative;
+    z-index: 1;
+    text-align: left;
+  }
+  .chub-page .chub-hero-visual {
+    position: relative;
+    z-index: 1;
+    min-width: 0;
+  }
+  .chub-page .chub-hero-text h1 {
+    font-size: clamp(1.65rem, 2.1vw, 2.05rem);
+    font-weight: 700;
+    letter-spacing: -0.018em;
+    line-height: 1.2;
+    color: var(--text-color);
+    margin: 0 0 16px;
+    text-wrap: balance;
+  }
+  .chub-page .chub-lead {
+    max-width: 500px;
+    margin: 0;
+    font-size: 0.97rem;
+    line-height: 1.65;
+    color: var(--subtext-metadata-color);
+    text-wrap: pretty;
+  }
+
+  .chub-page .chub-downloads {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 32px;
+    max-width: 540px;
+  }
+  .chub-page .chub-btn {
+    box-sizing: border-box;
+    flex: 1 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    padding: 15px 14px;
+    border-radius: 15px;
+    border: 1px solid transparent;
+    font-size: 0.95rem;
+    white-space: nowrap;
+    font-weight: 700;
+    text-decoration: none;
+    transition:
+      transform 0.15s ease,
+      background-color 0.2s ease,
+      border-color 0.2s ease;
+  }
+  .chub-page .chub-btn svg {
+    width: 19px;
+    height: 19px;
+    flex-shrink: 0;
+  }
+  /* Gentle press instead of a lift: the button sinks slightly under the cursor. */
+  .chub-page .chub-btn:hover {
+    transform: scale(0.98);
+  }
+  .chub-page .chub-btn:active {
+    transform: scale(0.96);
+  }
+  /* Inverted-contrast CTA, mac-style: white on dark theme, near-black on light. */
+  .chub-page .chub-btn-solid {
+    background: #ffffff;
+    border-color: #ffffff;
+    color: #101113;
+  }
+  .chub-page .chub-btn-solid:hover {
+    background: #e8e8ea;
+    border-color: #e8e8ea;
+  }
+  :root[data-theme="light"] .chub-page .chub-btn-solid {
+    background: #17181a;
+    border-color: #17181a;
+    color: #ffffff;
+  }
+  :root[data-theme="light"] .chub-page .chub-btn-solid:hover {
+    background: #2d2e31;
+    border-color: #2d2e31;
+  }
+  .chub-page .chub-btn-outline {
+    background: var(--bg-body);
+    border-color: var(--bg-active-station-border);
+    color: var(--text-color);
+  }
+  .chub-page .chub-btn-outline:hover {
+    border-color: var(--subtext-metadata-color);
+  }
+  .chub-page .chub-download-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 4px 9px;
+    margin: 16px 0 0;
+    font-size: 0.78rem;
+    font-weight: 400;
+    color: var(--subtext-metadata-color);
+    opacity: 0.68;
+  }
+  .chub-page .chub-download-meta span {
+    color: var(--subtext-metadata-color);
+  }
+  .chub-page .chub-download-meta a {
+    color: var(--subtext-metadata-color);
+    font-weight: 400;
+    text-decoration: underline;
+    text-decoration-color: var(--bg-active-station-border);
+    text-underline-offset: 3px;
+  }
+  .chub-page .chub-download-meta a:hover {
+    color: var(--text-color);
+    text-decoration-color: currentColor;
+  }
+
+  /* ── Stats strip under the hero ── */
+  .chub-page .chub-stats-strip {
+    padding: 46px 20px 0;
+  }
+  .chub-page .chub-window {
+    width: 100%;
+    background: #101013;
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow:
+      0 24px 70px rgba(0, 0, 0, 0.4),
+      0 6px 22px rgba(0, 0, 0, 0.25),
+      0 0 120px rgba(33, 150, 243, 0.13);
+  }
+  .chub-page .chub-window-bar {
+    display: flex;
+    gap: 6px;
+    padding: 10px 13px;
+  }
+  .chub-page .chub-window-bar span {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: #ff5f57;
+  }
+  .chub-page .chub-window-bar span:nth-child(2) {
+    background: #febc2e;
+  }
+  .chub-page .chub-window-bar span:nth-child(3) {
+    background: #28c840;
+  }
+  .chub-page .chub-window img {
+    display: block;
+    width: 100%;
+    height: auto;
+    cursor: zoom-in;
+  }
+
+  .chub-page .chub-stats {
+    display: flex;
+    justify-content: center;
+    align-items: stretch;
+    flex-wrap: wrap;
+    gap: 14px 56px;
+    margin: 0 auto;
+    list-style: none;
+    padding: 0;
+  }
+  .chub-page .chub-stats li {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    text-align: center;
+  }
+  .chub-page .chub-stats strong {
+    font-size: 1.45rem;
+    font-weight: 700;
+    letter-spacing: -0.015em;
+    color: var(--text-color);
+  }
+  .chub-page .chub-stats span {
+    font-size: 0.83rem;
+    color: var(--subtext-metadata-color);
+    max-width: 200px;
+  }
+
+  /* ── Sections ── */
+  .chub-page section h2 {
+    font-size: clamp(1.6rem, 2.6vw, 2.1rem);
+    font-weight: 700;
+    letter-spacing: -0.018em;
+    line-height: 1.2;
+    color: var(--text-color);
+    margin: 0 0 14px;
+    text-align: center;
+    text-wrap: balance;
+  }
+  .chub-page .chub-section-lead {
+    max-width: 640px;
+    margin: 0 auto;
+    font-size: 1rem;
+    line-height: 1.65;
+    color: var(--header-subtext-color);
+    text-align: center;
+    text-wrap: pretty;
+  }
+
+  /* ── Features — alternating rows ── */
+  .chub-page .chub-features {
+    padding: 110px 0 20px;
+  }
+  .chub-page .chub-feature {
+    display: grid;
+    grid-template-columns: 1.15fr 1fr;
+    gap: clamp(28px, 5vw, 72px);
+    align-items: center;
+    margin-top: 72px;
+  }
+  .chub-page .chub-feature:first-of-type {
+    margin-top: 64px;
+  }
+  .chub-page .chub-feature:nth-of-type(even) .chub-feature-media {
+    order: 2;
+  }
+  .chub-page .chub-feature-media img {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: 14px;
+    border: 1px solid var(--bg-active-station-border);
+    cursor: zoom-in;
+    transition: transform 0.2s ease;
+  }
+  .chub-page .chub-feature-media img:hover {
+    transform: scale(1.012);
+  }
+  .chub-page .chub-feature-copy h3 {
+    font-size: 1.35rem;
+    font-weight: 700;
+    letter-spacing: -0.014em;
+    color: var(--text-color);
+    margin: 0 0 16px;
+  }
+  .chub-page .chub-feature-copy ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .chub-page .chub-feature-copy li {
+    position: relative;
+    padding-left: 20px;
+    margin-bottom: 10px;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    color: var(--header-subtext-color);
+  }
+  .chub-page .chub-feature-copy li::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0.62em;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #2196f3;
+  }
+
+  /* ── Comparison table ── */
+  .chub-page .chub-compare {
+    padding: 110px 0 0;
+  }
+  .chub-page .chub-table-wrap {
+    max-width: 860px;
+    margin: 44px auto 0;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border: 1px solid var(--bg-active-station-border);
+    border-radius: 18px;
+    background: var(--bg-header-container);
+  }
+  .chub-page .chub-compare table {
+    width: 100%;
+    min-width: 560px;
+    border-collapse: collapse;
+    font-size: 0.92rem;
+  }
+  .chub-page .chub-compare th,
+  .chub-page .chub-compare td {
+    padding: 14px 18px;
+    text-align: center;
+    color: var(--text-color);
+    border-bottom: 1px solid var(--bg-active-station-border);
+  }
+  .chub-page .chub-compare tbody tr:last-child th,
+  .chub-page .chub-compare tbody tr:last-child td {
+    border-bottom: none;
+  }
+  .chub-page .chub-compare thead th {
+    font-weight: 700;
+    font-size: 0.95rem;
+    padding-top: 18px;
+  }
+  .chub-page .chub-compare tbody th {
+    text-align: left;
+    font-weight: 500;
+    color: var(--header-subtext-color);
+  }
+  .chub-page .chub-compare .chub-col-hub {
+    font-weight: 600;
+    background: rgba(33, 150, 243, 0.08);
+  }
+  .chub-page .chub-yes {
+    color: #30d158;
+    font-weight: 700;
+  }
+  .chub-page .chub-no {
+    color: var(--subtext-metadata-color);
+  }
+
+  /* ── Steps ── */
+  .chub-page .chub-steps {
+    padding: 110px 0 0;
+  }
+  .chub-page .chub-steps-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    max-width: 1020px;
+    margin: 44px auto 0;
+  }
+  .chub-page .chub-step {
+    background: var(--bg-header-container);
+    border: 1px solid var(--bg-active-station-border);
+    border-radius: 18px;
+    padding: 26px 24px;
+  }
+  .chub-page .chub-step-num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: rgba(33, 150, 243, 0.13);
+    color: #2196f3;
+    font-size: 0.95rem;
+    font-weight: 700;
+    margin-bottom: 16px;
+  }
+  :root[data-theme="light"] .chub-page .chub-step-num {
+    color: #1769aa;
+  }
+  .chub-page .chub-step h3 {
+    font-size: 1.05rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    color: var(--text-color);
+    margin: 0 0 10px;
+  }
+  .chub-page .chub-step p {
+    font-size: 0.92rem;
+    line-height: 1.65;
+    color: var(--header-subtext-color);
+    margin: 0;
+  }
+
+  /* ── FAQ — same accordion pattern as the category pages ── */
+  .chub-page .chub-faq {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    gap: 20px 70px;
+    align-items: start;
+    max-width: 1020px;
+    margin: 0 auto;
+    padding: 110px 0 20px;
+  }
+  .chub-page .chub-faq-heading {
+    margin: 9px 0 0;
+    font-size: 1.4rem;
+    font-weight: 700;
+    letter-spacing: -0.016em;
+    line-height: 1.25;
+    color: var(--text-color);
+    text-align: left;
+    text-wrap: balance;
+  }
+  .chub-page .chub-faq-list {
+    min-width: 0;
+  }
+  .chub-page .chub-faq-item {
+    border-bottom: 1px solid var(--bg-active-station-border);
+  }
+  .chub-page .chub-faq-item summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 15px 2px;
+    cursor: pointer;
+    list-style: none;
+    color: var(--text-color);
+  }
+  .chub-page .chub-faq-item summary::-webkit-details-marker {
+    display: none;
+  }
+  .chub-page .chub-faq-item summary h3 {
+    margin: 0;
+    font-size: 0.97rem;
+    font-weight: 600;
+    letter-spacing: -0.005em;
+    color: inherit;
+    text-align: left;
+  }
+  .chub-page .chub-faq-item summary:hover .chub-faq-chevron {
+    color: var(--text-color);
+  }
+  .chub-page .chub-faq-chevron {
+    flex-shrink: 0;
+    width: 18px;
+    height: 18px;
+    color: var(--subtext-metadata-color);
+    transition:
+      transform 0.25s ease,
+      color 0.2s ease;
+  }
+  .chub-page .chub-faq-item[open] .chub-faq-chevron {
+    transform: rotate(180deg);
+  }
+  .chub-page .chub-faq-body {
+    padding: 0 2px 18px;
+  }
+  .chub-page .chub-faq-body p {
+    margin: 0 0 10px;
+    font-size: 0.93rem;
+    line-height: 1.65;
+    color: var(--header-subtext-color);
+  }
+  .chub-page .chub-faq-body p:last-child {
+    margin-bottom: 0;
+  }
+  .chub-page .chub-faq-body a {
+    color: var(--link-color);
+    font-weight: 500;
+    text-decoration: none;
+  }
+  .chub-page .chub-faq-body a:hover {
+    color: var(--link-hover-color);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  .chub-page .chub-faq-body code {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 6px;
+    background: var(--bg-active-station);
+    border: 1px solid var(--bg-active-station-border);
+    color: var(--text-color);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.85em;
+  }
+
+  /* ── Open source ── */
+  .chub-page .chub-oss {
+    padding: 90px 0 100px;
+    text-align: center;
+  }
+  .chub-page .chub-oss p {
+    max-width: 620px;
+    margin: 0 auto;
+    font-size: 1rem;
+    line-height: 1.65;
+    color: var(--header-subtext-color);
+    text-wrap: pretty;
+  }
+  .chub-page .chub-oss-actions {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 22px;
+    flex-wrap: wrap;
+    margin-top: 30px;
+  }
+  .chub-page .chub-github-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 13px 28px;
+    border-radius: 50px;
+    background: var(--bg-header-container);
+    border: 1px solid var(--bg-active-station-border);
+    color: var(--text-color);
+    font-size: 0.95rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition:
+      transform 0.2s ease,
+      background-color 0.2s ease;
+  }
+  .chub-page .chub-github-link svg {
+    width: 18px;
+    height: 18px;
+  }
+  .chub-page .chub-github-link:hover {
+    transform: translateY(-1px);
+    background: var(--bg-active-station);
+  }
+  .chub-page .chub-oss-secondary {
+    font-size: 0.92rem;
+    font-weight: 500;
+    color: var(--link-color);
+    text-decoration: none;
+  }
+  .chub-page .chub-oss-secondary:hover {
+    color: var(--link-hover-color);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  /* ── macOS Gatekeeper dialog ── */
+  .chub-macos-dialog {
+    box-sizing: border-box;
+    width: min(500px, 92vw);
+    padding: 30px 28px 26px;
+    border: 1px solid var(--bg-active-station-border);
+    border-radius: 20px;
+    background: var(--station-card-color);
+    color: var(--text-color);
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
+  }
+  .chub-macos-dialog::backdrop {
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(6px);
+  }
+  .chub-macos-dialog .chub-macos-icon {
+    display: block;
+    border-radius: 12px;
+    margin-bottom: 16px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3);
+  }
+  .chub-macos-dialog h2 {
+    margin: 0 0 10px;
+    font-size: 1.25rem;
+    font-weight: 700;
+    letter-spacing: -0.014em;
+    color: var(--text-color);
+  }
+  .chub-macos-dialog .chub-macos-text {
+    margin: 0 0 16px;
+    font-size: 0.92rem;
+    line-height: 1.6;
+    color: var(--header-subtext-color);
+  }
+  .chub-macos-dialog .chub-macos-text em {
+    font-style: italic;
+    color: var(--text-color);
+  }
+  .chub-macos-dialog .chub-macos-text strong {
+    font-weight: 600;
+    color: var(--text-color);
+  }
+  .chub-macos-dialog .chub-macos-cmd {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 4px 0 0;
+    padding: 10px 10px 10px 14px;
+    background: var(--bg-active-station);
+    border: 1px solid var(--bg-active-station-border);
+    border-radius: 12px;
+  }
+  .chub-macos-dialog .chub-macos-cmd code {
+    flex: 1;
+    min-width: 0;
+    overflow-x: auto;
+    white-space: nowrap;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.8rem;
+    color: var(--text-color);
+    scrollbar-width: none;
+  }
+  .chub-macos-dialog .chub-macos-cmd code::-webkit-scrollbar {
+    display: none;
+  }
+  .chub-macos-dialog .chub-macos-hint {
+    margin: 10px 0 0;
+    font-size: 0.8rem;
+    line-height: 1.5;
+    color: var(--subtext-metadata-color);
+  }
+  .chub-macos-dialog .chub-copy-btn {
+    flex-shrink: 0;
+    padding: 7px 14px;
+    border-radius: 8px;
+    border: 1px solid var(--bg-active-station-border);
+    background: var(--bg-body);
+    color: var(--text-color);
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: border-color 0.2s ease;
+  }
+  .chub-macos-dialog .chub-copy-btn:hover {
+    border-color: var(--subtext-metadata-color);
+  }
+  .chub-macos-dialog .chub-macos-ok {
+    width: 100%;
+    margin-top: 20px;
+    padding: 13px 20px;
+    min-width: 0;
+    font-size: 0.95rem;
+    cursor: pointer;
+  }
+  .chub-macos-dialog .chub-dialog-close {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    border: none;
+    background: transparent;
+    color: var(--subtext-metadata-color);
+    cursor: pointer;
+    transition:
+      color 0.2s ease,
+      background-color 0.2s ease;
+  }
+  .chub-macos-dialog .chub-dialog-close:hover {
+    color: var(--text-color);
+    background: var(--bg-active-station);
+  }
+  .chub-macos-dialog .chub-dialog-close svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  /* ── Lightbox ── */
+  .chub-lightbox {
+    max-width: min(1400px, 94vw);
+    max-height: 92vh;
+    padding: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 14px;
+    background: #101013;
+    box-shadow: 0 20px 80px rgba(0, 0, 0, 0.7);
+  }
+  .chub-lightbox::backdrop {
+    background: rgba(0, 0, 0, 0.82);
+    backdrop-filter: blur(10px);
+  }
+  .chub-lightbox img {
+    display: block;
+    max-width: 100%;
+    max-height: calc(92vh - 20px);
+    width: auto;
+    height: auto;
+    margin: 0 auto;
+    border-radius: 8px;
+  }
+  .chub-lightbox-close {
+    position: absolute;
+    top: 18px;
+    right: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(0, 0, 0, 0.55);
+    color: #fff;
+    cursor: pointer;
+    transition:
+      background-color 0.2s ease,
+      transform 0.2s ease;
+  }
+  .chub-lightbox-close svg {
+    width: 20px;
+    height: 20px;
+  }
+  .chub-lightbox-close:hover {
+    background: rgba(255, 255, 255, 0.18);
+    transform: scale(1.06);
+  }
+
+  /* ── Motion & responsive ── */
+  @media (prefers-reduced-motion: reduce) {
+    .chub-page .chub-btn,
+    .chub-page .chub-feature-media img,
+    .chub-page .chub-github-link {
+      transition: none;
+    }
+  }
+  @media screen and (max-width: 1378px) {
+    .chub-page .chub-inner {
+      padding-left: 15px;
+      padding-right: 15px;
+    }
+  }
+  @media screen and (max-width: 1160px) {
+    .chub-page .chub-hero-vector {
+      display: none;
+    }
+    .chub-page .chub-inner {
+      padding-left: 25px;
+      padding-right: 25px;
+    }
+  }
+  @media screen and (max-width: 900px) {
+    .chub-page .chub-hero-grid {
+      grid-template-columns: 1fr;
+      gap: 40px;
+      padding-top: 46px;
+    }
+    .chub-page .chub-hero-text {
+      text-align: center;
+    }
+    .chub-page .chub-lead {
+      margin: 0 auto;
+    }
+    .chub-page .chub-downloads {
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .chub-page .chub-download-meta {
+      justify-content: center;
+    }
+    .chub-page .chub-hero-visual {
+      width: 100%;
+      max-width: 640px;
+      margin: 0 auto;
+    }
+    .chub-page .chub-feature,
+    .chub-page .chub-feature:nth-of-type(even) {
+      grid-template-columns: 1fr;
+      gap: 20px;
+    }
+    .chub-page .chub-feature:nth-of-type(even) .chub-feature-media {
+      order: 0;
+    }
+    .chub-page .chub-steps-grid {
+      grid-template-columns: 1fr;
+      max-width: 560px;
+    }
+  }
+  @media screen and (max-width: 768px) {
+    .chub-page .chub-hero {
+      border-radius: 0;
+      margin-top: 0;
+      padding: 20px 20px 44px;
+    }
+    .chub-page .chub-hero-text h1 {
+      font-size: 1.5rem;
+    }
+    .chub-page .chub-nav-github {
+      padding: 8px 11px;
+    }
+    .chub-page .chub-nav-github span {
+      display: none;
+    }
+    .chub-page .chub-lead {
+      font-size: 0.93rem;
+    }
+    .chub-page .chub-btn {
+      width: 100%;
+    }
+    .chub-page .chub-stats-strip {
+      padding: 32px 15px 0;
+    }
+    .chub-page .chub-window-bar {
+      padding: 8px 11px;
+    }
+    .chub-page .chub-stats {
+      gap: 18px 28px;
+      margin-top: 34px;
+    }
+    .chub-page .chub-stats strong {
+      font-size: 1.2rem;
+    }
+    .chub-page .chub-inner {
+      padding-left: 15px;
+      padding-right: 15px;
+    }
+    .chub-page .chub-features {
+      padding-top: 70px;
+    }
+    .chub-page .chub-feature {
+      margin-top: 52px;
+    }
+    .chub-page .chub-compare,
+    .chub-page .chub-steps {
+      padding-top: 70px;
+    }
+    .chub-page .chub-faq {
+      grid-template-columns: 1fr;
+      gap: 6px;
+      padding-top: 70px;
+    }
+    .chub-page .chub-faq-heading {
+      margin: 0;
+      font-size: 1.2rem;
+    }
+    .chub-page .chub-faq-item summary {
+      padding: 13px 2px;
+    }
+    .chub-page .chub-oss {
+      padding: 70px 0 80px;
+    }
+  }
+</style>

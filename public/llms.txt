@@ -32,6 +32,7 @@ Utilizatorul accesează site-ul, alege un post de radio din listă și apasă pe
 - Radio creștin pentru copii: https://www.radiocrestin.ro/radio-crestin-pentru-copii/
 - Întrebări frecvente: https://www.radiocrestin.ro/intrebari-frecvente/
 - Descarcă aplicația mobilă: https://www.radiocrestin.ro/descarca-aplicatia-radio-crestin/
+- Church Hub, program gratuit de proiecție versuri pentru biserică: https://www.radiocrestin.ro/church-hub/
 
 ## Limbă
 

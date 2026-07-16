@@ -105,9 +105,9 @@ export const SEO_RADIO_COPII = {
 };
 
 export const SEO_CHURCH_HUB = {
-  title: "Church Hub – Software Gratuit pentru Biserică | Radio Creștin",
+  title: "Church Hub: Program Gratuit de Proiecție Versuri la Biserică",
   description:
-    "Church Hub - sistem modern de prezentare și management pentru servicii de închinare. Gestionează cântări, versete biblice, programe și transmiteri live.",
+    "Church Hub: program gratuit de proiecție versuri și versete pentru biserică — alternativă open-source la EasyWorship. 40.000+ cântări. Windows/macOS.",
   imageUrl: `${SITE_URL}/images/church-hub/control-room.png`,
   fullURL: `${SITE_URL}/church-hub/`,
 };
