@@ -1,0 +1,49 @@
+---
+import CategoryLayout from "../../layouts/CategoryLayout.astro";
+import { getStations } from "@/services/getStations";
+import { cleanStationsMetadata, stationsInGroup } from "@/utils";
+import { SEO_RADIO_COPII } from "@/utils/seo";
+import type { IStation } from "@/models/Station";
+
+const { stations: rawStations, station_groups } = await getStations();
+rawStations.forEach((station: IStation) => { station.is_favorite = false; });
+const stations = cleanStationsMetadata(rawStations);
+const groupStations = stationsInGroup(stations, station_groups, "copii");
+
+const faqs = [
+  {
+    question: "Ce pot asculta cei mici?",
+    answer:
+      `<p>Cântecele creștine vesele și ușor de fredonat, povestiri din Biblie spuse pe înțelesul copiilor, versete puse pe muzică și emisiuni care îi ajută să descopere credința pas cu pas. Totul în limba română, într-un ritm blând.</p>`,
+  },
+  {
+    question: "E sigur să las copilul să asculte singur?",
+    answer:
+      `<p>Da. Stațiile de pe această pagină difuzează exclusiv conținut pentru copii — muzică, povestiri și emisiuni potrivite vârstei lor. Radioul poate merge liniștit în fundal, fără să fie nevoie să-l supraveghezi.</p>`,
+  },
+  {
+    question: "Cum pornesc radioul pe telefon sau în mașină?",
+    answer:
+      `<p>Cu <a href="/descarca-aplicatia-radio-crestin/">aplicația Radio Creștin</a> pornești stația preferată a copilului în câteva secunde, iar prin Apple CarPlay o asculți în drum spre grădiniță sau școală. Redarea continuă și cu ecranul blocat.</p>`,
+  },
+  {
+    question: "Pentru ce vârste sunt potrivite stațiile?",
+    answer:
+      `<p>Pentru toate vârstele — de la melodii liniștite pentru cei mici, la cântecele vesele și povestiri biblice pe înțelesul școlarilor. Fiecare stație are stilul ei: încearcă-le pe rând și vezi care îi place copilului tău.</p>`,
+  },
+];
+
+---
+
+<CategoryLayout
+  seo={SEO_RADIO_COPII}
+  h1="Radio Creștin pentru Copii"
+  lead="Radio creștin pentru copii, online și gratuit: cântecele creștine, povestiri biblice și emisiuni gândite special pentru cei mici. Conținut potrivit pentru copii, pe care îl poți lăsa pornit fără grijă — acasă, în mașină sau înainte de somn."
+  stations={stations}
+  groupStations={groupStations}
+  stationsHeading="Stații radio creștine pentru copii – ascultă live"
+  variant="kids"
+  defaultStationSlug="radio-vestea-buna"
+  faqHeading="Întrebări frecvente despre radio pentru copii"
+  faqs={faqs}
+/>

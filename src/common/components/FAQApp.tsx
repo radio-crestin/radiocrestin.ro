@@ -149,7 +149,7 @@ function FAQContent() {
       </main>
 
       <DownloadAppBanner />
-      <FooterLinks />
+      <FooterLinks showStoreBadges={false} />
     </div>
   );
 }

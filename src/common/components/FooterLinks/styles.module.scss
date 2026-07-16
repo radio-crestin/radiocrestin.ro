@@ -1,48 +1,134 @@
 @use "public/styles/mixinHelper";
 
-.container {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
-  max-width: 1440px;
-  margin: 70px auto 150px;
-  padding: 0 30px;
-
-  @include mixinHelper.onDesktop {
-    padding: 0 15px;
-  }
+.footer {
+  margin-top: 90px;
+  padding: 55px 30px 140px;
 
   @include mixinHelper.onTablet {
-    flex-direction: column;
-    gap: 16px;
-    margin-top: 30px;
-    padding: 0 16px;
+    margin-top: 50px;
+    padding: 40px 20px 130px;
   }
 }
 
-.links {
+.inner {
+  max-width: 1230px;
+  margin: 0 auto;
+}
+
+.top {
   display: flex;
+  align-items: flex-start;
+  gap: 40px 80px;
+
+  @include mixinHelper.onSmallDesktop {
+    flex-direction: column;
+  }
+}
+
+.brand {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  flex: 0 0 300px;
+  max-width: 300px;
+
+  @include mixinHelper.onSmallDesktop {
+    flex-basis: auto;
+    max-width: 340px;
+  }
+}
+
+.brand_logo {
+  display: inline-flex;
   align-items: center;
   gap: 12px;
+  width: fit-content;
+  text-decoration: none;
+
+  img {
+    border-radius: 9px;
+    display: block;
+  }
+
+  span {
+    color: var(--text-color);
+    font-size: 18px;
+    font-weight: 700;
+  }
+}
+
+.tagline {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: var(--subtext-metadata-color);
+}
+
+.store_badges {
+  display: flex;
+  gap: 10px;
   flex-wrap: wrap;
+  margin-top: 4px;
+
+  img {
+    display: block;
+  }
+}
+
+.columns {
+  flex: 1;
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 35px 25px;
+}
+
+.col {
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+
+  .col_title {
+    margin: 0 0 4px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--subtext-metadata-color);
+  }
 
   a {
+    width: fit-content;
+    font-size: 0.9rem;
+    line-height: 1.4;
     color: var(--text-color);
     text-decoration: none;
-    font-size: 0.85rem;
-    opacity: 0.6;
+    opacity: 0.72;
     transition: opacity 0.2s ease;
 
     &:hover {
       opacity: 1;
     }
   }
-
-  .separator {
-    color: var(--text-color);
-    opacity: 0.3;
-    font-size: 0.85rem;
-  }
 }
 
+.bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px 20px;
+  flex-wrap: wrap;
+  margin-top: 55px;
+  padding-top: 24px;
+  border-top: 1px solid var(--bg-active-station-border);
+
+  p {
+    margin: 0;
+    font-size: 0.82rem;
+    color: var(--subtext-metadata-color);
+  }
+
+  @include mixinHelper.onTablet {
+    margin-top: 40px;
+  }
+}

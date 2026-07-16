@@ -10,6 +10,9 @@ const API_URL = "https://api.radiocrestin.ro/api/v1/stations";
 // so every sitemap URL must use the trailing-slash form (matching canonicals).
 const STATIC_PAGES = [
   { path: "/", priority: "1.0", changefreq: "daily" },
+  { path: "/muzica-crestina/", priority: "0.8", changefreq: "weekly" },
+  { path: "/predici/", priority: "0.8", changefreq: "weekly" },
+  { path: "/radio-crestin-pentru-copii/", priority: "0.8", changefreq: "weekly" },
   { path: "/intrebari-frecvente/", priority: "0.8", changefreq: "monthly" },
   { path: "/descarca-aplicatia-radio-crestin/", priority: "0.8", changefreq: "monthly" },
   { path: "/church-hub/", priority: "0.7", changefreq: "monthly" },

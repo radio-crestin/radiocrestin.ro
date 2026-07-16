@@ -1,0 +1,561 @@
+---
+import BaseLayout from "./BaseLayout.astro";
+import CategoryApp from "@/components/CategoryApp";
+import FooterLinks from "@/components/FooterLinks";
+import ThemeToggle from "@/components/ThemeToggle";
+import { SITE_URL } from "@/constants/constants";
+import type { IStation } from "@/models/Station";
+
+interface FaqItem {
+  question: string;
+  /** Answer as HTML (internal links allowed) — rendered on page and in the FAQPage schema. */
+  answer: string;
+}
+
+interface Props {
+  seo: {
+    title: string;
+    description: string;
+    imageUrl: string;
+    fullURL: string;
+  };
+  h1: string;
+  lead: string;
+  /** Full station list — passed to the island so the player and live metadata work. */
+  stations: IStation[];
+  /** Stations in this category, in curated order. */
+  groupStations: IStation[];
+  stationsHeading: string;
+  /** "kids" switches the hero to a playful, colorful look. */
+  variant?: "default" | "kids";
+  /** Station preselected in the player; defaults to the first of the group. */
+  defaultStationSlug?: string;
+  faqHeading?: string;
+  faqs: FaqItem[];
+}
+
+const {
+  seo,
+  h1,
+  lead,
+  stations,
+  groupStations,
+  stationsHeading,
+  variant = "default",
+  defaultStationSlug = groupStations[0]?.slug,
+  faqHeading = "Întrebări frecvente",
+  faqs,
+} = Astro.props;
+const categorySlugs = groupStations.map((s) => s.slug);
+const count = groupStations.length;
+const countLabel = count < 20 ? `${count} stații` : `${count} de stații`;
+
+const itemListSchema = JSON.stringify({
+  "@context": "https://schema.org",
+  "@type": "ItemList",
+  name: h1,
+  numberOfItems: groupStations.length,
+  itemListElement: groupStations.map((station, index) => ({
+    "@type": "ListItem",
+    position: index + 1,
+    name: station.title,
+    url: `${SITE_URL}/${station.slug}/`,
+  })),
+});
+
+const breadcrumbSchema = JSON.stringify({
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  itemListElement: [
+    {
+      "@type": "ListItem",
+      position: 1,
+      name: "Radio Creștin",
+      item: `${SITE_URL}/`,
+    },
+    {
+      "@type": "ListItem",
+      position: 2,
+      name: h1,
+      item: seo.fullURL,
+    },
+  ],
+});
+
+// Google accepts a small HTML subset (incl. <a>) inside acceptedAnswer.text.
+const faqSchema = JSON.stringify({
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: faqs.map((faq) => ({
+    "@type": "Question",
+    name: faq.question,
+    acceptedAnswer: {
+      "@type": "Answer",
+      text: faq.answer,
+    },
+  })),
+});
+---
+
+<BaseLayout {...seo}>
+  <script type="application/ld+json" set:html={itemListSchema} slot="head" />
+  <script type="application/ld+json" set:html={breadcrumbSchema} slot="head" />
+  <script type="application/ld+json" set:html={faqSchema} slot="head" />
+
+  <div class="category-page">
+    <header class:list={["category-hero", { "hero-kids": variant === "kids" }]}>
+      {variant !== "kids" && (
+        <img
+          class="hero-vector"
+          src="/images/vector_yellow.svg"
+          alt=""
+          aria-hidden="true"
+        />
+      )}
+      {variant === "kids" && (
+        <div class="kids-decor" aria-hidden="true">
+          <span class="kids-emoji kids-e1">🎈</span>
+          <span class="kids-emoji kids-e2">⭐</span>
+          <span class="kids-emoji kids-e3">🎵</span>
+          <span class="kids-emoji kids-e4">🕊️</span>
+          <span class="kids-emoji kids-e5">🧸</span>
+          <span class="kids-emoji kids-e6">☀️</span>
+        </div>
+      )}
+      <nav class="hero-nav">
+        <a href="/" class="hero-logo">
+          <img
+            src="/images/radiocrestin_logo.png"
+            alt="Radio Creștin"
+            width={40}
+            height={40}
+          />
+          <span>Radio Creștin</span>
+        </a>
+        <ThemeToggle client:load />
+      </nav>
+      <div class="hero-text">
+        <h1>{h1}</h1>
+        <p class="hero-lead">{lead}</p>
+        <p class="hero-meta">
+          <span class="live-dot" aria-hidden="true"></span>
+          Live acum&nbsp;&nbsp;·&nbsp;&nbsp;{countLabel}&nbsp;&nbsp;·&nbsp;&nbsp;Gratuit, fără cont
+        </p>
+      </div>
+    </header>
+
+    <section class="category-stations-section">
+      <div class="section-inner">
+        <h2 class="stations-heading">{stationsHeading}</h2>
+      </div>
+      <CategoryApp
+        client:load
+        stations={stations}
+        categorySlugs={categorySlugs}
+        defaultStationSlug={defaultStationSlug}
+      />
+    </section>
+
+    <section class="category-faq-section">
+      <div class="section-inner">
+        <div class="category-faq">
+          <h2 class="faq-heading">{faqHeading}</h2>
+          <div class="faq-list">
+          {faqs.map((faq) => (
+            <details class="faq-item">
+              <summary>
+                <h3>{faq.question}</h3>
+                <svg
+                  class="faq-chevron"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.4"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M6 9l6 6 6-6" />
+                </svg>
+              </summary>
+              <div class="faq-body" set:html={faq.answer} />
+            </details>
+          ))}
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <FooterLinks />
+  </div>
+</BaseLayout>
+
+<style is:global>
+  .category-page {
+    min-height: 100vh;
+    background: var(--bg-body);
+    padding-bottom: 40px;
+  }
+
+  /* ── Hero — same visual bones as the homepage header container ── */
+  .category-page .category-hero {
+    position: relative;
+    max-width: 1350px;
+    margin: 15px auto 0;
+    padding: 35px 35px 60px;
+    background: var(--bg-header-container);
+    border-radius: 50px;
+    overflow: hidden;
+  }
+  .category-page .hero-vector {
+    position: absolute;
+    right: 0;
+    top: 0;
+    height: 100%;
+    border-top-right-radius: 50px;
+    border-bottom-right-radius: 50px;
+  }
+  .category-page .hero-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: relative;
+    z-index: 2;
+    max-width: 1230px;
+    margin: 0 auto;
+  }
+  .category-page .hero-logo {
+    display: inline-flex;
+    align-items: center;
+    gap: 15px;
+    font-size: 20px;
+    font-weight: bold;
+    color: var(--text-color);
+    text-decoration: none;
+  }
+  .category-page .hero-logo img {
+    border-radius: 10px;
+  }
+  /* The global reset paints every element black — restate the theme color
+     on the span (same workaround as the homepage header). */
+  .category-page .hero-logo span {
+    color: var(--text-color);
+  }
+  .category-page .hero-text {
+    position: relative;
+    z-index: 1;
+    max-width: 1230px;
+    margin: 0 auto;
+    padding-top: 75px;
+  }
+  .category-page .hero-text h1 {
+    max-width: 640px;
+    font-size: clamp(2.2rem, 4.5vw, 3.3rem);
+    font-weight: 700;
+    letter-spacing: -0.022em;
+    line-height: 1.06;
+    color: var(--text-color);
+    margin: 0 0 22px;
+    text-wrap: balance;
+  }
+  .category-page .hero-lead {
+    max-width: 580px;
+    font-size: 1.1rem;
+    line-height: 1.6;
+    color: var(--header-subtext-color);
+    margin: 0;
+    text-wrap: pretty;
+  }
+  .category-page .hero-meta {
+    display: flex;
+    align-items: center;
+    margin: 28px 0 0;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--subtext-metadata-color);
+  }
+  .category-page .live-dot {
+    width: 8px;
+    height: 8px;
+    margin-right: 9px;
+    border-radius: 50%;
+    background: #30d158;
+    box-shadow: 0 0 0 0 rgba(48, 209, 88, 0.45);
+    animation: category-live-pulse 2.4s ease-out infinite;
+  }
+  @keyframes category-live-pulse {
+    0% {
+      box-shadow: 0 0 0 0 rgba(48, 209, 88, 0.45);
+    }
+    70% {
+      box-shadow: 0 0 0 7px rgba(48, 209, 88, 0);
+    }
+    100% {
+      box-shadow: 0 0 0 0 rgba(48, 209, 88, 0);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .category-page .live-dot {
+      animation: none;
+    }
+    .category-page .kids-emoji {
+      animation: none;
+    }
+  }
+
+  /* ── Kids variant — playful pastel hero ── */
+  .category-page .hero-kids {
+    background:
+      radial-gradient(ellipse 60% 90% at 85% 15%, rgba(94, 170, 255, 0.22), transparent 70%),
+      radial-gradient(ellipse 55% 80% at 15% 90%, rgba(255, 120, 190, 0.14), transparent 70%),
+      radial-gradient(ellipse 45% 70% at 60% 100%, rgba(140, 96, 255, 0.16), transparent 70%),
+      var(--bg-header-container);
+  }
+  :root[data-theme="light"] .category-page .hero-kids {
+    background:
+      radial-gradient(ellipse 60% 90% at 85% 15%, rgba(127, 216, 255, 0.5), transparent 70%),
+      radial-gradient(ellipse 55% 80% at 15% 90%, rgba(255, 176, 197, 0.45), transparent 70%),
+      radial-gradient(ellipse 45% 70% at 60% 100%, rgba(255, 224, 130, 0.5), transparent 70%),
+      var(--bg-header-container);
+  }
+  .category-page .kids-decor {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+  .category-page .kids-emoji {
+    position: absolute;
+    line-height: 1;
+    animation: kids-float 7s ease-in-out infinite alternate;
+  }
+  .category-page .kids-e1 {
+    right: 9%;
+    top: 16%;
+    font-size: 3.4rem;
+    animation-duration: 8s;
+  }
+  .category-page .kids-e2 {
+    right: 24%;
+    top: 55%;
+    font-size: 2.1rem;
+    animation-delay: -2s;
+  }
+  .category-page .kids-e3 {
+    right: 16%;
+    bottom: 14%;
+    font-size: 2.5rem;
+    animation-delay: -4s;
+    animation-duration: 9s;
+  }
+  .category-page .kids-e4 {
+    right: 33%;
+    top: 20%;
+    font-size: 2.4rem;
+    animation-delay: -1s;
+  }
+  .category-page .kids-e5 {
+    right: 5%;
+    bottom: 32%;
+    font-size: 2.6rem;
+    animation-delay: -5s;
+    animation-duration: 10s;
+  }
+  .category-page .kids-e6 {
+    right: 41%;
+    bottom: 24%;
+    font-size: 1.9rem;
+    animation-delay: -3s;
+  }
+  @keyframes kids-float {
+    from {
+      transform: translateY(-9px) rotate(-4deg);
+    }
+    to {
+      transform: translateY(9px) rotate(5deg);
+    }
+  }
+
+  /* ── Shared section container, aligned with the 1230px station grid ── */
+  .category-page .section-inner {
+    max-width: 1230px;
+    margin: 0 auto;
+  }
+
+  /* ── Stations section — heading styled like the homepage sections ── */
+  .category-page .stations-heading {
+    margin: 75px 0 0;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text-color);
+    letter-spacing: -0.01em;
+  }
+  /* Grid rendered by the CategoryApp island; StationItem cards size themselves
+     exactly like on the homepage (max-width 571px → 45% → full width). */
+  .category-page .category-stations {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 20px;
+    max-width: 1230px;
+    margin: 30px auto 0;
+    width: 100%;
+  }
+
+  /* ── FAQ (accordion) — title left, questions right ── */
+  .category-page .category-faq {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    gap: 20px 70px;
+    align-items: start;
+    max-width: 1020px;
+    margin: 0 auto;
+    padding: 100px 0 45px;
+  }
+  .category-page .faq-heading {
+    margin: 9px 0 0;
+    font-size: 1.4rem;
+    font-weight: 700;
+    letter-spacing: -0.016em;
+    line-height: 1.25;
+    color: var(--text-color);
+    text-wrap: balance;
+  }
+  .category-page .faq-list {
+    min-width: 0;
+  }
+  .category-page .faq-item {
+    border-bottom: 1px solid var(--bg-active-station-border);
+  }
+  .category-page .faq-item summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 15px 2px;
+    cursor: pointer;
+    list-style: none;
+    color: var(--text-color);
+  }
+  .category-page .faq-item summary::-webkit-details-marker {
+    display: none;
+  }
+  .category-page .faq-item summary h3 {
+    margin: 0;
+    font-size: 0.97rem;
+    font-weight: 600;
+    letter-spacing: -0.005em;
+    color: inherit;
+  }
+  .category-page .faq-item summary:hover .faq-chevron {
+    color: var(--text-color);
+  }
+  .category-page .faq-chevron {
+    flex-shrink: 0;
+    width: 18px;
+    height: 18px;
+    color: var(--subtext-metadata-color);
+    transition: transform 0.25s ease, color 0.2s ease;
+  }
+  .category-page .faq-item[open] .faq-chevron {
+    transform: rotate(180deg);
+  }
+  .category-page .faq-body {
+    padding: 0 2px 18px;
+  }
+  .category-page .faq-body p {
+    margin: 0 0 10px;
+    font-size: 0.93rem;
+    line-height: 1.65;
+    color: var(--header-subtext-color);
+  }
+  .category-page .faq-body p:last-child {
+    margin-bottom: 0;
+  }
+  .category-page .faq-body a {
+    color: var(--link-color);
+    font-weight: 500;
+    text-decoration: none;
+  }
+  .category-page .faq-body a:hover {
+    color: var(--link-hover-color);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  /* ── Responsive ── */
+  @media screen and (max-width: 1378px) {
+    .category-page .section-inner {
+      padding-left: 15px;
+      padding-right: 15px;
+    }
+  }
+  @media screen and (max-width: 1160px) {
+    .category-page .hero-vector {
+      display: none;
+    }
+    .category-page .section-inner {
+      padding-left: 25px;
+      padding-right: 25px;
+    }
+  }
+  @media screen and (max-width: 768px) {
+    .category-page .category-hero {
+      border-radius: 0;
+      margin-top: 0;
+      padding: 20px 20px 40px;
+    }
+    .category-page .hero-text {
+      padding-top: 45px;
+    }
+    .category-page .hero-text h1 {
+      font-size: 2rem;
+    }
+    .category-page .hero-lead {
+      font-size: 1rem;
+    }
+    .category-page .hero-meta {
+      margin-top: 22px;
+      font-size: 0.85rem;
+    }
+    .category-page .section-inner {
+      padding-left: 15px;
+      padding-right: 15px;
+    }
+    .category-page .stations-heading {
+      margin-top: 45px;
+      font-size: 20px;
+    }
+    .category-page .kids-e2,
+    .category-page .kids-e4,
+    .category-page .kids-e5,
+    .category-page .kids-e6 {
+      display: none;
+    }
+    .category-page .kids-e1 {
+      font-size: 2.1rem;
+      right: 6%;
+      top: 10%;
+    }
+    .category-page .kids-e3 {
+      font-size: 1.8rem;
+      right: 7%;
+      bottom: 10%;
+    }
+    .category-page .category-stations {
+      margin-top: 18px;
+      gap: 14px;
+    }
+    .category-page .category-faq {
+      grid-template-columns: 1fr;
+      gap: 6px;
+      padding-top: 60px;
+    }
+    .category-page .faq-heading {
+      margin: 0;
+      font-size: 1.2rem;
+    }
+    .category-page .faq-item summary {
+      padding: 13px 2px;
+    }
+  }
+</style>

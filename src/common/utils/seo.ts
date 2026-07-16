@@ -80,6 +80,30 @@ export const SEO_FAQ = {
   fullURL: `${SITE_URL}/intrebari-frecvente/`,
 };
 
+export const SEO_MUZICA_CRESTINA = {
+  title: "Muzică Creștină Online – Ascultă Gratuit | Radio Creștin",
+  description:
+    "Ascultă muzică creștină online gratuit: worship, cântări vechi, gospel și muzică nouă, non-stop, pe zeci de radiouri creștine. Fără cont, fără reclame.",
+  imageUrl: DEFAULT_SHARE_IMAGE,
+  fullURL: `${SITE_URL}/muzica-crestina/`,
+};
+
+export const SEO_PREDICI = {
+  title: "Predici Creștine Audio – Ascultă Online | Radio Creștin",
+  description:
+    "Ascultă predici creștine audio online: mesaje biblice, învățătură și emisiuni de zidire sufletească, non-stop, gratuit, pe radiourile creștine cu predici.",
+  imageUrl: DEFAULT_SHARE_IMAGE,
+  fullURL: `${SITE_URL}/predici/`,
+};
+
+export const SEO_RADIO_COPII = {
+  title: "Radio Creștin pentru Copii – Ascultă Online Gratuit",
+  description:
+    "Radio creștin pentru copii: cântecele creștine, povestiri biblice și emisiuni pentru cei mici. Ascultă online gratuit stațiile creștine pentru copii.",
+  imageUrl: DEFAULT_SHARE_IMAGE,
+  fullURL: `${SITE_URL}/radio-crestin-pentru-copii/`,
+};
+
 export const SEO_CHURCH_HUB = {
   title: "Church Hub – Software Gratuit pentru Biserică | Radio Creștin",
   description:
