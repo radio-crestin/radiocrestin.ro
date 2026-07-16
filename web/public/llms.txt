@@ -24,6 +24,15 @@ Platforma este deschisă oricui dorește să asculte muzică creștină în limb
 
 Utilizatorul accesează site-ul, alege un post de radio din listă și apasă pe el pentru a începe ascultarea. Poate căuta posturi după nume sau după melodia care cântă. Nu este necesară crearea unui cont.
 
+## Pagini principale
+
+- Toate stațiile: https://www.radiocrestin.ro/
+- Muzică creștină online: https://www.radiocrestin.ro/muzica-crestina/
+- Predici creștine audio: https://www.radiocrestin.ro/predici/
+- Radio creștin pentru copii: https://www.radiocrestin.ro/radio-crestin-pentru-copii/
+- Întrebări frecvente: https://www.radiocrestin.ro/intrebari-frecvente/
+- Descarcă aplicația mobilă: https://www.radiocrestin.ro/descarca-aplicatia-radio-crestin/
+
 ## Limbă
 
 Interfața și conținutul sunt în limba română.

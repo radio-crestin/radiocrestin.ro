@@ -1,0 +1,47 @@
+---
+import CategoryLayout from "../../layouts/CategoryLayout.astro";
+import { getStations } from "@/services/getStations";
+import { cleanStationsMetadata, stationsInGroup } from "@/utils";
+import { SEO_PREDICI } from "@/utils/seo";
+import type { IStation } from "@/models/Station";
+
+const { stations: rawStations, station_groups } = await getStations();
+rawStations.forEach((station: IStation) => { station.is_favorite = false; });
+const stations = cleanStationsMetadata(rawStations);
+const groupStations = stationsInGroup(stations, station_groups, "predici");
+
+const faqs = [
+  {
+    question: "De ce să ascult predici la radio?",
+    answer:
+      `<p>E cel mai simplu mod de a asculta învățătură biblică: apeși play, iar predicile se succed de la sine — fără să cauți înregistrări sau să alegi ce urmează. Le poți asculta oriunde: la volan, în timpul lucrului sau seara, acasă.</p>`,
+  },
+  {
+    question: "Unde ascult direct Scriptura?",
+    answer:
+      `<p><a href="/radio-calea-spre-cer-biblia/">Radio Calea spre Cer Biblia</a> difuzează citirea Bibliei în continuu, iar <a href="/rve-predici/">RVE Predici</a> transmite mesaje de la Radio Vocea Evangheliei.</p>`,
+  },
+  {
+    question: "Ce fel de predici găsesc?",
+    answer:
+      `<p>Mesaje evanghelice și de încurajare, serii de învățătură pe cărți din Biblie, mărturii și emisiuni cu întrebări biblice — de la vorbitori și biserici de diferite confesiuni evanghelice. Între predici, multe stații difuzează și <a href="/muzica-crestina/">muzică creștină</a>.</p>`,
+  },
+  {
+    question: "Costă ceva sau am nevoie de cont?",
+    answer:
+      `<p>Nu — totul e gratuit, fără cont și fără descărcări. Deschizi pagina, apeși play și asculți. Pentru telefon există și <a href="/descarca-aplicatia-radio-crestin/">aplicația Radio Creștin</a>.</p>`,
+  },
+];
+
+---
+
+<CategoryLayout
+  seo={SEO_PREDICI}
+  h1="Predici Creștine Online"
+  lead="Ascultă predici creștine audio, non-stop și gratuit: mesaje biblice, învățătură și emisiuni de zidire sufletească de la pastori și biserici din România și din diaspora. Nu cauți înregistrări una câte una — doar apeși play."
+  stations={stations}
+  groupStations={groupStations}
+  stationsHeading="Radiouri cu predici creștine – ascultă live"
+  faqHeading="Întrebări frecvente despre predici la radio"
+  faqs={faqs}
+/>

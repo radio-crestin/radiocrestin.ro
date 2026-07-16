@@ -1,0 +1,48 @@
+---
+import CategoryLayout from "../../layouts/CategoryLayout.astro";
+import { getStations } from "@/services/getStations";
+import { cleanStationsMetadata, stationsInGroup } from "@/utils";
+import { SEO_MUZICA_CRESTINA } from "@/utils/seo";
+import type { IStation } from "@/models/Station";
+
+const { stations: rawStations, station_groups } = await getStations();
+rawStations.forEach((station: IStation) => { station.is_favorite = false; });
+const stations = cleanStationsMetadata(rawStations);
+const groupStations = stationsInGroup(stations, station_groups, "muzica");
+
+const faqs = [
+  {
+    question: "Ce stiluri de muzică creștină pot asculta?",
+    answer:
+      `<p><strong>Închinare</strong> — muzică modernă, în română și engleză, pe <a href="/radio-levi/">Radio Levi</a>, <a href="/cross-one/">Cross One</a> sau <a href="/radio-elim-plus/">Radio Elim Plus</a>.</p>` +
+      `<p><strong>Cântări creștine vechi</strong> — imnuri și cântări tradiționale, pe <a href="/radio-old-christian-radio/">Old Christian Radio</a> și <a href="/radio-philadelphia-clasic/">Radio Philadelphia Clasic</a>. <strong>Muzică populară</strong> — pe <a href="/radio-calea-spre-cer-popular/">Calea spre Cer Popular</a> și <a href="/aripi-spre-cer-popular/">Aripi spre Cer Popular</a>, iar pentru liniște și studiu, <a href="/aripi-spre-cer-instrumental/">Aripi spre Cer Instrumental</a>.</p>`,
+  },
+  {
+    question: "E gratuit? Am nevoie de cont?",
+    answer:
+      `<p>Da, totul e gratuit — fără cont și fără descărcări. Alegi stația, apeși play și muzica pornește direct în browser.</p>`,
+  },
+  {
+    question: "Cum ascult în mașină sau pe telefon?",
+    answer:
+      `<p>Cu <a href="/descarca-aplicatia-radio-crestin/">aplicația Radio Creștin</a> pentru Android și iPhone: redarea continuă cu ecranul blocat, iar prin Apple CarPlay asculți direct în mașină.</p>`,
+  },
+  {
+    question: "Există și predici sau stații pentru copii?",
+    answer:
+      `<p>Da — multe stații difuzează <a href="/predici/">predici creștine</a> între blocurile de muzică, iar pentru cei mici există <a href="/radio-crestin-pentru-copii/">stații dedicate copiilor</a>.</p>`,
+  },
+];
+
+---
+
+<CategoryLayout
+  seo={SEO_MUZICA_CRESTINA}
+  h1="Muzică Creștină Online"
+  lead="Ascultă muzică creștină online, gratuit și fără întrerupere: radiouri creștine din România și din diaspora care transmit muzică non-stop. Alegi stația, apeși play și asculți — fără cont și fără descărcări."
+  stations={stations}
+  groupStations={groupStations}
+  stationsHeading="Radiouri creștine cu muzică – ascultă live"
+  faqHeading="Întrebări frecvente despre muzica creștină online"
+  faqs={faqs}
+/>

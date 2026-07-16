@@ -14,6 +14,17 @@ export interface IReviewsStats {
   average_rating: number;
 }
 
+export interface IStationGroup {
+  id: number;
+  name: string;
+  order: number;
+  slug: string;
+  station_to_station_groups: {
+    station_id: number;
+    order: number;
+  }[];
+}
+
 export interface IStation {
   id: number;
   slug: string;

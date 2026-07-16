@@ -1,4 +1,4 @@
-import type { IStation } from "@/models/Station";
+import type { IStation, IStationGroup } from "@/models/Station";
 
 /**
  * clean the Stations metadata because the pages are rendered statically, and the metadata will pe loaded on client side.
@@ -35,6 +35,22 @@ export function cleanStationsMetadata(stations: IStation[]) {
 
     return station;
   });
+}
+
+// Stations belonging to an API station_group (e.g. "muzica", "predici",
+// "copii"), in the group's curated order — used by the category pages.
+export function stationsInGroup(
+  stations: IStation[],
+  groups: IStationGroup[],
+  groupSlug: string,
+): IStation[] {
+  const group = (groups || []).find((g) => g.slug === groupSlug);
+  if (!group) return [];
+  return (group.station_to_station_groups || [])
+    .slice()
+    .sort((a, b) => a.order - b.order)
+    .map((m) => stations.find((s) => s.id === m.station_id))
+    .filter((s): s is IStation => Boolean(s));
 }
 
 export function getValidImageUrl(url: string | null | undefined, fallback: string = "/images/radio-white-default.jpg"): string {

@@ -43,7 +43,9 @@ const StationItem = ({ badgeType, ...data }: StationItemProps) => {
     const station = ctx.stations?.find((s: IStation) => s.slug === data.slug);
     if (station) {
       setCtx({ selectedStation: station });
-      window.history.pushState(null, "", `/${data.slug}/`);
+      if (!ctx.inPagePlayback) {
+        window.history.pushState(null, "", `/${data.slug}/`);
+      }
     }
   };
 

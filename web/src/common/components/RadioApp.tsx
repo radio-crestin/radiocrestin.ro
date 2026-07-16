@@ -58,7 +58,7 @@ function RadioContent({ showReviews, hideAppBanner }: { showReviews: boolean; hi
           reviewsStats={ctx.selectedStation.reviews_stats}
         />
       )}
-      <FooterLinks />
+      <FooterLinks showStoreBadges={false} />
       {ctx.selectedStation && <RadioPlayer />}
       <ToastContainer />
     </NoInternetConnection>

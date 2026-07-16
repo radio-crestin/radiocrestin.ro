@@ -26,6 +26,9 @@ import { captureException, getUserId, trackListeningStarted, trackListeningStopp
 import type { IStationStreams } from "@/models/Station";
 import OfflineStatus from "@/components/OfflineStatus";
 import Star from "@/icons/Star";
+import HeadphoneIcon from "@/icons/Headphone";
+import { getStationSongHistory } from "@/services/getStations";
+import type { ISongHistoryItem } from "@/services/getStations";
 import usePlayCount from "@/store/usePlayCount";
 import { useRefreshStations } from "@/hooks/useUpdateStationsMetadata";
 import { getValidImageUrl } from "@/utils";
@@ -54,6 +57,13 @@ export default function RadioPlayer() {
   const { incrementPlayCount } = usePlayCount();
   const { refreshStations } = useRefreshStations();
   const [isFavorite, setIsFavorite] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+  const [history, setHistory] = useState<ISongHistoryItem[] | null>(null);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const playerContainerRef = useRef<HTMLDivElement>(null);
+  // Slug of the station that was preselected without a user gesture (category
+  // pages); its stream is not loaded until the user actually presses play.
+  const autoSelectedNoLoadRef = useRef<string | null>(null);
   const hlsInstanceRef = useRef<HlsType | null>(null);
   const isPausedRef = useRef(false); // true = HLS paused with stopLoad(), resumable
   const retryMechanismRef = useRef<() => void>(() => {});
@@ -165,6 +175,58 @@ export default function RadioPlayer() {
   useEffect(() => {
     setIsFavorite(favouriteItems.includes(station.slug));
   }, [favouriteItems, station.slug]);
+
+  // Load the recent-songs list for the expanded panel (category pages only)
+  useEffect(() => {
+    if (!expanded) return;
+    let cancelled = false;
+    setHistoryLoading(true);
+    setHistory(null);
+    getStationSongHistory(station.slug)
+      .then((response) => {
+        if (cancelled) return;
+        const items = (response?.history || [])
+          .filter((item) => item.song?.name)
+          .sort(
+            (a, b) =>
+              new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
+          )
+          .slice(0, 12);
+        setHistory(items);
+      })
+      .catch(() => {
+        if (!cancelled) setHistory([]);
+      })
+      .finally(() => {
+        if (!cancelled) setHistoryLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [expanded, station.slug]);
+
+  useEffect(() => {
+    if (!expanded) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setExpanded(false);
+    };
+    const onPointerDown = (event: MouseEvent | TouchEvent) => {
+      if (
+        playerContainerRef.current &&
+        !playerContainerRef.current.contains(event.target as Node)
+      ) {
+        setExpanded(false);
+      }
+    };
+    document.addEventListener("keydown", onKey);
+    document.addEventListener("mousedown", onPointerDown);
+    document.addEventListener("touchstart", onPointerDown);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.removeEventListener("mousedown", onPointerDown);
+      document.removeEventListener("touchstart", onPointerDown);
+    };
+  }, [expanded]);
 
   useEffect(() => {
     const audio = document.getElementById("audioPlayer") as HTMLAudioElement;
@@ -562,6 +624,20 @@ export default function RadioPlayer() {
     // (e.g. clicked play then immediately paused — React batches both), bail out.
     if (loadKeyChanged && playbackState === PLAYBACK_STATE.STOPPED) return;
 
+    // Category pages preselect a station on load (restored or default). There
+    // is no user gesture at that point, so play() can hang forever on live
+    // MP3 streams — don't load anything yet; the play button (or picking a
+    // station) starts the stream.
+    if (
+      ctx.inPagePlayback &&
+      autoSelectedNoLoadRef.current === null &&
+      !loadKeyChanged
+    ) {
+      autoSelectedNoLoadRef.current = station.slug;
+      setPlaybackState(PLAYBACK_STATE.STOPPED);
+      return;
+    }
+
     const streamUrl = getStreamUrl(streamType);
     if (!streamUrl) {
       retryMechanism();
@@ -690,7 +766,13 @@ export default function RadioPlayer() {
       });
 
       navigator.mediaSession.setActionHandler("previoustrack", () => {
-        history.back();
+        // In-page playback (category pages) has no station history entries —
+        // step back through the list instead of navigating the browser history.
+        if (ctx.inPagePlayback) {
+          stepStation(-1);
+        } else {
+          history.back();
+        }
       });
     }
   }, [station]);
@@ -710,21 +792,27 @@ export default function RadioPlayer() {
     }
   });
 
-  const nextRandomStation = () => {
+  const stepStation = (direction: number) => {
     const stationList = ctx.sortedStations || ctx.stations;
     const upStations = stationList.filter(
       (s: any) => s.uptime.is_up === true,
     );
+    if (!upStations.length) return;
 
     const currentIndex = upStations.findIndex((s: any) => s.slug === station.slug);
-    const nextIndex = (currentIndex + 1) % upStations.length;
+    const nextIndex =
+      (currentIndex + direction + upStations.length) % upStations.length;
     const nextStation = upStations[nextIndex];
 
     if (nextStation) {
       setCtx({ selectedStation: nextStation });
-      window.history.pushState(null, "", `/${nextStation.slug}/`);
+      if (!ctx.inPagePlayback) {
+        window.history.pushState(null, "", `/${nextStation.slug}/`);
+      }
     }
   };
+
+  const nextRandomStation = () => stepStation(1);
 
   const renderPlayButtonSvg = () => {
     switch (playbackState) {
@@ -752,8 +840,82 @@ export default function RadioPlayer() {
   return (
     <>
       <div className={styles.player_gradient_overlay} />
-      <div className={styles.radio_player_container}>
+      <div className={styles.radio_player_container} ref={playerContainerRef}>
         <div className={styles.radio_player}>
+        {ctx.inPagePlayback && (
+          <div
+            className={`${styles.expanded_panel} ${expanded ? styles.expanded_panel_open : ""}`}
+            aria-hidden={!expanded}
+          >
+            <div className={styles.expanded_scroll}>
+              {station.description && (
+                <div>
+                  <div className={styles.expanded_row_head}>
+                    <p className={styles.expanded_label}>Despre stație</p>
+                    {station.total_listeners > 0 && (
+                      <span className={styles.expanded_listeners}>
+                        {station.total_listeners} <HeadphoneIcon /> acum
+                      </span>
+                    )}
+                  </div>
+                  <p className={styles.expanded_description}>{station.description}</p>
+                </div>
+              )}
+
+              <div>
+                <div className={styles.expanded_row_head}>
+                  <p className={styles.expanded_label}>Redate recent</p>
+                  <a className={styles.expanded_page_link} href={`/${station.slug}/`}>
+                    Pagina stației →
+                  </a>
+                </div>
+                {historyLoading && !history?.length ? (
+                  <p className={styles.expanded_empty}>Se încarcă istoricul…</p>
+                ) : history?.length ? (
+                  <div className={styles.expanded_history}>
+                    {history.map((item) => (
+                      <div
+                        className={styles.history_row}
+                        key={`${item.timestamp}-${item.song?.id}`}
+                      >
+                        <img
+                          className={styles.history_thumb}
+                          src={getValidImageUrl(
+                            item.song?.thumbnail_url,
+                            getValidImageUrl(station.thumbnail_url),
+                          )}
+                          alt=""
+                          loading="lazy"
+                          onError={(e) => {
+                            e.currentTarget.src = getValidImageUrl(station.thumbnail_url);
+                          }}
+                        />
+                        <span className={styles.history_titles}>
+                          <span className={styles.history_song}>{item.song?.name}</span>
+                          {item.song?.artist?.name && (
+                            <span className={styles.history_artist}>
+                              {item.song.artist.name}
+                            </span>
+                          )}
+                          <span className={styles.history_time}>
+                            {new Date(item.timestamp).toLocaleTimeString("ro-RO", {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </span>
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className={styles.expanded_empty}>
+                    Istoricul nu este disponibil pentru această stație.
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
         <div className={styles.player_container}>
           <div className={styles.image_container}>
             <img
@@ -777,7 +939,11 @@ export default function RadioPlayer() {
             </div>
           </div>
 
-          <div className={`${styles.station_info} ${styles.two_lines}`}>
+          <div
+            className={`${styles.station_info} ${styles.two_lines} ${ctx.inPagePlayback ? styles.station_info_clickable : ""}`}
+            onClick={ctx.inPagePlayback ? () => setExpanded((v) => !v) : undefined}
+            title={ctx.inPagePlayback ? "Detalii stație și melodii redate recent" : undefined}
+          >
             <h2 className={styles.station_title}>{station.title}</h2>
             {station.uptime?.is_up !== false ? (
               <p className={styles.song_name}>
@@ -817,6 +983,30 @@ export default function RadioPlayer() {
           </div>
 
           <div className={styles.play_button_container}>
+            {ctx.inPagePlayback && (
+              <button
+                aria-label={expanded ? "Restrânge playerul" : "Extinde playerul"}
+                aria-expanded={expanded}
+                title="Detalii stație și melodii redate recent"
+                className={styles.expand_button}
+                onClick={() => setExpanded((v) => !v)}
+              >
+                <svg
+                  className={expanded ? styles.expand_icon_open : undefined}
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M18 15l-6-6-6 6" />
+                </svg>
+              </button>
+            )}
             <button
               aria-label="Play"
               className={styles.play_button}
