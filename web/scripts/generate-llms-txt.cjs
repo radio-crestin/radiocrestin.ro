@@ -85,6 +85,7 @@ Utilizatorul accesează site-ul, alege un post de radio din listă și apasă pe
 - Radio creștin pentru copii: ${SITE_URL}/radio-crestin-pentru-copii/
 - Întrebări frecvente: ${SITE_URL}/intrebari-frecvente/
 - Descarcă aplicația mobilă: ${SITE_URL}/descarca-aplicatia-radio-crestin/
+- Church Hub, program gratuit de proiecție versuri pentru biserică: ${SITE_URL}/church-hub/
 
 ## Limbă
 
