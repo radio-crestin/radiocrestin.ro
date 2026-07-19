@@ -3,16 +3,21 @@
 
 .container {
   max-width: 1350px;
-  padding: 95px 35px;
+  // Mirrors the homepage header: same paddings, nav pinned at the top,
+  // same 652px total height (28 + 576 + 48)
+  padding: 28px 35px 48px;
   background: var(--bg-header-container);
-  height: 462px;
+  box-sizing: border-box;
+  height: 652px;
+  display: flex;
+  flex-direction: column;
   border-radius: 50px;
   margin: 15px auto 0;
   position: relative;
 
   @include mixinHelper.onTablet {
-    padding: 35px 20px;
-    height: 100%;
+    padding: 22px 20px 34px;
+    height: auto;
     border-radius: 0;
     margin-top: 0;
   }
@@ -23,6 +28,9 @@
   justify-content: space-between;
   gap: 0 30px;
   max-width: 1230px;
+  // Auto margins on a flex child disable stretch — force full width so the
+  // logo/actions spread to the edges instead of clustering in the middle
+  width: 100%;
   margin: 0 auto;
 
   @include mixinHelper.onTablet {
@@ -212,14 +220,17 @@
 .content_section {
   display: flex;
   flex-direction: row;
-  margin-top: 86px;
+  // Fill the fixed-height container and center the station content vertically
+  flex: 1;
+  align-items: center;
   gap: 90px;
   max-width: 1230px;
-  margin-left: auto;
-  margin-right: auto;
+  width: 100%;
+  margin: 0 auto;
 
   @include mixinHelper.onTablet {
-    margin-top: 50px;
+    margin-top: 40px;
+    flex: none;
     max-width: 100%;
   }
 }
@@ -398,7 +409,7 @@
       @include mixinHelper.onTablet {
         font-size: 0.9rem;
         line-height: 20px;
-        height: 140px;
+        max-height: 140px;
         -webkit-line-clamp: 7;
       }
     }
