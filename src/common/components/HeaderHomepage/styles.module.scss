@@ -5,13 +5,19 @@
   max-width: 1350px;
   padding: 28px 35px 48px;
   background: var(--bg-header-container);
+  // Same rendered height as the station page header: 462px content-box + 2×95px padding
+  box-sizing: border-box;
+  height: 652px;
+  display: flex;
+  flex-direction: column;
   border-radius: 50px;
   position: relative;
   overflow: hidden;
   margin: 15px auto 0;
 
   @include mixinHelper.onTablet {
-    padding: 20px 20px 26px;
+    padding: 22px 20px 34px;
+    height: auto;
     border-radius: 0;
     margin-top: 0;
   }
@@ -60,6 +66,7 @@
   }
 }
 
+
 :global([data-theme="light"]) {
   .decor {
     &::before {
@@ -78,6 +85,10 @@
       }
     }
   }
+
+  .title_accent {
+    background-image: linear-gradient(115deg, #d98a00 0%, #c47500 100%);
+  }
 }
 
 .nav {
@@ -87,6 +98,9 @@
   position: relative;
   z-index: 2;
   max-width: 1230px;
+  // Auto margins on a flex child disable stretch — force full width so the
+  // logo/actions spread to the edges instead of clustering in the middle
+  width: 100%;
   margin: 0 auto;
 
   @include mixinHelper.onTablet {
@@ -269,12 +283,13 @@
 .hero {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 400px;
-  grid-template-areas:
-    "main side"
-    "verse side";
+  grid-template-areas: "main side";
   column-gap: 70px;
+  // Fill the fixed-height container and center the content vertically
   align-items: center;
-  margin: 64px auto 0;
+  flex: 1;
+  width: 100%;
+  margin: 0 auto;
   max-width: 1230px;
   position: relative;
   z-index: 1;
@@ -288,15 +303,13 @@
     grid-template-columns: minmax(0, 1fr);
     grid-template-areas:
       "main"
-      "side"
-      "verse";
-    margin-top: 26px;
+      "side";
+    margin-top: 34px;
   }
 }
 
 .hero_left {
   grid-area: main;
-  align-self: end;
 }
 
 .hero_right {
@@ -305,7 +318,7 @@
   min-width: 0;
 
   @include mixinHelper.onTablet {
-    margin-top: 20px;
+    margin-top: 28px;
   }
 }
 
@@ -339,24 +352,90 @@
   }
 }
 
+// Reserves the badge's line whether or not it has rendered yet — the badge
+// fades in inside this slot without ever shifting the title below
+.eyebrow_slot {
+  height: 29px;
+  margin-bottom: 24px;
+
+  @include mixinHelper.onTablet {
+    height: 27px;
+    margin-bottom: 18px;
+  }
+}
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  margin: 0;
+  padding: 7px 14px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--text-color) 13%, transparent);
+  background: color-mix(in srgb, var(--bg-body) 50%, transparent);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--header-subtext-color);
+  animation: eyebrowIn 0.5s ease both;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+
+  // The global reset paints bare spans black — restate the muted color
+  span {
+    color: var(--header-subtext-color);
+  }
+
+  strong {
+    color: var(--text-color);
+    font-weight: 700;
+  }
+
+  @include mixinHelper.onTablet {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+}
+
+// Opacity/transform only — never moves surrounding layout
+@keyframes eyebrowIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 .title {
   font-family: globalVariables.$dm-sans-bold, serif;
-  font-size: 2.6rem;
-  line-height: 1.15;
+  font-size: 3rem;
+  line-height: 1.12;
   letter-spacing: -0.02em;
   font-weight: 700;
-  margin: 0 0 14px;
+  margin: 0 0 20px;
   color: var(--text-color);
 
   @include mixinHelper.onTablet {
     font-size: 1.7rem;
-    margin: 0 0 10px;
+    margin: 0 0 14px;
   }
+}
+
+.title_accent {
+  background-image: linear-gradient(115deg, #ffca45 0%, #fdae1c 60%, #f79e0e 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: #fdae1c;
 }
 
 .subtitle {
   font-size: 17px;
-  line-height: 1.55;
+  line-height: 1.65;
   max-width: 520px;
   color: var(--header-subtext-color);
 
@@ -374,11 +453,11 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 12px;
-  margin-top: 26px;
+  gap: 14px;
+  margin-top: 36px;
 
   @include mixinHelper.onTablet {
-    margin-top: 20px;
+    margin-top: 26px;
   }
 }
 
@@ -390,6 +469,7 @@
   border: none;
   border-radius: 999px;
   background: linear-gradient(135deg, #ffc53d 0%, #fdae1c 100%);
+  box-shadow: 0 6px 16px -8px rgba(253, 174, 28, 0.3);
   color: #1a1a1a;
   font-size: 16px;
   font-weight: 700;
@@ -452,39 +532,6 @@
   }
 }
 
-.verse {
-  grid-area: verse;
-  margin: 34px 0 0;
-  padding-left: 16px;
-  max-width: 500px;
-  border-left: 3px solid #fdae1c;
-
-  blockquote {
-    font-size: 14.5px;
-    line-height: 1.55;
-    font-style: italic;
-    color: var(--header-subtext-color);
-    margin: 0;
-  }
-
-  figcaption {
-    margin-top: 7px;
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--subtext-metadata-color);
-
-    &::before {
-      content: "— ";
-    }
-  }
-
-  // Hidden on mobile to keep the hero light — the "Versetul zilei" WhatsApp
-  // banner right below the hero carries the verse theme there.
-  @include mixinHelper.onTablet {
-    display: none;
-  }
-}
-
 .live_card {
   background: color-mix(in srgb, var(--bg-body) 62%, transparent);
   backdrop-filter: blur(16px);
@@ -534,14 +581,40 @@
     transform: scale(0.99);
   }
 
-  img {
-    width: 52px;
-    height: 52px;
-    border-radius: 13px;
-    object-fit: cover;
-    flex-shrink: 0;
-    box-shadow: rgba(0, 0, 0, 0.12) 0 2px 8px;
+  @media (hover: hover) and (pointer: fine) {
+    &:hover .thumb_play {
+      opacity: 1;
+    }
   }
+}
+
+.live_thumb {
+  position: relative;
+  width: 52px;
+  height: 52px;
+  flex-shrink: 0;
+  border-radius: 13px;
+  overflow: hidden;
+  box-shadow: rgba(0, 0, 0, 0.12) 0 2px 8px;
+
+  img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+.thumb_play {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.42);
+  color: #fff;
+  opacity: 0;
+  transition: opacity 0.15s ease;
 }
 
 .live_item_info {

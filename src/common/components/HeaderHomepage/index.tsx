@@ -155,7 +155,22 @@ const HeaderHomepage = () => {
       <Navigation />
       <div className={styles.hero}>
         <div className={styles.hero_left}>
-          <h1 className={styles.title}>Ascultă Radiouri Creștine Online</h1>
+          {/* Fixed-height slot: stays empty until the first live fetch lands, so
+              the badge fades in without ever moving the title below */}
+          <div className={styles.eyebrow_slot}>
+            {hasLiveData && (
+              <p className={styles.eyebrow}>
+                <span className={styles.live_dot} />
+                <span>
+                  <strong>{roPlural(totalListeners, "persoană", "persoane")}</strong> ascultă chiar
+                  acum
+                </span>
+              </p>
+            )}
+          </div>
+          <h1 className={styles.title}>
+            Ascultă <span className={styles.title_accent}>Radiouri Creștine</span> Online
+          </h1>
           <p className={styles.subtitle}>
             Muzică creștină, predici și emisiuni pentru toată familia —{" "}
             <strong>{roPlural(stations.length, "stație", "stații")} gratuite</strong>, într-un
@@ -189,16 +204,21 @@ const HeaderHomepage = () => {
                     playStation(station);
                   }}
                 >
-                  <img
-                    src={getValidImageUrl(station.thumbnail_url)}
-                    alt={`${station.title} | radiocrestin.ro`}
-                    width={52}
-                    height={52}
-                    loading={"eager"}
-                    onError={(e) => {
-                      e.currentTarget.src = "/images/radio-white-default.jpg";
-                    }}
-                  />
+                  <span className={styles.live_thumb}>
+                    <img
+                      src={getValidImageUrl(station.thumbnail_url)}
+                      alt={`${station.title} | radiocrestin.ro`}
+                      width={52}
+                      height={52}
+                      loading={"eager"}
+                      onError={(e) => {
+                        e.currentTarget.src = "/images/radio-white-default.jpg";
+                      }}
+                    />
+                    <span className={styles.thumb_play} aria-hidden="true">
+                      <PlayIcon size={16} />
+                    </span>
+                  </span>
                   <div className={styles.live_item_info}>
                     <p className={styles.live_item_name}>{station.title}</p>
                     <p className={styles.live_item_song}>
@@ -230,12 +250,6 @@ const HeaderHomepage = () => {
             </div>
           </div>
         </aside>
-        <figure className={styles.verse}>
-          <blockquote>
-            {`„Iubesc pe Domnul, căci El aude glasul meu, cererile mele. Da, El Și-a plecat urechea spre mine, de aceea-L voi chema toată viața mea."`}
-          </blockquote>
-          <figcaption>Psalmii 116:1-2</figcaption>
-        </figure>
       </div>
     </header>
   );
