@@ -10,7 +10,6 @@ import { Magnify } from "@/icons/Magnify";
 import CloseIcon from "@/icons/CloseIcon";
 import usePlayCount from "@/store/usePlayCount";
 import useFavourite from "@/store/useFavourite";
-import { pickStationHintTargets } from "@/utils/domHints";
 import SparklesStar from "@/icons/SparklesStar";
 
 type SortOption = "recommended" | "most_played" | "listeners" | "rating" | "alphabetical";
@@ -280,20 +279,6 @@ const Stations = () => {
   }, [ctx.stations, sortBy]);
 
   useEffect(() => {
-    if (
-      ctx.favouriteStations?.length > 0 &&
-      document.getElementsByClassName("apasa_aici_move").length > 0
-    ) {
-      document.getElementsByClassName("apasa_aici_move")[0].remove();
-      let favouriteSection: any = document.querySelectorAll(
-        '[data-info="favourite-section"]',
-      );
-      let scrollPosition = favouriteSection[0].offsetTop - 100;
-      window.scrollTo({ top: scrollPosition, behavior: "smooth" });
-    }
-  }, [ctx.favouriteStations]);
-
-  useEffect(() => {
     handleSearch();
   }, [searchedValue]);
 
@@ -334,31 +319,11 @@ const Stations = () => {
     }
   };
 
-  function handleNoStationClicked() {
-    const stationItems = document.querySelectorAll(
-      '[data-station="station-item"]',
-    );
-    const { scrollTarget, appendTarget } = pickStationHintTargets(stationItems);
-
-    scrollTarget?.scrollIntoView({ behavior: "smooth" });
-
-    if (appendTarget && !document.querySelector(".apasa_aici_move")) {
-      let newElement = document.createElement("div");
-      newElement.className = "apasa_aici_move";
-      newElement.textContent = "Apasa aici";
-      appendTarget.appendChild(newElement);
-
-      setTimeout(() => {
-        newElement.remove();
-      }, 10000);
-    }
-  }
-
   return (
     <div className={styles.container}>
-      <div className={styles.favourite_section} data-info={"favourite-section"}>
-        <h2>Stații favorite:</h2>
-        {ctx.favouriteStations?.length > 0 ? (
+      {ctx.favouriteStations?.length > 0 && (
+        <div className={styles.favourite_section} data-info={"favourite-section"}>
+          <h2>Stații favorite:</h2>
           <div className={styles.stations_container}>
             {ctx.favouriteStations.map((station: IStation) => {
               return (
@@ -368,23 +333,9 @@ const Stations = () => {
               );
             })}
           </div>
-        ) : (
-          <div
-            className={`${styles.stations_container} ${styles.favourite_cont}`}
-          >
-            <div className={styles.favorite_card}>
-              <p>Adaugă prima ta stație la favorite.</p>
-              <button
-                onClick={() => handleNoStationClicked()}
-                aria-label="Add to favourite"
-              >
-                Adaugă
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-      <div className={`${styles.search_section}`}>
+        </div>
+      )}
+      <div className={`${styles.search_section}`} data-info={"stations-section"}>
         <div ref={sortRef} className={styles.sort_container}>
           <button
             className={`${styles.sort_button} ${showSortDropdown ? styles.sort_button_open : ""}`}
