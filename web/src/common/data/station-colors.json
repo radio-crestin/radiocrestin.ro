@@ -1,0 +1,234 @@
+{
+  "alt-fm": {
+    "primary": "#4ba1d0",
+    "secondary": "#9dca5d"
+  },
+  "aripi-spre-cer": {
+    "primary": "#c1102f",
+    "secondary": "#b35f0f"
+  },
+  "aripi-spre-cer-instrumental": {
+    "primary": "#c1102f",
+    "secondary": "#b35f0f"
+  },
+  "aripi-spre-cer-popular": {
+    "primary": "#c1102f",
+    "secondary": "#b35f0f"
+  },
+  "aripi-spre-cer-predici": {
+    "primary": "#c1102f",
+    "secondary": "#b35f0f"
+  },
+  "aripi-spre-cer-special": {
+    "primary": "#c1102f",
+    "secondary": "#b35f0f"
+  },
+  "cross-one": {
+    "primary": "#da4d80",
+    "secondary": "#d56634"
+  },
+  "radio-9-fm": {
+    "primary": "#d1575c",
+    "secondary": "#c08c34"
+  },
+  "radio-armonia": {
+    "primary": "#59a8cf",
+    "secondary": "#3637bb"
+  },
+  "radio-betel-alcala": {
+    "primary": "#39c8ef",
+    "secondary": "#132deb"
+  },
+  "radio-calea-spre-cer": {
+    "primary": "#ef3955",
+    "secondary": "#ef9638"
+  },
+  "radio-calea-spre-cer-biblia": {
+    "primary": "#8f4d33",
+    "secondary": "#8f8a33"
+  },
+  "radio-calea-spre-cer-copii": {
+    "primary": "#d07048",
+    "secondary": "#afd94f"
+  },
+  "radio-calea-spre-cer-popular": {
+    "primary": "#864541",
+    "secondary": "#83703f"
+  },
+  "radio-crestin-autentic": {
+    "primary": "#936947",
+    "secondary": "#7b833f"
+  },
+  "radio-de-cuvant": {
+    "primary": "#efef39",
+    "secondary": "#75ef39"
+  },
+  "radio-ekklesia": {
+    "primary": "#dc4c52",
+    "secondary": "#dca64c"
+  },
+  "radio-elim": {
+    "primary": "#7519a9",
+    "secondary": "#a9197d"
+  },
+  "radio-elim-kids": {
+    "primary": "#7519a9",
+    "secondary": "#a9197d"
+  },
+  "radio-elim-plus": {
+    "primary": "#7519a9",
+    "secondary": "#a9197d"
+  },
+  "radio-emanuel": {
+    "primary": "#5271aa",
+    "secondary": "#553f83"
+  },
+  "radio-filadelfia": {
+    "primary": "#39caef",
+    "secondary": "#122ee2"
+  },
+  "radio-filadelfia-christmas": {
+    "primary": "#d45354",
+    "secondary": "#bb8b2f"
+  },
+  "radio-filadelfia-special": {
+    "primary": "#b6cc12",
+    "secondary": "#33b210"
+  },
+  "radio-gosen": {
+    "primary": "#c3895d",
+    "secondary": "#9ba63d"
+  },
+  "radio-joy": {
+    "primary": "#de794a",
+    "secondary": "#dcd93d"
+  },
+  "radio-levi": {
+    "primary": "#57abd1",
+    "secondary": "#3538be"
+  },
+  "radio-micul-samaritean": {
+    "primary": "#5c84b0",
+    "secondary": "#51438c"
+  },
+  "radio-moody-chicago": {
+    "primary": "#76a545",
+    "secondary": "#398846"
+  },
+  "radio-o-noua-sansa": {
+    "primary": "#3d7085",
+    "secondary": "#3d4085"
+  },
+  "radio-old-christian-radio": {
+    "primary": "#3d7085",
+    "secondary": "#3d4085"
+  },
+  "radio-philadelphia-clasic": {
+    "primary": "#1f33a3",
+    "secondary": "#631fa3"
+  },
+  "radio-philadelphia-copii": {
+    "primary": "#1e33a3",
+    "secondary": "#621ea3"
+  },
+  "radio-philadelphia-melbourne": {
+    "primary": "#61a7c7",
+    "secondary": "#bf9a69"
+  },
+  "radio-predic": {
+    "primary": "#cca15c",
+    "secondary": "#accc5c"
+  },
+  "radio-vestea-buna": {
+    "primary": "#cf595c",
+    "secondary": "#c6953c"
+  },
+  "radio-vocea-credintei": {
+    "primary": "#91456f",
+    "secondary": "#635eb1"
+  },
+  "radio-vocea-crestinilor": {
+    "primary": "#416687",
+    "secondary": "#493f83"
+  },
+  "radio-vocea-sperantei": {
+    "primary": "#638ec4",
+    "secondary": "#5e45b6"
+  },
+  "rve-brasov": {
+    "primary": "#ee3a3f",
+    "secondary": "#524fa4"
+  },
+  "rve-bucuresti": {
+    "primary": "#6598b5",
+    "secondary": "#4a4895"
+  },
+  "rve-cluj": {
+    "primary": "#0f9ab3",
+    "secondary": "#0f2db3"
+  },
+  "rve-constanta": {
+    "primary": "#ee3a40",
+    "secondary": "#534fa5"
+  },
+  "rve-hunedoara": {
+    "primary": "#ee3a40",
+    "secondary": "#5350a6"
+  },
+  "rve-oradea": {
+    "primary": "#b8a56c",
+    "secondary": "#7b9c4b"
+  },
+  "rve-oradea-international": {
+    "primary": "#b8a46b",
+    "secondary": "#e64281"
+  },
+  "rve-oradea-muzica": {
+    "primary": "#b8a46b",
+    "secondary": "#e74182"
+  },
+  "rve-predici": {
+    "primary": "#b9a66d",
+    "secondary": "#e64282"
+  },
+  "rve-satu-mare": {
+    "primary": "#b8a46b",
+    "secondary": "#e74181"
+  },
+  "rve-sibiu": {
+    "primary": "#ee3a3f",
+    "secondary": "#5250a5"
+  },
+  "rve-soveja": {
+    "primary": "#d43f45",
+    "secondary": "#5151a8"
+  },
+  "rve-suceava": {
+    "primary": "#ee3a3f",
+    "secondary": "#524fa5"
+  },
+  "rve-targoviste": {
+    "primary": "#d43f45",
+    "secondary": "#5252aa"
+  },
+  "rve-timisoara": {
+    "primary": "#ee3a40",
+    "secondary": "#524fa5"
+  },
+  "rve-viena": {
+    "primary": "#d79f51",
+    "secondary": "#9ec42d"
+  },
+  "rve-viena-muzica": {
+    "primary": "#d7a251",
+    "secondary": "#a0ca2e"
+  },
+  "rve-viena-tineri": {
+    "primary": "#d69b52",
+    "secondary": "#a4c52f"
+  },
+  "rve-zalau": {
+    "primary": "#ee3a3f",
+    "secondary": "#5250a5"
+  }
+}

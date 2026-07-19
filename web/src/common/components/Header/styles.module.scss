@@ -14,6 +14,7 @@
   border-radius: 50px;
   margin: 15px auto 0;
   position: relative;
+  overflow: hidden;
 
   @include mixinHelper.onTablet {
     padding: 22px 20px 34px;
@@ -23,10 +24,34 @@
   }
 }
 
+// Station-color ambience: the StationWash component draws the station's two
+// palette colors per-pixel into this canvas — a ~100° blend that dissolves
+// to transparent by ~46% of the height. A canvas instead of CSS gradients
+// because gradients rasterize at 8 bits/channel and band on long soft fades;
+// the canvas bakes sub-perceptual noise into the fade so no lines can form.
+// CSS here only stretches the fixed 1400x680 bitmap over the frame.
+.wash {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+:global([data-theme="light"]) {
+  // Same drawing, dialed back to stay airy on the #FFFBEF frame
+  .wash {
+    opacity: 0.62;
+  }
+}
+
 .nav {
   display: flex;
   justify-content: space-between;
   gap: 0 30px;
+  position: relative;
+  z-index: 2;
   max-width: 1230px;
   // Auto margins on a flex child disable stretch — force full width so the
   // logo/actions spread to the edges instead of clustering in the middle
@@ -227,6 +252,8 @@
   max-width: 1230px;
   width: 100%;
   margin: 0 auto;
+  position: relative;
+  z-index: 1;
 
   @include mixinHelper.onTablet {
     margin-top: 40px;
@@ -235,31 +262,88 @@
   }
 }
 
+.live_dot {
+  width: 9px;
+  height: 9px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: #f43f3f;
+  position: relative;
+
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: inherit;
+    animation: livePulse 1.8s ease-out infinite;
+  }
+}
+
+@keyframes livePulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  70%,
+  100% {
+    transform: scale(2.6);
+    opacity: 0;
+  }
+}
+
 .left_content {
   display: flex;
   flex-direction: column;
   height: fit-content;
-
-  @include mixinHelper.onDesktop {
-    margin: 0 20px
-  }
+  flex-shrink: 0;
 
   @include mixinHelper.onTablet {
     display: none;
   }
 
+  // Glass card wrapping the now-playing block — same recipe as the
+  // homepage "Se ascultă acum" panel so both heroes read as one family
+  .np_card {
+    display: flex;
+    flex-direction: column;
+    background: color-mix(in srgb, var(--bg-body) 62%, transparent);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--bg-active-station-border, rgba(128, 128, 128, 0.25));
+    border-radius: 26px;
+    padding: 18px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.18);
+    width: 260px;
+    box-sizing: border-box;
+  }
+
+  .np_header {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 2px 4px 14px;
+    font-size: 14px;
+    font-weight: 700;
+
+    span {
+      color: var(--text-color);
+    }
+
+    .live_dot {
+      width: 8px;
+      height: 8px;
+    }
+  }
+
   .container_img_plus_thumb {
     position: relative;
-
-    .song_thumb {
-      border-radius: 1rem;
-    }
 
     .img_thumb {
       position: absolute;
       border-radius: 50%;
-      bottom: 3px;
-      right: -15px;
+      bottom: 8px;
+      right: -8px;
       width: 55px;
       height: 55px;
       margin-bottom: 0;
@@ -267,24 +351,52 @@
     }
   }
 
-
   img {
     display: block;
     box-shadow: rgba(0, 0, 0, 0.08) 0px 4px 12px;
-    margin-bottom: 20px;
+    margin-bottom: 16px;
     object-fit: cover;
-    border-radius: 1rem;
+    border-radius: 16px;
+    width: 224px;
+    height: 224px;
+  }
+
+  // Two-phase text handoff (station name → live song, song → song): the
+  // outgoing copy slips up as it fades, the incoming one rises into place.
+  // Classes are only attached on real content changes, so the SSR'd text
+  // never animates on load.
+  .info_leave {
+    animation: infoSwapOut 0.17s ease both;
+  }
+
+  .info_enter {
+    animation: infoSwapIn 0.24s ease both;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .info_leave,
+    .info_enter {
+      animation: none;
+    }
   }
 
   .station_info {
-    max-width: 230px;
+    max-width: 224px;
+    padding: 0 4px;
+    // Reserve the tallest text state (2-line title + artist line: 44+8+17)
+    // so the card keeps its height when live song metadata replaces the
+    // SSR'd station title / "Transmisiune live" pair
+    min-height: 69px;
 
     h2 {
       color: var(--text-color);
       font-family: globalVariables.$dm-sans-bold, serif;
-      font-size: 22px;
+      // Sized for the 224px column: 20px clamped most titles to "…",
+      // 17px lets full titles survive on two lines
+      font-size: 17px;
+      line-height: 22px;
       font-weight: 700;
-      margin-bottom: 10px;
+      margin-bottom: 8px;
       display: -webkit-box;
       -webkit-line-clamp: 2;
       -webkit-box-orient: vertical;
@@ -293,23 +405,46 @@
 
     p {
       color: var(--header-subtext-color);
+      font-size: 14px;
+      line-height: 17px;
     }
 
     .youtube_link {
       text-decoration: none;
       color: inherit;
 
+      // Icon outside the h2 clamp box so the 2-line ellipsis can never
+      // swallow it: it hugs the title (short names) and gets pushed to the
+      // row's edge only when a long title fills the width
+      .title_row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 8px;
+
+        h2 {
+          min-width: 0;
+          margin-bottom: 0;
+        }
+      }
 
       .youtube_icon {
-        display: inline;
-        margin: 0 0 0 10px;
+        flex-shrink: 0;
+        margin: 0;
         box-shadow: none;
         border-radius: 0;
-        vertical-align: middle;
+        // Scaled with the 17px title so the glyph reads as punctuation,
+        // not a second thumbnail
+        width: 18px;
+        height: 18px;
         filter: grayscale(100%) brightness(1.5);
-        transition: opacity 0.2s ease, filter 0.2s ease;
       }
     }
+  }
+
+  .np_history_button {
+    justify-content: center;
+    border-radius: 12px;
   }
 }
 
@@ -319,22 +454,96 @@
   bottom: 60px;
   right: max(35px, calc(50% - 615px));
   width: fit-content;
+  z-index: 1;
 
   @include mixinHelper.onTablet {
-    position: static;
-    transform: none;
+    // relative (not static) keeps the row above the wash without moving it
+    position: relative;
+    bottom: auto;
+    right: auto;
     width: auto;
     display: flex;
     justify-content: flex-end;
-    margin-top: 10px;
+    margin-top: 22px;
   }
 }
 
 .right_content {
   max-width: 850px;
   width: 100%;
+  min-width: 0;
 
   .station_details {
+    .status_slot {
+      // Fixed line: the listeners text streams in after the first live fetch
+      // and must never push the title around vertically
+      height: 31px;
+      margin-bottom: 18px;
+
+      @include mixinHelper.onTablet {
+        height: 29px;
+        margin-bottom: 12px;
+        display: flex;
+        justify-content: center;
+      }
+    }
+
+    .status_pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      max-width: 100%;
+      margin: 0;
+      padding: 6px 14px;
+      border-radius: 999px;
+      border: 1px solid color-mix(in srgb, var(--text-color) 13%, transparent);
+      background: color-mix(in srgb, var(--bg-body) 50%, transparent);
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--header-subtext-color);
+      white-space: nowrap;
+
+      strong {
+        color: var(--text-color);
+        font-weight: 700;
+        letter-spacing: 0.02em;
+      }
+
+      // The global reset paints bare spans black — restate the muted color
+      span {
+        color: var(--header-subtext-color);
+      }
+
+      @include mixinHelper.onTablet {
+        padding: 5px 12px;
+        font-size: 12px;
+
+        // The communal copy is long for small screens — keep the pill tight
+        overflow: hidden;
+
+        .listeners_text {
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+      }
+    }
+
+    .listeners_text {
+      animation: fadeIn 0.5s ease both;
+
+      @media (prefers-reduced-motion: reduce) {
+        animation: none;
+      }
+    }
+
+    .offline_dot {
+      width: 9px;
+      height: 9px;
+      flex-shrink: 0;
+      border-radius: 50%;
+      background: color-mix(in srgb, var(--text-color) 35%, transparent);
+    }
+
     .title_container {
       @include mixinHelper.onTablet {
         display: flex;
@@ -357,6 +566,8 @@
       .station_title {
         font-family: globalVariables.$dm-sans-bold, serif;
         font-size: 3rem;
+        line-height: 1.12;
+        letter-spacing: -0.02em;
         font-weight: 700;
         display: flex;
         color: var(--text-color);
@@ -369,50 +580,369 @@
       }
     }
 
-    .nr_listeners_desktop {
-      font-size: 1rem;
-      font-weight: 400;
-      margin-bottom: 20px;
-      color: var(--header-subtext-color);
-
-      @include mixinHelper.onTablet {
-        display: none;
-      }
-    }
-
-    .nr_listeners_mobile {
-      display: none;
-      font-size: 0.8rem;
-      font-weight: 400;
-      margin-bottom: 20px;
-      text-align: center;
-      color: var(--header-subtext-color);
-
-      @include mixinHelper.onTablet {
-        display: block;
-      }
+    .description_block {
+      margin-bottom: 8px;
     }
 
     .station_description {
       font-size: 0.9rem;
       line-height: 25px;
       font-weight: 400;
-      margin-bottom: 30px;
+      max-width: 640px;
       color: var(--header-subtext-color);
 
       display: -webkit-box;
-      -webkit-line-clamp: 5;
+      -webkit-line-clamp: 3;
       -webkit-box-orient: vertical;
       overflow: hidden;
       text-overflow: ellipsis;
 
+      // 3 clamped lines — also the start/end point of the expand animation
+      max-height: 75px;
+      transition: max-height 0.38s ease;
+
+      // Expanded state stays inside the fixed 652px frame: the height glides
+      // open to a cap and long texts scroll within the paragraph. The cap is
+      // deliberately mid-line (6.6 lines) so a half-visible line hints that
+      // there is more to scroll.
+      &.desc_expanded {
+        display: block;
+        -webkit-line-clamp: unset;
+        max-height: 165px;
+        overflow-y: auto;
+        // Reserve the gutter so text doesn't rewrap the instant a classic
+        // (non-overlay) scrollbar materializes after the glide
+        scrollbar-gutter: stable;
+        padding-right: 12px;
+        scrollbar-width: thin;
+        scrollbar-color: color-mix(in srgb, var(--text-color) 28%, transparent)
+          transparent;
+      }
+
+      // No scrollbar while gliding open — it would flash and vanish on
+      // texts that fit the expanded cap; it appears (if needed) on settle
+      &.desc_opening {
+        overflow-y: hidden;
+      }
+
+      // Gliding shut: still unclamped so the text doesn't snap, scrollbar
+      // hidden for the ride; the clamp returns when the transition ends
+      &.desc_closing {
+        max-height: 75px;
+        overflow-y: hidden;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        transition: none;
+      }
+
       @include mixinHelper.onTablet {
         font-size: 0.9rem;
         line-height: 20px;
-        max-height: 140px;
-        -webkit-line-clamp: 7;
+        -webkit-line-clamp: 5;
+        max-height: 100px;
+
+        &.desc_expanded {
+          max-height: 150px;
+        }
+
+        &.desc_closing {
+          max-height: 100px;
+        }
+      }
+    }
+
+    // Fixed line for the toggle: the button only mounts after hydration
+    // measures the clamp, and must never move the actions row below
+    .desc_toggle_slot {
+      height: 27px;
+      display: flex;
+      align-items: center;
+    }
+
+    .desc_toggle {
+      background: none;
+      border: none;
+      padding: 4px 0;
+      font-family: inherit;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--link-color);
+      cursor: pointer;
+      transition: color 0.15s ease;
+      animation: fadeIn 0.4s ease both;
+
+      @media (prefers-reduced-motion: reduce) {
+        animation: none;
+      }
+
+      &:hover {
+        color: var(--link-hover-color);
+        text-decoration: underline;
+      }
+    }
+
+    .hero_actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 14px;
+      margin-top: 26px;
+
+      @include mixinHelper.onTablet {
+        margin-top: 26px;
+        justify-content: center;
+        gap: 10px;
+      }
+    }
+
+    // Flat, solid, quiet — the color is the emphasis, so no glow, no
+    // gradient, no lift.
+    .play_cta {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      // Fixed width fitting the widest label ("Se conectează…") so state
+      // flips never nudge anything sitting next to it; nowrap keeps the
+      // button one line tall even while the fallback font (pre webfont
+      // swap) renders the label a few px wider
+      width: 206px;
+      box-sizing: border-box;
+      white-space: nowrap;
+      padding: 13px 26px;
+      border: none;
+      border-radius: 999px;
+      background: #fdae1c;
+      color: #1a1a1a;
+      font-size: 16px;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      // Hover/press feedback is a one-step darkening of the surface, the
+      // way native buttons behave — no scaling, no lightening, no lift
+      transition: background-color 0.15s ease;
+
+      svg {
+        flex-shrink: 0;
+      }
+
+      @media (hover: hover) and (pointer: fine) {
+        &:hover {
+          background: #f3a30f;
+
+          .cta_eq {
+            opacity: 0;
+          }
+
+          .cta_pause_glyph {
+            opacity: 1;
+          }
+        }
+      }
+
+      &:active {
+        background: #e2960a;
+      }
+
+      &:focus-visible {
+        outline: 2px solid var(--text-color);
+        outline-offset: 3px;
+      }
+
+      @include mixinHelper.onTablet {
+        flex: 1;
+        width: auto;
+        min-width: 0;
+        padding: 13px 18px;
+        white-space: nowrap;
+      }
+    }
+
+    // Fixed 18px stage every icon state renders on, so swaps can't nudge
+    // the label
+    .cta_icon {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 18px;
+      height: 18px;
+      flex-shrink: 0;
+    }
+
+    // Playing state: three small bars breathing out of phase — the one
+    // moving element, and it moves because the audio does
+    .cta_eq {
+      display: inline-flex;
+      align-items: flex-end;
+      gap: 3px;
+      height: 14px;
+      transition: opacity 0.12s ease;
+
+      i {
+        width: 3px;
+        height: 100%;
+        border-radius: 1.5px;
+        background: currentColor;
+        transform-origin: bottom;
+        animation: ctaEq 1.1s ease-in-out infinite;
+
+        &:nth-child(1) {
+          animation-duration: 1s;
+          animation-delay: -0.6s;
+        }
+
+        &:nth-child(2) {
+          animation-duration: 1.25s;
+          animation-delay: -0.2s;
+        }
+
+        &:nth-child(3) {
+          animation-duration: 1.05s;
+          animation-delay: -0.9s;
+        }
+      }
+
+      // Frozen mid-song snapshot: still says "playing", nothing moves
+      @media (prefers-reduced-motion: reduce) {
+        i {
+          animation: none;
+        }
+
+        i:nth-child(1) {
+          transform: scaleY(0.5);
+        }
+
+        i:nth-child(2) {
+          transform: scaleY(0.95);
+        }
+
+        i:nth-child(3) {
+          transform: scaleY(0.65);
+        }
+      }
+    }
+
+    // Pause glyph shown on hover in place of the equalizer (desktop only;
+    // touch users get the "Pauză" label as the affordance)
+    .cta_pause_glyph {
+      position: absolute;
+      inset: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity 0.12s ease;
+    }
+
+    .play_spinner {
+      width: 16px;
+      height: 16px;
+      flex-shrink: 0;
+      box-sizing: border-box;
+      border-radius: 50%;
+      border: 2.5px solid rgba(26, 26, 26, 0.25);
+      border-top-color: #1a1a1a;
+      animation: spin 0.8s linear infinite;
+    }
+
+    // One line: rating cluster | hairline | site / Facebook. The row owns
+    // the vertical margins so the rating wrapper's own are zeroed below.
+    .rating_row {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px 16px;
+      margin: 10px 0 20px;
+
+      > :first-child {
+        margin: 0;
+      }
+
+      @include mixinHelper.onTablet {
+        justify-content: center;
+        // The row wraps into stacked centered lines here (stars / review
+        // pill / outbound links) — open up the line gap and give the last
+        // line air before the description starts
+        gap: 12px 16px;
+        margin: 12px 0 18px;
+      }
+    }
+
+    .rating_divider {
+      width: 1px;
+      height: 18px;
+      flex-shrink: 0;
+      background: color-mix(in srgb, var(--text-color) 18%, transparent);
+
+      // Centered wrap layout on small screens — a leading rule on a wrapped
+      // line reads as noise, the links become their own centered line
+      @include mixinHelper.onTablet {
+        display: none;
+      }
+    }
+
+    .meta_link {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--header-subtext-color);
+      text-decoration: none;
+      white-space: nowrap;
+      transition: color 0.15s ease;
+
+      svg {
+        flex-shrink: 0;
+        opacity: 0.75;
+      }
+
+      &:hover {
+        color: var(--text-color);
+        text-decoration: underline;
       }
     }
   }
 
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes ctaEq {
+  0%,
+  100% {
+    transform: scaleY(0.35);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+
+@keyframes infoSwapOut {
+  to {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+@keyframes infoSwapIn {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
 }

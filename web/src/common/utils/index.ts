@@ -1,5 +1,9 @@
 import type { IStation, IStationGroup } from "@/models/Station";
 
+// Romanian numeral agreement: 1 persoană / 8 persoane / 66 de persoane
+export const roPlural = (n: number, singular: string, plural: string) =>
+  n === 1 ? `1 ${singular}` : n < 20 ? `${n} ${plural}` : `${n} de ${plural}`;
+
 /**
  * clean the Stations metadata because the pages are rendered statically, and the metadata will pe loaded on client side.
  * @param stations
