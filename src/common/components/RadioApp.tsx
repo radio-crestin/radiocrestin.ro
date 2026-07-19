@@ -1,4 +1,4 @@
-import React, { useContext, useEffect } from "react";
+import React, { useContext, useEffect, useRef } from "react";
 import { ContextProvider } from "@/context/ContextProvider";
 import { ToastContainer } from "react-toastify";
 import NoInternetConnection from "@/components/NoInternetConnection";
@@ -35,10 +35,15 @@ function RadioContent({ showReviews, hideAppBanner }: { showReviews: boolean; hi
     initPostHog();
   }, []);
 
-  // Update document title when station changes
+  // Update document title when station changes; restore the page's own
+  // title when the station is deselected (back navigation to homepage)
+  const pageTitleRef = useRef<string | null>(null);
   useEffect(() => {
+    if (pageTitleRef.current === null) pageTitleRef.current = document.title;
     if (ctx.selectedStation) {
       document.title = stationTitle(ctx.selectedStation.title);
+    } else {
+      document.title = pageTitleRef.current;
     }
   }, [ctx.selectedStation?.title]);
 
