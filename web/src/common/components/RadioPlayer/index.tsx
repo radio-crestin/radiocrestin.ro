@@ -80,6 +80,10 @@ export default function RadioPlayer() {
   const [loadKey, setLoadKey] = useState(0);
   const prevLoadKeyRef = useRef(0);
   const listeningStartRef = useRef<{ time: number; slug: string; title: string; id: number } | null>(null);
+  // true = playback was interrupted by a network loss and should auto-resume
+  // as soon as the connection is back. Cleared on user stop / successful play.
+  const waitingForNetworkRef = useRef(false);
+  const onlineRestartTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const clearHlsTimeout = () => {
     if (hlsTimeoutRef.current) {
@@ -134,6 +138,41 @@ export default function RadioPlayer() {
     retryMechanism();
   };
 
+  // Streams driven by the bare <audio> element (MP3 proxy/direct, and native
+  // HLS on iOS Safari) never reconnect on their own: when the socket dies
+  // (network switch, brief offline) the element stalls silently, usually
+  // without firing an error event. Poll currentTime and retry when it stops
+  // advancing while we're supposed to be playing. hls.js streams are covered
+  // by their own stuck-detection instead.
+  const startStallWatchdog = (audio: HTMLAudioElement) => {
+    let lastTime = -1;
+    let stalledChecks = 0;
+    const interval = setInterval(() => {
+      // Background tabs throttle timers and may legitimately pause loading;
+      // recovery happens on the next visible check.
+      if (typeof document !== "undefined" && document.hidden) return;
+      const { playbackState: current } = usePlaybackState.getState();
+      if (current !== PLAYBACK_STATE.PLAYING && current !== PLAYBACK_STATE.BUFFERING) {
+        lastTime = audio.currentTime;
+        stalledChecks = 0;
+        return;
+      }
+      if (audio.currentTime > lastTime) {
+        lastTime = audio.currentTime;
+        stalledChecks = 0;
+        return;
+      }
+      stalledChecks++;
+      if (stalledChecks >= 3) {
+        stalledChecks = 0;
+        lastTime = audio.currentTime;
+        console.warn("[Player] Stream stalled with no playback progress, retrying");
+        retryMechanismRef.current();
+      }
+    }, 3500);
+    return () => clearInterval(interval);
+  };
+
   // Determine best stream type + reset retries on station change
   useEffect(() => {
     trackStationOpened(station.slug, station.title, station.id);
@@ -170,6 +209,7 @@ export default function RadioPlayer() {
       setHlsSongId(null);
       retriesRef.current = MAX_MEDIA_RETRIES;
       isPausedRef.current = false;
+      waitingForNetworkRef.current = false;
     };
   }, [station.slug]);
 
@@ -571,6 +611,8 @@ export default function RadioPlayer() {
         setLoadKey(k => k + 1);
         break;
       case PLAYBACK_STATE.STOPPED:
+        // A stop (user or exhausted retries) cancels any pending network auto-resume
+        waitingForNetworkRef.current = false;
         if (listeningStartRef.current) {
           const durationSeconds = (Date.now() - listeningStartRef.current.time) / 1000;
           trackListeningStopped(listeningStartRef.current.slug, listeningStartRef.current.title, durationSeconds, "stop", listeningStartRef.current.id);
@@ -612,6 +654,58 @@ export default function RadioPlayer() {
     window.addEventListener("beforeunload", handleBeforeUnload);
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, []);
+
+  // Auto-resume after a network interruption (brief offline / network switch).
+  // While offline, failures set waitingForNetworkRef instead of burning retries;
+  // once the connection is back we restart fresh from the preferred stream type.
+  useEffect(() => {
+    const clearRestartTimer = () => {
+      if (onlineRestartTimerRef.current) {
+        clearTimeout(onlineRestartTimerRef.current);
+        onlineRestartTimerRef.current = null;
+      }
+    };
+
+    const onOnline = () => {
+      if (!waitingForNetworkRef.current) return;
+      // Give the connection a moment to settle (DNS/DHCP after a network switch)
+      clearRestartTimer();
+      onlineRestartTimerRef.current = setTimeout(() => {
+        onlineRestartTimerRef.current = null;
+        // Bail if playback recovered by itself or the user stopped meanwhile
+        if (!waitingForNetworkRef.current) return;
+        waitingForNetworkRef.current = false;
+        retriesRef.current = MAX_MEDIA_RETRIES;
+        hlsRecoveryRef.current = 0;
+        // Offline churn may have downgraded the stream — restart from the best one
+        const preferred = [
+          STREAM_TYPE.HLS,
+          STREAM_TYPE.PROXY,
+          STREAM_TYPE.ORIGINAL,
+        ].find((type) =>
+          station.station_streams.some(
+            (stream: IStationStreams) => stream.type === type,
+          ),
+        );
+        setStreamState(preferred ? { type: preferred, slug: station.slug } : null);
+        setHlsActive(preferred === STREAM_TYPE.HLS);
+        setPlaybackState(PLAYBACK_STATE.BUFFERING);
+        setLoadKey((k) => k + 1);
+      }, 1000);
+    };
+
+    const onOffline = () => {
+      clearRestartTimer();
+    };
+
+    window.addEventListener("online", onOnline);
+    window.addEventListener("offline", onOffline);
+    return () => {
+      clearRestartTimer();
+      window.removeEventListener("online", onOnline);
+      window.removeEventListener("offline", onOffline);
+    };
+  }, [station.slug]);
 
   // Stream loader effect — single owner of HLS lifecycle
   useEffect(() => {
@@ -667,19 +761,30 @@ export default function RadioPlayer() {
 
     if (streamType === STREAM_TYPE.HLS) {
       let cancelled = false;
+      let stopNativeWatchdog: (() => void) | null = null;
       getHls().then((Hls) => {
         if (cancelled) return;
         const hls = new Hls(HLS_CONFIG);
         hlsInstanceRef.current = hls;
         cleanupRef.current = loadHLS(streamUrl, audio, hls, Hls);
+        if (!Hls.isSupported()) {
+          // Native HLS (iOS Safari): hls.js isn't driving the element, so its
+          // stuck-detection never runs — use the element-level stall watchdog.
+          stopNativeWatchdog = startStallWatchdog(audio);
+        }
       });
-      return () => { cancelled = true; destroyCurrentStream(); };
-    } else {
-      audio.src = streamUrl;
-      audio.play().catch((error) => handlePlayError(error, `Stream error [${streamType}]`));
+      return () => {
+        cancelled = true;
+        stopNativeWatchdog?.();
+        destroyCurrentStream();
+      };
     }
 
+    audio.src = streamUrl;
+    audio.play().catch((error) => handlePlayError(error, `Stream error [${streamType}]`));
+    const stopWatchdog = startStallWatchdog(audio);
     return () => {
+      stopWatchdog();
       destroyCurrentStream();
     };
   }, [streamType, station.slug, loadKey]);
@@ -687,6 +792,15 @@ export default function RadioPlayer() {
   const retryMechanism = () => {
     const audio = document.getElementById("audioPlayer") as HTMLAudioElement;
     if (!audio) return;
+
+    // Offline: cycling streams can't possibly succeed — don't burn retries or
+    // show the error toast. Keep the spinner and let the 'online' listener
+    // restart playback once the connection is back.
+    if (typeof navigator !== "undefined" && navigator.onLine === false) {
+      waitingForNetworkRef.current = true;
+      setPlaybackState(PLAYBACK_STATE.BUFFERING);
+      return;
+    }
 
     retriesRef.current--;
     if (retriesRef.current > 0) {
@@ -715,6 +829,11 @@ export default function RadioPlayer() {
         setStreamState({ type: streamOrder[nextIndex], slug: station.slug });
         setHlsActive(streamOrder[nextIndex] === STREAM_TYPE.HLS);
       }
+
+      // Force a reload even when the chosen type equals the current one —
+      // stations with a single stream type would otherwise never actually
+      // retry (the loader effect only re-runs when its deps change).
+      setLoadKey((k) => k + 1);
     } else {
       setPlaybackState(PLAYBACK_STATE.STOPPED);
       captureException(
@@ -785,7 +904,8 @@ export default function RadioPlayer() {
         if (ctx.inPagePlayback) {
           stepStation(-1);
         } else {
-          history.back();
+          // window. prefix required: the local `history` state (song list) shadows it
+          window.history.back();
         }
       });
     }
@@ -1057,6 +1177,10 @@ export default function RadioPlayer() {
           id="audioPlayer"
           onPlaying={(e) => {
             if (isDestroyingRef.current) return;
+            // Healthy playback: cancel any pending network auto-resume and
+            // refill the retry budget so long sessions survive many hiccups.
+            waitingForNetworkRef.current = false;
+            retriesRef.current = MAX_MEDIA_RETRIES;
             setPlaybackState(PLAYBACK_STATE.PLAYING);
             setHasError(false);
             hlsRecoveryRef.current = 0;
@@ -1070,10 +1194,27 @@ export default function RadioPlayer() {
           onPause={(e) => {
             if (isDestroyingRef.current) return;
             if (isPausedRef.current) return; // We initiated the pause via stopLoad — don't re-trigger STOPPED
+            // Browser paused the element on its own while the connection is
+            // down (iOS does this on network loss). The user didn't stop —
+            // keep the interruption resumable instead of flipping to STOPPED.
+            if (
+              typeof navigator !== "undefined" &&
+              navigator.onLine === false &&
+              usePlaybackState.getState().playbackState !== PLAYBACK_STATE.STOPPED
+            ) {
+              waitingForNetworkRef.current = true;
+              setPlaybackState(PLAYBACK_STATE.BUFFERING);
+              return;
+            }
             setPlaybackState(PLAYBACK_STATE.STOPPED);
           }}
           onWaiting={(e) => {
             if (isDestroyingRef.current) return;
+            // Stalling while offline = network interruption; flag it so the
+            // 'online' listener restarts the stream when the connection returns.
+            if (typeof navigator !== "undefined" && navigator.onLine === false) {
+              waitingForNetworkRef.current = true;
+            }
             setPlaybackState(PLAYBACK_STATE.BUFFERING);
           }}
           onError={(e) => {
