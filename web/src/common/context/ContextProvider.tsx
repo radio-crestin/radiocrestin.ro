@@ -43,7 +43,13 @@ const ContextProvider = ({
       // Paths are pushed with a trailing slash (/station-slug/), so strip
       // slashes on both ends before matching against station slugs.
       const slug = window.location.pathname.replace(/^\/+|\/+$/g, "");
-      if (!slug || !stationsRef.current) return;
+      if (!slug) {
+        // Back/forward landed on the homepage entry — deselect so the
+        // homepage UI renders again.
+        setCtx({ selectedStation: null });
+        return;
+      }
+      if (!stationsRef.current) return;
 
       const station = stationsRef.current.find(
         (s: any) => s.slug === slug,
