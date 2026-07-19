@@ -45,6 +45,21 @@
   align-items: center;
 }
 
+// Theme icon is picked by CSS from the pre-paint html[data-theme] stamp so
+// the button server-renders complete (no hydration pop-in)
+.sunIcon,
+.moonIcon {
+  display: none;
+}
+
+:global(html[data-theme="light"]) .sunIcon {
+  display: block;
+}
+
+:global(html[data-theme="dark"]) .moonIcon {
+  display: block;
+}
+
 .buttonContent span {
   margin-right: 8px;
 }

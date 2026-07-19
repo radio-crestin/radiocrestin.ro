@@ -3,15 +3,10 @@ import { useTheme } from "@/hooks/useTheme";
 import styles from "./styles.module.scss";
 
 const ThemeToggle: React.FC = () => {
-  const { theme, setTheme, resolvedTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
+  const { setTheme } = useTheme();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const closeDropdown = () => {
     setIsClosing(true);
@@ -50,12 +45,6 @@ const ThemeToggle: React.FC = () => {
     dark: "Întunecat",
   };
 
-  if (!mounted) {
-    return null;
-  }
-
-  const currentTheme = theme || "system";
-
   return (
     <div className={styles.dropdown} ref={dropdownRef}>
       <button
@@ -64,35 +53,27 @@ const ThemeToggle: React.FC = () => {
         aria-haspopup="true"
         aria-expanded={dropdownOpen}
       >
+        {/* Both icons are server-rendered; CSS on html[data-theme] (stamped
+            pre-paint by the BaseLayout inline script) shows the right one.
+            A mounted-gate here pops the button in after hydration and
+            shifts the whole nav (zero-CLS contract). */}
         <span className={styles.buttonContent}>
-          {currentTheme === "system" && (
-            <img
-              src={
-                resolvedTheme === "light" ? "/icons/sun.svg" : "/icons/luna.svg"
-              }
-              alt={resolvedTheme === "light" ? "sun" : "moon"}
-              height={20}
-              width={20}
-            />
-          )}
-          {currentTheme === "light" && (
-            <img
-              src={"/icons/sun.svg"}
-              alt={"sun"}
-              height={20}
-              width={20}
-              draggable={false}
-            />
-          )}
-          {currentTheme === "dark" && (
-            <img
-              src={"/icons/luna.svg"}
-              alt={"moon"}
-              height={20}
-              width={20}
-              draggable={false}
-            />
-          )}
+          <img
+            src={"/icons/sun.svg"}
+            alt={"sun"}
+            height={20}
+            width={20}
+            draggable={false}
+            className={styles.sunIcon}
+          />
+          <img
+            src={"/icons/luna.svg"}
+            alt={"moon"}
+            height={20}
+            width={20}
+            draggable={false}
+            className={styles.moonIcon}
+          />
         </span>
       </button>
       {(dropdownOpen || isClosing) && (

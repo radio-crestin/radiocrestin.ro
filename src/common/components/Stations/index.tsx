@@ -131,10 +131,10 @@ function sortStations(
 
   switch (sortBy) {
     case "recommended": {
-      // Position 1: Station of the day
+      // Station of the day — worn as an overlay badge, never a position pin
       stationOfDaySlug = getStationOfTheDay(stations);
 
-      // Positions 2-4: Top 3 most-played stations by the user
+      // Top 3 most-played stations by the user — badges as well
       const placedSlugs = new Set<string>();
       if (stationOfDaySlug) placedSlugs.add(stationOfDaySlug);
 
@@ -158,31 +158,12 @@ function sortStations(
 
       mostPlayedSlugs = mostPlayed;
 
-      const allSpecialSlugs = new Set([
-        ...(stationOfDaySlug ? [stationOfDaySlug] : []),
-        ...mostPlayed,
-      ]);
-      const remaining = sortByScore(stations.filter((s) => !allSpecialSlugs.has(s.slug)), scoreSnapshot);
-      const findStation = (slug: string) => stations.find((s) => s.slug === slug);
-
-      const result: IStation[] = [];
-
-      // Position 1: Station of the day
-      if (stationOfDaySlug) {
-        const s = findStation(stationOfDaySlug);
-        if (s) result.push(s);
-      }
-
-      // Positions 2-4: Most played by user
-      for (const slug of mostPlayed) {
-        const s = findStation(slug);
-        if (s) result.push(s);
-      }
-
-      // Remaining stations sorted by score (50% reviews + 50% listeners)
-      result.push(...remaining);
-
-      return { sorted: result, stationOfDaySlug, mostPlayedSlugs };
+      // Badge-only: station-of-day and most-played are client-side knowledge
+      // (date + localStorage), so repositioning them after hydration would
+      // reshuffle the server-rendered grid — the exact CLS pop-in the
+      // zero-CLS contract forbids. The SSR'd order IS the recommended order;
+      // the badges fade in on the cards wherever they already sit.
+      return { sorted: list, stationOfDaySlug, mostPlayedSlugs };
     }
     case "most_played": {
       const played = list.filter((s) => (playCounts[s.slug] || 0) > 0);

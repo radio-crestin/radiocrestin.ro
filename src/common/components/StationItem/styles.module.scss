@@ -156,6 +156,9 @@
       -webkit-line-clamp: 2;
       -webkit-box-orient: vertical;
       overflow: hidden;
+      // Reserve one text line: static builds ship blank song names, and the
+      // live text streaming in must not push the rating row down
+      min-height: 18px;
     }
   }
 
