@@ -25,14 +25,13 @@ import useFavourite from "@/store/useFavourite";
 import { captureException, getUserId, trackListeningStarted, trackListeningStopped, trackListeningStoppedBeacon, trackStationOpened } from "@/utils/posthog";
 import type { IStationStreams } from "@/models/Station";
 import OfflineStatus from "@/components/OfflineStatus";
-import Star from "@/icons/Star";
 import HeadphoneIcon from "@/icons/Headphone";
 import { getStationSongHistory } from "@/services/getStations";
 import type { ISongHistoryItem } from "@/services/getStations";
 import { canAutoplayAudio } from "@/utils/autoplay";
 import usePlayCount from "@/store/usePlayCount";
 import { useRefreshStations } from "@/hooks/useUpdateStationsMetadata";
-import { getValidImageUrl } from "@/utils";
+import { getValidImageUrl, roPlural } from "@/utils";
 
 enum STREAM_TYPE {
   HLS = "HLS",
@@ -62,6 +61,10 @@ export default function RadioPlayer() {
   const [history, setHistory] = useState<ISongHistoryItem[] | null>(null);
   const [historyLoading, setHistoryLoading] = useState(false);
   const playerContainerRef = useRef<HTMLDivElement>(null);
+  // Mobile song ticker: scrolls only when the text overflows its container.
+  const tickerRef = useRef<HTMLDivElement>(null);
+  const [tickerMarquee, setTickerMarquee] = useState(false);
+  const [tickerDuration, setTickerDuration] = useState(16);
   // Slug of the station that was preselected without a user gesture (category
   // pages); its stream is not loaded until the user actually presses play.
   const autoSelectedNoLoadRef = useRef<string | null>(null);
@@ -216,6 +219,65 @@ export default function RadioPlayer() {
   useEffect(() => {
     setIsFavorite(favouriteItems.includes(station.slug));
   }, [favouriteItems, station.slug]);
+
+  const nowSong = station?.now_playing?.song;
+  const songText = nowSong?.name
+    ? `${nowSong.name}${nowSong.artist?.name ? " · " + nowSong.artist.name : ""}`
+    : "";
+  const isStationUp = station.uptime?.is_up !== false;
+
+  // Two-phase song-line swap (mirrors the hero's now-playing handoff): the
+  // rendered text trails the live data by one 170ms fade-out, then the new
+  // song rises into place. Plays for the SSR'd → live handoff and song changes.
+  const [shownSongText, setShownSongText] = useState(songText);
+  const [songAnim, setSongAnim] = useState<"" | "leave" | "enter">("");
+  const songTextRef = useRef(songText);
+  songTextRef.current = songText;
+
+  useEffect(() => {
+    if (songText === shownSongText) return;
+    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) {
+      setShownSongText(songText);
+      setSongAnim("");
+      return;
+    }
+    setSongAnim("leave");
+    const t = window.setTimeout(() => {
+      setShownSongText(songTextRef.current);
+      setSongAnim("enter");
+    }, 170);
+    return () => window.clearTimeout(t);
+  }, [songText, shownSongText]);
+
+  useEffect(() => {
+    setTickerMarquee(false);
+  }, [shownSongText, station.slug]);
+
+  // Re-measure on resize: a line that fit can overflow after the window narrows
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const onResize = () => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => setTickerMarquee(false), 200);
+    };
+    window.addEventListener("resize", onResize);
+    return () => {
+      if (timer) clearTimeout(timer);
+      window.removeEventListener("resize", onResize);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (tickerMarquee) return;
+    const el = tickerRef.current;
+    if (!el || !shownSongText) return;
+    // Static (clipped with ellipsis) for reduced-motion users
+    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
+    if (el.scrollWidth > el.clientWidth + 1) {
+      setTickerDuration(Math.max(14, Math.round(el.scrollWidth / 22)));
+      setTickerMarquee(true);
+    }
+  }, [tickerMarquee, shownSongText]);
 
   // Load the recent-songs list for the expanded panel (category pages only)
   useEffect(() => {
@@ -948,25 +1010,26 @@ export default function RadioPlayer() {
 
   const nextRandomStation = () => stepStation(1);
 
-  const renderPlayButtonSvg = () => {
+  // Bare glyphs for the amber play button
+  const renderPlayIcon = () => {
     switch (playbackState) {
       case PLAYBACK_STATE.STARTED:
-        return <Loading />;
       case PLAYBACK_STATE.BUFFERING:
         return <Loading />;
       case PLAYBACK_STATE.PLAYING:
         return (
-          <path
-            fill="white"
-            d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"
-          />
+          <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+            <path fill="currentColor" d="M7 5h3.6v14H7zM13.4 5H17v14h-3.6z" />
+          </svg>
         );
       default:
         return (
-          <path
-            fill="white"
-            d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zM9.5 16.5v-9l7 4.5-7 4.5z"
-          />
+          <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+            <path
+              fill="currentColor"
+              d="M8.2 5.6v12.8a.7.7 0 0 0 1.06.6l10.2-6.4a.7.7 0 0 0 0-1.2L9.26 5a.7.7 0 0 0-1.06.6z"
+            />
+          </svg>
         );
     }
   };
@@ -975,7 +1038,9 @@ export default function RadioPlayer() {
     <>
       <div className={styles.player_gradient_overlay} />
       <div className={styles.radio_player_container} ref={playerContainerRef}>
-        <div className={styles.radio_player}>
+        <div
+          className={`${styles.radio_player} ${expanded ? styles.radio_player_open : ""}`}
+        >
         {ctx.inPagePlayback && (
           <div
             className={`${styles.expanded_panel} ${expanded ? styles.expanded_panel_open : ""}`}
@@ -1051,6 +1116,54 @@ export default function RadioPlayer() {
           </div>
         )}
         <div className={styles.player_container}>
+          <div className={styles.live_strip}>
+            <span
+              className={`${styles.live_strip_dot} ${!isStationUp ? styles.live_strip_dot_off : ""}`}
+            />
+            <span
+              className={`${styles.live_strip_label} ${!isStationUp ? styles.live_strip_label_off : ""}`}
+            >
+              {isStationUp ? "ÎN DIRECT" : "INDISPONIBIL"}
+            </span>
+            {isStationUp && station.total_listeners > 0 && (
+              <span className={styles.live_strip_listeners}>
+                · {roPlural(station.total_listeners, "ascultător", "ascultători")}
+              </span>
+            )}
+            <div className={styles.live_strip_actions}>
+              {ctx.inPagePlayback && (
+                <button
+                  aria-label={expanded ? "Restrânge playerul" : "Extinde playerul"}
+                  aria-expanded={expanded}
+                  title="Detalii stație și melodii redate recent"
+                  className={styles.strip_button}
+                  onClick={() => setExpanded((v) => !v)}
+                >
+                  <svg
+                    className={expanded ? styles.expand_icon_open : undefined}
+                    width="15"
+                    height="15"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.4"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M18 15l-6-6-6 6" />
+                  </svg>
+                </button>
+              )}
+              <button
+                aria-label={isFavorite ? "Elimină de la favorite" : "Adaugă la favorite"}
+                className={styles.strip_button}
+                onClick={() => toggleFavourite(station.slug)}
+              >
+                <Heart color={isFavorite ? "red" : "white"} defaultColor={"red"} />
+              </button>
+            </div>
+          </div>
           <div className={styles.image_container}>
             <img
               src={getValidImageUrl(
@@ -1062,44 +1175,52 @@ export default function RadioPlayer() {
                 e.currentTarget.src = '/images/radio-white-default.jpg';
               }}
             />
-            <div
-              className={styles.heart_container}
-              onClick={() => toggleFavourite(station.slug)}
-            >
-              <Heart
-                color={isFavorite ? "red" : "white"}
-                defaultColor={"red"}
-              />
-            </div>
           </div>
 
           <div
-            className={`${styles.station_info} ${styles.two_lines} ${ctx.inPagePlayback ? styles.station_info_clickable : ""}`}
+            className={`${styles.station_info} ${ctx.inPagePlayback ? styles.station_info_clickable : ""}`}
             onClick={ctx.inPagePlayback ? () => setExpanded((v) => !v) : undefined}
             title={ctx.inPagePlayback ? "Detalii stație și melodii redate recent" : undefined}
           >
             <h2 className={styles.station_title}>{station.title}</h2>
             {station.uptime?.is_up !== false ? (
-              <p className={styles.song_name}>
-                {station?.now_playing?.song?.name}
-                {station?.now_playing?.song?.artist?.name && (
-                  <span className={styles.artist_name}>
-                    {" · "}
-                    {station?.now_playing?.song?.artist?.name}
-                  </span>
+              <>
+                {shownSongText && (
+                  <div
+                    className={`${styles.song_ticker} ${
+                      songAnim === "leave"
+                        ? styles.ticker_leave
+                        : songAnim === "enter"
+                          ? styles.ticker_enter
+                          : ""
+                    }`}
+                    data-marquee={tickerMarquee ? "true" : undefined}
+                    ref={tickerRef}
+                  >
+                    <span
+                      className={styles.ticker_inner}
+                      style={
+                        tickerMarquee
+                          ? { animationDuration: `${tickerDuration}s` }
+                          : undefined
+                      }
+                    >
+                      {tickerMarquee ? (
+                        <>
+                          {shownSongText}
+                          <span className={styles.ticker_sep} aria-hidden="true">·</span>
+                          {shownSongText}
+                          <span className={styles.ticker_sep} aria-hidden="true">·</span>
+                        </>
+                      ) : (
+                        shownSongText
+                      )}
+                    </span>
+                  </div>
                 )}
-              </p>
+              </>
             ) : (
               <OfflineStatus size="small" />
-            )}
-            {station.reviews_stats?.average_rating > 0 && (
-              <div className={styles.average_rating}>
-                <Star fillWidth={1} height={10} />
-                {station.reviews_stats.average_rating.toFixed(1)}
-                <span className={styles.review_count}>
-                  ({station.reviews_stats.number_of_reviews} {station.reviews_stats.number_of_reviews === 1 ? 'recenzie' : 'recenzii'})
-                </span>
-              </div>
             )}
           </div>
 
@@ -1142,6 +1263,13 @@ export default function RadioPlayer() {
               </button>
             )}
             <button
+              aria-label={isFavorite ? "Elimină de la favorite" : "Adaugă la favorite"}
+              className={styles.heart_ghost}
+              onClick={() => toggleFavourite(station.slug)}
+            >
+              <Heart color={isFavorite ? "red" : "white"} defaultColor={"red"} />
+            </button>
+            <button
               aria-label="Play"
               className={styles.play_button}
               onClick={() => {
@@ -1159,15 +1287,9 @@ export default function RadioPlayer() {
                 }
               }}
             >
-              <svg
-                width="50px"
-                height="50px"
-                focusable="false"
-                aria-hidden="true"
-                viewBox="0 0 24 24"
-              >
-                {renderPlayButtonSvg()}
-              </svg>
+              <span className={styles.play_icon} aria-hidden="true">
+                {renderPlayIcon()}
+              </span>
             </button>
           </div>
         </div>
