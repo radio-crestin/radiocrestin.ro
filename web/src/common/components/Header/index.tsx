@@ -12,8 +12,7 @@ import {
 import styles from "./styles.module.scss";
 import { Context } from "@/context/ContextProvider";
 import ShareOnSocial from "@/components/ShareOnSocial";
-import ThemeToggle from "@/components/ThemeToggle";
-import WhatsAppButton from "@/components/WhatsAppButton";
+import NavMenu from "@/components/NavMenu";
 import StationRating from "@/components/Reviews/StationRating";
 import SongHistory from "@/components/SongHistory";
 import songHistoryStyles from "@/components/SongHistory/styles.module.scss";
@@ -143,101 +142,23 @@ const FacebookIcon = () => (
   </svg>
 );
 
-const Navigation = () => {
-  const [menuOpen, setMenuOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
-  const themeToggleRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setMenuOpen(false);
-      }
-    };
-
-    if (menuOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
-    }
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [menuOpen]);
-
-  const handleThemeClick = () => {
-    const button = themeToggleRef.current?.querySelector("button");
-    button?.click();
-  };
-
-  return (
-    <nav className={styles.nav}>
-      <div className={styles.internal_links}>
-        <a href={"/"} className={styles.logo}>
-          <img
-            loading={"lazy"}
-            src={"/images/radiocrestin_logo.png"}
-            width={40}
-            height={40}
-            alt={"Logo Radio Creștin"}
-          />
-          <span>Radio Creștin</span>
-        </a>
-      </div>
-      <div className={styles.right_content}>
-        <ThemeToggle />
-        <WhatsAppButton />
-      </div>
-      <div className={styles.mobile_menu} ref={menuRef}>
-        <button
-          className={styles.hamburger}
-          onClick={() => setMenuOpen(!menuOpen)}
-          aria-label="Menu"
-          aria-expanded={menuOpen}
-        >
-          <span className={`${styles.hamburger_line} ${menuOpen ? styles.open : ""}`}></span>
-          <span className={`${styles.hamburger_line} ${menuOpen ? styles.open : ""}`}></span>
-          <span className={`${styles.hamburger_line} ${menuOpen ? styles.open : ""}`}></span>
-        </button>
-        {menuOpen && (
-          <div className={styles.mobile_dropdown}>
-            <div className={styles.menu_item} onClick={handleThemeClick}>
-              <span className={styles.menu_icon} aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width={17} height={17}>
-                  <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
-                </svg>
-              </span>
-              <span className={styles.menu_label}>Temă</span>
-              <div ref={themeToggleRef} className={styles.menu_trailing}>
-                <ThemeToggle />
-              </div>
-            </div>
-            <div className={styles.menu_divider} aria-hidden="true" />
-            <a href="/descarca-aplicatia-radio-crestin/" target="_blank" rel="noopener noreferrer" className={styles.menu_item}>
-              <span className={`${styles.menu_icon} ${styles.menu_icon_accent}`} aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width={17} height={17}>
-                  <path d="M12 3v12" />
-                  <path d="m7 10 5 5 5-5" />
-                  <path d="M5 21h14" />
-                </svg>
-              </span>
-              <span className={styles.menu_label}>Descarcă aplicația</span>
-            </a>
-            <a
-              href="https://wa.me/40766338046?text=Buna%20ziua%20[radiocrestin.ro]%0A"
-              target="_blank"
-              rel="noopener noreferrer"
-              className={styles.menu_item}
-            >
-              <span className={`${styles.menu_icon} ${styles.menu_icon_whatsapp}`} aria-hidden="true">
-                <img src="/icons/whatsapp.svg" alt="" width={18} height={18} />
-              </span>
-              <span className={styles.menu_label}>Contact</span>
-            </a>
-          </div>
-        )}
-      </div>
-    </nav>
-  );
-};
+const Navigation = () => (
+  <nav className={styles.nav}>
+    <div className={styles.internal_links}>
+      <a href={"/"} className={styles.logo}>
+        <img
+          loading={"lazy"}
+          src={"/images/radiocrestin_logo.png"}
+          width={40}
+          height={40}
+          alt={"Logo Radio Creștin"}
+        />
+        <span>Radio Creștin</span>
+      </a>
+    </div>
+    <NavMenu />
+  </nav>
+);
 
 const ContentLeft = () => {
   const { ctx } = useContext(Context);
