@@ -13,7 +13,7 @@ const getHls = async () => {
 };
 import useSpaceBarPress from "@/hooks/useSpaceBarPress";
 import { Loading } from "@/icons/Loading";
-import { CONSTANTS } from "@/constants/constants";
+import { CONSTANTS, SHARE_URL } from "@/constants/constants";
 import styles from "./styles.module.scss";
 import { Context } from "@/context/ContextProvider";
 import usePlayer from "@/store/usePlayer";
@@ -58,6 +58,7 @@ export default function RadioPlayer() {
   const { refreshStations } = useRefreshStations();
   const [isFavorite, setIsFavorite] = useState(false);
   const [expanded, setExpanded] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [history, setHistory] = useState<ISongHistoryItem[] | null>(null);
   const [historyLoading, setHistoryLoading] = useState(false);
   const playerContainerRef = useRef<HTMLDivElement>(null);
@@ -226,6 +227,42 @@ export default function RadioPlayer() {
     : "";
   const isStationUp = station.uptime?.is_up !== false;
 
+  // "Now playing" menu actions
+  const youtubeSearchUrl = nowSong?.name
+    ? `https://www.youtube.com/results?search_query=${encodeURIComponent(
+        `${nowSong.name} ${nowSong.artist?.name || ""}`.trim(),
+      )}`
+    : null;
+
+  const openRecentSongs = () => {
+    setMenuOpen(false);
+    if (ctx.inPagePlayback) {
+      setExpanded(true);
+    } else {
+      // Station pages: the SongHistory modal lives in the hero (Header) — ask it to open
+      window.dispatchEvent(new Event("rc:open-song-history"));
+    }
+  };
+
+  const shareStation = async () => {
+    setMenuOpen(false);
+    const url = `${SHARE_URL}/${station.slug}`;
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: station.title,
+          text: `Ascultă și tu ${station.title}`,
+          url,
+        });
+      } else {
+        await navigator.clipboard.writeText(url);
+        toast.success("Linkul stației a fost copiat");
+      }
+    } catch {
+      // Share sheet dismissed — nothing to do
+    }
+  };
+
   // Two-phase song-line swap (mirrors the hero's now-playing handoff): the
   // rendered text trails the live data by one 170ms fade-out, then the new
   // song rises into place. Plays for the SSR'd → live handoff and song changes.
@@ -309,16 +346,20 @@ export default function RadioPlayer() {
   }, [expanded, station.slug]);
 
   useEffect(() => {
-    if (!expanded) return;
+    if (!expanded && !menuOpen) return;
+    const closeAll = () => {
+      setExpanded(false);
+      setMenuOpen(false);
+    };
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setExpanded(false);
+      if (event.key === "Escape") closeAll();
     };
     const onPointerDown = (event: MouseEvent | TouchEvent) => {
       if (
         playerContainerRef.current &&
         !playerContainerRef.current.contains(event.target as Node)
       ) {
-        setExpanded(false);
+        closeAll();
       }
     };
     document.addEventListener("keydown", onKey);
@@ -329,7 +370,12 @@ export default function RadioPlayer() {
       document.removeEventListener("mousedown", onPointerDown);
       document.removeEventListener("touchstart", onPointerDown);
     };
-  }, [expanded]);
+  }, [expanded, menuOpen]);
+
+  // A station switch invalidates the open menu's context (song, favorite state)
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [station.slug]);
 
   useEffect(() => {
     const audio = document.getElementById("audioPlayer") as HTMLAudioElement;
@@ -1039,8 +1085,160 @@ export default function RadioPlayer() {
       <div className={styles.player_gradient_overlay} />
       <div className={styles.radio_player_container} ref={playerContainerRef}>
         <div
-          className={`${styles.radio_player} ${expanded ? styles.radio_player_open : ""}`}
+          className={`${styles.radio_player} ${expanded || menuOpen ? styles.radio_player_open : ""}`}
         >
+        {/* Decorative twin of the station_info trigger (which carries the a11y
+            semantics) — hidden from AT but tappable, so the chevron itself
+            closes the menu once it points down */}
+        <span
+          className={`${styles.player_handle} ${menuOpen ? styles.player_handle_open : ""}`}
+          aria-hidden="true"
+          onClick={() => setMenuOpen((v) => !v)}
+        >
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.6"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M18 15l-6-6-6 6" />
+          </svg>
+        </span>
+        <div
+          className={`${styles.player_menu} ${menuOpen ? styles.player_menu_open : ""}`}
+          role="menu"
+          aria-hidden={!menuOpen}
+          aria-label={`Opțiuni ${station.title}`}
+        >
+          <div className={styles.menu_inner}>
+            <div className={styles.menu_status}>
+              <span
+                className={`${styles.menu_live_dot} ${!isStationUp ? styles.menu_live_dot_off : ""}`}
+              />
+              <span
+                className={`${styles.menu_live_label} ${!isStationUp ? styles.menu_live_label_off : ""}`}
+              >
+                {isStationUp ? "ÎN DIRECT" : "INDISPONIBIL"}
+              </span>
+              {isStationUp && station.total_listeners > 0 && (
+                <span className={styles.menu_listeners}>
+                  · {roPlural(station.total_listeners, "ascultător", "ascultători")}{" "}
+                  acum
+                </span>
+              )}
+            </div>
+            <button
+              className={styles.menu_item}
+              role="menuitem"
+              onClick={() => toggleFavourite(station.slug)}
+            >
+              <span className={styles.menu_item_icon}>
+                <Heart color={isFavorite ? "red" : "white"} defaultColor={"red"} />
+              </span>
+              <span className={styles.menu_item_label}>
+                {isFavorite ? "Elimină de la favorite" : "Adaugă la favorite"}
+              </span>
+            </button>
+            {youtubeSearchUrl && (
+              <a
+                className={styles.menu_item}
+                role="menuitem"
+                href={youtubeSearchUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => setMenuOpen(false)}
+              >
+                <span className={styles.menu_item_icon}>
+                  <img src="/icons/youtube.svg" alt="" width={18} height={18} />
+                </span>
+                <span className={styles.menu_item_text}>
+                  <span className={styles.menu_item_label}>
+                    Caută melodia pe YouTube
+                  </span>
+                  <span className={styles.menu_item_sublabel}>{songText}</span>
+                </span>
+              </a>
+            )}
+            <button
+              className={styles.menu_item}
+              role="menuitem"
+              onClick={openRecentSongs}
+            >
+              <span className={styles.menu_item_icon}>
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <circle cx="12" cy="12" r="10" />
+                  <polyline points="12 6 12 12 16 14" />
+                </svg>
+              </span>
+              <span className={styles.menu_item_label}>Melodii redate recent</span>
+            </button>
+            <button
+              className={styles.menu_item}
+              role="menuitem"
+              onClick={shareStation}
+            >
+              <span className={styles.menu_item_icon}>
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7" />
+                  <polyline points="16 6 12 2 8 6" />
+                  <line x1="12" y1="2" x2="12" y2="15" />
+                </svg>
+              </span>
+              <span className={styles.menu_item_label}>Distribuie stația</span>
+            </button>
+            {ctx.inPagePlayback && (
+              <a
+                className={styles.menu_item}
+                role="menuitem"
+                href={`/${station.slug}/`}
+                onClick={() => setMenuOpen(false)}
+              >
+                <span className={styles.menu_item_icon}>
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                    <polyline points="15 3 21 3 21 9" />
+                    <line x1="10" y1="14" x2="21" y2="3" />
+                  </svg>
+                </span>
+                <span className={styles.menu_item_label}>Pagina stației</span>
+              </a>
+            )}
+          </div>
+        </div>
         {ctx.inPagePlayback && (
           <div
             className={`${styles.expanded_panel} ${expanded ? styles.expanded_panel_open : ""}`}
@@ -1115,55 +1313,21 @@ export default function RadioPlayer() {
             </div>
           </div>
         )}
-        <div className={styles.player_container}>
-          <div className={styles.live_strip}>
-            <span
-              className={`${styles.live_strip_dot} ${!isStationUp ? styles.live_strip_dot_off : ""}`}
-            />
-            <span
-              className={`${styles.live_strip_label} ${!isStationUp ? styles.live_strip_label_off : ""}`}
-            >
-              {isStationUp ? "ÎN DIRECT" : "INDISPONIBIL"}
-            </span>
-            {isStationUp && station.total_listeners > 0 && (
-              <span className={styles.live_strip_listeners}>
-                · {roPlural(station.total_listeners, "ascultător", "ascultători")}
-              </span>
-            )}
-            <div className={styles.live_strip_actions}>
-              {ctx.inPagePlayback && (
-                <button
-                  aria-label={expanded ? "Restrânge playerul" : "Extinde playerul"}
-                  aria-expanded={expanded}
-                  title="Detalii stație și melodii redate recent"
-                  className={styles.strip_button}
-                  onClick={() => setExpanded((v) => !v)}
-                >
-                  <svg
-                    className={expanded ? styles.expand_icon_open : undefined}
-                    width="15"
-                    height="15"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.4"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    aria-hidden="true"
-                  >
-                    <path d="M18 15l-6-6-6 6" />
-                  </svg>
-                </button>
-              )}
-              <button
-                aria-label={isFavorite ? "Elimină de la favorite" : "Adaugă la favorite"}
-                className={styles.strip_button}
-                onClick={() => toggleFavourite(station.slug)}
-              >
-                <Heart color={isFavorite ? "red" : "white"} defaultColor={"red"} />
-              </button>
-            </div>
-          </div>
+        <div
+          className={styles.player_container}
+          title="Opțiuni stație"
+          onClick={(e) => {
+            // The whole row opens the menu — except the real controls inside it
+            if (
+              (e.target as HTMLElement).closest(
+                "button, input, a, [data-menu-ignore]",
+              )
+            ) {
+              return;
+            }
+            setMenuOpen((v) => !v);
+          }}
+        >
           <div className={styles.image_container}>
             <img
               src={getValidImageUrl(
@@ -1178,9 +1342,18 @@ export default function RadioPlayer() {
           </div>
 
           <div
-            className={`${styles.station_info} ${ctx.inPagePlayback ? styles.station_info_clickable : ""}`}
-            onClick={ctx.inPagePlayback ? () => setExpanded((v) => !v) : undefined}
-            title={ctx.inPagePlayback ? "Detalii stație și melodii redate recent" : undefined}
+            className={styles.station_info}
+            role="button"
+            tabIndex={0}
+            aria-haspopup="menu"
+            aria-expanded={menuOpen}
+            aria-label={`Opțiuni ${station.title}`}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                setMenuOpen((v) => !v);
+              }
+            }}
           >
             <h2 className={styles.station_title}>{station.title}</h2>
             {station.uptime?.is_up !== false ? (
@@ -1224,7 +1397,7 @@ export default function RadioPlayer() {
             )}
           </div>
 
-          <div className={styles.volume_slider}>
+          <div className={styles.volume_slider} data-menu-ignore>
             <input
               type="range"
               min="0"
@@ -1238,30 +1411,6 @@ export default function RadioPlayer() {
           </div>
 
           <div className={styles.play_button_container}>
-            {ctx.inPagePlayback && (
-              <button
-                aria-label={expanded ? "Restrânge playerul" : "Extinde playerul"}
-                aria-expanded={expanded}
-                title="Detalii stație și melodii redate recent"
-                className={styles.expand_button}
-                onClick={() => setExpanded((v) => !v)}
-              >
-                <svg
-                  className={expanded ? styles.expand_icon_open : undefined}
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden="true"
-                >
-                  <path d="M18 15l-6-6-6 6" />
-                </svg>
-              </button>
-            )}
             <button
               aria-label={isFavorite ? "Elimină de la favorite" : "Adaugă la favorite"}
               className={styles.heart_ghost}

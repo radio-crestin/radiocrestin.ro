@@ -264,6 +264,13 @@ const ContentLeft = () => {
     }
   }, [selectedStation]);
 
+  // The bottom player's "now playing" menu asks for the history modal via event
+  useEffect(() => {
+    const onOpenRequest = () => handleOpenHistory();
+    window.addEventListener("rc:open-song-history", onOpenRequest);
+    return () => window.removeEventListener("rc:open-song-history", onOpenRequest);
+  }, [handleOpenHistory]);
+
   // Handle browser back button
   useEffect(() => {
     const handlePopState = () => {
