@@ -1,117 +1,99 @@
 @use "public/styles/mixinHelper";
 @use "public/styles/globalVariables";
-@use "public/styles/modal";
 
-.modal_overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(8px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  padding: 20px;
-  animation: modalFadeIn 0.2s ease-out;
-}
-
+// Panel box only — the overlay, backdrop and enter/swap/exit animations
+// live in ReviewsModalShell/styles.module.scss.
 .modal_content {
   background: var(--bg-header-container);
-  border-radius: 16px;
-  padding: 32px;
+  border: 1px solid rgba(128, 128, 128, 0.14);
+  border-radius: 20px;
   max-width: 500px;
   width: 100%;
   max-height: 90vh;
-  overflow-y: auto;
   position: relative;
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
-  animation: modalSlideDown 0.25s ease-out;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 
   @include mixinHelper.onTablet {
-    padding: 24px 20px;
     max-width: 100%;
-    border-radius: 12px;
+    border-radius: 16px;
   }
 }
 
-.button_text {
-  color: #ED8A19;
-}
+.modal_header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 20px 24px 14px;
+  flex-shrink: 0;
+  border-bottom: 1px solid rgba(128, 128, 128, 0.12);
 
-.button_spinner {
-  width: 20px;
-  height: 20px;
-  border: 2px solid rgba(237, 138, 25, 0.3);
-  border-top-color: #ED8A19;
-  border-radius: 50%;
-  animation: spin 0.7s linear infinite;
-  display: none;
-}
-
-.submitting {
-  .button_text {
-    display: none;
-  }
-
-  .button_spinner {
-    display: block;
+  @include mixinHelper.onTablet {
+    padding: 16px 16px 12px;
   }
 }
 
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
+.header_text {
+  min-width: 0;
+}
+
+.modal_title {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--text-color);
+  margin: 0;
+}
+
+.station_name {
+  font-size: 0.9rem;
+  color: var(--text-color);
+  opacity: 0.55;
+  margin: 2px 0 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .close_button {
-  position: absolute;
-  top: 16px;
-  right: 16px;
   background: none;
   border: none;
   cursor: pointer;
   color: var(--text-color);
+  opacity: 0.5;
   padding: 8px;
+  margin: -4px -8px 0 0;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 50%;
   transition: background-color 0.2s, opacity 0.2s;
+  flex-shrink: 0;
 
   &:hover:not(:disabled) {
-    background-color: rgba(0, 0, 0, 0.1);
+    opacity: 1;
+    background-color: rgba(128, 128, 128, 0.15);
   }
 
   &:disabled {
-    opacity: 0.3;
+    opacity: 0.25;
     cursor: not-allowed;
   }
-}
-
-.modal_title {
-  font-family: globalVariables.$dm-sans-bold, serif;
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: var(--text-color);
-  margin-bottom: 8px;
-  padding-right: 40px;
-}
-
-.station_name {
-  font-size: 1rem;
-  color: var(--text-color);
-  opacity: 0.7;
-  margin-bottom: 24px;
 }
 
 .form {
   display: flex;
   flex-direction: column;
   gap: 20px;
+  padding: 18px 24px 20px;
+  overflow-y: auto;
+  min-height: 0;
+
+  @include mixinHelper.onTablet {
+    padding: 14px 16px 16px;
+  }
 }
 
 .label {
@@ -139,6 +121,7 @@
   border: none;
   cursor: pointer;
   padding: 8px;
+  border-radius: 8px;
   transition: transform 0.15s ease;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
@@ -151,6 +134,11 @@
 
   &:active {
     transform: scale(0.95);
+  }
+
+  &:focus-visible {
+    outline: 2px solid #ED8A19;
+    outline-offset: 2px;
   }
 }
 
@@ -171,25 +159,50 @@
   flex-direction: column;
 }
 
+// Border/background/focus live on a shell around the textarea: a textarea
+// scrolls its padding along with the text, so a styled textarea hard-slices
+// scrolled lines at the rounded border and butts the system scrollbar into
+// the corner radius. The shell keeps the visual box static while the inner
+// field scrolls, and overflow:hidden clips the scrollbar to the radius.
+.textarea_shell {
+  border: 1px solid rgba(128, 128, 128, 0.2);
+  border-radius: 12px;
+  background: rgba(128, 128, 128, 0.05);
+  overflow: hidden;
+  transition: border-color 0.2s, box-shadow 0.2s;
+
+  &:focus-within {
+    border-color: rgba(237, 138, 25, 0.55);
+    box-shadow: 0 0 0 3px rgba(237, 138, 25, 0.14);
+  }
+}
+
 .textarea {
+  display: block;
   width: 100%;
   padding: 12px 16px;
-  border: 1px solid rgba(128, 128, 128, 0.2);
-  border-radius: 10px;
+  border: none;
   font-size: 0.95rem;
   font-family: inherit;
+  line-height: 1.5;
   resize: none;
   min-height: 100px;
-  background: rgba(128, 128, 128, 0.05);
+  background: transparent;
   color: var(--text-color);
-  transition: border-color 0.2s, box-shadow 0.2s;
   box-sizing: border-box;
-
-  &:focus {
-    outline: none;
-    border-color: rgba(128, 128, 128, 0.4);
-    box-shadow: 0 0 0 3px rgba(128, 128, 128, 0.1);
-  }
+  outline: none;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(128, 128, 128, 0.4) transparent;
+  // Scrolled lines dissolve at the top/bottom edge instead of getting cut
+  // mid-glyph; the 10px fade sits inside the 12px padding, so unscrolled
+  // text is never dimmed
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    #000 10px,
+    #000 calc(100% - 10px),
+    transparent 100%
+  );
 
   &::placeholder {
     color: var(--text-color);
@@ -231,10 +244,12 @@
 .share_button {
   width: 48px;
   height: 48px;
+  flex-shrink: 0;
   background-color: transparent;
-  color: #ED8A19;
-  border: 1px solid rgba(237, 138, 25, 0.4);
-  border-radius: 10px;
+  color: var(--text-color);
+  opacity: 0.65;
+  border: 1px solid rgba(128, 128, 128, 0.25);
+  border-radius: 999px;
   cursor: pointer;
   transition: all 0.2s, transform 0.1s;
   display: flex;
@@ -242,8 +257,9 @@
   justify-content: center;
 
   &:hover {
-    border-color: #ED8A19;
-    background-color: rgba(237, 138, 25, 0.08);
+    opacity: 1;
+    border-color: rgba(128, 128, 128, 0.45);
+    background-color: rgba(128, 128, 128, 0.08);
   }
 
   &:active {
@@ -252,6 +268,7 @@
 }
 
 .share_copied {
+  opacity: 1;
   border-color: #22c55e;
   color: #22c55e;
   background-color: rgba(34, 197, 94, 0.08);
@@ -262,34 +279,77 @@
   }
 }
 
+// Same recipe as the hero play CTA: solid amber, dark label, flat feedback
 .submit_button {
   margin-left: auto;
-  width: 180px;
+  min-width: 180px;
   height: 48px;
-  background-color: transparent;
-  color: #ED8A19;
-  border: 1px solid rgba(237, 138, 25, 0.4);
-  border-radius: 10px;
-  font-size: 1rem;
-  font-weight: 600;
+  padding: 0 24px;
+  background: #fdae1c;
+  color: #1a1a1a;
+  border: none;
+  border-radius: 999px;
+  font-size: 15px;
+  font-weight: 700;
   cursor: pointer;
-  transition: all 0.2s, transform 0.1s;
+  transition: background-color 0.15s ease;
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
 
   &:hover:not(:disabled) {
-    border-color: #ED8A19;
-    background-color: rgba(237, 138, 25, 0.08);
+    background: #f3a30f;
   }
 
   &:active:not(:disabled) {
-    transform: scale(0.98);
+    background: #e2960a;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--text-color);
+    outline-offset: 3px;
   }
 
   &:disabled {
-    opacity: 0.5;
+    opacity: 0.45;
     cursor: not-allowed;
+  }
+
+  @include mixinHelper.onTablet {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+.button_text {
+  color: #1a1a1a;
+  white-space: nowrap;
+}
+
+.button_spinner {
+  width: 20px;
+  height: 20px;
+  box-sizing: border-box;
+  border: 2.5px solid rgba(26, 26, 26, 0.25);
+  border-top-color: #1a1a1a;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  display: none;
+}
+
+.submitting {
+  .button_text {
+    display: none;
+  }
+
+  .button_spinner {
+    display: block;
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
   }
 }
