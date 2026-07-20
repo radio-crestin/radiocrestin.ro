@@ -66,19 +66,37 @@ const Navigation = () => {
         {menuOpen && (
           <div className={styles.mobile_dropdown}>
             <div className={styles.menu_item} onClick={handleThemeClick}>
-              <span>Temă</span>
-              <div ref={themeToggleRef}>
+              <span className={styles.menu_icon} aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width={17} height={17}>
+                  <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+                </svg>
+              </span>
+              <span className={styles.menu_label}>Temă</span>
+              <div ref={themeToggleRef} className={styles.menu_trailing}>
                 <ThemeToggle />
               </div>
             </div>
+            <div className={styles.menu_divider} aria-hidden="true" />
+            <a href="/descarca-aplicatia-radio-crestin/" className={styles.menu_item}>
+              <span className={`${styles.menu_icon} ${styles.menu_icon_accent}`} aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width={17} height={17}>
+                  <path d="M12 3v12" />
+                  <path d="m7 10 5 5 5-5" />
+                  <path d="M5 21h14" />
+                </svg>
+              </span>
+              <span className={styles.menu_label}>Descarcă aplicația</span>
+            </a>
             <a
               href="https://wa.me/40766338046?text=Buna%20ziua%20[radiocrestin.ro]%0A"
               target="_blank"
               rel="noopener noreferrer"
-              className={styles.contact_link}
+              className={styles.menu_item}
             >
-              <span>Contact</span>
-              <img src="/icons/whatsapp.svg" alt="WhatsApp" width={20} height={20} />
+              <span className={`${styles.menu_icon} ${styles.menu_icon_whatsapp}`} aria-hidden="true">
+                <img src="/icons/whatsapp.svg" alt="" width={18} height={18} />
+              </span>
+              <span className={styles.menu_label}>Contact</span>
             </a>
           </div>
         )}

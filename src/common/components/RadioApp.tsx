@@ -11,7 +11,6 @@ import DownloadAppBanner from "@/components/DownloadAppBanner";
 import FooterLinks from "@/components/FooterLinks";
 import RadioPlayer from "@/components/RadioPlayer";
 import WhatsAppBibleGroup from "@/components/WhatsAppBibleGroup";
-import MobileAppBanner from "@/components/MobileAppBanner";
 import StationReviewsSection from "@/components/Reviews/StationReviewsSection";
 import { Context } from "@/context/ContextProvider";
 import type { IStation } from "@/models/Station";
@@ -22,10 +21,9 @@ interface RadioAppProps {
   stations: IStation[];
   selectedStation?: IStation | null;
   showReviews?: boolean;
-  hideAppBanner?: boolean;
 }
 
-function RadioContent({ showReviews, hideAppBanner }: { showReviews: boolean; hideAppBanner: boolean }) {
+function RadioContent({ showReviews }: { showReviews: boolean }) {
   const { ctx } = useContext(Context);
 
   useUpdateContextMetadata();
@@ -49,7 +47,6 @@ function RadioContent({ showReviews, hideAppBanner }: { showReviews: boolean; hi
 
   return (
     <NoInternetConnection>
-      {!hideAppBanner && <MobileAppBanner />}
       {ctx.selectedStation ? <Header /> : <HeaderHomepage />}
       {!ctx.selectedStation && <WhatsAppBibleGroup />}
       {ctx.selectedStation && <WhatsAppBibleGroup />}
@@ -73,7 +70,6 @@ export default function RadioApp({
   stations,
   selectedStation = null,
   showReviews = false,
-  hideAppBanner = false,
 }: RadioAppProps) {
   const initialState = {
     stations,
@@ -83,7 +79,7 @@ export default function RadioApp({
 
   return (
     <ContextProvider initialState={initialState}>
-      <RadioContent showReviews={showReviews} hideAppBanner={hideAppBanner} />
+      <RadioContent showReviews={showReviews} />
     </ContextProvider>
   );
 }
