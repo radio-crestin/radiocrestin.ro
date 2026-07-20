@@ -1,0 +1,262 @@
+@use "public/styles/mixinHelper";
+
+.menu_root {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+// Desktop trigger: settings gear, spins slightly while the menu is open
+.settings_button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  border-radius: 10px;
+  color: var(--text-color);
+  transition: background-color 0.2s ease;
+
+  svg {
+    transition: transform 0.35s ease;
+  }
+
+  &:hover {
+    background-color: var(--bg-hover, rgba(0, 0, 0, 0.05));
+  }
+
+  &.settings_open svg {
+    transform: rotate(45deg);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    svg {
+      transition: none;
+    }
+  }
+
+  @include mixinHelper.onTablet {
+    display: none;
+  }
+}
+
+// Mobile trigger: the classic hamburger, lines fold into an X
+.hamburger {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+  width: 40px;
+  height: 40px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 8px;
+  transition: background-color 0.2s ease;
+
+  &:hover {
+    background-color: var(--bg-hover, rgba(0, 0, 0, 0.05));
+  }
+
+  @include mixinHelper.onTablet {
+    display: flex;
+  }
+
+  .hamburger_line {
+    display: block;
+    width: 22px;
+    height: 2px;
+    background-color: var(--text-color);
+    border-radius: 2px;
+    transition: all 0.3s ease;
+
+    &.open {
+      &:nth-child(1) {
+        transform: translateY(7px) rotate(45deg);
+      }
+
+      &:nth-child(2) {
+        opacity: 0;
+      }
+
+      &:nth-child(3) {
+        transform: translateY(-7px) rotate(-45deg);
+      }
+    }
+  }
+}
+
+// Glass card in the family of the hero panels: icon chips lead each row,
+// the theme row carries an inline segmented picker on the right
+.dropdown {
+  position: absolute;
+  top: 52px;
+  right: 0;
+  background: color-mix(in srgb, var(--station-card-color) 88%, transparent);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-radius: 16px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 250px;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.28);
+  border: 1px solid rgba(128, 128, 128, 0.22);
+  z-index: 100;
+  transform-origin: top right;
+  animation: menuPop 0.18s ease;
+
+  &.dropdown_closing {
+    animation: menuPopOut 0.15s ease forwards;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+
+    &.dropdown_closing {
+      animation: none;
+    }
+  }
+}
+
+.menu_item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  padding: 9px 10px;
+  border-radius: 11px;
+  text-decoration: none;
+  transition: background-color 0.15s ease;
+
+  &:hover {
+    background-color: rgba(128, 128, 128, 0.1);
+  }
+
+  &:active {
+    background-color: rgba(128, 128, 128, 0.16);
+  }
+}
+
+// The app-download row only makes sense on phones — hidden on desktop,
+// where the gear trigger lives
+.menu_item_mobile_only {
+  display: none;
+
+  @include mixinHelper.onTablet {
+    display: flex;
+  }
+}
+
+// The theme row is a control surface, not a link — no row-level hover
+.menu_item_theme {
+  cursor: default;
+
+  &:hover,
+  &:active {
+    background-color: transparent;
+  }
+}
+
+.menu_icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border-radius: 10px;
+  background: rgba(128, 128, 128, 0.12);
+  color: var(--text-color);
+}
+
+.menu_icon_accent {
+  background: rgba(253, 174, 28, 0.16);
+  color: #e79008;
+}
+
+// Solid brand green like the real app icon — the glyph asset is white,
+// so a tinted chip would swallow it
+.menu_icon_whatsapp {
+  background: linear-gradient(180deg, #57d163 0%, #23b33a 100%);
+}
+
+.menu_label {
+  flex: 1;
+  color: var(--text-color);
+  font-size: 14.5px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.menu_divider {
+  height: 1px;
+  margin: 5px 10px;
+  background: rgba(128, 128, 128, 0.16);
+}
+
+.theme_segment {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 10px;
+  background: rgba(128, 128, 128, 0.12);
+
+  button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 26px;
+    border: none;
+    background: transparent;
+    border-radius: 8px;
+    cursor: pointer;
+    padding: 0;
+    color: var(--text-color);
+    opacity: 0.6;
+    transition:
+      background-color 0.15s ease,
+      opacity 0.15s ease;
+
+    &:hover {
+      opacity: 1;
+    }
+
+    &.segment_active {
+      background: var(--bg-active-station);
+      border: 1px solid var(--bg-active-station-border);
+      opacity: 1;
+    }
+  }
+}
+
+@keyframes menuPop {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes menuPopOut {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.96);
+  }
+}
