@@ -11,6 +11,8 @@ import CloseIcon from "@/icons/CloseIcon";
 import usePlayCount from "@/store/usePlayCount";
 import useFavourite from "@/store/useFavourite";
 import SparklesStar from "@/icons/SparklesStar";
+import { buildScoreSnapshot, sortByScore } from "@/utils/stationScore";
+import type { StationSnapshot } from "@/utils/stationScore";
 
 type SortOption = "recommended" | "most_played" | "listeners" | "rating" | "alphabetical";
 
@@ -69,36 +71,6 @@ function getSavedSort(): SortOption {
   return "recommended";
 }
 
-function getReviewScore(station: IStation): number {
-  const avgRating = station.reviews_stats?.average_rating || 0;
-  const numReviews = station.reviews_stats?.number_of_reviews || 0;
-  return avgRating * numReviews;
-}
-
-interface StationSnapshot {
-  score: number;
-  listeners: number;
-  rating: number;
-}
-
-function buildScoreSnapshot(stations: IStation[]): Record<string, StationSnapshot> {
-  const maxReview = Math.max(...stations.map(getReviewScore), 1);
-  const maxListeners = Math.max(...stations.map((s) => s.total_listeners || 0), 1);
-  const snapshot: Record<string, StationSnapshot> = {};
-  for (const s of stations) {
-    snapshot[s.slug] = {
-      score: (getReviewScore(s) / maxReview) * 0.5 + ((s.total_listeners || 0) / maxListeners) * 0.5,
-      listeners: s.total_listeners || 0,
-      rating: getReviewScore(s),
-    };
-  }
-  return snapshot;
-}
-
-function sortByScore(stations: IStation[], scoreSnapshot: Record<string, StationSnapshot>): IStation[] {
-  return [...stations].sort((a, b) => (scoreSnapshot[b.slug]?.score || 0) - (scoreSnapshot[a.slug]?.score || 0));
-}
-
 function getDayOfYear(): number {
   const now = new Date();
   const start = new Date(now.getFullYear(), 0, 0);
@@ -123,18 +95,19 @@ function sortStations(
   sortBy: SortOption,
   playCounts: Record<string, number>,
   favouriteSlugs: string[],
-  scoreSnapshot: Record<string, StationSnapshot>,
+  liveSnapshot: Record<string, StationSnapshot> | null,
 ): SortResult {
+  const scoreSnapshot = liveSnapshot ?? buildScoreSnapshot(stations);
   const list = [...stations];
   let stationOfDaySlug: string | null = null;
   let mostPlayedSlugs: string[] = [];
 
   switch (sortBy) {
     case "recommended": {
-      // Station of the day — worn as an overlay badge, never a position pin
+      // Station of the day — pinned to position 1 (and badged)
       stationOfDaySlug = getStationOfTheDay(stations);
 
-      // Top 3 most-played stations by the user — badges as well
+      // Top 3 most-played stations by the user — pinned to positions 2-4
       const placedSlugs = new Set<string>();
       if (stationOfDaySlug) placedSlugs.add(stationOfDaySlug);
 
@@ -158,12 +131,36 @@ function sortStations(
 
       mostPlayedSlugs = mostPlayed;
 
-      // Badge-only: station-of-day and most-played are client-side knowledge
-      // (date + localStorage), so repositioning them after hydration would
-      // reshuffle the server-rendered grid — the exact CLS pop-in the
-      // zero-CLS contract forbids. The SSR'd order IS the recommended order;
-      // the badges fade in on the cards wherever they already sit.
-      return { sorted: list, stationOfDaySlug, mostPlayedSlugs };
+      // The SSR'd grid is pre-sorted by build-time score (index.astro /
+      // [station_slug]/index.astro). Hold that order until the first live
+      // listener fetch locks the score snapshot, then apply the pinned
+      // order once — a single controlled reshuffle instead of per-poll churn.
+      if (!liveSnapshot) {
+        return { sorted: list, stationOfDaySlug, mostPlayedSlugs };
+      }
+
+      const allSpecialSlugs = new Set([
+        ...(stationOfDaySlug ? [stationOfDaySlug] : []),
+        ...mostPlayed,
+      ]);
+      const remaining = sortByScore(stations.filter((s) => !allSpecialSlugs.has(s.slug)), scoreSnapshot);
+      const findStation = (slug: string) => stations.find((s) => s.slug === slug);
+
+      const result: IStation[] = [];
+      // Position 1: station of the day
+      if (stationOfDaySlug) {
+        const s = findStation(stationOfDaySlug);
+        if (s) result.push(s);
+      }
+      // Positions 2-4: most played by the user
+      for (const slug of mostPlayed) {
+        const s = findStation(slug);
+        if (s) result.push(s);
+      }
+      // Remaining stations sorted by score (50% reviews + 50% listeners)
+      result.push(...remaining);
+
+      return { sorted: result, stationOfDaySlug, mostPlayedSlugs };
     }
     case "most_played": {
       const played = list.filter((s) => (playCounts[s.slug] || 0) > 0);
@@ -243,8 +240,7 @@ const Stations = () => {
   }, []);
 
   const applySort = (stations: IStation[]) => {
-    const snapshot = scoreSnapshotRef.current || buildScoreSnapshot(stations);
-    const result = sortStations(stations, sortBy, playCounts, favouriteItems, snapshot);
+    const result = sortStations(stations, sortBy, playCounts, favouriteItems, scoreSnapshotRef.current);
     setStationOfDaySlug(result.stationOfDaySlug);
     setMostPlayedSlugs(result.mostPlayedSlugs);
     setCtx({ sortedStations: result.sorted });

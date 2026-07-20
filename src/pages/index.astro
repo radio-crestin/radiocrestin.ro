@@ -3,13 +3,16 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 import RadioApp from "@/components/RadioApp";
 import { getStations } from "@/services/getStations";
 import { cleanStationsMetadata } from "@/utils";
+import { sortStationsByRecommendedScore } from "@/utils/stationScore";
 import { SEO_DEFAULT } from "@/utils/seo";
 import { SITE_URL } from "@/constants/constants";
 import type { IStation } from "@/models/Station";
 
 const { stations: rawStations } = await getStations();
 rawStations.forEach((station: IStation) => { station.is_favorite = false; });
-const stations = cleanStationsMetadata(rawStations);
+// Pre-sort by the "Pentru tine" score before cleaning zeroes total_listeners,
+// so the static grid (and its ItemList JSON-LD) ships in recommended order.
+const stations = cleanStationsMetadata(sortStationsByRecommendedScore(rawStations));
 
 const stationListSchema = JSON.stringify({
   "@context": "https://schema.org",
