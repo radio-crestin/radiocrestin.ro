@@ -26,6 +26,13 @@ time, mark, audio, video {
   transition: color 0.2s ease-in-out, background-color 0.2s ease-in-out, border-color 0.2s ease-in-out, opacity 0.2s ease-in-out;
 }
 
+html {
+  /* iOS WebKit auto-inflates text in blocks wider than the viewport
+     (the player's nowrap marquee strip triggers it) — keep authored sizes */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
 /* HTML5 display-role reset for older browsers */
 article, aside, details, figcaption, figure,
 footer, header, hgroup, menu, nav, section {

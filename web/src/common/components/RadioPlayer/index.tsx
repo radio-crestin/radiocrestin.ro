@@ -316,7 +316,8 @@ export default function RadioPlayer() {
     // Static (clipped with ellipsis) for reduced-motion users
     if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
     if (el.scrollWidth > el.clientWidth + 1) {
-      setTickerDuration(Math.max(14, Math.round(el.scrollWidth / 22)));
+      // ≈16px/s — calm enough to read along
+      setTickerDuration(Math.max(18, Math.round(el.scrollWidth / 16)));
       setTickerMarquee(true);
     }
   }, [tickerMarquee, shownSongText]);
