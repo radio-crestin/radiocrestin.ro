@@ -1018,13 +1018,13 @@ export default function RadioPlayer() {
         return <Loading />;
       case PLAYBACK_STATE.PLAYING:
         return (
-          <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+          <svg width={22} height={22} viewBox="0 0 24 24" focusable="false" aria-hidden="true">
             <path fill="currentColor" d="M7 5h3.6v14H7zM13.4 5H17v14h-3.6z" />
           </svg>
         );
       default:
         return (
-          <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+          <svg width={22} height={22} viewBox="0 0 24 24" focusable="false" aria-hidden="true">
             <path
               fill="currentColor"
               d="M8.2 5.6v12.8a.7.7 0 0 0 1.06.6l10.2-6.4a.7.7 0 0 0 0-1.2L9.26 5a.7.7 0 0 0-1.06.6z"
