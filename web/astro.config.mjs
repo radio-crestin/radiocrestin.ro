@@ -26,7 +26,10 @@ export default defineConfig({
       },
     },
     optimizeDeps: {
-      include: ["react-dom/client"],
+      // hls.js is only reached via dynamic import(), so Vite's startup scan
+      // misses it; without pre-bundling it gets discovered mid-session and
+      // stale tabs hit "504 Outdated Optimize Dep" on the player.
+      include: ["react-dom/client", "hls.js"],
     },
     css: {
       preprocessorOptions: {
