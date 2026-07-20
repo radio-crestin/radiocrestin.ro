@@ -249,6 +249,39 @@ export default function RadioPlayer() {
     }
   };
 
+  // Toggle on pointerdown — the moment the finger/mouse touches — instead of
+  // the click that only fires on release. The click trailing the same tap is
+  // skipped via pointerHandledRef (clicks without a pointerdown — keyboard,
+  // screen readers — still toggle); pointercancel means the browser turned
+  // the gesture into a scroll, so undo the toggle.
+  const pointerHandledRef = useRef(false);
+
+  const isRowControl = (target: EventTarget | null) =>
+    !!(target as HTMLElement | null)?.closest?.(
+      "button, input, a, [data-menu-ignore]",
+    );
+
+  const onRowPointerDown = (e: React.PointerEvent) => {
+    if (!e.isPrimary || e.button !== 0 || isRowControl(e.target)) return;
+    pointerHandledRef.current = true;
+    setMenuOpen((v) => !v);
+  };
+
+  const onRowPointerCancel = () => {
+    if (!pointerHandledRef.current) return;
+    pointerHandledRef.current = false;
+    setMenuOpen((v) => !v);
+  };
+
+  const onRowClick = (e: React.MouseEvent) => {
+    if (isRowControl(e.target)) return;
+    if (pointerHandledRef.current) {
+      pointerHandledRef.current = false;
+      return;
+    }
+    setMenuOpen((v) => !v);
+  };
+
   const shareStation = async () => {
     setMenuOpen(false);
     const url = `${SHARE_URL}/${station.slug}`;
@@ -1097,7 +1130,9 @@ export default function RadioPlayer() {
         <span
           className={`${styles.player_handle} ${menuOpen ? styles.player_handle_open : ""}`}
           aria-hidden="true"
-          onClick={() => setMenuOpen((v) => !v)}
+          onPointerDown={onRowPointerDown}
+          onPointerCancel={onRowPointerCancel}
+          onClick={onRowClick}
         >
           <svg
             width="16"
@@ -1118,6 +1153,7 @@ export default function RadioPlayer() {
           aria-hidden={!menuOpen}
           aria-label={`Opțiuni ${station.title}`}
         >
+          <div className={styles.menu_clip}>
           <div className={styles.menu_inner}>
             <div className={styles.menu_status}>
               <span
@@ -1242,12 +1278,14 @@ export default function RadioPlayer() {
               </a>
             )}
           </div>
+          </div>
         </div>
         {ctx.inPagePlayback && (
           <div
             className={`${styles.expanded_panel} ${expanded ? styles.expanded_panel_open : ""}`}
             aria-hidden={!expanded}
           >
+            <div className={styles.expanded_clip}>
             <div className={styles.expanded_scroll}>
               {station.description && (
                 <div>
@@ -1315,22 +1353,15 @@ export default function RadioPlayer() {
                 )}
               </div>
             </div>
+            </div>
           </div>
         )}
         <div
           className={styles.player_container}
           title="Opțiuni stație"
-          onClick={(e) => {
-            // The whole row opens the menu — except the real controls inside it
-            if (
-              (e.target as HTMLElement).closest(
-                "button, input, a, [data-menu-ignore]",
-              )
-            ) {
-              return;
-            }
-            setMenuOpen((v) => !v);
-          }}
+          onPointerDown={onRowPointerDown}
+          onPointerCancel={onRowPointerCancel}
+          onClick={onRowClick}
         >
           <div className={styles.image_container}>
             <img

@@ -9,6 +9,9 @@
   width: calc(100% - 40px);
   max-width: 560px;
   z-index: 10;
+  // Kill double-tap zoom (and any residual tap delay) on the whole card —
+  // rapid open/close taps must never trigger the browser's zoom gesture
+  touch-action: manipulation;
 }
 
 .player_gradient_overlay {
@@ -32,11 +35,13 @@
   box-shadow: var(--radio-player-shadow);
   border-radius: 16px;
   border: 1px solid var(--radio-player-border);
-  transition: border-radius 0.25s ease;
+  transition: border-radius 0.26s cubic-bezier(0.33, 1, 0.68, 1);
 
-  // Desktop „Linie" pill: one 64px band
+  // Desktop „Linie" pill: half the closed card height (70px) — same stadium
+  // shape as 999px, but the open transition animates 35→22px instead of
+  // sweeping through huge clamped radii that render as an egg-shaped blob
   @media (min-width: 768px) {
-    border-radius: 999px;
+    border-radius: 35px;
     padding: 10px 14px 10px 10px;
   }
 }
@@ -71,7 +76,7 @@
 
   svg {
     display: block;
-    transition: transform 0.28s ease;
+    transition: transform 0.2s ease;
   }
 }
 
@@ -209,17 +214,34 @@
   }
 }
 
-/* ── Expanded panel (in-place, category pages) ── */
+/* ── Expanded panel (in-place, category pages) ──
+   Same grid-rows reveal as the menu: animates to the real content height,
+   so open/close move from the first frame. */
 .expanded_panel {
-  max-height: 0;
+  display: grid;
+  grid-template-rows: 0fr;
   opacity: 0;
   overflow: hidden;
-  transition: max-height 0.35s ease, opacity 0.25s ease;
+  visibility: hidden;
+  transition:
+    grid-template-rows 0.3s cubic-bezier(0.33, 1, 0.68, 1),
+    opacity 0.18s ease,
+    visibility 0s linear 0.3s;
 }
 
 .expanded_panel_open {
-  max-height: min(55vh, 480px);
+  grid-template-rows: 1fr;
   opacity: 1;
+  visibility: visible;
+  transition:
+    grid-template-rows 0.3s cubic-bezier(0.33, 1, 0.68, 1),
+    opacity 0.18s ease,
+    visibility 0s;
+}
+
+.expanded_clip {
+  min-height: 0;
+  overflow: hidden;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -398,26 +420,36 @@
   }
 }
 
-/* ── „Now playing" menu — unfolds inside the card (no floating layer) ── */
+/* ── „Now playing" menu — unfolds inside the card (no floating layer) ──
+   Animated via grid-template-rows 0fr→1fr: the track follows the real content
+   height, so there is no max-height dead zone and open/close start moving on
+   the very first frame. */
 .player_menu {
-  max-height: 0;
+  display: grid;
+  grid-template-rows: 0fr;
   opacity: 0;
   overflow: hidden;
   visibility: hidden;
   transition:
-    max-height 0.32s ease,
-    opacity 0.22s ease,
-    visibility 0s linear 0.32s;
+    grid-template-rows 0.26s cubic-bezier(0.33, 1, 0.68, 1),
+    opacity 0.16s ease,
+    visibility 0s linear 0.26s;
 }
 
 .player_menu_open {
-  max-height: 420px;
+  grid-template-rows: 1fr;
   opacity: 1;
   visibility: visible;
   transition:
-    max-height 0.32s ease,
-    opacity 0.22s ease,
+    grid-template-rows 0.26s cubic-bezier(0.33, 1, 0.68, 1),
+    opacity 0.16s ease,
     visibility 0s;
+}
+
+// Bare grid item — any padding/border/margin here would leak height at 0fr
+.menu_clip {
+  min-height: 0;
+  overflow: hidden;
 }
 
 .menu_inner {
