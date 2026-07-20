@@ -207,9 +207,9 @@ export const getStationSongHistory = async (
 export const getStationReviews = async (
   stationId: number,
 ): Promise<IReview[]> => {
-  // Reviews for a non-positive / invalid station id can never resolve — skip the
-  // request entirely (avoids pointless calls like station_id=0).
-  if (!Number.isFinite(stationId) || stationId <= 0) return [];
+  // Station ids start at 0 (aripi-spre-cer IS station 0), so only negative /
+  // NaN ids are invalid and skip the request.
+  if (!Number.isFinite(stationId) || stationId < 0) return [];
   const endpoint = `${API_BASE}/reviews?station_id=${stationId}&timestamp=${getTimestamp()}`;
   try {
     const response = await fetch(endpoint, {

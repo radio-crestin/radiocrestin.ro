@@ -7,6 +7,10 @@ export const ANDROID_PACKAGE = "com.radiocrestin.radio_crestin";
 export const APP_RATING = "4.9";
 export const APP_REVIEW_COUNT = "2175";
 
+// The reviews API has no author field yet — shown in the UI and used as the
+// Review JSON-LD author so the markup stays valid for Google.
+export const ANONYMOUS_REVIEW_AUTHOR = "Anonim";
+
 export const getIOSStoreLink = (source?: string) => {
   const baseUrl = `https://apps.apple.com/app/${IOS_APP_ID}`;
   return source ? `${baseUrl}?pt=126318767&ct=${source}&mt=8` : baseUrl;

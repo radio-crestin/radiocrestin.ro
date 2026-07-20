@@ -122,11 +122,12 @@ describe("getStationSongHistory", () => {
 });
 
 describe("getStationReviews", () => {
-  it("does NOT fetch for stationId=0 (the station_id=0 noise)", async () => {
-    const fetchMock = setFetch(async () => makeResponse(200, "{}"));
-    expect(await getStationReviews(0)).toEqual([]);
-    expect(fetchMock).not.toHaveBeenCalled();
-    expect(captureExceptionMock).not.toHaveBeenCalled();
+  it("DOES fetch for stationId=0 (aripi-spre-cer is station 0)", async () => {
+    const fetchMock = setFetch(async () =>
+      makeResponse(200, JSON.stringify({ data: { reviews: [{ id: 5, stars: 5 }] } })),
+    );
+    expect(await getStationReviews(0)).toEqual([{ id: 5, stars: 5 }]);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
   it("does NOT fetch for negative / NaN station ids", async () => {

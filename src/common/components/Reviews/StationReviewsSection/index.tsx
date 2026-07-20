@@ -4,28 +4,42 @@ import styles from "./styles.module.scss";
 import Star from "@/icons/Star";
 import { getStationReviews } from "@/services/getStations";
 import type { IReview } from "@/models/Station";
+import { ANONYMOUS_REVIEW_AUTHOR } from "@/constants/constants";
 
 interface StationReviewsSectionProps {
   stationId: number;
   stationTitle: string;
   stationSlug: string;
+  // Build-time reviews, server-rendered into the static HTML so crawlers see
+  // review text without JS. Must seed the first client render unchanged —
+  // hydration re-rendering different content is the CLS trap.
+  initialReviews?: IReview[];
 }
 
 const StationReviewsSection: React.FC<StationReviewsSectionProps> = ({
   stationId,
   stationTitle,
   stationSlug,
+  initialReviews = [],
 }) => {
-  const [reviews, setReviews] = useState<IReview[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [reviews, setReviews] = useState<IReview[]>(initialReviews);
+  const [isLoading, setIsLoading] = useState(initialReviews.length === 0);
 
+  // Refresh on mount (build-time data goes stale between deploys) and refetch
+  // after a client-side station switch.
   useEffect(() => {
-    const fetchReviews = async () => {
-      const fetchedReviews = await getStationReviews(stationId);
-      setReviews(fetchedReviews);
+    let cancelled = false;
+    (async () => {
+      const fetched = await getStationReviews(stationId);
+      if (cancelled) return;
+      // getStationReviews returns [] for "no reviews" and "fetch failed" alike —
+      // fall back to the build-time list rather than blanking visible content.
+      setReviews(fetched.length > 0 ? fetched : initialReviews);
       setIsLoading(false);
+    })();
+    return () => {
+      cancelled = true;
     };
-    fetchReviews();
   }, [stationId]);
 
   // Smooth-scroll to section when URL hash is #reviews (works after async load)
@@ -61,10 +75,9 @@ const StationReviewsSection: React.FC<StationReviewsSectionProps> = ({
     toast.success("Link copiat!");
   };
 
-  // No client-side Review JSON-LD: reviews are anonymous (no author field,
-  // which Google requires — it flagged these as invalid rich results), and it
-  // duplicated the RadioStation node already server-rendered by the station
-  // page, whose AggregateRating keeps star snippets eligible on its own.
+  // No client-side Review JSON-LD: the station page server-renders the
+  // RadioStation node with per-review markup (author falls back to "Anonim",
+  // which Google requires) — a client-side copy would duplicate that node.
 
   const header = (
     <div className={styles.section_header}>
@@ -118,18 +131,19 @@ const StationReviewsSection: React.FC<StationReviewsSectionProps> = ({
         {reviews.map((review) => (
           <div key={review.id} className={styles.review_item}>
             <div className={styles.review_header}>
-              <div className={styles.review_stars}>
-                {[1, 2, 3, 4, 5].map((i) => (
-                  <Star key={i} fillWidth={i <= review.stars ? 1 : 0} height={16} />
-                ))}
-              </div>
-              <span className={styles.review_date}>
+              <span className={styles.review_author}>{ANONYMOUS_REVIEW_AUTHOR}</span>
+              <time className={styles.review_date} dateTime={review.created_at}>
                 {new Date(review.created_at).toLocaleDateString("ro-RO", {
                   year: "numeric",
                   month: "long",
                   day: "numeric",
                 })}
-              </span>
+              </time>
+            </div>
+            <div className={styles.review_stars}>
+              {[1, 2, 3, 4, 5].map((i) => (
+                <Star key={i} fillWidth={i <= review.stars ? 1 : 0} height={16} />
+              ))}
             </div>
             {review.message && (
               <p className={styles.review_message}>{review.message}</p>
