@@ -533,7 +533,7 @@ const ContentRight = () => {
                   rel="noopener"
                 >
                   <GlobeIcon />
-                  Site oficial
+                  Site
                 </a>
               )}
               {station.facebook_page_id && (

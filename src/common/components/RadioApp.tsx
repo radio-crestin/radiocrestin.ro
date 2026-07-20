@@ -60,7 +60,6 @@ function RadioContent({ showReviews, hideAppBanner }: { showReviews: boolean; hi
           stationId={ctx.selectedStation.id}
           stationTitle={ctx.selectedStation.title}
           stationSlug={ctx.selectedStation.slug}
-          reviewsStats={ctx.selectedStation.reviews_stats}
         />
       )}
       <FooterLinks showStoreBadges={false} />
