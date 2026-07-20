@@ -39,14 +39,18 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
   padding: 20px;
   font-family: globalVariables.$dm-sans;
+
+  // Dim only — the page blur comes from html[data-modal-blur] in base.scss.
+  // No backdrop-filter here: Chromium/macOS drops backdrop-filter surfaces
+  // for a frame when overlay content repaints (cursor movement), flashing
+  // the unblurred page + modal off.
+  background-color: rgba(0, 0, 0, 0.6);
 
   // Override reset.scss's "font: inherit" on all elements inside the portal
   * {
@@ -342,6 +346,9 @@
 
     .thumb_overlay {
       opacity: 1;
+      // Hover intent: sweeping the cursor across rows must not strobe the
+      // play overlay on every artwork passed — it only fades in on a pause
+      transition-delay: 0.12s;
     }
 
     .song_time {
@@ -659,8 +666,10 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(4px);
+  // Dim only — the page behind is already blurred via html[data-modal-blur],
+  // and backdrop-filter on overlays flashes off on cursor movement
+  // (Chromium/macOS).
+  background-color: rgba(0, 0, 0, 0.55);
   display: flex;
   align-items: center;
   justify-content: center;

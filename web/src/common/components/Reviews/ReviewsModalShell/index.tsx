@@ -79,14 +79,19 @@ const ReviewsModalShell: React.FC<ReviewsModalShellProps> = ({
   useEffect(() => () => window.clearTimeout(timerRef.current), []);
 
   // Body scroll lock for the whole time the shell is on screen — including
-  // panel swaps, which used to unlock + relock between the two modals
+  // panel swaps, which used to unlock + relock between the two modals.
+  // data-modal-blur blurs the page content behind (base.scss) — a plain
+  // filter instead of overlay backdrop-filter, which Chromium/macOS flashes
+  // off on cursor movement. Assumes one fullscreen modal open at a time.
   const mounted = shownView !== null;
   useEffect(() => {
     if (!mounted) return;
     const scrollY = window.scrollY;
     document.body.style.cssText = `overflow-y: scroll; position: fixed; width: 100%; top: -${scrollY}px`;
+    document.documentElement.setAttribute("data-modal-blur", "1");
     return () => {
       document.body.style.cssText = "";
+      document.documentElement.removeAttribute("data-modal-blur");
       window.scrollTo(0, scrollY);
     };
   }, [mounted]);

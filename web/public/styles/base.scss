@@ -96,3 +96,15 @@ body {
   --link-color: #0066CC;
   --link-hover-color: #004C99;
 }
+
+/* Page-content blur while a fullscreen modal is open (SongHistory, Reviews).
+   The modal overlays used to carry backdrop-filter: blur() — on macOS,
+   Chromium drops a backdrop-filter surface for a frame whenever content
+   above it repaints (any cursor movement over the modal), flashing the
+   unblurred page through. A plain filter on the content behind has no such
+   invalidation path. Applied per direct child of the island container so the
+   fixed player blurs in place (self-filter keeps viewport anchoring) while
+   react-toastify stays sharp and correctly positioned. */
+html[data-modal-blur] main astro-island > div > :not(.Toastify) {
+  filter: blur(8px);
+}
