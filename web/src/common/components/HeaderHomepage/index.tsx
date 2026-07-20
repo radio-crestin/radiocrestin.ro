@@ -143,11 +143,9 @@ const HeaderHomepage = () => {
     window.history.pushState(null, "", `/${station.slug}/`);
   };
 
-  const handlePlayTop = () => {
-    if (liveStations.length > 0) {
-      playStation(liveStations[0]);
-    }
-  };
+  // Baked into the static HTML so the primary CTA is a real crawlable link
+  // (and still works before hydration by navigating to the station page).
+  const topStation = liveStations[0];
 
   const scrollToStations = () => {
     const target = document.querySelector(
@@ -186,10 +184,18 @@ const HeaderHomepage = () => {
             singur loc.
           </p>
           <div className={styles.cta_row}>
-            <button className={styles.cta_primary} onClick={handlePlayTop}>
+            <a
+              className={styles.cta_primary}
+              href={topStation ? `/${topStation.slug}/` : "/"}
+              onClick={(e) => {
+                if (!topStation) return;
+                e.preventDefault();
+                playStation(topStation);
+              }}
+            >
               <PlayIcon />
               Ascultă acum
-            </button>
+            </a>
             <button className={styles.cta_secondary} onClick={scrollToStations}>
               Vezi toate stațiile
             </button>
