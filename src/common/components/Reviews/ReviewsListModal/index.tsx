@@ -2,7 +2,6 @@ import React, { useMemo } from "react";
 import styles from "./styles.module.scss";
 import Star from "@/icons/Star";
 import type { IReview, IReviewsStats } from "@/models/Station";
-import { ANONYMOUS_REVIEW_AUTHOR } from "@/constants/constants";
 
 // Panel content only — the portal, backdrop, scroll lock and Escape/backdrop
 // closing live in ReviewsModalShell, which keeps one persistent overlay
@@ -116,7 +115,11 @@ const ReviewsListModal: React.FC<ReviewsListModalProps> = ({
             reviews.map((review) => (
               <div key={review.id} className={styles.review_item}>
                 <div className={styles.review_header}>
-                  <span className={styles.review_author}>{ANONYMOUS_REVIEW_AUTHOR}</span>
+                  <div className={styles.review_stars}>
+                    {[1, 2, 3, 4, 5].map((i) => (
+                      <Star key={i} fillWidth={i <= review.stars ? 1 : 0} height={15} />
+                    ))}
+                  </div>
                   <time className={styles.review_date} dateTime={review.created_at}>
                     {new Date(review.created_at).toLocaleDateString("ro-RO", {
                       year: "numeric",
@@ -124,11 +127,6 @@ const ReviewsListModal: React.FC<ReviewsListModalProps> = ({
                       day: "numeric",
                     })}
                   </time>
-                </div>
-                <div className={styles.review_stars}>
-                  {[1, 2, 3, 4, 5].map((i) => (
-                    <Star key={i} fillWidth={i <= review.stars ? 1 : 0} height={15} />
-                  ))}
                 </div>
                 {review.message && (
                   <p className={styles.review_message}>{review.message}</p>

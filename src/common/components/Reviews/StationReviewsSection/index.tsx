@@ -4,7 +4,6 @@ import styles from "./styles.module.scss";
 import Star from "@/icons/Star";
 import { getStationReviews } from "@/services/getStations";
 import type { IReview } from "@/models/Station";
-import { ANONYMOUS_REVIEW_AUTHOR } from "@/constants/constants";
 
 interface StationReviewsSectionProps {
   stationId: number;
@@ -131,7 +130,11 @@ const StationReviewsSection: React.FC<StationReviewsSectionProps> = ({
         {reviews.map((review) => (
           <div key={review.id} className={styles.review_item}>
             <div className={styles.review_header}>
-              <span className={styles.review_author}>{ANONYMOUS_REVIEW_AUTHOR}</span>
+              <div className={styles.review_stars}>
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <Star key={i} fillWidth={i <= review.stars ? 1 : 0} height={16} />
+                ))}
+              </div>
               <time className={styles.review_date} dateTime={review.created_at}>
                 {new Date(review.created_at).toLocaleDateString("ro-RO", {
                   year: "numeric",
@@ -139,11 +142,6 @@ const StationReviewsSection: React.FC<StationReviewsSectionProps> = ({
                   day: "numeric",
                 })}
               </time>
-            </div>
-            <div className={styles.review_stars}>
-              {[1, 2, 3, 4, 5].map((i) => (
-                <Star key={i} fillWidth={i <= review.stars ? 1 : 0} height={16} />
-              ))}
             </div>
             {review.message && (
               <p className={styles.review_message}>{review.message}</p>
