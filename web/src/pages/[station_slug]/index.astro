@@ -3,6 +3,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 import RadioApp from "@/components/RadioApp";
 import { getStations, getStationReviews } from "@/services/getStations";
 import { cleanStationsMetadata } from "@/utils";
+import { sortStationsByRecommendedScore } from "@/utils/stationScore";
 import { seoStation } from "@/utils/seo";
 import type { IReview, IStation } from "@/models/Station";
 import { ANONYMOUS_REVIEW_AUTHOR, SITE_URL } from "@/constants/constants";
@@ -19,9 +20,12 @@ export async function getStaticPaths() {
         reviewsByStation.set(s.id, await getStationReviews(s.id));
       }),
   );
-  return stations.map((station: IStation) => ({
+  // Same "Pentru tine" pre-sort as the homepage, applied before
+  // cleanStationsMetadata (in the page frontmatter) zeroes total_listeners.
+  const orderedStations = sortStationsByRecommendedScore(stations);
+  return orderedStations.map((station: IStation) => ({
     params: { station_slug: station.slug },
-    props: { stations, initialReviews: reviewsByStation.get(station.id) ?? [] },
+    props: { stations: orderedStations, initialReviews: reviewsByStation.get(station.id) ?? [] },
   }));
 }
 
