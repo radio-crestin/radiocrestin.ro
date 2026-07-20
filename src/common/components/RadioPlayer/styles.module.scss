@@ -3,7 +3,7 @@
 
 .radio_player_container {
   position: fixed;
-  bottom: 10px;
+  bottom: 32px;
   left: 50%;
   transform: translateX(-50%);
   width: calc(100% - 40px);
@@ -25,14 +25,17 @@
 }
 
 .radio_player {
+  position: relative;
   padding: 10px;
   background-color: var(--radio-player-container-bg);
-  // Layered lift: tight contact shadow + wide ambient falloff, so the
-  // player separates from same-darkness content scrolling behind it
+  // Layered lift: upward halo + tight contact shadow + wide ambient falloff,
+  // so the player separates from same-darkness content above and below it
   box-shadow:
-    0 3px 8px rgba(0, 0, 0, 0.6),
-    0 14px 32px rgba(0, 0, 0, 0.65),
-    0 34px 90px 12px rgba(0, 0, 0, 0.75);
+    0 -8px 24px rgba(0, 0, 0, 0.5),
+    0 -22px 60px 8px rgba(0, 0, 0, 0.4),
+    0 4px 10px rgba(0, 0, 0, 0.65),
+    0 18px 40px rgba(0, 0, 0, 0.7),
+    0 40px 110px 18px rgba(0, 0, 0, 0.85);
   border-radius: 16px;
   border: 1px solid var(--radio-player-border);
   transition: border-radius 0.25s ease;
@@ -54,6 +57,32 @@
 .player_container {
   display: flex;
   align-items: center;
+  // The whole row is the menu trigger (controls inside stop propagation)
+  cursor: pointer;
+}
+
+/* ── Grab-handle chevron (mobile): signals the card opens; whole row is the
+   target. Tappable itself — rotated down, it acts as the close button. ── */
+.player_handle {
+  display: none;
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 56px;
+  height: 22px;
+  color: #8a8a8a;
+  cursor: pointer;
+  z-index: 1;
+
+  svg {
+    display: block;
+    transition: transform 0.28s ease;
+  }
+}
+
+.player_handle_open svg {
+  transform: rotate(180deg);
 }
 
 .image_container {
@@ -74,6 +103,12 @@
   min-width: 0;
   // Standoff so the title/ticker end before the controls
   padding-right: 10px;
+
+  &:focus-visible {
+    outline: 2px solid rgba(255, 255, 255, 0.55);
+    outline-offset: 4px;
+    border-radius: 8px;
+  }
 }
 
 .station_title {
@@ -156,29 +191,6 @@
   margin-right: 2px;
 }
 
-.expand_button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  border: none;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.06);
-  color: #c9c9c9;
-  cursor: pointer;
-  transition: color 0.2s ease, background-color 0.2s ease;
-
-  svg {
-    transition: transform 0.3s ease;
-  }
-
-  &:hover {
-    color: #fff;
-    background: rgba(255, 255, 255, 0.12);
-  }
-}
-
 .heart_ghost {
   width: 40px;
   height: 40px;
@@ -203,14 +215,6 @@
   }
 }
 
-.expand_icon_open {
-  transform: rotate(180deg);
-}
-
-.station_info_clickable {
-  cursor: pointer;
-}
-
 /* ── Expanded panel (in-place, category pages) ── */
 .expanded_panel {
   max-height: 0;
@@ -226,7 +230,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .expanded_panel,
-  .expand_button svg {
+  .player_handle svg {
     transition: none;
   }
 }
@@ -400,32 +404,58 @@
   }
 }
 
-/* ── LIVE strip (mobile „Puls LIVE" layout) ── */
-.live_strip {
-  display: none;
-  width: 100%;
-  align-items: center;
-  gap: 7px;
-  padding-bottom: 9px;
-  margin-bottom: 10px;
+/* ── „Now playing" menu — unfolds inside the card (no floating layer) ── */
+.player_menu {
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  visibility: hidden;
+  transition:
+    max-height 0.32s ease,
+    opacity 0.22s ease,
+    visibility 0s linear 0.32s;
+}
+
+.player_menu_open {
+  max-height: 420px;
+  opacity: 1;
+  visibility: visible;
+  transition:
+    max-height 0.32s ease,
+    opacity 0.22s ease,
+    visibility 0s;
+}
+
+.menu_inner {
+  padding: 2px 0 8px;
+  margin-bottom: 9px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.07);
 }
 
-.live_strip_dot {
+.menu_status {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 6px 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  margin-bottom: 5px;
+}
+
+.menu_live_dot {
   width: 7px;
   height: 7px;
   border-radius: 50%;
   background: #ff4d4d;
   flex-shrink: 0;
-  animation: stripBlink 1.6s ease-in-out infinite;
+  animation: liveBlink 1.6s ease-in-out infinite;
 }
 
-.live_strip_dot_off {
+.menu_live_dot_off {
   background: #8a8a8a;
   animation: none;
 }
 
-@keyframes stripBlink {
+@keyframes liveBlink {
   0%,
   100% {
     opacity: 1;
@@ -435,19 +465,19 @@
   }
 }
 
-.live_strip_label {
-  font-size: 0.62rem;
+.menu_live_label {
+  font-size: 0.64rem;
   font-weight: 800;
   letter-spacing: 0.1em;
   color: #ff6b6b;
 }
 
-.live_strip_label_off {
+.menu_live_label_off {
   color: #9a9a9a;
 }
 
-.live_strip_listeners {
-  font-size: 0.72rem;
+.menu_listeners {
+  font-size: 0.76rem;
   font-weight: 500;
   color: #9a9a9a;
   white-space: nowrap;
@@ -456,37 +486,71 @@
   min-width: 0;
 }
 
-.live_strip_actions {
-  margin-left: auto;
+.menu_item {
+  // Anchor rows (<a>) don't get the UA's border-box like <button> does
+  box-sizing: border-box;
   display: flex;
   align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
-}
-
-.strip_button {
-  width: 30px;
-  height: 30px;
+  gap: 12px;
+  width: 100%;
+  padding: 8px 6px;
   border: none;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.07);
-  color: #c9c9c9;
-  display: grid;
-  place-items: center;
+  border-radius: 13px;
+  background: transparent;
   cursor: pointer;
-  padding: 0;
-  transition: background-color 0.15s ease, color 0.15s ease;
-
-  svg {
-    width: 15px;
-    height: 15px;
-    display: block;
-    transition: transform 0.3s ease;
-  }
+  text-align: left;
+  text-decoration: none;
+  font-family: inherit;
+  transition: background-color 0.15s ease;
 
   &:hover {
-    background: rgba(255, 255, 255, 0.13);
+    background: rgba(255, 255, 255, 0.07);
   }
+
+  &:active {
+    background: rgba(255, 255, 255, 0.1);
+  }
+}
+
+.menu_item_icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.07);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  color: #d6d6d6;
+
+  svg,
+  img {
+    width: 18px;
+    height: 18px;
+    display: block;
+  }
+}
+
+.menu_item_text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+// The global reset paints bare text black — leaf spans carry their own color
+.menu_item_label {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #ececec;
+  line-height: 1.3;
+}
+
+.menu_item_sublabel {
+  font-size: 0.72rem;
+  color: #9a9a9a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* ── Song ticker: scrolls whenever „song · artist" overflows the line ── */
@@ -576,23 +640,23 @@
   }
 }
 
-/* ── Mobile: „Puls LIVE" layout ── */
+/* ── Mobile: compact single row ── */
 @media (max-width: 767px) {
   .radio_player_container {
     width: calc(100% - 24px);
-    bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+    bottom: calc(34px + env(safe-area-inset-bottom, 0px));
   }
 
   .radio_player {
-    padding: 11px 12px 12px;
+    // Symmetric padding keeps the artwork vertically centered; the handle
+    // chevron floats in the top padding over the (indented) text column
+    padding: 15px 11px;
+    border-radius: 20px;
   }
 
-  .player_container {
-    flex-wrap: wrap;
-  }
-
-  .live_strip {
-    display: flex;
+  .player_handle {
+    display: grid;
+    place-items: center;
   }
 
   .image_container {
@@ -611,10 +675,9 @@
   .station_info {
     margin-left: 12px;
     min-width: 0;
-    // Basis 0 so the long song line shrinks instead of wrapping the row
-    // (the strip row above relies on flex-wrap + width: 100%).
+    // Basis 0 so the long song line shrinks instead of growing the row
     flex: 1 1 0;
-    // Standoff so the title/ticker end before the play button
+    // Standoff so the title/ticker end before the controls
     padding-right: 8px;
   }
 
@@ -626,10 +689,6 @@
     font-size: 0.67rem;
   }
 
-  .expand_button {
-    display: none;
-  }
-
   .heart_ghost {
     display: none;
   }
@@ -638,11 +697,16 @@
     width: 52px;
     height: 52px;
   }
+
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .live_strip_dot {
+  .menu_live_dot {
     animation: none;
+  }
+
+  .player_menu {
+    transition: none;
   }
 
   .song_ticker[data-marquee="true"] .ticker_inner {
