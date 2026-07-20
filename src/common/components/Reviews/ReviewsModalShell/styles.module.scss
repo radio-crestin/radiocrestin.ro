@@ -7,8 +7,9 @@
   left: 0;
   right: 0;
   bottom: 0;
+  // Dim only — the page blur comes from html[data-modal-blur] in base.scss.
+  // backdrop-filter here flashes off on cursor movement (Chromium/macOS).
   background-color: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
   justify-content: center;

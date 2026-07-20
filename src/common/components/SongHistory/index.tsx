@@ -32,6 +32,15 @@ const HOURS_PER_BATCH = 6;
 const MAX_BATCHES_PER_LOAD = 4;
 // The list only ends after this many consecutive hours with no songs
 const MAX_EMPTY_HOURS = 72;
+// The API keeps a rolling window of history; the date picker stops there
+const RETENTION_DAYS = 7;
+
+const pad2 = (n: number) => String(n).padStart(2, "0");
+
+// Local calendar date (YYYY-MM-DD). toISOString() would give the UTC date,
+// which disagrees with the local hours shown next to it around midnight.
+const toLocalDateKey = (date: Date): string =>
+  `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`;
 
 const formatDateLabel = (date: Date): string => {
   const today = new Date();
@@ -55,8 +64,8 @@ const groupHistoryByDateAndHour = (items: ISongHistoryItem[]): GroupedHistory[] 
   for (const item of items) {
     if (!item.song) continue;
     const date = new Date(item.timestamp);
-    const dateKey = date.toISOString().slice(0, 10);
-    const hourKey = `${dateKey}-${String(date.getHours()).padStart(2, "0")}`;
+    const dateKey = toLocalDateKey(date);
+    const hourKey = `${dateKey}-${pad2(date.getHours())}`;
 
     if (!groups.has(dateKey)) groups.set(dateKey, new Map());
     const hourMap = groups.get(dateKey)!;
@@ -231,7 +240,10 @@ const DateFilterModal: React.FC<{
           </button>
         </div>
 
-        <p className={styles.filter_description}>Alege o data si ora pentru a vedea melodiile redate in acel moment.</p>
+        <p className={styles.filter_description}>
+          Alege o data si ora pentru a vedea melodiile redate in acel moment.
+          Istoricul este disponibil pentru ultimele {RETENTION_DAYS} zile.
+        </p>
 
         <div className={styles.filter_fields}>
           <div className={styles.filter_field}>
@@ -242,7 +254,10 @@ const DateFilterModal: React.FC<{
               value={date}
               onChange={(e) => setDate(e.target.value)}
               onClick={(e) => (e.target as HTMLInputElement).showPicker?.()}
-              max={new Date().toISOString().slice(0, 10)}
+              min={toLocalDateKey(
+                new Date(Date.now() - RETENTION_DAYS * 24 * HOUR * 1000)
+              )}
+              max={toLocalDateKey(new Date())}
             />
           </div>
           <div className={styles.filter_field}>
@@ -287,6 +302,9 @@ const SongHistory: React.FC<SongHistoryProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
+  // Bumped after a fully-empty scan round: nothing was appended, so without it
+  // the observer effect would never re-arm and the back-scan would stall
+  const [scanTick, setScanTick] = useState(0);
   const [showDateFilter, setShowDateFilter] = useState(false);
   const [filterDate, setFilterDate] = useState("");
   const [filterTime, setFilterTime] = useState("");
@@ -332,7 +350,11 @@ const SongHistory: React.FC<SongHistoryProps> = ({
       const nowUnix = Math.floor(Date.now() / 1000);
       // Align to the hour ceiling for cache efficiency, capped at current time
       const aligned = Math.min(Math.ceil((targetTs ?? nowUnix) / HOUR) * HOUR, nowUnix);
-      const head = await getStationSongHistory(stationSlug, undefined, aligned);
+      // Both bounds must be explicit: given only to_timestamp, the API falls
+      // back to from=now and returns an empty head whose from_timestamp points
+      // at today — every filtered load would then walk back from now instead
+      // of the requested date.
+      const head = await getStationSongHistory(stationSlug, aligned - HOUR, aligned);
       if (gen !== generationRef.current) return;
 
       let items = head?.history ?? [];
@@ -396,6 +418,10 @@ const SongHistory: React.FC<SongHistoryProps> = ({
     } else if (emptyHoursRef.current >= MAX_EMPTY_HOURS) {
       hasMoreRef.current = false;
       setHasMore(false);
+    } else {
+      // Empty round below the give-up limit: re-arm the observer so the scan
+      // continues (the still-visible sentinel alone fires no new events)
+      setScanTick((t) => t + 1);
     }
 
     busyRef.current = false;
@@ -430,10 +456,8 @@ const SongHistory: React.FC<SongHistoryProps> = ({
       const date = new Date(tParam);
       if (!isNaN(date.getTime())) {
         targetTs = Math.floor(date.getTime() / 1000);
-        setFilterDate(date.toISOString().slice(0, 10));
-        setFilterTime(
-          `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`
-        );
+        setFilterDate(toLocalDateKey(date));
+        setFilterTime(`${pad2(date.getHours())}:${pad2(date.getMinutes())}`);
         scrollTargetRef.current = tParam;
       }
     }
@@ -495,7 +519,7 @@ const SongHistory: React.FC<SongHistoryProps> = ({
 
     observer.observe(sentinel);
     return () => observer.disconnect();
-  }, [isOpen, isLoading, hasMore, history.length, loadMore]);
+  }, [isOpen, isLoading, hasMore, history.length, scanTick, loadMore]);
 
   const handleFilterApply = (date: string, time: string) => {
     if (!date) return;
@@ -581,13 +605,18 @@ const SongHistory: React.FC<SongHistoryProps> = ({
     };
   }, [isOpen, updateUrlTimestamp]);
 
-  // Lock body scroll
+  // Lock body scroll + blur the page content behind the overlay.
+  // data-modal-blur drives a plain filter on the page (base.scss) instead of
+  // backdrop-filter on the overlay, which Chromium/macOS flashes off on
+  // cursor movement. Assumes only one fullscreen modal is open at a time.
   useEffect(() => {
     if (!isOpen) return;
     const scrollY = window.scrollY;
     document.body.style.cssText = `overflow-y: scroll; position: fixed; width: 100%; top: -${scrollY}px`;
+    document.documentElement.setAttribute("data-modal-blur", "1");
     return () => {
       document.body.style.cssText = "";
+      document.documentElement.removeAttribute("data-modal-blur");
       window.scrollTo(0, scrollY);
     };
   }, [isOpen]);
@@ -690,7 +719,9 @@ const SongHistory: React.FC<SongHistoryProps> = ({
               </div>
             ) : isEmpty ? (
               <div className={styles.empty_state}>
-                Niciun istoric disponibil pentru aceasta statie.
+                {filterDate
+                  ? "Nicio melodie gasita pentru data selectata."
+                  : "Niciun istoric disponibil pentru aceasta statie."}
               </div>
             ) : (
               <>

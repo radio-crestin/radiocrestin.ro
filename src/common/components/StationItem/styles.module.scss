@@ -113,7 +113,11 @@
         }
 
         .promoted_tooltip {
-          display: none;
+          visibility: hidden;
+          opacity: 0;
+          // Fade out on leave; visibility flips only after the fade so the
+          // tooltip doesn't blink off mid-transition
+          transition: opacity 0.15s ease, visibility 0s linear 0.15s;
           position: absolute;
           bottom: calc(100% + 8px);
           left: 50%;
@@ -138,7 +142,10 @@
         }
 
         &:hover .promoted_tooltip {
-          display: block;
+          visibility: visible;
+          opacity: 1;
+          // Hover intent: crossing the badge en route shouldn't pop the tooltip
+          transition: opacity 0.15s ease 0.2s, visibility 0s linear 0.2s;
         }
       }
     }
@@ -234,6 +241,7 @@
     cursor: pointer;
     padding: 5px;
     border-radius: 50%;
+    transition: scale 0.15s ease;
 
     svg {
       color: var(--subtext-metadata-color);
