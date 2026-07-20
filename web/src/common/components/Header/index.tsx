@@ -2,6 +2,7 @@ import {
   useContext,
   useState,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useCallback,
@@ -199,19 +200,37 @@ const Navigation = () => {
         {menuOpen && (
           <div className={styles.mobile_dropdown}>
             <div className={styles.menu_item} onClick={handleThemeClick}>
-              <span>Temă</span>
-              <div ref={themeToggleRef}>
+              <span className={styles.menu_icon} aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width={17} height={17}>
+                  <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+                </svg>
+              </span>
+              <span className={styles.menu_label}>Temă</span>
+              <div ref={themeToggleRef} className={styles.menu_trailing}>
                 <ThemeToggle />
               </div>
             </div>
+            <div className={styles.menu_divider} aria-hidden="true" />
+            <a href="/descarca-aplicatia-radio-crestin/" className={styles.menu_item}>
+              <span className={`${styles.menu_icon} ${styles.menu_icon_accent}`} aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width={17} height={17}>
+                  <path d="M12 3v12" />
+                  <path d="m7 10 5 5 5-5" />
+                  <path d="M5 21h14" />
+                </svg>
+              </span>
+              <span className={styles.menu_label}>Descarcă aplicația</span>
+            </a>
             <a
               href="https://wa.me/40766338046?text=Buna%20ziua%20[radiocrestin.ro]%0A"
               target="_blank"
               rel="noopener noreferrer"
-              className={styles.contact_link}
+              className={styles.menu_item}
             >
-              <span>Contact</span>
-              <img src="/icons/whatsapp.svg" alt="WhatsApp" width={20} height={20} />
+              <span className={`${styles.menu_icon} ${styles.menu_icon_whatsapp}`} aria-hidden="true">
+                <img src="/icons/whatsapp.svg" alt="" width={18} height={18} />
+              </span>
+              <span className={styles.menu_label}>Contact</span>
             </a>
           </div>
         )}
@@ -463,6 +482,80 @@ const ContentRight = () => {
     }
   }, [station?.description, descExpanded]);
 
+  // Mobile inline "read more": character count the collapsed text is cut
+  // to so that "… Citește mai mult" sits immediately after the last word
+  // inside the 3-line cap (null = fits fully / desktop). Measured on a
+  // hidden clone with a binary search; a floated link can't do this — it
+  // right-aligns and leaves a gap after wherever the text happens to wrap.
+  const [descCut, setDescCut] = useState<number | null>(null);
+  const [descViewportW, setDescViewportW] = useState(0);
+  const [fontsReadyTick, setFontsReadyTick] = useState(0);
+
+  useEffect(() => {
+    const onResize = () => setDescViewportW(window.innerWidth);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
+  // The cut depends on glyph widths, so recompute once the webfont lands
+  useEffect(() => {
+    let alive = true;
+    document.fonts?.ready.then(() => {
+      if (alive) setFontsReadyTick(1);
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  useLayoutEffect(() => {
+    if (descExpanded) return;
+    const el = descRef.current;
+    const text = station?.description || "";
+    if (!el || !text) return;
+    if (!window.matchMedia("(max-width: 768px)").matches) {
+      setDescCut(null);
+      return;
+    }
+
+    const MAX_H = 3 * 20 + 2; // 3 mobile line boxes + rounding slack
+
+    const clone = el.cloneNode(false) as HTMLParagraphElement;
+    clone.style.cssText = `position:absolute; visibility:hidden; pointer-events:none; max-height:none; overflow:visible; width:${el.getBoundingClientRect().width}px`;
+    const textNode = document.createTextNode(text);
+    const link = document.createElement("span");
+    link.className = styles.desc_toggle_inline;
+    link.textContent = "Citește mai mult";
+    clone.append(textNode, link);
+    el.parentElement?.appendChild(clone);
+
+    const fits = () => clone.getBoundingClientRect().height <= MAX_H;
+
+    let cut: number | null = null;
+    if (!fits()) {
+      // Largest prefix that fits together with the inline link
+      let lo = 0;
+      let hi = text.length;
+      while (lo < hi) {
+        const mid = Math.floor((lo + hi + 1) / 2);
+        textNode.data = text.slice(0, mid);
+        if (fits()) {
+          lo = mid;
+        } else {
+          hi = mid - 1;
+        }
+      }
+      // Snap back to a word boundary and drop trailing whitespace
+      const head = text.slice(0, lo);
+      const lastSpace = head.search(/\s+\S*$/);
+      cut = (lastSpace > 0 ? head.slice(0, lastSpace) : head).replace(/\s+$/, "").length;
+    }
+    clone.remove();
+    setDescCut(cut);
+  }, [station?.description, descExpanded, descViewportW, fontsReadyTick]);
+
+  const descCutApplied = descCut !== null && !descExpanded;
+
   if (!station) return null;
 
   const isConnecting =
@@ -558,7 +651,20 @@ const ContentRight = () => {
               ref={descRef}
               className={`${styles.station_description} ${descExpanded ? styles.desc_expanded : ""} ${descOpening ? styles.desc_opening : ""} ${descClosing ? styles.desc_closing : ""}`}
             >
-              {station.description}
+              {/* Mobile: text pre-cut so the inline link directly follows
+                  the last visible word (desktop uses the slot below) */}
+              {descCutApplied
+                ? station.description.slice(0, descCut!)
+                : station.description}
+              {descCutApplied && (
+                <button
+                  className={styles.desc_toggle_inline}
+                  onClick={toggleDesc}
+                  aria-expanded={false}
+                >
+                  Citește mai mult
+                </button>
+              )}
             </p>
             {/* Fixed-height slot: overflow is only measurable after hydration,
                 so the toggle fades in without pushing the actions row down */}
