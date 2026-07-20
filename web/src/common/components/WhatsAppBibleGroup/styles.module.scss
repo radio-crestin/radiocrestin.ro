@@ -1,46 +1,145 @@
-
 .container {
+  --wa-accent: #25d366;
   display: none;
-  background-color: #1A1A1A;
-  margin: 2rem 1rem 0 1rem;
-  max-width: 545px;
-  gap: 8px;
-  padding: 1rem 1.5rem;
-  position: relative;
-  font-size: 16px;
-  line-height: 22px;
-  background: var(--bg-favourite-intro);
-  border: 1px solid #393939;
-  border-radius: 0.75rem;
   align-items: center;
-
+  margin: 24px auto 0;
+  width: calc(100% - 32px);
+  max-width: 545px;
+  background: var(--station-card-color);
+  border: 1px solid var(--bg-active-station-border);
+  border-radius: 16px;
 }
 
-.title {
-  color: var(--text-color);
-  font-size: 1rem;
-  margin-bottom: 1rem;
-  line-height: 1.4;
+// Mouse-only affordance: touch long-press must not light the border
+// (mobile browsers apply sticky :hover on tap-and-hold)
+@media (hover: hover) {
+  .container {
+    transition: border-color 0.2s ease;
+
+    &:hover {
+      border-color: var(--subtext-metadata-color);
+    }
+  }
 }
 
-.joinButton {
-  background-color: #0f6e63;
-  color: #ffffff;
-  border: none;
-  padding: 0.8rem 1rem;
-  border-radius: 8px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-  width: 100%;
+// Visibility contract (mobile only): hidden until the user has spent 5+ minutes
+// on the site. `data-wa-verse-show` is set on <html> before first paint for
+// already-eligible visitors (BaseLayout inline script) or at runtime when the
+// threshold is crossed; `data-wa-verse-hidden` (dismissed) always wins — it is
+// also set pre-paint, so a closed banner never flashes in.
+@media (max-width: 768px) {
+  :global(html[data-wa-verse-show="1"]) .container {
+    display: flex;
+  }
+
+  :global(html[data-wa-verse-hidden="1"]) .container {
+    display: none;
+  }
+}
+
+// Runtime reveal only (never on page load): slide the card in, pushing
+// content over ~0.35s right after a user input
+.reveal {
+  animation: bannerIn 0.35s ease both;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
+@keyframes bannerIn {
+  from {
+    opacity: 0;
+    max-height: 0;
+    margin-top: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    max-height: 100px;
+    margin-top: 24px;
+    transform: none;
+  }
+}
+
+.link {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 4px 12px 14px;
+  min-width: 0;
+  text-decoration: none;
+  border-radius: inherit;
+
+  &:active {
+    background: rgba(128, 128, 128, 0.08);
+  }
+}
+
+:global(html[data-theme="light"]) .container {
+  --wa-accent: #0f8a4d;
+}
+
+.icon {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  border-radius: 11px;
+  background: rgba(37, 211, 102, 0.14);
+  color: var(--wa-accent);
 }
 
-@media (max-width: 768px) {
-  .container {
-    display: block;
+.text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.title {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--text-color);
+}
+
+.cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--wa-accent);
+
+  svg {
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+}
+
+.close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  margin-right: 8px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--subtext-metadata-color);
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+
+  &:hover {
+    background: rgba(128, 128, 128, 0.12);
+    color: var(--text-color);
   }
 }
