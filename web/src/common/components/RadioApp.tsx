@@ -13,7 +13,7 @@ import RadioPlayer from "@/components/RadioPlayer";
 import WhatsAppBibleGroup from "@/components/WhatsAppBibleGroup";
 import StationReviewsSection from "@/components/Reviews/StationReviewsSection";
 import { Context } from "@/context/ContextProvider";
-import type { IStation } from "@/models/Station";
+import type { IReview, IStation } from "@/models/Station";
 import { initPostHog } from "@/utils/posthog";
 import { stationTitle } from "@/utils/seo";
 
@@ -21,9 +21,16 @@ interface RadioAppProps {
   stations: IStation[];
   selectedStation?: IStation | null;
   showReviews?: boolean;
+  initialReviews?: IReview[];
 }
 
-function RadioContent({ showReviews }: { showReviews: boolean }) {
+interface RadioContentProps {
+  showReviews: boolean;
+  initialStationId?: number;
+  initialReviews?: IReview[];
+}
+
+function RadioContent({ showReviews, initialStationId, initialReviews }: RadioContentProps) {
   const { ctx } = useContext(Context);
 
   useUpdateContextMetadata();
@@ -56,6 +63,11 @@ function RadioContent({ showReviews }: { showReviews: boolean }) {
           stationId={ctx.selectedStation.id}
           stationTitle={ctx.selectedStation.title}
           stationSlug={ctx.selectedStation.slug}
+          initialReviews={
+            // Build-time reviews belong to the server-rendered station only;
+            // after a client-side station switch the section refetches instead.
+            ctx.selectedStation.id === initialStationId ? initialReviews : undefined
+          }
         />
       )}
       <FooterLinks showStoreBadges={false} />
@@ -69,6 +81,7 @@ export default function RadioApp({
   stations,
   selectedStation = null,
   showReviews = false,
+  initialReviews,
 }: RadioAppProps) {
   const initialState = {
     stations,
@@ -78,7 +91,11 @@ export default function RadioApp({
 
   return (
     <ContextProvider initialState={initialState}>
-      <RadioContent showReviews={showReviews} />
+      <RadioContent
+        showReviews={showReviews}
+        initialStationId={selectedStation?.id}
+        initialReviews={initialReviews}
+      />
     </ContextProvider>
   );
 }
