@@ -48,8 +48,7 @@ function RadioContent({ showReviews }: { showReviews: boolean }) {
   return (
     <NoInternetConnection>
       {ctx.selectedStation ? <Header /> : <HeaderHomepage />}
-      {!ctx.selectedStation && <WhatsAppBibleGroup />}
-      {ctx.selectedStation && <WhatsAppBibleGroup />}
+      <WhatsAppBibleGroup />
       <Stations />
       <DownloadAppBanner />
       {showReviews && ctx.selectedStation && (
