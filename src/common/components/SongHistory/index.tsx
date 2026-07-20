@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { getStationSongHistory } from "@/services/getStations";
 import type { ISongHistoryItem } from "@/services/getStations";
@@ -24,6 +24,14 @@ interface GroupedHistory {
     songs: ISongHistoryItem[];
   }[];
 }
+
+const HOUR = 3600;
+// Hour-aligned windows fetched in parallel per scroll trigger (each request stays CDN-cacheable)
+const HOURS_PER_BATCH = 6;
+// One trigger scans at most this many silent batches before yielding back to the scroll
+const MAX_BATCHES_PER_LOAD = 4;
+// The list only ends after this many consecutive hours with no songs
+const MAX_EMPTY_HOURS = 72;
 
 const formatDateLabel = (date: Date): string => {
   const today = new Date();
@@ -86,10 +94,102 @@ const groupHistoryByDateAndHour = (items: ISongHistoryItem[]): GroupedHistory[] 
   return result;
 };
 
+const dedupeByTimestamp = (items: ISongHistoryItem[]): ISongHistoryItem[] => {
+  const seen = new Set<string>();
+  return items.filter((item) => {
+    if (seen.has(item.timestamp)) return false;
+    seen.add(item.timestamp);
+    return true;
+  });
+};
+
 const getYouTubeSearchUrl = (songName: string, artistName?: string): string => {
   const query = artistName ? `${songName} ${artistName}` : songName;
   return `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
 };
+
+// Memoized: `grouped` is reference-stable between appends (useMemo below), so
+// spinner/scroll-button state flips skip reconciling the row tree entirely.
+const HistoryGroups = React.memo<{
+  grouped: GroupedHistory[];
+  stationThumbnailUrl?: string;
+}>(({ grouped, stationThumbnailUrl }) => (
+  <>
+    {grouped.map((dateGroup) => (
+      <div key={dateGroup.dateKey} className={styles.date_group}>
+        <div className={styles.date_header}>
+          <span>{dateGroup.dateLabel}</span>
+        </div>
+        {dateGroup.hours.map((hourGroup) => (
+          <div key={hourGroup.hourKey} className={styles.hour_group}>
+            <div className={styles.hour_header}>{hourGroup.hourLabel}</div>
+            {hourGroup.songs.map((item, i) => {
+              if (!item.song) return null;
+              const time = new Date(item.timestamp);
+              const timeStr = time.toLocaleTimeString("ro-RO", {
+                hour: "2-digit",
+                minute: "2-digit",
+              });
+
+              return (
+                <a
+                  key={`${item.song.id}-${item.timestamp}-${i}`}
+                  className={styles.song_item}
+                  data-timestamp={item.timestamp}
+                  href={getYouTubeSearchUrl(
+                    item.song.name,
+                    item.song.artist?.name || undefined
+                  )}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title="Cauta melodia pe YouTube"
+                >
+                  <span className={styles.song_thumbnail_wrap}>
+                    <img
+                      className={styles.song_thumbnail}
+                      src={getValidImageUrl(item.song.thumbnail_url, getValidImageUrl(stationThumbnailUrl))}
+                      alt=""
+                      loading="lazy"
+                      decoding="async"
+                      onError={(e) => {
+                        e.currentTarget.src = getValidImageUrl(stationThumbnailUrl);
+                      }}
+                    />
+                    <span className={styles.thumb_overlay} aria-hidden="true">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M8 5.14v13.72L19 12 8 5.14z" />
+                      </svg>
+                    </span>
+                  </span>
+                  <span className={styles.song_info}>
+                    <span className={styles.song_name}>{item.song.name}</span>
+                    {item.song.artist?.name && (
+                      <span className={styles.song_artist}>{item.song.artist.name}</span>
+                    )}
+                  </span>
+                  <span className={styles.song_time}>{timeStr}</span>
+                </a>
+              );
+            })}
+          </div>
+        ))}
+      </div>
+    ))}
+  </>
+));
+
+HistoryGroups.displayName = "HistoryGroups";
+
+const SkeletonRow: React.FC<{ seed: number }> = ({ seed }) => (
+  <div className={styles.skeleton_item}>
+    <div className={styles.skeleton_thumbnail} />
+    <div className={styles.skeleton_info}>
+      <div className={styles.skeleton_line} style={{ width: `${52 + (seed % 3) * 14}%` }} />
+      <div className={styles.skeleton_line_short} style={{ width: `${30 + (seed % 4) * 9}%` }} />
+    </div>
+    <div className={styles.skeleton_time} />
+  </div>
+);
 
 // ---------- Date filter modal ----------
 const DateFilterModal: React.FC<{
@@ -186,14 +286,30 @@ const SongHistory: React.FC<SongHistoryProps> = ({
   const [history, setHistory] = useState<ISongHistoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const [oldestTimestamp, setOldestTimestamp] = useState<number | null>(null);
   const [hasMore, setHasMore] = useState(true);
   const [showDateFilter, setShowDateFilter] = useState(false);
   const [filterDate, setFilterDate] = useState("");
   const [filterTime, setFilterTime] = useState("");
+  const [showScrollTop, setShowScrollTop] = useState(false);
+
   const listRef = useRef<HTMLDivElement>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
   const scrollTargetRef = useRef<string | null>(null);
+
+  // Row elements cached per append so the scroll tracker never re-queries the
+  // DOM per frame; URL writes are debounced to scroll settle.
+  const rowsCacheRef = useRef<HTMLElement[]>([]);
+  const urlUpdateTimerRef = useRef<number | null>(null);
+  const lastAnchorTsRef = useRef<string | null>(null);
+
+  // Pagination lives in refs so the IntersectionObserver callback never closes
+  // over stale state; the generation counter cancels in-flight loads on
+  // close / filter changes.
+  const cursorRef = useRef<number | null>(null);
+  const busyRef = useRef(false);
+  const hasMoreRef = useRef(true);
+  const emptyHoursRef = useRef(0);
+  const generationRef = useRef(0);
 
   const updateUrlTimestamp = useCallback((timestamp: string) => {
     const url = new URL(window.location.href);
@@ -201,95 +317,136 @@ const SongHistory: React.FC<SongHistoryProps> = ({
     window.history.replaceState(null, "", url.toString());
   }, []);
 
-  const fetchInitial = useCallback(
-    async (toTimestamp?: number) => {
+  const loadInitial = useCallback(
+    async (targetTs?: number) => {
+      const gen = ++generationRef.current;
+      busyRef.current = true;
+      hasMoreRef.current = true;
+      emptyHoursRef.current = 0;
+      cursorRef.current = null;
+      setIsLoading(true);
+      setIsLoadingMore(false);
+      setHistory([]);
+      setHasMore(true);
+
       const nowUnix = Math.floor(Date.now() / 1000);
-      const ts = toTimestamp ?? nowUnix;
-      // Align to hour ceiling for cache efficiency, cap at current time
-      const aligned = Math.min(Math.ceil(ts / 3600) * 3600, nowUnix);
-      const data = await getStationSongHistory(stationSlug, undefined, aligned);
-      if (!data) return { items: [], fromTs: null };
-      return { items: data.history, fromTs: data.from_timestamp };
+      // Align to the hour ceiling for cache efficiency, capped at current time
+      const aligned = Math.min(Math.ceil((targetTs ?? nowUnix) / HOUR) * HOUR, nowUnix);
+      const head = await getStationSongHistory(stationSlug, undefined, aligned);
+      if (gen !== generationRef.current) return;
+
+      let items = head?.history ?? [];
+      let cursor: number | null = head?.from_timestamp ?? null;
+
+      if (cursor !== null) {
+        // Preload a few more hours so the first screen is comfortably filled
+        const base = cursor;
+        const pages = await Promise.all(
+          Array.from({ length: 3 }, (_, i) =>
+            getStationSongHistory(stationSlug, base - (i + 1) * HOUR, base - i * HOUR)
+          )
+        );
+        if (gen !== generationRef.current) return;
+        items = [...items, ...pages.flatMap((p) => p?.history ?? [])];
+        cursor = base - 3 * HOUR;
+      }
+
+      cursorRef.current = cursor;
+      hasMoreRef.current = cursor !== null;
+      busyRef.current = false;
+      setHistory(dedupeByTimestamp(items));
+      setHasMore(cursor !== null);
+      setIsLoading(false);
     },
     [stationSlug]
   );
 
-  const fetchPage = useCallback(
-    async (from: number, to: number) => {
-      const data = await getStationSongHistory(stationSlug, from, to);
-      if (!data) return { items: [] };
-      return { items: data.history };
-    },
-    [stationSlug]
-  );
+  const loadMore = useCallback(async () => {
+    if (busyRef.current || !hasMoreRef.current || cursorRef.current === null) return;
+    const gen = generationRef.current;
+    busyRef.current = true;
+    setIsLoadingMore(true);
+
+    let cursor = cursorRef.current;
+    let collected: ISongHistoryItem[] = [];
+    let batches = 0;
+
+    // Keep scanning past silent hours (talk blocks, overnight gaps) instead of
+    // ending the list on the first empty hour.
+    while (collected.length === 0 && batches < MAX_BATCHES_PER_LOAD) {
+      const base = cursor;
+      const pages = await Promise.all(
+        Array.from({ length: HOURS_PER_BATCH }, (_, i) =>
+          getStationSongHistory(stationSlug, base - (i + 1) * HOUR, base - i * HOUR)
+        )
+      );
+      if (gen !== generationRef.current) return;
+
+      collected = pages.flatMap((p) => p?.history ?? []);
+      cursor -= HOURS_PER_BATCH * HOUR;
+      batches += 1;
+      if (collected.length === 0) emptyHoursRef.current += HOURS_PER_BATCH;
+    }
+
+    cursorRef.current = cursor;
+
+    if (collected.length > 0) {
+      emptyHoursRef.current = 0;
+      setHistory((prev) => dedupeByTimestamp([...prev, ...collected]));
+    } else if (emptyHoursRef.current >= MAX_EMPTY_HOURS) {
+      hasMoreRef.current = false;
+      setHasMore(false);
+    }
+
+    busyRef.current = false;
+    setIsLoadingMore(false);
+  }, [stationSlug]);
 
   // Load data when modal opens; reset when it closes
   useEffect(() => {
     if (!isOpen) {
+      generationRef.current += 1;
+      busyRef.current = false;
+      cursorRef.current = null;
+      hasMoreRef.current = true;
+      emptyHoursRef.current = 0;
+      scrollTargetRef.current = null;
       setHistory([]);
-      setOldestTimestamp(null);
       setHasMore(true);
+      setIsLoading(false);
+      setIsLoadingMore(false);
       setFilterDate("");
       setFilterTime("");
       setShowDateFilter(false);
-      setIsLoading(false);
+      setShowScrollTop(false);
       return;
     }
 
-    let cancelled = false;
+    const url = new URL(window.location.href);
+    const tParam = url.searchParams.get("t");
+    let targetTs: number | undefined;
 
-    const load = async () => {
-      setIsLoading(true);
-
-      const url = new URL(window.location.href);
-      const tParam = url.searchParams.get("t");
-      let targetTs: number | undefined;
-
-      if (tParam) {
-        const date = new Date(tParam);
-        if (!isNaN(date.getTime())) {
-          targetTs = Math.floor(date.getTime() / 1000);
-          setFilterDate(date.toISOString().slice(0, 10));
-          setFilterTime(
-            `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`
-          );
-        }
-      }
-
-      const { items, fromTs } = await fetchInitial(targetTs);
-      if (cancelled) return;
-
-      // Preload 3 hours in parallel
-      if (fromTs) {
-        const preloadPages = await Promise.all([
-          fetchPage(fromTs - 3600, fromTs),
-          fetchPage(fromTs - 7200, fromTs - 3600),
-          fetchPage(fromTs - 10800, fromTs - 7200),
-        ]);
-        if (cancelled) return;
-
-        const allItems = [...items, ...preloadPages.flatMap((p) => p.items)];
-        const oldest = fromTs - 10800;
-        setHistory(allItems);
-        setOldestTimestamp(oldest);
-        setHasMore(allItems.length > 0);
-      } else {
-        setHistory(items);
-        setHasMore(items.length > 0);
-      }
-      setIsLoading(false);
-
-      if (tParam) {
+    if (tParam) {
+      const date = new Date(tParam);
+      if (!isNaN(date.getTime())) {
+        targetTs = Math.floor(date.getTime() / 1000);
+        setFilterDate(date.toISOString().slice(0, 10));
+        setFilterTime(
+          `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`
+        );
         scrollTargetRef.current = tParam;
       }
-    };
+    }
 
-    load();
+    loadInitial(targetTs);
+  }, [isOpen, loadInitial]);
 
-    return () => {
-      cancelled = true;
-    };
-  }, [isOpen, fetchInitial]);
+  // Refresh the row cache whenever the rendered list changes
+  useEffect(() => {
+    rowsCacheRef.current = listRef.current
+      ? Array.from(listRef.current.querySelectorAll<HTMLElement>("[data-timestamp]"))
+      : [];
+  }, [isOpen, isLoading, history]);
 
   // Scroll to the t= position after data loads
   useEffect(() => {
@@ -320,145 +477,107 @@ const SongHistory: React.FC<SongHistoryProps> = ({
     });
   }, [history]);
 
-  // Infinite scroll
+  // Infinite scroll. Recreated after every append (history.length dep): the
+  // fresh observe() immediately re-probes intersection, so a short page that
+  // leaves the sentinel inside the viewport can't stall the list.
   useEffect(() => {
-    if (!isOpen || !sentinelRef.current || !listRef.current) return;
+    if (!isOpen || isLoading || !hasMore) return;
+    const sentinel = sentinelRef.current;
+    const root = listRef.current;
+    if (!sentinel || !root) return;
 
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && hasMore && !isLoadingMore && !isLoading) {
-          loadMore();
-        }
+        if (entries[0].isIntersecting) loadMore();
       },
-      { root: listRef.current, threshold: 0.1 }
+      { root, rootMargin: "0px 0px 900px 0px" }
     );
 
-    observer.observe(sentinelRef.current);
+    observer.observe(sentinel);
     return () => observer.disconnect();
-  }, [isOpen, hasMore, isLoadingMore, isLoading, oldestTimestamp]);
+  }, [isOpen, isLoading, hasMore, history.length, loadMore]);
 
-  const loadMore = async () => {
-    if (!oldestTimestamp || isLoadingMore) return;
-    setIsLoadingMore(true);
-
-    const PAGE_SIZE = 3600; // 1 hour
-    const from = oldestTimestamp - PAGE_SIZE;
-    const { items } = await fetchPage(from, oldestTimestamp);
-    if (items.length === 0) {
-      setHasMore(false);
-    } else {
-      setHistory((prev) => {
-        const existing = new Set(prev.map((s) => s.timestamp));
-        const fresh = items.filter((s) => !existing.has(s.timestamp));
-        return [...prev, ...fresh];
-      });
-    }
-    setOldestTimestamp(from);
-
-    setIsLoadingMore(false);
-  };
-
-  const handleFilterApply = async (date: string, time: string) => {
+  const handleFilterApply = (date: string, time: string) => {
     if (!date) return;
 
-    const timeStr = time || "23:59";
-    const targetDate = new Date(`${date}T${timeStr}:00`);
+    const targetDate = new Date(`${date}T${time || "23:59"}:00`);
     if (isNaN(targetDate.getTime())) return;
 
     setFilterDate(date);
     setFilterTime(time);
     setShowDateFilter(false);
-    setIsLoading(true);
-    setHistory([]);
-    setHasMore(true);
-
-    const targetTs = Math.floor(targetDate.getTime() / 1000);
-    const { items, fromTs } = await fetchInitial(targetTs);
-
-    if (fromTs) {
-      const preloadPages = await Promise.all([
-        fetchPage(fromTs - 3600, fromTs),
-        fetchPage(fromTs - 7200, fromTs - 3600),
-        fetchPage(fromTs - 10800, fromTs - 7200),
-      ]);
-      const allItems = [...items, ...preloadPages.flatMap((p) => p.items)];
-      setHistory(allItems);
-      setOldestTimestamp(fromTs - 10800);
-      setHasMore(allItems.length > 0);
-    } else {
-      setHistory(items);
-      setHasMore(items.length > 0);
-    }
-    setIsLoading(false);
-
+    loadInitial(Math.floor(targetDate.getTime() / 1000));
     updateUrlTimestamp(targetDate.toISOString());
-
-    if (listRef.current) {
-      listRef.current.scrollTop = 0;
-    }
+    listRef.current?.scrollTo({ top: 0 });
   };
 
-  const handleClearFilter = async () => {
+  const handleClearFilter = () => {
     setFilterDate("");
     setFilterTime("");
-    setIsLoading(true);
-    setHistory([]);
-    setHasMore(true);
-
-    const { items, fromTs } = await fetchInitial();
-
-    if (fromTs) {
-      const preloadPages = await Promise.all([
-        fetchPage(fromTs - 3600, fromTs),
-        fetchPage(fromTs - 7200, fromTs - 3600),
-        fetchPage(fromTs - 10800, fromTs - 7200),
-      ]);
-      const allItems = [...items, ...preloadPages.flatMap((p) => p.items)];
-      setHistory(allItems);
-      setOldestTimestamp(fromTs - 10800);
-      setHasMore(allItems.length > 0);
-    } else {
-      setHistory(items);
-      setHasMore(items.length > 0);
-    }
-    setIsLoading(false);
+    loadInitial();
 
     const url = new URL(window.location.href);
     url.searchParams.delete("t");
     window.history.replaceState(null, "", url.toString());
-
-    if (listRef.current) {
-      listRef.current.scrollTop = 0;
-    }
+    listRef.current?.scrollTo({ top: 0 });
   };
 
-  // Track scroll position -> update URL
+  // Track scroll position -> toggle scroll-to-top button + update URL.
+  // The URL write waits for the scroll to settle: history.replaceState is
+  // rate-limited (Safari throws past ~100 calls/30s) and the anchor search,
+  // although O(log n), is pointless mid-flick.
   useEffect(() => {
     if (!isOpen || !listRef.current) return;
 
     const container = listRef.current;
     let rafId: number;
 
+    const findAnchorTimestamp = (): string | null => {
+      const rows = rowsCacheRef.current;
+      if (rows.length === 0) return null;
+      const topEdge = container.getBoundingClientRect().top - 10;
+      // Rows are in document order, so their tops are monotonic: binary-search
+      // the first row that starts at/below the scrollport top
+      let lo = 0;
+      let hi = rows.length - 1;
+      let found: HTMLElement | null = null;
+      while (lo <= hi) {
+        const mid = (lo + hi) >> 1;
+        if (rows[mid].getBoundingClientRect().top >= topEdge) {
+          found = rows[mid];
+          hi = mid - 1;
+        } else {
+          lo = mid + 1;
+        }
+      }
+      return found?.dataset.timestamp ?? null;
+    };
+
     const handleScroll = () => {
       cancelAnimationFrame(rafId);
       rafId = requestAnimationFrame(() => {
-        const items = Array.from(container.querySelectorAll("[data-timestamp]"));
-        const containerRect = container.getBoundingClientRect();
-        for (let i = 0; i < items.length; i++) {
-          const rect = (items[i] as HTMLElement).getBoundingClientRect();
-          if (rect.top >= containerRect.top - 10) {
-            const ts = (items[i] as HTMLElement).dataset.timestamp;
-            if (ts) updateUrlTimestamp(ts);
-            break;
-          }
-        }
+        setShowScrollTop(container.scrollTop > 600);
       });
+
+      if (urlUpdateTimerRef.current !== null) window.clearTimeout(urlUpdateTimerRef.current);
+      urlUpdateTimerRef.current = window.setTimeout(() => {
+        urlUpdateTimerRef.current = null;
+        const ts = findAnchorTimestamp();
+        if (ts && ts !== lastAnchorTsRef.current) {
+          lastAnchorTsRef.current = ts;
+          updateUrlTimestamp(ts);
+        }
+      }, 250);
     };
 
     container.addEventListener("scroll", handleScroll, { passive: true });
     return () => {
       container.removeEventListener("scroll", handleScroll);
       cancelAnimationFrame(rafId);
+      if (urlUpdateTimerRef.current !== null) {
+        window.clearTimeout(urlUpdateTimerRef.current);
+        urlUpdateTimerRef.current = null;
+      }
     };
   }, [isOpen, updateUrlTimestamp]);
 
@@ -490,9 +609,15 @@ const SongHistory: React.FC<SongHistoryProps> = ({
     }
   };
 
+  // Memoized so appends are the only renders that pay for regrouping, and so
+  // HistoryGroups sees a stable reference on unrelated state flips
+  const grouped = useMemo(() => groupHistoryByDateAndHour(history), [history]);
+
   if (!isOpen) return null;
 
-  const grouped = groupHistoryByDateAndHour(history);
+  const isEmpty = !isLoading && !hasMore && history.length === 0;
+  // Initial hours were silent and the back-scan is still running
+  const isScanning = !isLoading && hasMore && grouped.length === 0;
 
   return createPortal(
     <>
@@ -508,7 +633,16 @@ const SongHistory: React.FC<SongHistoryProps> = ({
               </button>
             </div>
             <div className={styles.toolbar}>
-              <p className={styles.station_name}>{stationTitle}</p>
+              <div className={styles.station_identity}>
+                <img
+                  className={styles.station_avatar}
+                  src={getValidImageUrl(stationThumbnailUrl)}
+                  alt=""
+                  width={30}
+                  height={30}
+                />
+                <p className={styles.station_name}>{stationTitle}</p>
+              </div>
               <div className={styles.toolbar_actions}>
                 {filterDate && (
                   <button
@@ -540,111 +674,62 @@ const SongHistory: React.FC<SongHistoryProps> = ({
           <div className={styles.history_list} ref={listRef}>
             {isLoading ? (
               <div className={styles.skeleton_list}>
-                <div className={styles.date_group}>
-                  <div className={styles.date_header}>
-                    <span className={styles.skeleton_date_pill} />
-                  </div>
-                  {[6, 5, 5].map((count, gi) => (
-                    <div key={gi} className={styles.hour_group}>
-                      <div className={styles.hour_header}>
-                        <span className={styles.skeleton_hour_pill} />
-                      </div>
-                      {Array.from({ length: count }).map((_, i) => (
-                        <div key={i} className={styles.skeleton_item}>
-                          <div className={styles.skeleton_thumbnail} />
-                          <div className={styles.skeleton_info}>
-                            <div className={styles.skeleton_line} style={{ width: `${55 + ((i + gi) % 3) * 15}%` }} />
-                            <div className={styles.skeleton_line_short} style={{ width: `${35 + ((i + gi) % 4) * 10}%` }} />
-                            <div className={styles.skeleton_line_short} style={{ width: '30px' }} />
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ))}
+                <div className={styles.date_header}>
+                  <span className={styles.skeleton_date_pill} />
                 </div>
+                {[6, 5, 5].map((count, gi) => (
+                  <div key={gi} className={styles.hour_group}>
+                    <div className={styles.hour_header}>
+                      <span className={styles.skeleton_hour_pill} />
+                    </div>
+                    {Array.from({ length: count }).map((_, i) => (
+                      <SkeletonRow key={i} seed={i + gi} />
+                    ))}
+                  </div>
+                ))}
               </div>
-            ) : grouped.length === 0 ? (
+            ) : isEmpty ? (
               <div className={styles.empty_state}>
                 Niciun istoric disponibil pentru aceasta statie.
               </div>
             ) : (
               <>
-                {grouped.map((dateGroup) => (
-                  <div key={dateGroup.dateKey} className={styles.date_group}>
-                    <div className={styles.date_header}>
-                      <span>{dateGroup.dateLabel}</span>
-                    </div>
-                    {dateGroup.hours.map((hourGroup) => (
-                      <div key={hourGroup.hourKey} className={styles.hour_group}>
-                        <div className={styles.hour_header}>{hourGroup.hourLabel}</div>
-                        {hourGroup.songs.map((item, i) => {
-                          if (!item.song) return null;
-                          const time = new Date(item.timestamp);
-                          const timeStr = time.toLocaleTimeString("ro-RO", {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          });
+                <HistoryGroups grouped={grouped} stationThumbnailUrl={stationThumbnailUrl} />
 
-                          return (
-                            <a
-                              key={`${item.song.id}-${item.timestamp}-${i}`}
-                              className={styles.song_item}
-                              data-timestamp={item.timestamp}
-                              href={getYouTubeSearchUrl(
-                                item.song.name,
-                                item.song.artist?.name || undefined
-                              )}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                            >
-                              <img
-                                className={styles.song_thumbnail}
-                                src={getValidImageUrl(item.song.thumbnail_url, getValidImageUrl(stationThumbnailUrl))}
-                                alt={item.song.name}
-                                loading="lazy"
-                                onError={(e) => {
-                                  e.currentTarget.src = getValidImageUrl(stationThumbnailUrl);
-                                }}
-                              />
-                              <div className={styles.song_info}>
-                                <div className={styles.song_name}>{item.song.name}</div>
-                                {item.song.artist?.name && (
-                                  <div className={styles.song_artist}>{item.song.artist.name}</div>
-                                )}
-                                <div className={styles.song_time}>{timeStr}</div>
-                              </div>
-                              <div className={styles.song_actions}>
-                                <img
-                                  src="/icons/youtube.svg"
-                                  alt="YouTube"
-                                  width={20}
-                                  height={20}
-                                  className={styles.youtube_icon}
-                                />
-                              </div>
-                            </a>
-                          );
-                        })}
+                {hasMore && (
+                  <div ref={sentinelRef} className={styles.load_more_trigger}>
+                    {(isLoadingMore || isScanning) && (
+                      <div className={styles.loading_more}>
+                        {[0, 1, 2].map((i) => (
+                          <SkeletonRow key={i} seed={i} />
+                        ))}
                       </div>
-                    ))}
+                    )}
                   </div>
-                ))}
-
-                <div ref={sentinelRef} className={styles.load_more_trigger}>
-                  {isLoadingMore && (
-                    <div className={styles.loading}>
-                      <div className={styles.loading_spinner} />
-                    </div>
-                  )}
-                  {!hasMore && history.length > 0 && (
-                    <div className={styles.empty_state} style={{ minHeight: "auto", padding: "16px 0" }}>
-                      Nu mai sunt melodii de afisat.
-                    </div>
-                  )}
-                </div>
+                )}
+                {!hasMore && history.length > 0 && (
+                  <div className={styles.end_marker}>Nu mai sunt melodii de afisat</div>
+                )}
               </>
             )}
           </div>
+
+          <button
+            type="button"
+            className={`${styles.scroll_top_button} ${showScrollTop ? styles.scroll_top_visible : ""}`}
+            onClick={() => {
+              const el = listRef.current;
+              if (!el) return;
+              // Smooth-scrolling from very deep positions takes seconds; jump instead
+              el.scrollTo({ top: 0, behavior: el.scrollTop > 6000 ? "auto" : "smooth" });
+            }}
+            aria-label="Inapoi la inceput"
+            tabIndex={showScrollTop ? 0 : -1}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 19V5M5 12l7-7 7 7" />
+            </svg>
+          </button>
         </div>
       </div>
 
