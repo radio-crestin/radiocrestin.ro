@@ -77,7 +77,7 @@ const Navigation = () => {
               </div>
             </div>
             <div className={styles.menu_divider} aria-hidden="true" />
-            <a href="/descarca-aplicatia-radio-crestin/" className={styles.menu_item}>
+            <a href="/descarca-aplicatia-radio-crestin/" target="_blank" rel="noopener noreferrer" className={styles.menu_item}>
               <span className={`${styles.menu_icon} ${styles.menu_icon_accent}`} aria-hidden="true">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width={17} height={17}>
                   <path d="M12 3v12" />
