@@ -3,6 +3,7 @@ import styles from "./styles.module.scss";
 import Star from "@/icons/Star";
 import ReviewModal from "@/components/Reviews/ReviewModal";
 import ReviewsListModal from "@/components/Reviews/ReviewsListModal";
+import ReviewsModalShell from "@/components/Reviews/ReviewsModalShell";
 import { getStationReviews } from "@/services/getStations";
 import type { IReview, IReviewsStats } from "@/models/Station";
 
@@ -23,6 +24,7 @@ const StationRating: React.FC<StationRatingProps> = ({
   const [isReviewsListModalOpen, setIsReviewsListModalOpen] = useState(false);
   const [reviews, setReviews] = useState<IReview[]>([]);
   const [isLoadingReviews, setIsLoadingReviews] = useState(false);
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
 
   const score = reviewsStats?.average_rating || 0;
   const slug = stationSlug || window.location.pathname.split("/")[1];
@@ -137,21 +139,31 @@ const StationRating: React.FC<StationRatingProps> = ({
         </a>
       </div>
 
-      <ReviewModal
-        isOpen={isReviewModalOpen}
-        onClose={handleReviewModalClose}
-        stationId={stationId}
+      <ReviewsModalShell
+        view={isReviewModalOpen ? "write" : isReviewsListModalOpen ? "list" : null}
         stationTitle={stationTitle}
-        stationSlug={stationSlug}
-      />
-      <ReviewsListModal
-        isOpen={isReviewsListModalOpen}
-        onClose={handleCloseReviewsList}
-        stationTitle={stationTitle}
-        reviews={reviews}
-        reviewsStats={reviewsStats}
-        isLoading={isLoadingReviews}
-        onWriteReview={handleWriteReviewFromList}
+        closeDisabled={isSubmittingReview}
+        onClose={isReviewModalOpen ? handleReviewModalClose : handleCloseReviewsList}
+        renderPanel={(shownView) =>
+          shownView === "write" ? (
+            <ReviewModal
+              onClose={handleReviewModalClose}
+              stationId={stationId}
+              stationTitle={stationTitle}
+              stationSlug={stationSlug}
+              onBusyChange={setIsSubmittingReview}
+            />
+          ) : (
+            <ReviewsListModal
+              onClose={handleCloseReviewsList}
+              stationTitle={stationTitle}
+              reviews={reviews}
+              reviewsStats={reviewsStats}
+              isLoading={isLoadingReviews}
+              onWriteReview={handleWriteReviewFromList}
+            />
+          )
+        }
       />
     </>
   );

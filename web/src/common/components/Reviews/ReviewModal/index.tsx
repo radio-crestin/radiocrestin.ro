@@ -8,20 +8,24 @@ import { useRefreshStations } from "@/hooks/useUpdateStationsMetadata";
 import { getUserId, trackReviewSubmitted } from "@/utils/posthog";
 
 
+// Panel content only — the portal, backdrop, scroll lock and Escape/backdrop
+// closing live in ReviewsModalShell. The form state is fresh on every open
+// because the shell mounts the panel per view. While a submit is in flight,
+// onBusyChange(true) tells the shell to refuse Escape/backdrop closing.
 interface ReviewModalProps {
-  isOpen: boolean;
   onClose: () => void;
   stationId: number;
   stationTitle: string;
   stationSlug?: string;
+  onBusyChange?: (busy: boolean) => void;
 }
 
 const ReviewModal: React.FC<ReviewModalProps> = ({
-  isOpen,
   onClose,
   stationId,
   stationTitle,
   stationSlug,
+  onBusyChange,
 }) => {
   const { refreshStations } = useRefreshStations();
   const [selectedStars, setSelectedStars] = useState(0);
@@ -31,28 +35,14 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
   const [linkCopied, setLinkCopied] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  useEffect(() => {
-    if (!isOpen) return;
-    setSelectedStars(0);
-    setMessage("");
-    setLinkCopied(false);
-    const scrollY = window.scrollY;
-    document.body.style.cssText = `overflow-y: scroll; position: fixed; width: 100%; top: -${scrollY}px`;
-    return () => {
-      document.body.style.cssText = "";
-      window.scrollTo(0, scrollY);
-    };
-  }, [isOpen]);
+  const onBusyChangeRef = useRef(onBusyChange);
+  onBusyChangeRef.current = onBusyChange;
 
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && isOpen && !isSubmitting) {
-        onClose();
-      }
-    };
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, isSubmitting, onClose]);
+    onBusyChangeRef.current?.(isSubmitting);
+  }, [isSubmitting]);
+
+  useEffect(() => () => onBusyChangeRef.current?.(false), []);
 
   const sendReview = async (stars: number, msg: string) => {
     flushSync(() => {
@@ -72,7 +62,7 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
       return true;
     } else {
       setIsSubmitting(false);
-      toast.error(result.error || "A aparut o eroare. Te rugam sa incerci din nou.");
+      toast.error(result.error || "A apărut o eroare. Te rugăm să încerci din nou.");
       return false;
     }
   };
@@ -85,7 +75,7 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
     const success = await sendReview(selectedStars, message.trim());
     if (success) {
       trackReviewSubmitted(stationSlug || "", stationTitle, selectedStars, stationId);
-      toast.success("Multumim pentru recenzia ta!");
+      toast.success("Mulțumim pentru recenzia ta!");
       setMessage("");
       setSelectedStars(0);
       onClose();
@@ -146,88 +136,89 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
     return stars;
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div className={styles.modal_overlay}>
-      <div className={styles.modal_content}>
+    <div className={styles.modal_content}>
+      <div className={styles.modal_header}>
+        <div className={styles.header_text}>
+          <h2 className={styles.modal_title}>Adaugă o recenzie</h2>
+          <p className={styles.station_name}>{stationTitle}</p>
+        </div>
         <button
           className={styles.close_button}
           onClick={onClose}
-          aria-label="Inchide"
+          aria-label="Închide"
           disabled={isSubmitting}
         >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
         </button>
+      </div>
 
-        <h2 className={styles.modal_title}>Adaugă o recenzie</h2>
-        <p className={styles.station_name}>{stationTitle}</p>
-
-        <form onSubmit={handleSubmit} className={styles.form}>
-          <div className={styles.stars_section}>
-            <label className={styles.label}>Evaluarea ta</label>
-            <div className={styles.stars_container}>
-              {renderStarSelector()}
-            </div>
-            <span className={styles.stars_text}>
-              {selectedStars > 0
-                ? `${selectedStars} din 5 stele`
-                : "Selectează o evaluare"}
-            </span>
+      <form onSubmit={handleSubmit} className={styles.form}>
+        <div className={styles.stars_section}>
+          <label className={styles.label}>Evaluarea ta</label>
+          <div className={styles.stars_container}>
+            {renderStarSelector()}
           </div>
+          <span className={styles.stars_text}>
+            {selectedStars > 0
+              ? `${selectedStars} din 5 stele`
+              : "Selectează o evaluare"}
+          </span>
+        </div>
 
-          <div className={styles.message_section}>
-            <label htmlFor="review-message" className={styles.label}>
-              Mesaj
-            </label>
+        <div className={styles.message_section}>
+          <label htmlFor="review-message" className={styles.label}>
+            Mesaj
+          </label>
+          <div className={styles.textarea_shell}>
             <textarea
               ref={textareaRef}
               id="review-message"
               className={styles.textarea}
               value={message}
               onChange={(e) => setMessage(e.target.value)}
-              placeholder="Spune-ne parerea ta despre acest radio..."
+              placeholder="Spune-ne părerea ta despre acest radio..."
               rows={4}
               maxLength={500}
             />
-            <span className={styles.char_count}>{message.length}/500</span>
           </div>
+          <span className={styles.char_count}>{message.length}/500</span>
+        </div>
 
-          <div className={styles.actions_row}>
-            <button
-              type="button"
-              className={`${styles.share_button} ${linkCopied ? styles.share_copied : ""}`}
-              onClick={handleShareLink}
-              aria-label="Copiază link recenzie"
-              title="Copiază link recenzie"
-            >
-              {linkCopied ? (
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M20 6L9 17L4 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              ) : (
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M18 8C19.6569 8 21 6.65685 21 5C21 3.34315 19.6569 2 18 2C16.3431 2 15 3.34315 15 5C15 5.12548 15.0077 5.24917 15.0227 5.37061L8.08261 9.19352C7.54305 8.46267 6.6792 8 5.70588 8C4.21207 8 3 9.34315 3 11C3 12.6569 4.21207 14 5.70588 14C6.6792 14 7.54305 13.5373 8.08261 12.8065L15.0227 16.6294C15.0077 16.7508 15 16.8745 15 17C15 18.6569 16.3431 20 18 20C19.6569 20 21 18.6569 21 17C21 15.3431 19.6569 14 18 14C16.9948 14 16.1095 14.5305 15.5706 15.3294L8.97727 11.6906C8.99234 11.4628 9 11.2327 9 11C9 10.7673 8.99234 10.5372 8.97727 10.3094L15.5706 6.67061C16.1095 7.46953 16.9948 8 18 8Z" fill="currentColor"/>
-                </svg>
-              )}
-            </button>
-            {linkCopied && (
-              <span className={styles.copied_text}>Link copiat!</span>
+        <div className={styles.actions_row}>
+          <button
+            type="button"
+            className={`${styles.share_button} ${linkCopied ? styles.share_copied : ""}`}
+            onClick={handleShareLink}
+            aria-label="Copiază link recenzie"
+            title="Copiază link recenzie"
+          >
+            {linkCopied ? (
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M20 6L9 17L4 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            ) : (
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M18 8C19.6569 8 21 6.65685 21 5C21 3.34315 19.6569 2 18 2C16.3431 2 15 3.34315 15 5C15 5.12548 15.0077 5.24917 15.0227 5.37061L8.08261 9.19352C7.54305 8.46267 6.6792 8 5.70588 8C4.21207 8 3 9.34315 3 11C3 12.6569 4.21207 14 5.70588 14C6.6792 14 7.54305 13.5373 8.08261 12.8065L15.0227 16.6294C15.0077 16.7508 15 16.8745 15 17C15 18.6569 16.3431 20 18 20C19.6569 20 21 18.6569 21 17C21 15.3431 19.6569 14 18 14C16.9948 14 16.1095 14.5305 15.5706 15.3294L8.97727 11.6906C8.99234 11.4628 9 11.2327 9 11C9 10.7673 8.99234 10.5372 8.97727 10.3094L15.5706 6.67061C16.1095 7.46953 16.9948 8 18 8Z" fill="currentColor"/>
+              </svg>
             )}
+          </button>
+          {linkCopied && (
+            <span className={styles.copied_text}>Link copiat!</span>
+          )}
 
-            <button
-              type="submit"
-              className={`${styles.submit_button} ${isSubmitting ? styles.submitting : ""}`}
-              disabled={isSubmitting || selectedStars < 1 || !message.trim()}
-            >
-              <span className={styles.button_text}>Trimite mesajul</span>
-              <span className={styles.button_spinner} />
-            </button>
-          </div>
-        </form>
-      </div>
+          <button
+            type="submit"
+            className={`${styles.submit_button} ${isSubmitting ? styles.submitting : ""}`}
+            disabled={isSubmitting || selectedStars < 1 || !message.trim()}
+          >
+            <span className={styles.button_text}>Trimite recenzia</span>
+            <span className={styles.button_spinner} />
+          </button>
+        </div>
+      </form>
     </div>
   );
 };

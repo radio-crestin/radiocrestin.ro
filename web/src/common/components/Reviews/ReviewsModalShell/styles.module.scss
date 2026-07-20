@@ -1,0 +1,111 @@
+@use "public/styles/mixinHelper";
+@use "public/styles/globalVariables";
+
+.modal_overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+  // Portaled to <body>, outside the app wrapper that sets the UI font —
+  // restate it here and undo reset.scss's "font: inherit" for descendants
+  font-family: globalVariables.$dm-sans;
+
+  * {
+    font-family: inherit;
+  }
+
+  @include mixinHelper.onTablet {
+    padding: 14px;
+  }
+}
+
+.overlay_enter {
+  animation: shellFadeIn 0.2s ease-out;
+}
+
+.overlay_closing {
+  animation: shellFadeOut 0.18s ease-in forwards;
+}
+
+// Full-width flex row the active panel centers in. It only exists to carry
+// the swap animation, so it must not eat backdrop clicks beside the panel.
+.panel_stage {
+  width: 100%;
+  max-height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+
+  > * {
+    pointer-events: auto;
+  }
+}
+
+.stage_enter {
+  animation: panelIn 0.25s ease-out;
+}
+
+.stage_swap_in {
+  animation: panelIn 0.22s ease-out;
+}
+
+.stage_swap_out {
+  animation: panelOut 0.15s ease-in forwards;
+}
+
+.stage_closing {
+  animation: panelOut 0.18s ease-in forwards;
+}
+
+@keyframes shellFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes shellFadeOut {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes panelIn {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes panelOut {
+  to {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.985);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .overlay_enter,
+  .overlay_closing,
+  .stage_enter,
+  .stage_swap_in,
+  .stage_swap_out,
+  .stage_closing {
+    animation: none;
+  }
+}
