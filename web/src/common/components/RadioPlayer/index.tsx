@@ -66,8 +66,9 @@ export default function RadioPlayer() {
   const tickerRef = useRef<HTMLDivElement>(null);
   const [tickerMarquee, setTickerMarquee] = useState(false);
   const [tickerDuration, setTickerDuration] = useState(16);
-  // Slug of the station that was preselected without a user gesture (category
-  // pages); its stream is not loaded until the user actually presses play.
+  // Slug of the station that was preselected without a user gesture (page-load
+  // deep link or category default); its stream is not loaded until the autoplay
+  // probe allows it or the user actually presses play.
   const autoSelectedNoLoadRef = useRef<string | null>(null);
   const hlsInstanceRef = useRef<HlsType | null>(null);
   const isPausedRef = useRef(false); // true = HLS paused with stopLoad(), resumable
@@ -132,12 +133,16 @@ export default function RadioPlayer() {
   };
 
   const handlePlayError = (error: any, context: string) => {
-    // Ignore errors from intentional cancellation (station switch or user pause)
-    if (error.name === 'AbortError' || isDestroyingRef.current) return;
+    // Autoplay blocked: nothing will ever start this stream, so show the play
+    // button. Must run before the destroy guard — play() rejects a microtask
+    // before isDestroyingRef resets (macrotask), and swallowing the rejection
+    // would strand the spinner on BUFFERING with no event left to clear it.
     if (error.name === 'NotAllowedError') {
       setPlaybackState(PLAYBACK_STATE.STOPPED);
       return;
     }
+    // Ignore errors from intentional cancellation (station switch or user pause)
+    if (error.name === 'AbortError' || isDestroyingRef.current) return;
     captureException(error, `${context} - station: ${station.title}`);
     retryMechanism();
   };
@@ -827,15 +832,13 @@ export default function RadioPlayer() {
     // (e.g. clicked play then immediately paused — React batches both), bail out.
     if (loadKeyChanged && playbackState === PLAYBACK_STATE.STOPPED) return;
 
-    // Category pages preselect a station on load (restored or default). There
-    // is no user gesture at that point, so play() can hang forever on live
-    // MP3 streams — don't load anything yet; the play button (or picking a
-    // station) starts the stream.
-    if (
-      ctx.inPagePlayback &&
-      autoSelectedNoLoadRef.current === null &&
-      !loadKeyChanged
-    ) {
+    // The first station selection after page load (station-page deep link, or
+    // a category page's restored/default pick) happens without a user gesture,
+    // so play() would either reject (NotAllowedError) or hang forever on live
+    // MP3 streams — don't load anything yet. Probe autoplay permission and
+    // either start as if the visitor pressed play, or stay STOPPED so the UI
+    // shows the play button instead of an endless spinner.
+    if (autoSelectedNoLoadRef.current === null && !loadKeyChanged) {
       autoSelectedNoLoadRef.current = station.slug;
       setPlaybackState(PLAYBACK_STATE.STOPPED);
       // If the browser already allows sound without a gesture (same-origin
