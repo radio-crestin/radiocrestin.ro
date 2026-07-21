@@ -19,12 +19,11 @@ import songHistoryStyles from "@/components/SongHistory/styles.module.scss";
 import usePlaybackState from "@/store/usePlaybackState";
 import { PLAYBACK_STATE } from "@/models/enum";
 import PlayIcon from "@/icons/Play";
-import { getValidImageUrl, roPlural } from "@/utils";
+import { DEFAULT_RADIO_IMG, getValidImageUrl, roPlural, stepImageFallback } from "@/utils";
 import { getStationColors } from "@/utils/stationColors";
 
-const DEFAULT_STATION_IMG = "/images/radio-white-default.jpg";
 const handleImgError = (e: SyntheticEvent<HTMLImageElement>) => {
-  e.currentTarget.src = DEFAULT_STATION_IMG;
+  stepImageFallback(e.currentTarget);
 };
 
 // Outbound station links carry ?ref= so stations can see the traffic we
@@ -300,7 +299,7 @@ const ContentLeft = () => {
   if (!selectedStation) return null;
 
   const songThumb =
-    song?.thumbnail_url && getValidImageUrl(song.thumbnail_url) !== DEFAULT_STATION_IMG
+    song?.thumbnail_url && getValidImageUrl(song.thumbnail_url) !== DEFAULT_RADIO_IMG
       ? getValidImageUrl(song.thumbnail_url)
       : null;
 
@@ -319,7 +318,9 @@ const ContentLeft = () => {
               alt={selectedStation.title}
               width={224}
               height={224}
-              onError={handleImgError}
+              onError={(e) =>
+                stepImageFallback(e.currentTarget, selectedStation.thumbnail_url)
+              }
             />
             <img
               loading={"lazy"}

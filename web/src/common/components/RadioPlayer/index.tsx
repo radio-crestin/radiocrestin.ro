@@ -31,7 +31,7 @@ import type { ISongHistoryItem } from "@/services/getStations";
 import { canAutoplayAudio } from "@/utils/autoplay";
 import usePlayCount from "@/store/usePlayCount";
 import { useRefreshStations } from "@/hooks/useUpdateStationsMetadata";
-import { getValidImageUrl, roPlural } from "@/utils";
+import { getValidImageUrl, roPlural, stepImageFallback } from "@/utils";
 
 enum STREAM_TYPE {
   HLS = "HLS",
@@ -1343,9 +1343,9 @@ export default function RadioPlayer() {
                           )}
                           alt=""
                           loading="lazy"
-                          onError={(e) => {
-                            e.currentTarget.src = getValidImageUrl(station.thumbnail_url);
-                          }}
+                          onError={(e) =>
+                            stepImageFallback(e.currentTarget, station.thumbnail_url)
+                          }
                         />
                         <span className={styles.history_titles}>
                           <span className={styles.history_song}>{item.song?.name}</span>
@@ -1382,9 +1382,7 @@ export default function RadioPlayer() {
               )}
               alt={`${station.title} | Radio Crestin`}
               className={styles.station_thumbnail}
-              onError={(e) => {
-                e.currentTarget.src = '/images/radio-white-default.jpg';
-              }}
+              onError={(e) => stepImageFallback(e.currentTarget, station.thumbnail_url)}
             />
           </div>
 

@@ -6,7 +6,7 @@ import useFavourite from "@/store/useFavourite";
 import React, { useContext, useEffect, useState } from "react";
 import Heart from "@/icons/Heart";
 import { Context } from "@/context/ContextProvider";
-import { getValidImageUrl } from "@/utils";
+import { getValidImageUrl, stepImageFallback } from "@/utils";
 import OfflineStatus from "@/components/OfflineStatus";
 import PlayingIndicator from "@/components/PlayingIndicator";
 
@@ -55,9 +55,7 @@ const FavouriteItem = (data: FavouriteItemProps) => {
           loading={"lazy"}
           height={100}
           width={100}
-          onError={(e) => {
-            e.currentTarget.src = "/images/radio-white-default.jpg";
-          }}
+          onError={(e) => stepImageFallback(e.currentTarget)}
         />
         <div className={styles.station_details}>
           <p className={styles.station_name}>

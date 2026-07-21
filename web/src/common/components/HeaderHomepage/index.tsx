@@ -5,7 +5,7 @@ import { Context } from "@/context/ContextProvider";
 import NavMenu from "@/components/NavMenu";
 import HeadphoneIcon from "@/icons/Headphone";
 import PlayIcon from "@/icons/Play";
-import { getValidImageUrl, roPlural } from "@/utils";
+import { getValidImageUrl, roPlural, stepImageFallback } from "@/utils";
 import type { IStation } from "@/models/Station";
 
 const Navigation = () => (
@@ -147,9 +147,7 @@ const HeaderHomepage = () => {
                       width={52}
                       height={52}
                       loading={"eager"}
-                      onError={(e) => {
-                        e.currentTarget.src = "/images/radio-white-default.jpg";
-                      }}
+                      onError={(e) => stepImageFallback(e.currentTarget)}
                     />
                     <span className={styles.thumb_play} aria-hidden="true">
                       <PlayIcon size={16} />
