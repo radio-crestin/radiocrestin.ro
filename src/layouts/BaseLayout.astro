@@ -79,7 +79,6 @@ const knownImageSize = imageUrl === DEFAULT_SHARE_IMAGE
     <noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" /></noscript>
 
     <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
-    <link rel="dns-prefetch" href="https://static.hotjar.com" />
     <link rel="preconnect" href="https://api.radiocrestin.ro" crossorigin />
 
     <script type="application/ld+json" set:html={JSON.stringify({
@@ -134,11 +133,10 @@ const knownImageSize = imageUrl === DEFAULT_SHARE_IMAGE
       })();
     </script>
 
-    <!-- Google Analytics & Hotjar — deferred until after page is interactive -->
+    <!-- Google Analytics — deferred until after page is interactive -->
     <script is:inline>
       window.addEventListener('load', function() {
         setTimeout(function() {
-          // Google Analytics
           var gs = document.createElement('script');
           gs.src = 'https://www.googletagmanager.com/gtag/js?id=G-CKRHS296W2';
           gs.async = true;
@@ -147,16 +145,6 @@ const knownImageSize = imageUrl === DEFAULT_SHARE_IMAGE
           function gtag() { dataLayer.push(arguments); }
           gtag('js', new Date());
           gtag('config', 'G-CKRHS296W2');
-
-          // Hotjar
-          (function(h,o,t,j,a,r){
-            h.hj=h.hj||function(){(h.hj.q=h.hj.q||[]).push(arguments)};
-            h._hjSettings={hjid:3666620,hjsv:6};
-            a=o.getElementsByTagName('head')[0];
-            r=o.createElement('script');r.async=1;
-            r.src=t+h._hjSettings.hjid+j+h._hjSettings.hjsv;
-            a.appendChild(r);
-          })(window,document,'https://static.hotjar.com/c/hotjar-','.js?sv=');
         }, 2500);
       });
     </script>
