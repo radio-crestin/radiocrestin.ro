@@ -12,6 +12,7 @@ const getHls = async () => {
   return HlsModule.default;
 };
 import useSpaceBarPress from "@/hooks/useSpaceBarPress";
+import useSwapTransition from "@/hooks/useSwapTransition";
 import { Loading } from "@/icons/Loading";
 import { CONSTANTS, SHARE_URL } from "@/constants/constants";
 import styles from "./styles.module.scss";
@@ -305,25 +306,7 @@ export default function RadioPlayer() {
   // Two-phase song-line swap (mirrors the hero's now-playing handoff): the
   // rendered text trails the live data by one 170ms fade-out, then the new
   // song rises into place. Plays for the SSR'd → live handoff and song changes.
-  const [shownSongText, setShownSongText] = useState(songText);
-  const [songAnim, setSongAnim] = useState<"" | "leave" | "enter">("");
-  const songTextRef = useRef(songText);
-  songTextRef.current = songText;
-
-  useEffect(() => {
-    if (songText === shownSongText) return;
-    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) {
-      setShownSongText(songText);
-      setSongAnim("");
-      return;
-    }
-    setSongAnim("leave");
-    const t = window.setTimeout(() => {
-      setShownSongText(songTextRef.current);
-      setSongAnim("enter");
-    }, 170);
-    return () => window.clearTimeout(t);
-  }, [songText, shownSongText]);
+  const { shown: shownSongText, anim: songAnim } = useSwapTransition(songText);
 
   useEffect(() => {
     setTickerMarquee(false);
