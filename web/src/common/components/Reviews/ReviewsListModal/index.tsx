@@ -125,6 +125,7 @@ const ReviewsListModal: React.FC<ReviewsListModalProps> = ({
                       year: "numeric",
                       month: "long",
                       day: "numeric",
+                      timeZone: "Europe/Bucharest",
                     })}
                   </time>
                 </div>

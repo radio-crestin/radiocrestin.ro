@@ -136,10 +136,14 @@ const StationReviewsSection: React.FC<StationReviewsSectionProps> = ({
                 ))}
               </div>
               <time className={styles.review_date} dateTime={review.created_at}>
+                {/* timeZone pinned: the build runs on UTC, visitors don't —
+                    an unpinned format renders a different calendar day and
+                    breaks hydration (React #418) for late-evening reviews */}
                 {new Date(review.created_at).toLocaleDateString("ro-RO", {
                   year: "numeric",
                   month: "long",
                   day: "numeric",
+                  timeZone: "Europe/Bucharest",
                 })}
               </time>
             </div>
