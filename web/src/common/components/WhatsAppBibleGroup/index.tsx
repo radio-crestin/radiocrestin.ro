@@ -87,25 +87,28 @@ export default function WhatsAppBibleGroup() {
           </svg>
         </span>
         <span className={styles.text}>
-          <span className={styles.title}>Versetul zilei la ora 7:30</span>
+          <span className={styles.title}>Versetul Zilei</span>
           <span className={styles.cta}>
-            Intră în grupul WhatsApp
-            <svg
-              width="10"
-              height="10"
-              viewBox="0 0 10 10"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-              aria-hidden="true"
-            >
-              <path
-                d="M3 1.5L6.5 5L3 8.5"
-                stroke="currentColor"
-                strokeWidth="1.6"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
+            Primește-l zilnic{" "}
+            <span className={styles.ctaEnd}>
+              pe WhatsApp
+              <svg
+                width="10"
+                height="10"
+                viewBox="0 0 10 10"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                aria-hidden="true"
+              >
+                <path
+                  d="M3 1.5L6.5 5L3 8.5"
+                  stroke="currentColor"
+                  strokeWidth="1.6"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </span>
           </span>
         </span>
       </a>
