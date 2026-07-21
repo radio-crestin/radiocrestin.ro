@@ -253,8 +253,63 @@ export default function RadioPlayer() {
   // the click that only fires on release. The click trailing the same tap is
   // skipped via pointerHandledRef (clicks without a pointerdown — keyboard,
   // screen readers — still toggle); pointercancel means the browser turned
-  // the gesture into a scroll, so undo the toggle.
+  // the gesture into a scroll, so undo the toggle. Exception: a tap landing
+  // during momentum scroll is consumed by the browser to stop the fling — it
+  // fires pointercancel (or suppresses the click) with the finger never
+  // having moved, which would undo/eat a deliberate tap. A cancel therefore
+  // undoes only when the pointer actually travelled DRAG_SLOP_PX, or when the
+  // page was at rest at pointerdown; a genuine drag crosses the browser's own
+  // touch-slop (~8–15 CSS px) before it claims the gesture, a fling-stop tap
+  // does not.
+  const SCROLL_RECENT_MS = 150;
+  const DRAG_SLOP_PX = 8;
   const pointerHandledRef = useRef(false);
+  const pointerDownRef = useRef({ x: 0, y: 0, moved: 0, wasScrolling: false });
+  const pointerExpiryRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastScrollTsRef = useRef(0);
+
+  // Window-level: scroll needs capture (scroll events don't bubble, and inner
+  // scrollers — modals, the expanded panel — count as "page was scrolling");
+  // move/up must keep working after the pointer leaves the row. The expiry
+  // clears pointerHandledRef when a tap ends with a suppressed click
+  // (pointerup, no click, no cancel — iOS fling-stop; mouse released off-row)
+  // so the flag can't stale-swallow a later keyboard/AT click.
+  useEffect(() => {
+    const onScroll = () => {
+      lastScrollTsRef.current = Date.now();
+    };
+    const onPointerMove = (e: PointerEvent) => {
+      if (!pointerHandledRef.current || !e.isPrimary) return;
+      const down = pointerDownRef.current;
+      down.moved = Math.max(
+        down.moved,
+        Math.hypot(e.clientX - down.x, e.clientY - down.y),
+      );
+    };
+    const onPointerUp = (e: PointerEvent) => {
+      if (!pointerHandledRef.current || !e.isPrimary) return;
+      // The trailing click (when the browser fires one) follows pointerup
+      // within milliseconds — 400ms leaves margin without reaching into the
+      // next interaction.
+      if (pointerExpiryRef.current) clearTimeout(pointerExpiryRef.current);
+      pointerExpiryRef.current = setTimeout(() => {
+        pointerExpiryRef.current = null;
+        pointerHandledRef.current = false;
+      }, 400);
+    };
+    window.addEventListener("scroll", onScroll, {
+      capture: true,
+      passive: true,
+    });
+    window.addEventListener("pointermove", onPointerMove, { passive: true });
+    window.addEventListener("pointerup", onPointerUp, { passive: true });
+    return () => {
+      if (pointerExpiryRef.current) clearTimeout(pointerExpiryRef.current);
+      window.removeEventListener("scroll", onScroll, { capture: true });
+      window.removeEventListener("pointermove", onPointerMove);
+      window.removeEventListener("pointerup", onPointerUp);
+    };
+  }, []);
 
   const isRowControl = (target: EventTarget | null) =>
     !!(target as HTMLElement | null)?.closest?.(
@@ -263,22 +318,39 @@ export default function RadioPlayer() {
 
   const onRowPointerDown = (e: React.PointerEvent) => {
     if (!e.isPrimary || e.button !== 0 || isRowControl(e.target)) return;
+    // A pending expiry from the previous gesture must not clear this one's flag
+    if (pointerExpiryRef.current) {
+      clearTimeout(pointerExpiryRef.current);
+      pointerExpiryRef.current = null;
+    }
     pointerHandledRef.current = true;
+    pointerDownRef.current = {
+      x: e.clientX,
+      y: e.clientY,
+      moved: 0,
+      wasScrolling: Date.now() - lastScrollTsRef.current < SCROLL_RECENT_MS,
+    };
     setMenuOpen((v) => !v);
   };
 
   const onRowPointerCancel = () => {
     if (!pointerHandledRef.current) return;
     pointerHandledRef.current = false;
+    const down = pointerDownRef.current;
+    // Fling-stop tap: cancelled by the browser without real movement — the
+    // toggle stands. Undo only for genuine drags, or any cancel at rest.
+    if (down.wasScrolling && down.moved < DRAG_SLOP_PX) return;
     setMenuOpen((v) => !v);
   };
 
   const onRowClick = (e: React.MouseEvent) => {
-    if (isRowControl(e.target)) return;
+    // Clear the ghost-click flag before the control check — a finger that
+    // lands on the row but releases over a button must not leave it stale.
     if (pointerHandledRef.current) {
       pointerHandledRef.current = false;
       return;
     }
+    if (isRowControl(e.target)) return;
     setMenuOpen((v) => !v);
   };
 
@@ -1384,6 +1456,7 @@ export default function RadioPlayer() {
             aria-expanded={menuOpen}
             aria-label={`Opțiuni ${station.title}`}
             onKeyDown={(e) => {
+              if (e.repeat) return;
               if (e.key === "Enter" || e.key === " ") {
                 e.preventDefault();
                 setMenuOpen((v) => !v);
