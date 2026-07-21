@@ -7,6 +7,12 @@ export default defineConfig({
   // canonicals and the sitemap use the trailing-slash form to match.
   trailingSlash: "always",
   output: "static",
+  // Page CSS goes inline in the HTML: as separate files the three per-page
+  // stylesheets are render-blocking round-trips (~0.5-0.85s of blank screen
+  // on 4G), while the HTML they'd ride in is served max-age=0 regardless.
+  build: {
+    inlineStylesheets: "always",
+  },
   prefetch: false,
   integrations: [react()],
   image: {
