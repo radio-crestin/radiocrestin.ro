@@ -97,6 +97,10 @@
 
       @include mixinHelper.onTablet {
         font-size: 1.1rem;
+        // Fit the 72px station_details: title 17.6 + 4 + slot 35.84 + 3 +
+        // rating 11.2 = 71.64px — at 5px the flexbox squeezed the song slot
+        // and clipped the second line's descenders
+        margin-bottom: 4px;
       }
 
       .promoted_badge {
@@ -168,14 +172,60 @@
       line-height: 1.4;
     }
 
+    // Height-animated slot around the song line. The CSS height is only the
+    // pre-measure fallback — one line (1.4 line-height × 0.8rem), matching
+    // the blank line static builds ship — after hydration the component sets
+    // the measured text height inline and this transition turns 1↔2-line
+    // changes into a glide (rating hugs the text, no reserved dead line).
+    // Collapses to 0 when a station has no song at all so the lone title
+    // sits centered.
+    .song_slot {
+      height: 1.12rem;
+      overflow: hidden;
+      transition: height 0.25s ease, margin-top 0.25s ease;
+
+      &.song_slot_empty {
+        height: 0;
+        // Also cancel station_name's margin-bottom (flex column — margins
+        // don't collapse) so the lone title sits dead-center in the card.
+        // Must mirror .station_name's margin-bottom.
+        margin-top: -5px;
+
+        @include mixinHelper.onTablet {
+          margin-top: -4px;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        transition: none;
+      }
+    }
+
     .song_name {
       display: -webkit-box;
       -webkit-line-clamp: 2;
       -webkit-box-orient: vertical;
       overflow: hidden;
-      // Reserve one text line: static builds ship blank song names, and the
-      // live text streaming in must not push the rating row down
-      min-height: 18px;
+    }
+
+    // Two-phase song swap (same keyframes as the player bar ticker): out on
+    // the old text, then the new one rises into place
+    .song_leave {
+      animation: songSwapOut 0.17s ease both;
+    }
+
+    .song_enter {
+      // --song-enter-delay is set inline by the component while the slot is
+      // gliding to a new height, so the text fades in only after the room
+      // for it exists (mid-glide it would render sliced by the clip edge)
+      animation: songSwapIn 0.24s ease var(--song-enter-delay, 0s) both;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .song_leave,
+      .song_enter {
+        animation: none;
+      }
     }
   }
 
@@ -229,7 +279,9 @@
 
     @include mixinHelper.onTablet {
       font-size: 0.7rem;
-      margin-top: 4px;
+      // 3px (not 4) so the title + two-line slot + rating stack fits the
+      // 72px station_details without the flexbox squeezing the song slot
+      margin-top: 3px;
 
       svg {
         height: 10px;
@@ -263,5 +315,18 @@
       }
     }
   }
+}
 
+@keyframes songSwapOut {
+  to {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+@keyframes songSwapIn {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
 }

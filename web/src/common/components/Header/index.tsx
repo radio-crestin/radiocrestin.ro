@@ -16,6 +16,7 @@ import StationRating from "@/components/Reviews/StationRating";
 import SongHistory from "@/components/SongHistory";
 import songHistoryStyles from "@/components/SongHistory/styles.module.scss";
 import usePlaybackState from "@/store/usePlaybackState";
+import useSwapTransition from "@/hooks/useSwapTransition";
 import { PLAYBACK_STATE } from "@/models/enum";
 import PlayIcon from "@/icons/Play";
 import { DEFAULT_RADIO_IMG, getValidImageUrl, roPlural, stepImageFallback } from "@/utils";
@@ -271,29 +272,10 @@ const ContentLeft = () => {
         : { kind: "station" as const, name: selectedStation?.title || "", artist: "" },
     [song?.name, song?.artist?.name, selectedStation?.title]
   );
-  const [shownInfo, setShownInfo] = useState(liveInfo);
-  const [infoAnim, setInfoAnim] = useState<"" | "leave" | "enter">("");
-  const liveInfoRef = useRef(liveInfo);
-  liveInfoRef.current = liveInfo;
-
-  useEffect(() => {
-    const changed =
-      liveInfo.kind !== shownInfo.kind ||
-      liveInfo.name !== shownInfo.name ||
-      liveInfo.artist !== shownInfo.artist;
-    if (!changed) return;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      setShownInfo(liveInfo);
-      setInfoAnim("");
-      return;
-    }
-    setInfoAnim("leave");
-    const t = window.setTimeout(() => {
-      setShownInfo(liveInfoRef.current);
-      setInfoAnim("enter");
-    }, 170);
-    return () => window.clearTimeout(t);
-  }, [liveInfo, shownInfo]);
+  const { shown: shownInfo, anim: infoAnim } = useSwapTransition(
+    liveInfo,
+    (a, b) => a.kind === b.kind && a.name === b.name && a.artist === b.artist,
+  );
 
   if (!selectedStation) return null;
 
