@@ -15,6 +15,7 @@ import StationReviewsSection from "@/components/Reviews/StationReviewsSection";
 import { Context } from "@/context/ContextProvider";
 import type { IReview, IStation } from "@/models/Station";
 import { initPostHog } from "@/utils/posthog";
+import { getPrepaintFavouriteStations } from "@/utils/prepaintFavourites";
 import { stationTitle } from "@/utils/seo";
 
 interface RadioAppProps {
@@ -86,7 +87,7 @@ export default function RadioApp({
   const initialState = {
     stations,
     selectedStation,
-    favouriteStations: [],
+    favouriteStations: getPrepaintFavouriteStations(stations),
   };
 
   return (

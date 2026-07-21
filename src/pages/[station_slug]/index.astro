@@ -1,6 +1,7 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import RadioApp from "@/components/RadioApp";
+import FavoritesPrepaint from "@/components/FavoritesPrepaint.astro";
 import PinStations from "@/components/PinStations.astro";
 import { getStations, getStationReviews } from "@/services/getStations";
 import { cleanStationsMetadata } from "@/utils";
@@ -100,5 +101,6 @@ const breadcrumbSchema = JSON.stringify({
   <script type="application/ld+json" set:html={radioStationSchema} slot="head" />
   <script type="application/ld+json" set:html={breadcrumbSchema} slot="head" />
   <RadioApp client:load stations={stations} selectedStation={selectedStation} showReviews={true} initialReviews={initialReviews} />
+  <FavoritesPrepaint stations={stations} selectedStation={selectedStation} />
   <PinStations />
 </BaseLayout>

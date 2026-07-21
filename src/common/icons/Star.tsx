@@ -1,4 +1,4 @@
-import React, { useId } from "react";
+import React from "react";
 
 interface StarProps {
   fillWidth: number;
@@ -8,9 +8,16 @@ interface StarProps {
 }
 
 const Star: React.FC<StarProps> = ({ fillWidth, height, color = "#ED8A19", strokeColor = "black" }) => {
-  const uniqueId = useId();
   const fillPercentage = `${Math.min(100, fillWidth * 100)}%`;
-  const gradientId = `starGradient-${uniqueId}`;
+  // Id derived from the gradient's own inputs, not useId: useId is
+  // position-derived, and the pre-painted favourites section
+  // (FavoritesPrepaint.astro) shifts sibling positions at hydration, which
+  // would desync every star's server/client id. Equal inputs share one def;
+  // url(#) resolves to the first identical one.
+  const gradientId = `starGradient-${fillPercentage}-${color}`.replace(
+    /[^a-zA-Z0-9_-]/g,
+    "_",
+  );
 
   return (
     <svg
