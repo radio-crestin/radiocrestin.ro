@@ -14,6 +14,15 @@
   touch-action: manipulation;
 }
 
+// Invisible click-shield while the menu/panel is open: outside taps land here
+// and dismiss without activating what's underneath. No background — page
+// scrolling chains through and dismiss-on-scroll is handled in the component.
+.player_backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 9;
+}
+
 .player_gradient_overlay {
   position: fixed;
   bottom: -50px;
@@ -30,6 +39,9 @@
 .radio_player {
   position: relative;
   padding: 10px;
+  // Closed, the whole card — padding included — opens the menu; the pointer
+  // (plus the row tooltip) is the desktop affordance for it
+  cursor: pointer;
   background-color: var(--radio-player-container-bg);
   // Per-theme in base.scss: heavy layered lift on dark, soft elevation on light
   box-shadow: var(--radio-player-shadow);
@@ -53,11 +65,30 @@
   }
 }
 
+// While the menu/panel is open the padding is inert (only row/chevron
+// toggle) — don't advertise it as clickable
+.radio_player_open {
+  cursor: default;
+}
+
 .player_container {
   display: flex;
   align-items: center;
-  // The whole row is the menu trigger (controls inside stop propagation)
+  // The row always toggles, open or closed
   cursor: pointer;
+}
+
+// Desktop: only the station text block opens the options — the mouse is
+// precise, so the rest of the pill stays neutral (behavior in onRowClick)
+@media (min-width: 768px) {
+  .radio_player,
+  .player_container {
+    cursor: default;
+  }
+
+  .station_info {
+    cursor: pointer;
+  }
 }
 
 /* ── Grab-handle chevron (mobile): signals the card opens; whole row is the
@@ -223,6 +254,8 @@
   opacity: 0;
   overflow: hidden;
   visibility: hidden;
+  // Not a menu trigger (data-menu-ignore) — don't inherit the card's pointer
+  cursor: default;
   transition:
     grid-template-rows 0.3s cubic-bezier(0.33, 1, 0.68, 1),
     opacity 0.18s ease,
@@ -398,6 +431,7 @@
 }
 
 .play_button {
+  position: relative;
   width: 48px;
   height: 48px;
   border: none;
@@ -410,6 +444,20 @@
   padding: 0;
   flex-shrink: 0;
   transition: transform 0.12s ease, background-color 0.15s ease;
+
+  // Forgiving hit zone: taps in the card padding around the FAB mean
+  // "play/pause", not "open the menu" — stretch the hit box to the card's
+  // top/right/bottom edges (2px container margin + card padding). Left stays
+  // small so the heart/row area keeps its own targets.
+  &::after {
+    content: "";
+    position: absolute;
+    place-self: stretch;
+    top: -10px;
+    right: -16px;
+    bottom: -10px;
+    left: -4px;
+  }
 
   &:hover {
     background-color: #f3a30f;
@@ -430,6 +478,8 @@
   opacity: 0;
   overflow: hidden;
   visibility: hidden;
+  // Not a menu trigger (data-menu-ignore) — don't inherit the card's pointer
+  cursor: default;
   transition:
     grid-template-rows 0.26s cubic-bezier(0.33, 1, 0.68, 1),
     opacity 0.16s ease,
@@ -722,6 +772,15 @@
   .play_button {
     width: 52px;
     height: 52px;
+
+    // Card padding is 15px 11px here; no heart beside the FAB, so the halo
+    // can reach further left too
+    &::after {
+      top: -16px;
+      right: -13px;
+      bottom: -16px;
+      left: -8px;
+    }
   }
 
 }
