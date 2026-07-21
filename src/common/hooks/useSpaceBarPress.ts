@@ -27,6 +27,14 @@ export const isEditableTarget = (target: EventTarget | null): boolean => {
 export const isSpaceKey = (e: KeyboardEvent): boolean =>
   e.key === " " || e.code === "Space" || e.keyCode === 32;
 
+/**
+ * True when Space is aimed at a focused control that handles its own
+ * activation (native buttons, ARIA buttons like the player row) — the global
+ * play/pause must stand down or one keypress fires two actions.
+ */
+export const isActivatableTarget = (target: EventTarget | null): boolean =>
+  !!(target as HTMLElement | null)?.closest?.('button, [role="button"]');
+
 const useSpaceBarPress = (callback: () => void) => {
   useEffect(() => {
     const target = resolveKeyboardTarget(
@@ -35,13 +43,21 @@ const useSpaceBarPress = (callback: () => void) => {
     if (!target) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (isSpaceKey(e) && !isEditableTarget(e.target)) {
+      if (
+        isSpaceKey(e) &&
+        !isEditableTarget(e.target) &&
+        !isActivatableTarget(e.target)
+      ) {
         e.preventDefault();
       }
     };
 
     const handleKeyPress = (e: KeyboardEvent) => {
-      if (isSpaceKey(e) && !isEditableTarget(e.target)) {
+      if (
+        isSpaceKey(e) &&
+        !isEditableTarget(e.target) &&
+        !isActivatableTarget(e.target)
+      ) {
         callback();
       }
     };
