@@ -3,26 +3,24 @@
 import type { IStation } from "@/models/Station";
 import styles from "./styles.module.scss";
 import useFavourite from "@/store/useFavourite";
-import React, { useContext, useEffect, useState } from "react";
+import React, { useContext } from "react";
 import Heart from "@/icons/Heart";
 import { Context } from "@/context/ContextProvider";
 import { getValidImageUrl, stepImageFallback } from "@/utils";
 import OfflineStatus from "@/components/OfflineStatus";
 import PlayingIndicator from "@/components/PlayingIndicator";
 
-interface FavouriteItemProps extends IStation {
-  animationDelay?: number;
-}
-
-const FavouriteItem = (data: FavouriteItemProps) => {
+/**
+ * Also rendered at build time into the FavoritesPrepaint template (via
+ * FavouriteStationsSection). Keep the output deterministic — no useId,
+ * Date/random/window-dependent values, no conditional adjacent text — so the
+ * pre-painted DOM stays byte-identical to the first client render and React
+ * 19 hydration can adopt it instead of re-rendering.
+ */
+const FavouriteItem = (data: IStation) => {
   const { ctx, setCtx } = useContext(Context);
-  const { favouriteItems, toggleFavourite } = useFavourite();
-  const [isStationFavourite, setIsStationFavourite] = useState(false);
+  const { toggleFavourite } = useFavourite();
   const isActive = ctx.selectedStation?.slug === data.slug;
-
-  useEffect(() => {
-    setIsStationFavourite(favouriteItems.includes(data.slug));
-  }, [data.slug, favouriteItems]);
 
   const handleRemoveFavorite = (event: React.MouseEvent) => {
     event.preventDefault();
@@ -46,7 +44,6 @@ const FavouriteItem = (data: FavouriteItemProps) => {
       data-active={isActive}
       draggable={false}
       onClick={handleStationClick}
-      style={{ animationDelay: `${data.animationDelay || 0}s` }}
     >
       <div className={styles.image_container}>
         <img

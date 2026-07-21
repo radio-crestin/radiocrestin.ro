@@ -4,7 +4,7 @@ import React, { useContext, useEffect, useRef, useState } from "react";
 import type { IStation } from "@/models/Station";
 import styles from "./styles.module.scss";
 import { Context } from "@/context/ContextProvider";
-import FavoriteItem from "@/components/FavoriteItem";
+import FavouriteStationsSection from "@/components/FavouriteStationsSection";
 import StationItem from "@/components/StationItem";
 import { Magnify } from "@/icons/Magnify";
 import CloseIcon from "@/icons/CloseIcon";
@@ -355,18 +355,7 @@ const Stations = () => {
   return (
     <div className={styles.container}>
       {ctx.favouriteStations?.length > 0 && (
-        <div className={styles.favourite_section} data-info={"favourite-section"}>
-          <h2>Stații favorite:</h2>
-          <div className={styles.stations_container}>
-            {ctx.favouriteStations.map((station: IStation) => {
-              return (
-                <React.Fragment key={`favourite-${station.id}-${station.slug}`}>
-                  <FavoriteItem {...station} />
-                </React.Fragment>
-              );
-            })}
-          </div>
-        </div>
+        <FavouriteStationsSection stations={ctx.favouriteStations} />
       )}
       <div className={`${styles.search_section}`} data-info={"stations-section"}>
         <div ref={sortRef} className={styles.sort_container}>
