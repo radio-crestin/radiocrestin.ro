@@ -41,6 +41,28 @@ export function cleanStationsMetadata(stations: IStation[]) {
   });
 }
 
+/**
+ * Full API refreshes bring cdn.radiocrestin.ro thumbnail URLs that are pixel-
+ * identical to the build-time /station-thumbnails/ files already painted by
+ * SSR. Swapping the src re-downloads every logo from a cold origin and
+ * re-anchors LCP to that late fetch — so keep the local file for stations the
+ * build knew about. Stations added after the deploy (no local file) keep their
+ * API URL. Song art (now_playing.song.thumbnail_url) is untouched.
+ */
+export function preserveLocalThumbnails(prev: IStation[], next: IStation[]): IStation[] {
+  const localById = new Map<number, string>();
+  for (const s of prev) {
+    if (s.thumbnail_url?.startsWith("/station-thumbnails/")) {
+      localById.set(s.id, s.thumbnail_url);
+    }
+  }
+  if (localById.size === 0) return next;
+  return next.map((s) => {
+    const local = localById.get(s.id);
+    return local ? { ...s, thumbnail_url: local } : s;
+  });
+}
+
 // Stations belonging to an API station_group (e.g. "muzica", "predici",
 // "copii"), in the group's curated order — used by the category pages.
 export function stationsInGroup(

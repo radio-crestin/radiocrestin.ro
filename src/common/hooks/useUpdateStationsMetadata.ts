@@ -4,6 +4,7 @@ import type { IStationMetadata } from "@/services/getStations";
 import type { IStation } from "@/models/Station";
 import { Context } from "@/context/ContextProvider";
 import { captureException } from "@/utils/posthog";
+import { preserveLocalThumbnails } from "@/utils";
 import usePlaybackState from "@/store/usePlaybackState";
 
 const FULL_REFRESH_INTERVAL = 5 * 60 * 1000; // 5 minutes
@@ -99,9 +100,10 @@ export const useRefreshStations = () => {
     try {
       const data = await getStations();
       if (data?.stations?.length > 0) {
-        setCtx({ stations: data.stations });
+        const stations = preserveLocalThumbnails(ctx.stations ?? [], data.stations);
+        setCtx({ stations });
         if (selectedStationSlug) {
-          const updatedStation = data.stations.find(
+          const updatedStation = stations.find(
             (s: IStation) => s.slug === selectedStationSlug
           );
           if (updatedStation) {
@@ -193,12 +195,13 @@ const useUpdateStationsMetadata = () => {
           lastFetchTimestamp.current = getTimestamp();
           lastFullRefreshTimestamp.current = Date.now();
           initialFetchDone.current = true;
-          setCtx({ stations: data.stations });
+          const stations = preserveLocalThumbnails(stationsRef.current ?? [], data.stations);
+          setCtx({ stations });
           // Use selected station slug, or fall back to URL path for new stations not in build
           const slug = selectedStationSlugRef.current
             || window.location.pathname.replace(/^\//, "").split("/")[0];
           if (slug) {
-            const updatedStation = data.stations.find(
+            const updatedStation = stations.find(
               (s: IStation) => s.slug === slug
             );
             if (updatedStation) {

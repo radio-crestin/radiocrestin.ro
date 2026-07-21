@@ -32,6 +32,7 @@ export const initPostHog = () => {
           capture_pageleave: true,
           persistence: "localStorage+cookie",
           session_idle_timeout_seconds: 14400, // 4 hours — keeps session alive during passive listening
+          disable_surveys: true, // surveys unused — stops the 32KB surveys.js bundle from loading
         });
 
         // Identify with the app's persistent user ID
