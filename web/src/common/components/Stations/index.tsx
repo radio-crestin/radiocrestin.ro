@@ -13,6 +13,7 @@ import useFavourite from "@/store/useFavourite";
 import SparklesStar from "@/icons/SparklesStar";
 import { buildScoreSnapshot, sortByScore } from "@/utils/stationScore";
 import type { StationSnapshot } from "@/utils/stationScore";
+import { createSearchMatcher } from "@/utils/fuzzySearch";
 
 type SortOption = "recommended" | "most_played" | "listeners" | "rating" | "alphabetical";
 
@@ -231,7 +232,7 @@ const Stations = () => {
     // WebSite JSON-LD (/?q={search_term_string}) actually works.
     const q = new URLSearchParams(window.location.search).get("q");
     if (q) {
-      setSearchedValue(q.toLowerCase());
+      setSearchedValue(q);
     }
   }, []);
 
@@ -316,31 +317,12 @@ const Stations = () => {
   }, [searchedValue]);
 
   const handleSearch = () => {
-    let newFilteredStations: IStation[] = [];
-    newFilteredStations.push(
-      ...(ctx.stations || []).filter((station: IStation) =>
-        station.title.toLowerCase().includes(searchedValue),
-      ),
-    );
-
-    newFilteredStations.push(
-      ...(ctx.stations || []).filter((station: IStation) =>
-        station.now_playing?.song?.name?.toLowerCase().includes(searchedValue),
-      ),
-    );
-
-    newFilteredStations.push(
-      ...(ctx.stations || []).filter((station: IStation) =>
-        station.now_playing?.song?.artist?.name
-          ?.toLowerCase()
-          .includes(searchedValue),
-      ),
-    );
-
-    newFilteredStations = newFilteredStations.filter(
-      (station, index, self) =>
-        index ===
-        self.findIndex((t) => t.id === station.id && t.slug === station.slug),
+    const matches = createSearchMatcher(searchedValue);
+    const newFilteredStations = (ctx.stations || []).filter(
+      (station: IStation) =>
+        matches(station.title) ||
+        matches(station.now_playing?.song?.name) ||
+        matches(station.now_playing?.song?.artist?.name),
     );
 
     setFilteredStations(applySort(newFilteredStations));
@@ -431,7 +413,7 @@ const Stations = () => {
             type="text"
             placeholder="Caută un radio..."
             value={searchedValue}
-            onChange={(e) => setSearchedValue(e.target.value.toLowerCase())}
+            onChange={(e) => setSearchedValue(e.target.value)}
             onKeyDown={handleKeyPress}
             aria-label="Search a station"
           />
