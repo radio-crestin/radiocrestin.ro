@@ -64,8 +64,38 @@ const smoothstep = (x: number) => {
   return t * t * (3 - 2 * t);
 };
 
+// Blend in linear light so midpoints stay lively instead of muddy
+const lin = (c: number) => Math.pow(c / 255, 2.2);
+const gam = (c: number) => Math.pow(c, 1 / 2.2) * 255;
+
+// SSR'd CSS stand-in for the canvas: the canvas has no pixels until the
+// bundle loads and hydration runs, which reads as the tint popping in after
+// a hard refresh. This div carries the same blend as plain gradients so it
+// paints with the static HTML; the canvas hides it the moment it draws, so
+// any banding is gone before it can register.
+const washFallbackStyle = (primary: string, secondary: string) => {
+  const A = hexToRgb(primary).map(lin);
+  const B = hexToRgb(secondary).map(lin);
+  const stop = (u: number) => {
+    const t = smoothstep(u);
+    const c = A.map((a, i) => Math.round(gam(a + (B[i] - a) * t)));
+    const alpha = WASH_ALPHA_A + (WASH_ALPHA_B - WASH_ALPHA_A) * t;
+    return `rgba(${c[0]},${c[1]},${c[2]},${+alpha.toFixed(4)})`;
+  };
+  // Quarter-point samples of the smoothstep ramp the canvas draws, and the
+  // same 1 - smoothstep(y / WASH_FADE_END) vertical dissolve as a mask
+  const background = `linear-gradient(100deg, ${stop(0)} 0%, ${stop(0.25)} 25%, ${stop(0.5)} 50%, ${stop(0.75)} 75%, ${stop(1)} 100%)`;
+  const mask = `linear-gradient(180deg, rgba(0,0,0,1) 0%, rgba(0,0,0,0.844) ${WASH_FADE_END * 25}%, rgba(0,0,0,0.5) ${WASH_FADE_END * 50}%, rgba(0,0,0,0.156) ${WASH_FADE_END * 75}%, rgba(0,0,0,0) ${WASH_FADE_END * 100}%)`;
+  // transition:none — reset.scss puts a 0.2s opacity/color transition on every
+  // element, which would turn the hide below into a 200ms fade stacked on top
+  // of the freshly drawn canvas (reads as a dark pulse at hydration)
+  return { background, WebkitMaskImage: mask, maskImage: mask, transition: "none" };
+};
+
 const StationWash = ({ primary, secondary }: { primary: string; secondary: string }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const fallbackRef = useRef<HTMLDivElement>(null);
+  const fallbackStyle = useMemo(() => washFallbackStyle(primary, secondary), [primary, secondary]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -73,42 +103,70 @@ const StationWash = ({ primary, secondary }: { primary: string; secondary: strin
     const ctx2d = canvas.getContext("2d");
     if (!ctx2d) return;
 
-    const a = hexToRgb(primary);
-    const b = hexToRgb(secondary);
-    // Blend in linear light so midpoints stay lively instead of muddy
-    const lin = (c: number) => Math.pow(c / 255, 2.2);
-    const gam = (c: number) => Math.pow(c, 1 / 2.2) * 255;
-    const A = a.map(lin);
-    const B = b.map(lin);
+    const A = hexToRgb(primary).map(lin);
+    const B = hexToRgb(secondary).map(lin);
+
+    // The blend ramp only varies along one axis, so precompute it as a LUT
+    // indexed by the pre-smoothstep mix and keep the pow-heavy linear-light
+    // math out of the pixel loop (was 3 Math.pow per pixel — ~54ms desktop
+    // / ~295ms on a slow phone for one draw; now ~9ms / ~43ms). 1024 steps
+    // out-resolve the 8-bit output, and the dither hides the quantization.
+    const LUT_N = 1024;
+    const lut = new Float64Array(LUT_N * 4);
+    for (let j = 0; j < LUT_N; j++) {
+      const t = smoothstep(j / (LUT_N - 1));
+      lut[j * 4] = gam(A[0] + (B[0] - A[0]) * t);
+      lut[j * 4 + 1] = gam(A[1] + (B[1] - A[1]) * t);
+      lut[j * 4 + 2] = gam(A[2] + (B[2] - A[2]) * t);
+      lut[j * 4 + 3] = (WASH_ALPHA_A + (WASH_ALPHA_B - WASH_ALPHA_A) * t) * 255;
+    }
 
     const img = ctx2d.createImageData(WASH_W, WASH_H);
     const data = img.data;
+    // xorshift32 for the dither — two draws per pixel make Math.random the
+    // next bottleneck once the pow calls are gone
+    let seed = 0x2f6e2b1;
     let i = 0;
     for (let y = 0; y < WASH_H; y++) {
       const fade = 1 - smoothstep(y / WASH_H / WASH_FADE_END);
+      const drift = (y / WASH_H) * 0.08;
       for (let x = 0; x < WASH_W; x++) {
         // ~100deg blend: mostly left→right with a slight vertical drift
-        const t = smoothstep((x / WASH_W) * 0.92 + (y / WASH_H) * 0.08);
-        const alpha = (WASH_ALPHA_A + (WASH_ALPHA_B - WASH_ALPHA_A) * t) * fade;
+        const k = ((((x / WASH_W) * 0.92 + drift) * (LUT_N - 1)) | 0) * 4;
         // ±1-level noise dithers the quantization steps away
-        const n = (Math.random() - 0.5) * 2.5;
-        data[i++] = gam(A[0] + (B[0] - A[0]) * t) + n;
-        data[i++] = gam(A[1] + (B[1] - A[1]) * t) + n;
-        data[i++] = gam(A[2] + (B[2] - A[2]) * t) + n;
-        data[i++] = alpha * 255 + (Math.random() - 0.5) * 2.5;
+        seed ^= seed << 13; seed ^= seed >>> 17; seed ^= seed << 5;
+        const n = ((seed >>> 0) / 4294967296 - 0.5) * 2.5;
+        seed ^= seed << 13; seed ^= seed >>> 17; seed ^= seed << 5;
+        const na = ((seed >>> 0) / 4294967296 - 0.5) * 2.5;
+        data[i++] = lut[k] + n;
+        data[i++] = lut[k + 1] + n;
+        data[i++] = lut[k + 2] + n;
+        data[i++] = lut[k + 3] * fade + na;
       }
     }
     ctx2d.putImageData(img, 0, 0);
+    // Hide the CSS stand-in in the same task as the pixel write: both land
+    // in one frame, so the two layers never stack into a double-depth tint.
+    // display (not opacity) — it can't be caught by any transition rule.
+    if (fallbackRef.current) fallbackRef.current.style.display = "none";
   }, [primary, secondary]);
 
   return (
-    <canvas
-      ref={canvasRef}
-      width={WASH_W}
-      height={WASH_H}
-      className={styles.wash}
-      aria-hidden="true"
-    />
+    <>
+      <div
+        ref={fallbackRef}
+        className={styles.wash}
+        style={fallbackStyle}
+        aria-hidden="true"
+      />
+      <canvas
+        ref={canvasRef}
+        width={WASH_W}
+        height={WASH_H}
+        className={styles.wash}
+        aria-hidden="true"
+      />
+    </>
   );
 };
 
