@@ -108,13 +108,20 @@
 }
 
 .cta {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
   font-size: 13px;
   font-weight: 600;
   line-height: 1.35;
   color: var(--wa-accent);
+}
+
+// Last words + chevron move as one unit so a wrap never strands the arrow
+.ctaEnd {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  // Global reset paints spans `color: black`; keep the accent from .cta
+  color: inherit;
 
   svg {
     flex-shrink: 0;
