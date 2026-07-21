@@ -332,8 +332,6 @@
   border-radius: 12px;
   transition: background-color 0.15s;
   cursor: pointer;
-  // Deep-link scroll target: keep the row clear of the sticky date pill
-  scroll-margin-top: 72px;
   // Offscreen rows skip layout/paint; `auto` keeps the last rendered height
   // (rows are a uniform 60px) so scroll geometry stays exact
   content-visibility: auto;
