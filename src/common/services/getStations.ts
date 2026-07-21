@@ -1,7 +1,6 @@
 import { CONSTANTS } from "@/constants/constants";
 import type { IReview, IStation } from "@/models/Station";
 import { captureException } from "@/utils/posthog";
-import fallbackData from "@/data/fallback-stations.json";
 
 const API_BASE = "https://api.radiocrestin.ro/api/v1";
 
@@ -66,10 +65,23 @@ const parseJsonOrThrowTransient = async (response: Response): Promise<any> => {
 
 export type IStationMetadata = Partial<IStation> & { id: number };
 
-const getFallbackStations = () => ({
-  stations: fallbackData?.data?.stations || [],
-  station_groups: fallbackData?.data?.station_groups || [],
-});
+// Imported on demand so the ~120KB backup dataset stays out of the eager client
+// bundle — it's only needed when the API is unreachable. If the chunk itself
+// can't load either (fully offline), degrade to empty data instead of throwing,
+// so the catch-block call sites can't reject.
+const getFallbackStations = async () => {
+  try {
+    const { default: fallbackData } = await import(
+      "@/data/fallback-stations.json"
+    );
+    return {
+      stations: fallbackData?.data?.stations || [],
+      station_groups: fallbackData?.data?.station_groups || [],
+    };
+  } catch {
+    return { stations: [], station_groups: [] };
+  }
+};
 
 export const getStations = async () => {
   const endpoint = `${CONSTANTS.API_ENDPOINT}?timestamp=${getTimestamp()}`;
