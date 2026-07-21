@@ -44,6 +44,10 @@
 
   @include mixinHelper.onTablet {
     margin-right: 15px;
+    // Cap the row inside the cards' 15px insets: when its content wants the
+    // full width, the auto left margin resolves to 15px instead of 0 (sort
+    // pill flush at the screen edge); when narrower it stays right-aligned
+    max-width: calc(100% - 30px);
   }
 
   .sort_container {
@@ -277,6 +281,9 @@
     border-radius: 20px;
     max-width: 250px;
     width: 100%;
+    // Let the box compress below the input's intrinsic width on narrow
+    // screens instead of overflowing the row's 15px insets
+    min-width: 0;
     margin-top: 25px;
     background: var(--bg-search-a-radio);
     color: #a0a0a0;
@@ -304,6 +311,7 @@
 
     input {
       width: 100%;
+      min-width: 0;
       font-size: 16px;
     }
 

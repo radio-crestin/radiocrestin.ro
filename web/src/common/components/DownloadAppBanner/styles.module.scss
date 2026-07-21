@@ -81,6 +81,10 @@
   display: flex;
   gap: 12px;
   align-items: center;
+  // The two store badges are an unbreakable ~340px row — wrap rather than
+  // widen the page on sub-350px screens
+  flex-wrap: wrap;
+  justify-content: center;
 }
 
 .link_box {
