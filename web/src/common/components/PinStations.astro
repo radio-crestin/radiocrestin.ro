@@ -1,0 +1,102 @@
+---
+/**
+ * Pre-paint "Pentru tine" pinning. Placed immediately after the RadioApp
+ * island so it runs as soon as the SSR grid exists, before the browser
+ * paints it: station of the day moves to position 1 and the user's top-3
+ * most-played to positions 2-4 with zero layout shift — no post-load
+ * reshuffle, ever.
+ *
+ * The computed order is stamped on window.__pinnedStations and consumed by
+ * Stations/index.tsx as its initial (and permanent) "recommended" order, so
+ * React hydration matches the mutated DOM exactly. Keep the day-station
+ * formula (byte-compare slug sort + day of year) and the most-played
+ * selection in sync with Stations/index.tsx.
+ */
+---
+
+<script is:inline>
+  (function () {
+    try {
+      var pref = localStorage.getItem("station-sort-preference");
+      if (pref && pref !== "recommended") return;
+
+      var anchors = document.querySelectorAll('a[data-station="station-item"]');
+      if (!anchors.length) return;
+      var container = anchors[0].parentElement;
+      if (!container) return;
+
+      var bySlug = {};
+      var slugs = [];
+      for (var i = 0; i < anchors.length; i++) {
+        var a = anchors[i];
+        if (a.parentElement !== container) continue;
+        var slug = (a.getAttribute("href") || "").replace(/\//g, "");
+        if (!slug || bySlug[slug]) continue;
+        bySlug[slug] = a;
+        slugs.push(slug);
+      }
+      if (slugs.length < 2) return;
+
+      // Station of the day: byte-sorted slugs, rotated by day of year
+      var sortedSlugs = slugs.slice().sort();
+      var now = new Date();
+      var start = new Date(now.getFullYear(), 0, 0);
+      var dayOfYear = Math.floor((now.getTime() - start.getTime()) / 86400000);
+      var day = sortedSlugs[dayOfYear % sortedSlugs.length];
+
+      var readStore = function (key) {
+        try {
+          var raw = localStorage.getItem(key);
+          return raw ? JSON.parse(raw).state : null;
+        } catch (e) {
+          return null;
+        }
+      };
+      var playCounts = (readStore("play-count-store") || {}).playCounts || {};
+      var favourites = (readStore("favourites-store") || {}).favouriteItems || [];
+      var isFav = {};
+      for (var f = 0; f < favourites.length; f++) isFav[favourites[f]] = true;
+
+      // Top 3 most-played (excluding the day station and favourites),
+      // backfilled with the first grid stations in SSR (build-score) order
+      var placed = {};
+      placed[day] = true;
+      var entries = [];
+      for (var slug2 in playCounts) {
+        if (playCounts[slug2] > 0 && !placed[slug2] && !isFav[slug2] && bySlug[slug2]) {
+          entries.push([slug2, playCounts[slug2]]);
+        }
+      }
+      entries.sort(function (x, y) { return y[1] - x[1]; });
+      var mostPlayed = [];
+      for (var e = 0; e < entries.length && mostPlayed.length < 3; e++) {
+        mostPlayed.push(entries[e][0]);
+        placed[entries[e][0]] = true;
+      }
+      for (var b = 0; b < slugs.length && mostPlayed.length < 3; b++) {
+        if (!placed[slugs[b]] && !isFav[slugs[b]]) {
+          mostPlayed.push(slugs[b]);
+          placed[slugs[b]] = true;
+        }
+      }
+
+      var order = [day].concat(mostPlayed);
+      for (var r = 0; r < slugs.length; r++) {
+        if (!placed[slugs[r]] && slugs[r] !== day) order.push(slugs[r]);
+      }
+
+      window.__pinnedStations = { order: order, day: day, mostPlayed: mostPlayed };
+
+      var changed = false;
+      for (var c = 0; c < order.length; c++) {
+        if (order[c] !== slugs[c]) { changed = true; break; }
+      }
+      if (!changed) return;
+      for (var m = 0; m < order.length; m++) {
+        container.appendChild(bySlug[order[m]]);
+      }
+    } catch (err) {
+      /* fail open: grid stays in SSR order, React holds it (no reshuffle) */
+    }
+  })();
+</script>

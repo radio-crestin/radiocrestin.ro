@@ -1,6 +1,7 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 import RadioApp from "@/components/RadioApp";
+import PinStations from "@/components/PinStations.astro";
 import { getStations } from "@/services/getStations";
 import { cleanStationsMetadata } from "@/utils";
 import { sortStationsByRecommendedScore } from "@/utils/stationScore";
@@ -31,4 +32,5 @@ const stationListSchema = JSON.stringify({
 <BaseLayout {...SEO_DEFAULT}>
   <script type="application/ld+json" set:html={stationListSchema} slot="head" />
   <RadioApp client:load stations={stations} />
+  <PinStations />
 </BaseLayout>

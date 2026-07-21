@@ -79,9 +79,20 @@ function getDayOfYear(): number {
 
 function getStationOfTheDay(stations: IStation[]): string | null {
   if (stations.length === 0) return null;
-  const stableOrder = [...stations].sort((a, b) => a.slug.localeCompare(b.slug));
+  // Byte compare (Array.prototype.sort default), NOT localeCompare — must
+  // produce exactly the same order as the pre-paint script in PinStations.astro
+  const stableOrder = stations.map((s) => s.slug).sort();
   const dayOfYear = getDayOfYear();
-  return stableOrder[dayOfYear % stableOrder.length].slug;
+  return stableOrder[dayOfYear % stableOrder.length];
+}
+
+type PinnedStamp = { order: string[]; day: string | null; mostPlayed: string[] };
+
+function orderBySlugList(stations: IStation[], order: string[]): IStation[] {
+  const idx = new Map(order.map((slug, i) => [slug, i]));
+  return [...stations].sort(
+    (a, b) => (idx.get(a.slug) ?? Number.MAX_SAFE_INTEGER) - (idx.get(b.slug) ?? Number.MAX_SAFE_INTEGER),
+  );
 }
 
 interface SortResult {
@@ -191,7 +202,25 @@ const ChevronDown = ({ size = 12 }: { size?: number }) => (
 
 const Stations = () => {
   const { ctx, setCtx } = useContext(Context);
-  const [filteredStations, setFilteredStations] = useState<IStation[]>(ctx.stations || []);
+  // Pre-paint pinning contract (PinStations.astro): an inline script reorders
+  // the SSR grid to [day station, top-3 most played, ...build order] before
+  // first paint and stamps the result on window.__pinnedStations. That stamp
+  // is the permanent "recommended" order — hydration matches the mutated DOM
+  // and nothing reshuffles post-paint (the old post-fetch reshuffle was an
+  // ~0.13 CLS hit on every visit). No stamp (script skipped/failed) → hold
+  // the SSR order for the whole visit instead; still no reshuffle.
+  const pinnedRef = useRef<PinnedStamp | null | undefined>(undefined);
+  if (pinnedRef.current === undefined) {
+    pinnedRef.current = typeof window !== "undefined"
+      ? ((window as unknown as { __pinnedStations?: PinnedStamp }).__pinnedStations ?? null)
+      : null;
+  }
+  const [filteredStations, setFilteredStations] = useState<IStation[]>(() => {
+    const pinned = pinnedRef.current;
+    return pinned?.order?.length
+      ? orderBySlugList(ctx.stations || [], pinned.order)
+      : (ctx.stations || []);
+  });
   const [searchedValue, setSearchedValue] = useState("");
   const [sortBy, setSortByState] = useState<SortOption>("recommended");
 
@@ -218,6 +247,11 @@ const Stations = () => {
   const { playCounts } = usePlayCount();
   const { favouriteItems } = useFavourite();
   const scoreSnapshotRef = useRef<Record<string, StationSnapshot> | null>(null);
+  const initialOrderRef = useRef<Map<string, number> | null>(null);
+
+  if (!initialOrderRef.current && ctx.stations?.length) {
+    initialOrderRef.current = new Map(ctx.stations.map((s: IStation, i: number) => [s.slug, i]));
+  }
 
   // Capture a score snapshot once stations have real listener data (the
   // initial static props set total_listeners to 0, so we wait for the
@@ -241,10 +275,32 @@ const Stations = () => {
 
   const applySort = (stations: IStation[]) => {
     const result = sortStations(stations, sortBy, playCounts, favouriteItems, scoreSnapshotRef.current);
-    setStationOfDaySlug(result.stationOfDaySlug);
-    setMostPlayedSlugs(result.mostPlayedSlugs);
-    setCtx({ sortedStations: result.sorted });
-    return result.sorted;
+    let sorted = result.sorted;
+    let daySlug = result.stationOfDaySlug;
+    let mpSlugs = result.mostPlayedSlugs;
+    if (sortBy === "recommended") {
+      const pinned = pinnedRef.current;
+      if (pinned?.order?.length) {
+        // The pre-paint stamp is the single source of truth: same order the
+        // inline script gave the DOM, stable across API refreshes (stations
+        // added after the build go to the end).
+        sorted = orderBySlugList(stations, pinned.order);
+        daySlug = pinned.day;
+        mpSlugs = pinned.mostPlayed;
+      } else if (initialOrderRef.current) {
+        // No stamp — hold the SSR order so nothing reshuffles post-paint
+        // (API refreshes deliver stations in their own order, so passthrough
+        // isn't enough; re-sort by the captured index).
+        const order = initialOrderRef.current;
+        sorted = [...stations].sort(
+          (a, b) => (order.get(a.slug) ?? Number.MAX_SAFE_INTEGER) - (order.get(b.slug) ?? Number.MAX_SAFE_INTEGER),
+        );
+      }
+    }
+    setStationOfDaySlug(daySlug);
+    setMostPlayedSlugs(mpSlugs);
+    setCtx({ sortedStations: sorted });
+    return sorted;
   };
 
   useEffect(() => {
