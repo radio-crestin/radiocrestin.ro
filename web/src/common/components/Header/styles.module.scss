@@ -501,11 +501,7 @@
       @include mixinHelper.onTablet {
         font-size: 0.9rem;
         line-height: 20px;
-        // Height cap instead of -webkit-line-clamp: the inline "Citește
-        // mai mult" floats into the last line and the text must wrap
-        // around it, which clamp boxes don't allow. 60px = 3 × 20px lines.
-        display: block;
-        -webkit-line-clamp: unset;
+        // 3 clamped lines at the tighter mobile line-height
         max-height: 60px;
 
         &.desc_expanded {
@@ -518,52 +514,12 @@
       }
     }
 
-    // Mobile-only inline "read more": flows right after the pre-cut text
-    // (the cut point is measured in the component so text + link fill the
-    // 3-line cap with no gap); the leading "… " stands in for the ellipsis
-    .desc_toggle_inline {
-      display: none;
-
-      @include mixinHelper.onTablet {
-        display: inline;
-        background: none;
-        border: none;
-        padding: 0;
-        font-family: inherit;
-        font-size: inherit;
-        line-height: inherit;
-        font-weight: 600;
-        color: var(--link-color);
-        cursor: pointer;
-
-        &::before {
-          content: "… ";
-          color: var(--header-subtext-color);
-          font-weight: 400;
-        }
-      }
-    }
-
     // Fixed line for the toggle: the button only mounts after hydration
     // measures the clamp, and must never move the actions row below
     .desc_toggle_slot {
       height: 27px;
       display: flex;
       align-items: center;
-
-      // Collapsed mobile uses the inline link on the description's last
-      // line; this slot only hosts "Afișează mai puțin" while expanded
-      // (desc_expanded stays set through the closing glide, so the button
-      // doesn't vanish mid-animation)
-      @include mixinHelper.onTablet {
-        display: none;
-      }
-    }
-
-    @include mixinHelper.onTablet {
-      .station_description.desc_expanded + .desc_toggle_slot {
-        display: flex;
-      }
     }
 
     .desc_toggle {

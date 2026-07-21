@@ -2,7 +2,6 @@ import {
   useContext,
   useState,
   useEffect,
-  useLayoutEffect,
   useMemo,
   useRef,
   useCallback,
@@ -312,8 +311,12 @@ const ContentLeft = () => {
         </div>
         {songThumb ? (
           <div className={styles.container_img_plus_thumb}>
+            {/* Desktop LCP candidate. Stays lazy so the CSS-hidden mobile
+                card never downloads it; the priority hint applies once
+                it's observed on desktop */}
             <img
               loading={"lazy"}
+              fetchPriority="high"
               src={songThumb}
               alt={selectedStation.title}
               width={224}
@@ -335,6 +338,7 @@ const ContentLeft = () => {
         ) : (
           <img
             loading={"lazy"}
+            fetchPriority="high"
             src={getValidImageUrl(selectedStation.thumbnail_url)}
             alt={selectedStation.title}
             width={224}
@@ -472,80 +476,6 @@ const ContentRight = () => {
     }
   }, [station?.description, descExpanded]);
 
-  // Mobile inline "read more": character count the collapsed text is cut
-  // to so that "… Citește mai mult" sits immediately after the last word
-  // inside the 3-line cap (null = fits fully / desktop). Measured on a
-  // hidden clone with a binary search; a floated link can't do this — it
-  // right-aligns and leaves a gap after wherever the text happens to wrap.
-  const [descCut, setDescCut] = useState<number | null>(null);
-  const [descViewportW, setDescViewportW] = useState(0);
-  const [fontsReadyTick, setFontsReadyTick] = useState(0);
-
-  useEffect(() => {
-    const onResize = () => setDescViewportW(window.innerWidth);
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
-  }, []);
-
-  // The cut depends on glyph widths, so recompute once the webfont lands
-  useEffect(() => {
-    let alive = true;
-    document.fonts?.ready.then(() => {
-      if (alive) setFontsReadyTick(1);
-    });
-    return () => {
-      alive = false;
-    };
-  }, []);
-
-  useLayoutEffect(() => {
-    if (descExpanded) return;
-    const el = descRef.current;
-    const text = station?.description || "";
-    if (!el || !text) return;
-    if (!window.matchMedia("(max-width: 768px)").matches) {
-      setDescCut(null);
-      return;
-    }
-
-    const MAX_H = 3 * 20 + 2; // 3 mobile line boxes + rounding slack
-
-    const clone = el.cloneNode(false) as HTMLParagraphElement;
-    clone.style.cssText = `position:absolute; visibility:hidden; pointer-events:none; max-height:none; overflow:visible; width:${el.getBoundingClientRect().width}px`;
-    const textNode = document.createTextNode(text);
-    const link = document.createElement("span");
-    link.className = styles.desc_toggle_inline;
-    link.textContent = "Citește mai mult";
-    clone.append(textNode, link);
-    el.parentElement?.appendChild(clone);
-
-    const fits = () => clone.getBoundingClientRect().height <= MAX_H;
-
-    let cut: number | null = null;
-    if (!fits()) {
-      // Largest prefix that fits together with the inline link
-      let lo = 0;
-      let hi = text.length;
-      while (lo < hi) {
-        const mid = Math.floor((lo + hi + 1) / 2);
-        textNode.data = text.slice(0, mid);
-        if (fits()) {
-          lo = mid;
-        } else {
-          hi = mid - 1;
-        }
-      }
-      // Snap back to a word boundary and drop trailing whitespace
-      const head = text.slice(0, lo);
-      const lastSpace = head.search(/\s+\S*$/);
-      cut = (lastSpace > 0 ? head.slice(0, lastSpace) : head).replace(/\s+$/, "").length;
-    }
-    clone.remove();
-    setDescCut(cut);
-  }, [station?.description, descExpanded, descViewportW, fontsReadyTick]);
-
-  const descCutApplied = descCut !== null && !descExpanded;
-
   if (!station) return null;
 
   const isConnecting =
@@ -642,20 +572,7 @@ const ContentRight = () => {
               ref={descRef}
               className={`${styles.station_description} ${descExpanded ? styles.desc_expanded : ""} ${descOpening ? styles.desc_opening : ""} ${descClosing ? styles.desc_closing : ""}`}
             >
-              {/* Mobile: text pre-cut so the inline link directly follows
-                  the last visible word (desktop uses the slot below) */}
-              {descCutApplied
-                ? station.description.slice(0, descCut!)
-                : station.description}
-              {descCutApplied && (
-                <button
-                  className={styles.desc_toggle_inline}
-                  onClick={toggleDesc}
-                  aria-expanded={false}
-                >
-                  Citește mai mult
-                </button>
-              )}
+              {station.description}
             </p>
             {/* Fixed-height slot: overflow is only measurable after hydration,
                 so the toggle fades in without pushing the actions row down */}
