@@ -495,8 +495,38 @@ const SongHistory: React.FC<SongHistoryProps> = ({
         }
       }
 
-      if (closest) {
-        closest.scrollIntoView({ block: "start" });
+      if (!closest) return;
+      const row = closest;
+
+      // Align the row flush under the sticky day pill (measured, not
+      // hard-coded): any extra offset shows a clipped slice of the
+      // preceding row in the strip between the pill and the target.
+      const align = (): number => {
+        const list = listRef.current;
+        if (!list || !row.isConnected) return NaN;
+        const band =
+          row
+            .closest(`.${styles.date_group}`)
+            ?.querySelector(`.${styles.date_header}`)
+            ?.getBoundingClientRect().height ?? 0;
+        const top =
+          row.getBoundingClientRect().top -
+          list.getBoundingClientRect().top +
+          list.scrollTop;
+        list.scrollTo({ top: Math.max(0, top - band) });
+        return list.scrollTop;
+      };
+
+      const appliedTop = align();
+      // Until the webfont arrives, rows measure with taller fallback-font
+      // metrics; when it lands the content above the target shrinks and the
+      // row rides up under the pill. Re-align once fonts settle, unless the
+      // user has scrolled away in the meantime.
+      if (document.fonts && document.fonts.status !== "loaded") {
+        document.fonts.ready.then(() => {
+          const list = listRef.current;
+          if (list && Math.abs(list.scrollTop - appliedTop) < 2) align();
+        });
       }
     });
   }, [history]);
