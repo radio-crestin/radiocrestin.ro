@@ -1,5 +1,30 @@
 @use "globalVariables";
 
+/* Self-hosted Inter variable subset: latin + Romanian diacritics (both
+   comma-below Șț and legacy cedilla şţ forms appear in API data), wght
+   400-800, opsz pinned — 33KB vs the 141KB Google/Cloudflare Fonts served.
+   Regenerate with a new content hash if new scripts ever appear in content
+   (filename is immutable-cached via public/_headers). */
+@font-face {
+  font-family: "Inter";
+  src: url("/fonts/InterVariable-subset.ce602498.woff2") format("woff2");
+  font-weight: 400 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Arial adjusted to Inter's metrics (same values as the church-hub page), so
+   text painted before the webfont arrives keeps its geometry when Inter swaps
+   in — no re-wrap, no layout shift, and LCP stays anchored to the first paint. */
+@font-face {
+  font-family: "Inter Fallback";
+  src: local("Arial");
+  size-adjust: 107.4%;
+  ascent-override: 90.2%;
+  descent-override: 22.48%;
+  line-gap-override: 0%;
+}
+
 body {
   background: var(--bg-body);
   font-family: globalVariables.$inter;
