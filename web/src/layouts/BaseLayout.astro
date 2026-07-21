@@ -72,11 +72,9 @@ const knownImageSize = imageUrl === DEFAULT_SHARE_IMAGE
     <link rel="apple-touch-icon" href="/favicon/apple-touch-icon.png" />
     <link rel="manifest" href="/manifest.json" />
 
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
-    <noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" /></noscript>
+    <!-- Self-hosted Inter subset (latin + RO diacritics, wght 400-800) — the
+         @font-face lives in base.scss; crossorigin is required on font preloads -->
+    <link rel="preload" as="font" type="font/woff2" crossorigin href="/fonts/InterVariable-subset.ce602498.woff2" />
 
     <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
     <link rel="preconnect" href="https://api.radiocrestin.ro" crossorigin />
@@ -150,7 +148,7 @@ const knownImageSize = imageUrl === DEFAULT_SHARE_IMAGE
     </script>
   </head>
   <body>
-    <main style="font-family: 'Inter', sans-serif;">
+    <main style="font-family: 'Inter', 'Inter Fallback', sans-serif;">
       <slot />
     </main>
   </body>
