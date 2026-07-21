@@ -531,6 +531,7 @@ const ContentRight = () => {
             alt="Radio Crestin"
             height={100}
             width={100}
+            fetchPriority="high"
             onError={handleImgError}
           />
           <h1 className={styles.station_title}>{station.title}</h1>
