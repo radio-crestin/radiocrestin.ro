@@ -1,29 +1,59 @@
-import posthog from "posthog-js";
+import type { PostHog } from "posthog-js";
 
 const POSTHOG_KEY = "phc_9lTquHDSyoFxkYq4VPd8cFiQ21VZd627Lv8jSV8S7Fi";
 
+// posthog-js (~58KB gzipped) is dynamically imported on idle so it stays out
+// of the islands' hydration bundles. Events fired before it arrives are queued
+// and flushed in order once init completes.
+let client: PostHog | null = null;
+let loadFailed = false;
 let initialized = false;
+const pending: Array<(ph: PostHog) => void> = [];
+
+const withPostHog = (fn: (ph: PostHog) => void) => {
+  if (client) fn(client);
+  else if (!loadFailed) pending.push(fn);
+};
 
 export const initPostHog = () => {
   if (typeof window === "undefined" || initialized) return;
-
-  posthog.init(POSTHOG_KEY, {
-    api_host: "https://k.radiocrestin.ro",
-    ui_host: "https://eu.posthog.com",
-    defaults: "2026-01-30",
-    person_profiles: "identified_only",
-    autocapture: true,
-    capture_pageview: true,
-    capture_pageleave: true,
-    persistence: "localStorage+cookie",
-    session_idle_timeout_seconds: 14400, // 4 hours — keeps session alive during passive listening
-  });
-
-  // Identify with the app's persistent user ID
-  const userId = getUserId();
-  posthog.identify(userId);
-
   initialized = true;
+
+  const load = () => {
+    import("posthog-js")
+      .then(({ default: posthog }) => {
+        posthog.init(POSTHOG_KEY, {
+          api_host: "https://k.radiocrestin.ro",
+          ui_host: "https://eu.posthog.com",
+          defaults: "2026-01-30",
+          person_profiles: "identified_only",
+          autocapture: true,
+          capture_pageview: true,
+          capture_pageleave: true,
+          persistence: "localStorage+cookie",
+          session_idle_timeout_seconds: 14400, // 4 hours — keeps session alive during passive listening
+        });
+
+        // Identify with the app's persistent user ID
+        posthog.identify(getUserId());
+
+        client = posthog;
+        pending.forEach((fn) => fn(posthog));
+        pending.length = 0;
+      })
+      .catch(() => {
+        // Chunk unreachable (offline, stale deploy) — analytics off for this page view
+        loadFailed = true;
+        pending.length = 0;
+      });
+  };
+
+  // requestIdleCallback is unavailable on Safari/iOS — a large share of listeners
+  if ("requestIdleCallback" in window) {
+    requestIdleCallback(load, { timeout: 4000 });
+  } else {
+    setTimeout(load, 1500);
+  }
 };
 
 const USER_ID_KEY = "radio_crestin_user_id";
@@ -58,34 +88,34 @@ export const captureException = (error: unknown, context?: string) => {
   const err = new Error(message, { cause: original });
   err.name = original.name;
   // Keep the NEW error's stack (points to our code) — don't overwrite with the original's
-  posthog.captureException(err);
+  withPostHog((ph) => ph.captureException(err));
 };
 
 export const trackStationOpened = (stationSlug: string, stationName: string, stationId?: number) => {
-  posthog.capture("station_opened", {
+  withPostHog((ph) => ph.capture("station_opened", {
     station_slug: stationSlug,
     station_name: stationName,
     ...(stationId != null && { station_id: stationId }),
-  });
+  }));
 };
 
 export const trackFavoriteToggled = (stationSlug: string, isFavorite: boolean, stationId?: number) => {
-  posthog.capture("favorite_toggled", {
+  withPostHog((ph) => ph.capture("favorite_toggled", {
     station_slug: stationSlug,
     is_favorite: isFavorite,
     ...(stationId != null && { station_id: stationId }),
-  });
+  }));
 };
 
 /** @deprecated Use trackFavoriteToggled */
 export const trackFavouriteToggled = trackFavoriteToggled;
 
 export const trackListeningStarted = (stationSlug: string, stationName: string, stationId?: number) => {
-  posthog.capture("listening_started", {
+  withPostHog((ph) => ph.capture("listening_started", {
     station_slug: stationSlug,
     station_name: stationName,
     ...(stationId != null && { station_id: stationId }),
-  });
+  }));
 };
 
 /** @deprecated Use trackListeningStarted */
@@ -98,13 +128,13 @@ export const trackListeningStopped = (
   reason: string = "stop",
   stationId?: number,
 ) => {
-  posthog.capture("listening_stopped", {
+  withPostHog((ph) => ph.capture("listening_stopped", {
     station_slug: stationSlug,
     station_name: stationName,
     duration_seconds: Math.round(durationSeconds),
     reason,
     ...(stationId != null && { station_id: stationId }),
-  });
+  }));
 };
 
 /** @deprecated Use trackListeningStopped */
@@ -117,13 +147,13 @@ export const trackListeningStoppedBeacon = (
   reason: string = "tab_closed",
   stationId?: number,
 ) => {
-  posthog.capture("listening_stopped", {
+  withPostHog((ph) => ph.capture("listening_stopped", {
     station_slug: stationSlug,
     station_name: stationName,
     duration_seconds: Math.round(durationSeconds),
     reason,
     ...(stationId != null && { station_id: stationId }),
-  }, { transport: "sendBeacon" });
+  }, { transport: "sendBeacon" }));
 };
 
 
@@ -134,13 +164,11 @@ export const trackReviewSubmitted = (
   stationId?: number,
   songId?: number,
 ) => {
-  posthog.capture("review_submitted", {
+  withPostHog((ph) => ph.capture("review_submitted", {
     station_slug: stationSlug,
     station_name: stationName,
     stars,
     ...(stationId != null && { station_id: stationId }),
     ...(songId != null && { song_id: songId }),
-  });
+  }));
 };
-
-export { posthog };
