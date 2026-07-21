@@ -249,108 +249,37 @@ export default function RadioPlayer() {
     }
   };
 
-  // Toggle on pointerdown — the moment the finger/mouse touches — instead of
-  // the click that only fires on release. The click trailing the same tap is
-  // skipped via pointerHandledRef (clicks without a pointerdown — keyboard,
-  // screen readers — still toggle); pointercancel means the browser turned
-  // the gesture into a scroll, so undo the toggle. Exception: a tap landing
-  // during momentum scroll is consumed by the browser to stop the fling — it
-  // fires pointercancel (or suppresses the click) with the finger never
-  // having moved, which would undo/eat a deliberate tap. A cancel therefore
-  // undoes only when the pointer actually travelled DRAG_SLOP_PX, or when the
-  // page was at rest at pointerdown; a genuine drag crosses the browser's own
-  // touch-slop (~8–15 CSS px) before it claims the gesture, a fling-stop tap
-  // does not.
-  const SCROLL_RECENT_MS = 150;
-  const DRAG_SLOP_PX = 8;
-  const pointerHandledRef = useRef(false);
-  const pointerDownRef = useRef({ x: 0, y: 0, moved: 0, wasScrolling: false });
-  const pointerExpiryRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const lastScrollTsRef = useRef(0);
-
-  // Window-level: scroll needs capture (scroll events don't bubble, and inner
-  // scrollers — modals, the expanded panel — count as "page was scrolling");
-  // move/up must keep working after the pointer leaves the row. The expiry
-  // clears pointerHandledRef when a tap ends with a suppressed click
-  // (pointerup, no click, no cancel — iOS fling-stop; mouse released off-row)
-  // so the flag can't stale-swallow a later keyboard/AT click.
-  useEffect(() => {
-    const onScroll = () => {
-      lastScrollTsRef.current = Date.now();
-    };
-    const onPointerMove = (e: PointerEvent) => {
-      if (!pointerHandledRef.current || !e.isPrimary) return;
-      const down = pointerDownRef.current;
-      down.moved = Math.max(
-        down.moved,
-        Math.hypot(e.clientX - down.x, e.clientY - down.y),
-      );
-    };
-    const onPointerUp = (e: PointerEvent) => {
-      if (!pointerHandledRef.current || !e.isPrimary) return;
-      // The trailing click (when the browser fires one) follows pointerup
-      // within milliseconds — 400ms leaves margin without reaching into the
-      // next interaction.
-      if (pointerExpiryRef.current) clearTimeout(pointerExpiryRef.current);
-      pointerExpiryRef.current = setTimeout(() => {
-        pointerExpiryRef.current = null;
-        pointerHandledRef.current = false;
-      }, 400);
-    };
-    window.addEventListener("scroll", onScroll, {
-      capture: true,
-      passive: true,
-    });
-    window.addEventListener("pointermove", onPointerMove, { passive: true });
-    window.addEventListener("pointerup", onPointerUp, { passive: true });
-    return () => {
-      if (pointerExpiryRef.current) clearTimeout(pointerExpiryRef.current);
-      window.removeEventListener("scroll", onScroll, { capture: true });
-      window.removeEventListener("pointermove", onPointerMove);
-      window.removeEventListener("pointerup", onPointerUp);
-    };
-  }, []);
-
+  // Toggle on click only — the browser fires it just for a completed tap and
+  // suppresses it when the gesture turns into a scroll, so a scroll that
+  // starts on the row never opens/closes the menu. The handler lives on the
+  // whole card (.radio_player) so its padding toggles too; the menu and the
+  // expanded panel opt out via data-menu-ignore.
   const isRowControl = (target: EventTarget | null) =>
     !!(target as HTMLElement | null)?.closest?.(
       "button, input, a, [data-menu-ignore]",
     );
 
-  const onRowPointerDown = (e: React.PointerEvent) => {
-    if (!e.isPrimary || e.button !== 0 || isRowControl(e.target)) return;
-    // A pending expiry from the previous gesture must not clear this one's flag
-    if (pointerExpiryRef.current) {
-      clearTimeout(pointerExpiryRef.current);
-      pointerExpiryRef.current = null;
-    }
-    pointerHandledRef.current = true;
-    pointerDownRef.current = {
-      x: e.clientX,
-      y: e.clientY,
-      moved: 0,
-      wasScrolling: Date.now() - lastScrollTsRef.current < SCROLL_RECENT_MS,
-    };
-    setMenuOpen((v) => !v);
-  };
-
-  const onRowPointerCancel = () => {
-    if (!pointerHandledRef.current) return;
-    pointerHandledRef.current = false;
-    const down = pointerDownRef.current;
-    // Fling-stop tap: cancelled by the browser without real movement — the
-    // toggle stands. Undo only for genuine drags, or any cancel at rest.
-    if (down.wasScrolling && down.moved < DRAG_SLOP_PX) return;
-    setMenuOpen((v) => !v);
-  };
-
   const onRowClick = (e: React.MouseEvent) => {
-    // Clear the ghost-click flag before the control check — a finger that
-    // lands on the row but releases over a button must not leave it stale.
-    if (pointerHandledRef.current) {
-      pointerHandledRef.current = false;
+    if (isRowControl(e.target)) return;
+    const target = e.target as HTMLElement | null;
+    // Desktop (precise pointer): only the station text block — the element
+    // that also carries the role=button semantics — toggles the options;
+    // the rest of the pill stays neutral. Cursor rules in SCSS mirror this.
+    if (window.matchMedia?.("(min-width: 768px)").matches) {
+      if (!target?.closest?.("[data-player-info]")) return;
+      setMenuOpen((v) => !v);
       return;
     }
-    if (isRowControl(e.target)) return;
+    // Mobile: closed, the whole card (padding included) opens it. While the
+    // menu or the panel is open the card is in "menu mode": only a deliberate
+    // tap on the player row or the chevron toggles — grazing the card padding
+    // next to the open content must not act.
+    if (
+      (menuOpen || expanded) &&
+      !target?.closest?.("[data-player-row], [data-player-handle]")
+    ) {
+      return;
+    }
     setMenuOpen((v) => !v);
   };
 
@@ -456,6 +385,12 @@ export default function RadioPlayer() {
     };
   }, [expanded, station.slug]);
 
+  // While the menu/panel is open, a transparent backdrop shields the page:
+  // an outside tap lands on it and only dismisses — it never activates the
+  // station card / control underneath. Page scrolling still chains through
+  // the backdrop, so a scroll behind the menu dismisses it here instead
+  // (scrolls inside the player's own scrollers — the expanded history list —
+  // don't count).
   useEffect(() => {
     if (!expanded && !menuOpen) return;
     const closeAll = () => {
@@ -465,21 +400,21 @@ export default function RadioPlayer() {
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") closeAll();
     };
-    const onPointerDown = (event: MouseEvent | TouchEvent) => {
+    const onScroll = (event: Event) => {
       if (
         playerContainerRef.current &&
-        !playerContainerRef.current.contains(event.target as Node)
+        event.target instanceof Node &&
+        playerContainerRef.current.contains(event.target)
       ) {
-        closeAll();
+        return;
       }
+      closeAll();
     };
     document.addEventListener("keydown", onKey);
-    document.addEventListener("mousedown", onPointerDown);
-    document.addEventListener("touchstart", onPointerDown);
+    window.addEventListener("scroll", onScroll, { capture: true, passive: true });
     return () => {
       document.removeEventListener("keydown", onKey);
-      document.removeEventListener("mousedown", onPointerDown);
-      document.removeEventListener("touchstart", onPointerDown);
+      window.removeEventListener("scroll", onScroll, { capture: true });
     };
   }, [expanded, menuOpen]);
 
@@ -1192,19 +1127,28 @@ export default function RadioPlayer() {
   return (
     <>
       <div className={styles.player_gradient_overlay} />
+      {(expanded || menuOpen) && (
+        <div
+          className={styles.player_backdrop}
+          aria-hidden="true"
+          onClick={() => {
+            setExpanded(false);
+            setMenuOpen(false);
+          }}
+        />
+      )}
       <div className={styles.radio_player_container} ref={playerContainerRef}>
         <div
           className={`${styles.radio_player} ${expanded || menuOpen ? styles.radio_player_open : ""}`}
+          onClick={onRowClick}
         >
         {/* Decorative twin of the station_info trigger (which carries the a11y
-            semantics) — hidden from AT but tappable, so the chevron itself
-            closes the menu once it points down */}
+            semantics) — hidden from AT but tappable (via the card's click
+            handler), so the chevron itself closes the menu once it points down */}
         <span
           className={`${styles.player_handle} ${menuOpen ? styles.player_handle_open : ""}`}
           aria-hidden="true"
-          onPointerDown={onRowPointerDown}
-          onPointerCancel={onRowPointerCancel}
-          onClick={onRowClick}
+          data-player-handle
         >
           <svg
             width="16"
@@ -1224,6 +1168,7 @@ export default function RadioPlayer() {
           role="menu"
           aria-hidden={!menuOpen}
           aria-label={`Opțiuni ${station.title}`}
+          data-menu-ignore
         >
           <div className={styles.menu_clip}>
           <div className={styles.menu_inner}>
@@ -1356,6 +1301,7 @@ export default function RadioPlayer() {
           <div
             className={`${styles.expanded_panel} ${expanded ? styles.expanded_panel_open : ""}`}
             aria-hidden={!expanded}
+            data-menu-ignore
           >
             <div className={styles.expanded_clip}>
             <div className={styles.expanded_scroll}>
@@ -1428,13 +1374,7 @@ export default function RadioPlayer() {
             </div>
           </div>
         )}
-        <div
-          className={styles.player_container}
-          title="Opțiuni stație"
-          onPointerDown={onRowPointerDown}
-          onPointerCancel={onRowPointerCancel}
-          onClick={onRowClick}
-        >
+        <div className={styles.player_container} data-player-row>
           <div className={styles.image_container}>
             <img
               src={getValidImageUrl(
@@ -1455,6 +1395,8 @@ export default function RadioPlayer() {
             aria-haspopup="menu"
             aria-expanded={menuOpen}
             aria-label={`Opțiuni ${station.title}`}
+            title="Opțiuni stație"
+            data-player-info
             onKeyDown={(e) => {
               if (e.repeat) return;
               if (e.key === "Enter" || e.key === " ") {
