@@ -39,13 +39,15 @@ async function generateLlmsTxt() {
     .map((station) => {
       const lines = [];
       lines.push(`### ${station.title}`);
-      lines.push(`- Ascultă live: ${SITE_URL}/${station.slug}/`);
+      lines.push("");
+      lines.push(`- [Ascultă ${station.title} live online](${SITE_URL}/${station.slug}/)`);
       if (station.website) {
-        lines.push(`- Website oficial: ${station.website}`);
+        lines.push(`- [Website oficial ${station.title}](${station.website})`);
       }
       if (station.description) {
         const desc = station.description.replace(/\r\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
-        lines.push(`- Descriere: ${desc}`);
+        lines.push("");
+        lines.push(desc);
       }
       return lines.join("\n");
     })
@@ -53,55 +55,32 @@ async function generateLlmsTxt() {
 
   const content = `# RadioCrestin.ro
 
-> Platformă online pentru ascultarea posturilor de radio creștine din România
+> Ascultă radio creștin online gratuit: ${stations.length} de posturi de radio creștine din România, cu muzică creștină non-stop, predici creștine și emisiuni live — direct din browser sau din aplicația mobilă, fără cont.
 
-## Ce este RadioCrestin.ro?
+RadioCrestin.ro reunește cele mai importante radiouri creștine românești într-un singur loc, atât pentru românii din țară, cât și pentru cei din diaspora. Interfața și conținutul sunt în limba română.
 
-RadioCrestin.ro este o platformă gratuită care reunește cele mai importante posturi de radio creștine din România într-un singur loc. Utilizatorii pot asculta muzică creștină, predici și emisiuni creștine de la multiple posturi, direct din browser sau prin aplicația mobilă.
+Utilizatorii pot asculta live radiouri creștine online, pot vedea în timp real ce cântare creștină și ce artist rulează (la anumite posturi), pot adăuga radiourile preferate la favorite, pot evalua și lăsa recenzii pentru posturi, pot vedea câți ascultători are fiecare post și pot partaja posturile preferate pe WhatsApp și rețele sociale.
 
-## Pentru cine este?
-
-Platforma este deschisă oricui dorește să asculte muzică creștină în limba română, atât pentru românii din țară, cât și pentru cei din diaspora.
-
-## Ce pot face utilizatorii?
-
-- Să asculte live posturi de radio creștine românești
-- Să vadă ce melodie și ce artist cântă în timp real (la anumite posturi)
-- Să adauge radiourile preferate în lista de favorite
-- Să evalueze și să lase recenzii pentru posturi
-- Să vadă câți ascultători are fiecare post (la anumite posturi)
-- Să instaleze aplicația pe telefon (Android și iOS)
-- Să partajeze posturile preferate pe WhatsApp și rețele sociale
-
-## Cum funcționează?
-
-Utilizatorul accesează site-ul, alege un post de radio din listă și apasă pe el pentru a începe ascultarea. Poate căuta posturi după nume sau după melodia care cântă. Nu este necesară crearea unui cont.
+Cum funcționează: utilizatorul accesează site-ul, alege un post de radio din listă și apasă pe el pentru a începe ascultarea. Poate căuta posturi după numele postului sau după melodia care cântă. Nu este necesară crearea unui cont.
 
 ## Pagini principale
 
-- Toate stațiile: ${SITE_URL}/
-- Muzică creștină online: ${SITE_URL}/muzica-crestina/
-- Predici creștine audio: ${SITE_URL}/predici/
-- Radio creștin pentru copii: ${SITE_URL}/radio-crestin-pentru-copii/
-- Întrebări frecvente: ${SITE_URL}/intrebari-frecvente/
-- Descarcă aplicația mobilă: ${SITE_URL}/descarca-aplicatia-radio-crestin/
-- Church Hub, program gratuit de proiecție versuri pentru biserică: ${SITE_URL}/church-hub/
-
-## Limbă
-
-Interfața și conținutul sunt în limba română.
+- [Radio creștin online – toate stațiile](${SITE_URL}/): ascultă gratuit toate radiourile creștine românești, live în browser
+- [Muzică creștină online](${SITE_URL}/muzica-crestina/): worship, cântări creștine vechi și noi, gospel — muzică creștină non-stop
+- [Predici creștine audio](${SITE_URL}/predici/): predici, învățătură biblică și emisiuni de zidire sufletească, online gratuit
+- [Radio creștin pentru copii](${SITE_URL}/radio-crestin-pentru-copii/): cântecele creștine și povestiri biblice pentru cei mici
+- [Întrebări frecvente](${SITE_URL}/intrebari-frecvente/): răspunsuri despre ascultarea radioului creștin online
+- [Descarcă aplicația Radio Creștin](${SITE_URL}/descarca-aplicatia-radio-crestin/): aplicația mobilă gratuită pentru Android și iOS
+- [Church Hub](${SITE_URL}/church-hub/): program gratuit de proiecție versuri pentru biserică, alternativă la EasyWorship
 
 ## Aplicația mobilă
 
 Aplicația Radio Creștin este disponibilă gratuit pe Android și iOS, cu un rating de 4.9 stele din 5 și peste 2175 de recenzii. Aplicația suportă și Apple CarPlay, permițând ascultarea radio creștin direct din mașină.
 
-## Contact
+- [Radio Creștin pe Google Play (Android)](https://play.google.com/store/apps/details?id=com.radiocrestin.radio_crestin)
+- [Radio Creștin pe App Store (iOS)](https://apps.apple.com/ro/app/radio-crestin/id6451270471)
 
-- Website: ${SITE_URL}
-- Android: https://play.google.com/store/apps/details?id=com.radiocrestin.radio_crestin
-- iOS: https://apps.apple.com/ro/app/radio-crestin/id6451270471
-
-## Posturi de radio disponibile (${stations.length} posturi)
+## Posturi de radio creștine disponibile (${stations.length})
 
 ${stationEntries}
 `;

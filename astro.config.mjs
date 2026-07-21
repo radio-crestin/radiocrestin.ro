@@ -13,6 +13,22 @@ export default defineConfig({
     domains: ["fsn1.your-objectstorage.com"],
   },
   vite: {
+    plugins: [
+      {
+        // Dev-only: Vite serves public/*.txt as text/plain without charset,
+        // so browsers decode UTF-8 diacritics as Windows-1252. Production
+        // (Cloudflare) already sends charset=utf-8.
+        name: "txt-charset-utf8",
+        configureServer(server) {
+          server.middlewares.use((req, res, next) => {
+            if (req.url?.split("?")[0].endsWith(".txt")) {
+              res.setHeader("Content-Type", "text/plain; charset=utf-8");
+            }
+            next();
+          });
+        },
+      },
+    ],
     environments: {
       client: {
         build: {
