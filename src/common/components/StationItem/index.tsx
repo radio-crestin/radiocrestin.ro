@@ -8,7 +8,7 @@ import Heart from "@/icons/Heart";
 import useFavourite from "@/store/useFavourite";
 import { useContext, useEffect, useState } from "react";
 import { Context } from "@/context/ContextProvider";
-import { getValidImageUrl } from "@/utils";
+import { getValidImageUrl, stepImageFallback } from "@/utils";
 import OfflineStatus from "@/components/OfflineStatus";
 import PlayingIndicator from "@/components/PlayingIndicator";
 import SparklesStar from "@/icons/SparklesStar";
@@ -65,9 +65,7 @@ const StationItem = ({ badgeType, ...data }: StationItemProps) => {
           loading={"lazy"}
           height={110}
           width={110}
-          onError={(e) => {
-            e.currentTarget.src = '/images/radio-white-default.jpg';
-          }}
+          onError={(e) => stepImageFallback(e.currentTarget, data?.thumbnail_url)}
         />
       </div>
       <div className={styles.station_details}>

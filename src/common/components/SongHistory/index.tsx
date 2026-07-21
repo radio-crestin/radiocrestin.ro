@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 import { getStationSongHistory } from "@/services/getStations";
 import type { ISongHistoryItem } from "@/services/getStations";
 import styles from "./styles.module.scss";
-import { getValidImageUrl } from "@/utils";
+import { getValidImageUrl, stepImageFallback } from "@/utils";
 
 interface SongHistoryProps {
   stationSlug: string;
@@ -160,9 +160,7 @@ const HistoryGroups = React.memo<{
                       alt=""
                       loading="lazy"
                       decoding="async"
-                      onError={(e) => {
-                        e.currentTarget.src = getValidImageUrl(stationThumbnailUrl);
-                      }}
+                      onError={(e) => stepImageFallback(e.currentTarget, stationThumbnailUrl)}
                     />
                     <span className={styles.thumb_overlay} aria-hidden="true">
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
@@ -699,6 +697,7 @@ const SongHistory: React.FC<SongHistoryProps> = ({
                   alt=""
                   width={30}
                   height={30}
+                  onError={(e) => stepImageFallback(e.currentTarget)}
                 />
                 <p className={styles.station_name}>{stationTitle}</p>
               </div>

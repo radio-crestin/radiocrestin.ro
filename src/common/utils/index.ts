@@ -79,7 +79,9 @@ export function stationsInGroup(
     .filter((s): s is IStation => Boolean(s));
 }
 
-export function getValidImageUrl(url: string | null | undefined, fallback: string = "/images/radio-white-default.jpg"): string {
+export const DEFAULT_RADIO_IMG = "/images/radio-white-default.jpg";
+
+export function getValidImageUrl(url: string | null | undefined, fallback: string = DEFAULT_RADIO_IMG): string {
   if (!url || url === "null" || url === "undefined" || url.trim() === "") {
     return fallback;
   }
@@ -89,4 +91,22 @@ export function getValidImageUrl(url: string | null | undefined, fallback: strin
     return fallback;
   }
   return url;
+}
+
+// onError handler body for artwork <img>s: advances the broken image one step
+// down its fallback chain (e.g. song thumb → station thumb → default radio
+// image). The current src is never re-set, so a broken station image can't
+// retry-loop and the chain always terminates on the bundled default.
+export function stepImageFallback(
+  img: HTMLImageElement,
+  ...fallbacks: Array<string | null | undefined>
+): void {
+  const chain: string[] = [];
+  for (const candidate of [...fallbacks, DEFAULT_RADIO_IMG]) {
+    const url = getValidImageUrl(candidate);
+    if (!chain.includes(url)) chain.push(url);
+  }
+  const current = img.getAttribute("src") ?? "";
+  const next = chain[chain.indexOf(current) + 1];
+  if (next && next !== current) img.src = next;
 }
