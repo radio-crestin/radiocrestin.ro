@@ -88,7 +88,7 @@ const FavouriteItem = (data: IStation) => {
         />
         <div className={styles.station_details}>
           <p className={styles.station_name}>
-            <PlayingIndicator />
+            <PlayingIndicator isActive={isActive} />
             {data.title}
           </p>
           {/* Height-animated song slot: hugs the rendered text and glides on
