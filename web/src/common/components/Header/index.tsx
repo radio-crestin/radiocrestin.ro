@@ -467,7 +467,7 @@ const ContentRight = () => {
     if (el) {
       setDescOverflows(el.scrollHeight > el.clientHeight + 2);
     }
-  }, [station?.description, descExpanded]);
+  }, [station?.slug, station?.description, descExpanded]);
 
   if (!station) return null;
 
@@ -601,29 +601,28 @@ const ContentRight = () => {
           )}
         </div>
 
-        {station.description && (
-          <div className={styles.description_block}>
-            <p
-              ref={descRef}
-              className={`${styles.station_description} ${descExpanded ? styles.desc_expanded : ""} ${descOpening ? styles.desc_opening : ""} ${descClosing ? styles.desc_closing : ""}`}
-            >
-              {station.description}
-            </p>
-            {/* Fixed-height slot: overflow is only measurable after hydration,
-                so the toggle fades in without pushing the actions row down */}
-            <div className={styles.desc_toggle_slot}>
-              {(descOverflows || descExpanded) && (
-                <button
-                  className={styles.desc_toggle}
-                  onClick={toggleDesc}
-                  aria-expanded={descExpanded && !descClosing}
-                >
-                  {descExpanded && !descClosing ? "Afișează mai puțin" : "Citește mai mult"}
-                </button>
-              )}
-            </div>
+        {/* Always mounted so description-less stations keep the same hero height */}
+        <div className={styles.description_block}>
+          <p
+            ref={descRef}
+            className={`${styles.station_description} ${descExpanded ? styles.desc_expanded : ""} ${descOpening ? styles.desc_opening : ""} ${descClosing ? styles.desc_closing : ""}`}
+          >
+            {station.description || `Ascultă ${station.title} live online pe Radio Creștin`}
+          </p>
+          {/* Fixed-height slot: overflow is only measurable after hydration,
+              so the toggle fades in without pushing the actions row down */}
+          <div className={styles.desc_toggle_slot}>
+            {(descOverflows || descExpanded) && (
+              <button
+                className={styles.desc_toggle}
+                onClick={toggleDesc}
+                aria-expanded={descExpanded && !descClosing}
+              >
+                {descExpanded && !descClosing ? "Afișează mai puțin" : "Citește mai mult"}
+              </button>
+            )}
           </div>
-        )}
+        </div>
 
         <div className={styles.hero_actions}>
           <button
