@@ -8,12 +8,13 @@
     "generate-sitemap": "node scripts/generate-sitemap.cjs",
     "generate-llms-txt": "node scripts/generate-llms-txt.cjs",
     "download-thumbnails": "node scripts/download-thumbnails.cjs",
-    "build": "npm run download-thumbnails && npm run generate-sitemap && npm run generate-llms-txt && astro build && npm run upload-sourcemaps",
+    "build": "npm run download-thumbnails && npm run generate-sitemap && npm run generate-llms-txt && astro build && npm run inject-modulepreload && npm run upload-sourcemaps",
     "upload-sourcemaps": "node scripts/upload-sourcemaps.cjs",
     "preview": "astro preview --port 3005",
     "start": "npx serve@latest dist",
     "lint": "eslint .",
-    "test": "vitest run"
+    "test": "vitest run",
+    "inject-modulepreload": "node scripts/inject-modulepreload.cjs"
   },
   "dependencies": {
     "@astrojs/react": "^4.0.0",
