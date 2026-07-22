@@ -7,6 +7,12 @@ export default defineConfig({
   // canonicals and the sitemap use the trailing-slash form to match.
   trailingSlash: "always",
   output: "static",
+  // Astro 7 changed the default to 'jsx', which strips the space between
+  // adjacent inline elements (<span>a</span> <em>b</em> → "ab") and reshuffles
+  // the HTML byte layout enough to move the parser's mid-hero paint yield
+  // (intermittent ~0.013 CLS on station pages in the throttled probe).
+  // `true` keeps the v6 HTML-aware compression the site was tuned against.
+  compressHTML: true,
   // Page CSS goes inline in the HTML: as separate files the three per-page
   // stylesheets are render-blocking round-trips (~0.5-0.85s of blank screen
   // on 4G), while the HTML they'd ride in is served max-age=0 regardless.
