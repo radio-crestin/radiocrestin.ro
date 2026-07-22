@@ -119,6 +119,19 @@ export function getValidImageUrl(url: string | null | undefined, fallback: strin
   return url;
 }
 
+// Click-capture handler for card-style links: a mouse/touch click leaves the
+// anchor focused, and Chrome promotes that invisible focus to the UA blue
+// focus ring at the next keypress (Space = global play/pause). Dropping
+// pointer focus prevents the promotion; keyboard activation (click detail 0)
+// keeps its focus so Tab users don't lose the ring. Capture phase so inner
+// stopPropagation (the favourite heart) can't skip it.
+export function dropPointerFocus(e: {
+  detail: number;
+  currentTarget: HTMLElement;
+}): void {
+  if (e.detail !== 0) e.currentTarget.blur();
+}
+
 // onError handler body for artwork <img>s: advances the broken image one step
 // down its fallback chain (e.g. song thumb → station thumb → default radio
 // image). The current src is never re-set, so a broken station image can't

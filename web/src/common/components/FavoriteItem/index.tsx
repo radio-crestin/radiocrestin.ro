@@ -9,7 +9,11 @@ import Heart from "@/icons/Heart";
 import useSwapTransition, { songSwapEqual } from "@/hooks/useSwapTransition";
 import useContentHeight from "@/hooks/useContentHeight";
 import { Context } from "@/context/ContextProvider";
-import { getValidImageUrl, stepImageFallback } from "@/utils";
+import {
+  dropPointerFocus,
+  getValidImageUrl,
+  stepImageFallback,
+} from "@/utils";
 import OfflineStatus from "@/components/OfflineStatus";
 import PlayingIndicator from "@/components/PlayingIndicator";
 
@@ -75,6 +79,7 @@ const FavouriteItem = (data: IStation) => {
       href={`/${data.slug}/`}
       data-active={isActive}
       draggable={false}
+      onClickCapture={dropPointerFocus}
       onClick={handleStationClick}
     >
       <div className={styles.image_container}>

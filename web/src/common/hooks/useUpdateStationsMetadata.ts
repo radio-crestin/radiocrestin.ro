@@ -40,24 +40,29 @@ function deepMerge<T extends Record<string, any>>(target: T, source: Partial<T>)
 // second half for non-differential fetches (the HLS offset fetch returns all
 // 64 stations every 10s; blindly merging gave every station a fresh identity
 // and defeated the memo for entire HLS sessions).
-const stationValuesChanged = (
-  original: IStation,
-  merged: IStation,
-  keys: Iterable<string>,
-): boolean => {
-  for (const key of keys) {
-    if (key === "id") continue;
-    if (
-      JSON.stringify((merged as any)[key]) !==
-      JSON.stringify((original as any)[key])
-    ) {
-      return true;
-    }
-  }
-  return false;
-};
+// Live-update change detection for the 10s polls. Compares ONLY the fields
+// the UI renders live between polls — replacing a per-key JSON.stringify
+// deep-compare that cost ~500+ serializations (~1MB of transient strings)
+// per tick AND was defeated by per-probe noise: uptime.latency_ms and the
+// two timestamps jitter on most polls, so ~70% of stations got a fresh
+// identity every 10s and their memoized cards re-rendered for nothing
+// (measured live: 44/64 flagged by the old diff vs 4/64 by this one).
+// Deliberately ignored as noise: now_playing.timestamp, uptime.latency_ms,
+// uptime.timestamp, slug/title. Any ignored or future metadata field still
+// reaches the UI within 5 minutes — doFullRefresh replaces every station
+// object unconditionally. Adding a live-updating field to the metadata
+// payload? Add it here and to the canary test in
+// useUpdateStationsMetadata.test.ts.
+export const stationValuesChanged = (a: IStation, b: IStation): boolean =>
+  a.now_playing?.song?.id !== b.now_playing?.song?.id ||
+  a.now_playing?.song?.name !== b.now_playing?.song?.name ||
+  a.now_playing?.song?.thumbnail_url !== b.now_playing?.song?.thumbnail_url ||
+  a.now_playing?.song?.artist?.name !== b.now_playing?.song?.artist?.name ||
+  (a.now_playing as any)?.listeners !== (b.now_playing as any)?.listeners ||
+  a.total_listeners !== b.total_listeners ||
+  a.uptime?.is_up !== b.uptime?.is_up;
 
-const applyMetadataToStations = (stations: IStation[], metadata: IStationMetadata[]): IStation[] => {
+export const applyMetadataToStations = (stations: IStation[], metadata: IStationMetadata[]): IStation[] => {
   if (!metadata.length) return stations;
 
   const metadataMap = new Map(metadata.map(m => [m.id, m]));
@@ -66,8 +71,17 @@ const applyMetadataToStations = (stations: IStation[], metadata: IStationMetadat
   const next = stations.map(station => {
     const meta = metadataMap.get(station.id);
     if (!meta) return station;
-    const merged = deepMerge(station, meta);
-    if (stationValuesChanged(station, merged, Object.keys(meta))) {
+    let merged = deepMerge(station, meta);
+    // The metadata endpoint reports listeners inside now_playing, but the UI
+    // renders station.total_listeners — same lift as applyDualMetadata, so
+    // counts stay live at 10s on this path too (non-HLS playback / idle
+    // browsing) instead of freezing until the 5-minute full refresh.
+    if (typeof (meta.now_playing as any)?.listeners === "number") {
+      merged = deepMerge(merged, {
+        total_listeners: (meta.now_playing as any).listeners,
+      });
+    }
+    if (stationValuesChanged(station, merged)) {
       anyChanged = true;
       return merged;
     }
@@ -111,12 +125,7 @@ const applyDualMetadata = (
       merged = deepMerge(merged, { total_listeners: (liveMeta.now_playing as any).listeners });
     }
 
-    if (
-      stationValuesChanged(station, merged, [
-        ...Object.keys(meta),
-        "total_listeners",
-      ])
-    ) {
+    if (stationValuesChanged(station, merged)) {
       anyChanged = true;
       return merged;
     }
