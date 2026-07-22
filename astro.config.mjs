@@ -25,6 +25,10 @@ export default defineConfig({
     domains: ["fsn1.your-objectstorage.com"],
   },
   vite: {
+    build: {
+      // ios15 keeps Lightning CSS from stripping -webkit-text-size-adjust
+      cssTarget: ["chrome100", "edge100", "firefox115", "safari15", "ios15"],
+    },
     plugins: [
       {
         // Dev-only: Vite serves public/*.txt as text/plain without charset,
