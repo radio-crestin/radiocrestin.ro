@@ -1,3 +1,5 @@
+@use "public/styles/mixinHelper";
+
 .playing_indicator {
   display: flex;
   align-items: flex-end;
@@ -11,6 +13,10 @@
   overflow: hidden;
   transition: width 0.3s ease, margin-right 0.3s ease, opacity 0.3s ease;
   will-change: width, margin-right, opacity;
+
+  @include mixinHelper.onTablet {
+    display: none;
+  }
 
   span {
     width: 3px;
