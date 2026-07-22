@@ -33,6 +33,9 @@ import { canAutoplayAudio } from "@/utils/autoplay";
 import usePlayCount from "@/store/usePlayCount";
 import { useRefreshStations } from "@/hooks/useUpdateStationsMetadata";
 import { getValidImageUrl, roPlural, stepImageFallback } from "@/utils";
+import { getAdjacentStation } from "@/utils/stationQueue";
+import SkipPreviousIcon from "@/icons/SkipPrevious";
+import SkipNextIcon from "@/icons/SkipNext";
 
 enum STREAM_TYPE {
   HLS = "HLS",
@@ -51,6 +54,11 @@ export default function RadioPlayer() {
   const { playerVolume, setPlayerVolume } = usePlayer();
   const { playbackState, setPlaybackState, setHasError, setHlsActive, setHlsPlaybackTimestamp, setHlsSongId } = usePlaybackState();
   const station = ctx.selectedStation;
+  // stepStation also runs from MediaSession handlers registered in a
+  // [station]-keyed effect — those closures read ctx through this ref so a
+  // 10s metadata poll between registrations never leaves them stale.
+  const ctxRef = useRef(ctx);
+  ctxRef.current = ctx;
   const retriesRef = useRef(MAX_MEDIA_RETRIES);
   const [streamState, setStreamState] = useState<{ type: STREAM_TYPE; slug: string } | null>(null);
   const streamType = streamState?.slug === station.slug ? streamState?.type ?? null : null;
@@ -1029,19 +1037,14 @@ export default function RadioPlayer() {
         setPlaybackState(PLAYBACK_STATE.STOPPED);
       });
 
+      // Hardware media keys mirror the on-screen prev/next buttons: same
+      // queue-aware stepper, same wrap-around.
       navigator.mediaSession.setActionHandler("nexttrack", () => {
-        nextRandomStation();
+        stepStation(1);
       });
 
       navigator.mediaSession.setActionHandler("previoustrack", () => {
-        // In-page playback (category pages) has no station history entries —
-        // step back through the list instead of navigating the browser history.
-        if (ctx.inPagePlayback) {
-          stepStation(-1);
-        } else {
-          // window. prefix required: the local `history` state (song list) shadows it
-          window.history.back();
-        }
+        stepStation(-1);
       });
     }
   }, [station]);
@@ -1061,27 +1064,28 @@ export default function RadioPlayer() {
     }
   });
 
-  const stepStation = (direction: number) => {
-    const stationList = ctx.sortedStations || ctx.stations;
-    const upStations = stationList.filter(
-      (s: any) => s.uptime.is_up === true,
-    );
-    if (!upStations.length) return;
+  // Prev/next station. The queue depends on where the current station was
+  // picked from (usePlayer.playbackSource): the favourites strip cycles the
+  // favourites, everything else cycles the full sorted list.
+  const stepStation = (direction: 1 | -1) => {
+    const current = ctxRef.current;
+    const currentStation = current.selectedStation;
+    if (!currentStation) return;
 
-    const currentIndex = upStations.findIndex((s: any) => s.slug === station.slug);
-    const nextIndex =
-      (currentIndex + direction + upStations.length) % upStations.length;
-    const nextStation = upStations[nextIndex];
+    const nextStation = getAdjacentStation({
+      allStations: current.sortedStations || current.stations || [],
+      favouriteStations: current.favouriteStations || [],
+      source: usePlayer.getState().playbackSource,
+      currentSlug: currentStation.slug,
+      direction,
+    });
+    if (!nextStation) return;
 
-    if (nextStation) {
-      setCtx({ selectedStation: nextStation });
-      if (!ctx.inPagePlayback) {
-        window.history.pushState(null, "", `/${nextStation.slug}/`);
-      }
+    setCtx({ selectedStation: nextStation });
+    if (!current.inPagePlayback) {
+      window.history.pushState(null, "", `/${nextStation.slug}/`);
     }
   };
-
-  const nextRandomStation = () => stepStation(1);
 
   // Bare glyphs for the amber play button
   const renderPlayIcon = () => {
@@ -1450,7 +1454,22 @@ export default function RadioPlayer() {
               <Heart color={isFavorite ? "red" : "white"} defaultColor={"red"} />
             </button>
             <button
-              aria-label="Play"
+              type="button"
+              aria-label="Stația anterioară"
+              title="Stația anterioară"
+              className={styles.skip_button}
+              onClick={() => stepStation(-1)}
+            >
+              <SkipPreviousIcon />
+            </button>
+            <button
+              aria-label={
+                playbackState === PLAYBACK_STATE.PLAYING ||
+                playbackState === PLAYBACK_STATE.STARTED ||
+                playbackState === PLAYBACK_STATE.BUFFERING
+                  ? "Pauză"
+                  : "Redă"
+              }
               className={styles.play_button}
               onClick={() => {
                 if (
@@ -1470,6 +1489,15 @@ export default function RadioPlayer() {
               <span className={styles.play_icon} aria-hidden="true">
                 {renderPlayIcon()}
               </span>
+            </button>
+            <button
+              type="button"
+              aria-label="Stația următoare"
+              title="Stația următoare"
+              className={styles.skip_button}
+              onClick={() => stepStation(1)}
+            >
+              <SkipNextIcon />
             </button>
           </div>
         </div>

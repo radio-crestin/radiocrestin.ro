@@ -3,6 +3,7 @@
 import type { IStation } from "@/models/Station";
 import styles from "./styles.module.scss";
 import useFavourite from "@/store/useFavourite";
+import usePlayer from "@/store/usePlayer";
 import React, { useContext, useMemo, useRef } from "react";
 import Heart from "@/icons/Heart";
 import useSwapTransition, { songSwapEqual } from "@/hooks/useSwapTransition";
@@ -61,6 +62,8 @@ const FavouriteItem = (data: IStation) => {
     e.preventDefault();
     const station = ctx.stations?.find((s: IStation) => s.slug === data.slug);
     if (station) {
+      // Picked from the favourites strip → player prev/next cycles favourites
+      usePlayer.getState().setPlaybackSource("favorites");
       setCtx({ selectedStation: station });
       window.history.pushState(null, "", `/${data.slug}/`);
     }
