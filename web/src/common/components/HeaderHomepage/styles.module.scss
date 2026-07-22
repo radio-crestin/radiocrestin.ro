@@ -192,25 +192,33 @@
   background: #f43f3f;
   position: relative;
 
+  // Radar ping: a ring swelling off the dot's edge that dissolves as it
+  // grows (box-shadow spread). The old scale(2.6) clone of the filled disc
+  // read as a red smudge hovering behind the dot on chrome-less layouts.
   &::after {
     content: "";
     position: absolute;
     inset: 0;
     border-radius: 50%;
-    background: inherit;
-    animation: livePulse 1.8s ease-out infinite;
+    animation: livePing 1.8s ease-out infinite;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    &::after {
+      animation: none;
+    }
   }
 }
 
-@keyframes livePulse {
+@keyframes livePing {
+  // Brighter than the dot itself: a translucent ring of the base red goes
+  // muddy-maroon over dark surfaces, while the lifted coral stays a glow
   0% {
-    transform: scale(1);
-    opacity: 0.8;
+    box-shadow: 0 0 0 0 rgba(248, 113, 113, 0.55);
   }
-  70%,
+  75%,
   100% {
-    transform: scale(2.6);
-    opacity: 0;
+    box-shadow: 0 0 2px 5px rgba(248, 113, 113, 0);
   }
 }
 
