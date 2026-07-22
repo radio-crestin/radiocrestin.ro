@@ -557,6 +557,7 @@
 
       // 3 clamped lines — also the start/end point of the expand animation
       max-height: 75px;
+      min-height: 75px;
       transition: max-height 0.38s ease;
 
       // Expanded state stays inside the fixed 652px frame: the height glides
@@ -599,6 +600,7 @@
         line-height: 20px;
         // 3 clamped lines at the tighter mobile line-height
         max-height: 60px;
+        min-height: 60px;
 
         &.desc_expanded {
           max-height: 150px;
