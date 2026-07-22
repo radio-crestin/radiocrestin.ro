@@ -1,44 +1,190 @@
 @use "public/styles/mixinHelper";
-@use "public/styles/globalVariables";
 
-.buttonContainer {
+.share_root {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 6px;
 }
 
-.label {
-  font-size: 0.8rem;
-  color: var(--header-subtext-color);
-  margin-right: 2px;
-}
-
-.button {
+// Quiet like the label it replaced: no box at rest — subdued text + icon in
+// the corner, the ghost pill surfaces only on hover / while the menu is open
+.trigger {
   display: flex;
   align-items: center;
-  justify-content: center;
+  gap: 7px;
+  height: 34px;
+  padding: 0 14px;
+  background: transparent;
   border: none;
-  border-radius: 50%;
+  border-radius: 999px;
+  color: var(--header-subtext-color);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
   cursor: pointer;
-  padding: 8px;
-  transition: opacity 0.2s;
-  opacity: 0.6;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
 
-  &:hover {
-    opacity: 1;
+  &:hover,
+  &.trigger_open {
+    background: rgba(128, 128, 128, 0.18);
+    color: var(--text-color);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--text-color);
+    outline-offset: 2px;
   }
 }
 
-.facebookButton {
-  background-color: #2d4373;
+// Same glass card as the nav settings menu, but rising from the pill: the
+// wrapper sits at the header's bottom edge, so the menu must open upward —
+// downward it would poke past the container's overflow:hidden crop
+.dropdown {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  right: 0;
+  background: color-mix(in srgb, var(--station-card-color) 88%, transparent);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-radius: 16px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 236px;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.28);
+  border: 1px solid rgba(128, 128, 128, 0.22);
+  z-index: 100;
+  transform-origin: bottom right;
+  animation: menuRise 0.18s ease;
+
+  &.dropdown_closing {
+    animation: menuRiseOut 0.15s ease forwards;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+
+    &.dropdown_closing {
+      animation: none;
+    }
+  }
 }
 
-.whatsappButton {
-  background-color: #1da851;
+// No width: the flex column already stretches rows edge-to-edge; an explicit
+// 100% + padding overflows the card on <a> rows (no global border-box reset)
+.menu_item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-sizing: border-box;
+  cursor: pointer;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 12px;
+  background: transparent;
+  font-family: inherit;
+  text-align: left;
+  text-decoration: none;
+  transition: background-color 0.15s ease;
+
+  &:hover {
+    background-color: rgba(128, 128, 128, 0.1);
+  }
+
+  &:active {
+    background-color: rgba(128, 128, 128, 0.16);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--text-color);
+    outline-offset: -2px;
+  }
 }
 
-.socialIcon {
-  width: 16px;
-  height: 16px;
-  display: block;
+// Brand-colored circles carry the white glyph assets, like the app icons
+// people already know the channels by
+.menu_icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: rgba(128, 128, 128, 0.12);
+  color: var(--text-color);
+
+  img {
+    display: block;
+  }
+}
+
+.icon_whatsapp {
+  background: linear-gradient(180deg, #57d163 0%, #23b33a 100%);
+}
+
+.icon_facebook {
+  background: #1877f2;
+}
+
+.icon_telegram {
+  background: linear-gradient(180deg, #37aee2 0%, #1e96c8 100%);
+}
+
+.icon_copied {
+  background: rgba(46, 167, 95, 0.18);
+  color: #34c471;
+}
+
+.menu_label {
+  flex: 1;
+  color: var(--text-color);
+  font-size: 14.5px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.label_copied {
+  color: #34c471;
+}
+
+:global([data-theme="light"]) {
+  .icon_copied {
+    color: #1e8e4c;
+  }
+
+  .label_copied {
+    color: #1e8e4c;
+  }
+}
+
+.menu_divider {
+  height: 1px;
+  margin: 5px 10px;
+  background: rgba(128, 128, 128, 0.16);
+}
+
+@keyframes menuRise {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes menuRiseOut {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(6px) scale(0.96);
+  }
 }
