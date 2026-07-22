@@ -444,7 +444,7 @@ const Stations = () => {
             }
             return (
               <React.Fragment key={`${station.id}-${station.slug}`}>
-                <StationItem {...station} badgeType={badgeType} />
+                <StationItem station={station} badgeType={badgeType} />
               </React.Fragment>
             );
           })

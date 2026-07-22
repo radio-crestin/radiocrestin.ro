@@ -1,4 +1,4 @@
-import { createContext, useEffect, useReducer, useRef } from "react";
+import { createContext, useEffect, useMemo, useReducer, useRef } from "react";
 
 const Context = createContext<any>(null);
 
@@ -63,9 +63,12 @@ const ContextProvider = ({
     return () => window.removeEventListener("popstate", handlePopState);
   }, []);
 
-  return (
-    <Context.Provider value={{ ctx, setCtx }}>{children}</Context.Provider>
-  );
+  // setCtx (useReducer dispatch) is identity-stable, so the memo keys on ctx
+  // alone — consumers re-render only when the context data actually changed,
+  // never because the provider itself re-rendered.
+  const value = useMemo(() => ({ ctx, setCtx }), [ctx]);
+
+  return <Context.Provider value={value}>{children}</Context.Provider>;
 };
 
 export { Context, ContextProvider };

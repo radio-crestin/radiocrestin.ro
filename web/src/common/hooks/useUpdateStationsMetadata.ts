@@ -33,6 +33,30 @@ function deepMerge<T extends Record<string, any>>(target: T, source: Partial<T>)
   return output;
 }
 
+// INVARIANT the memoized StationCard depends on: station objects are never
+// mutated in place on the client — a value change MUST come with a new object
+// reference, and an unchanged station SHOULD keep its reference (that is what
+// lets unchanged cards skip re-rendering). The helpers below enforce the
+// second half for non-differential fetches (the HLS offset fetch returns all
+// 64 stations every 10s; blindly merging gave every station a fresh identity
+// and defeated the memo for entire HLS sessions).
+const stationValuesChanged = (
+  original: IStation,
+  merged: IStation,
+  keys: Iterable<string>,
+): boolean => {
+  for (const key of keys) {
+    if (key === "id") continue;
+    if (
+      JSON.stringify((merged as any)[key]) !==
+      JSON.stringify((original as any)[key])
+    ) {
+      return true;
+    }
+  }
+  return false;
+};
+
 const applyMetadataToStations = (stations: IStation[], metadata: IStationMetadata[]): IStation[] => {
   if (!metadata.length) return stations;
 
@@ -41,7 +65,10 @@ const applyMetadataToStations = (stations: IStation[], metadata: IStationMetadat
   return stations.map(station => {
     const meta = metadataMap.get(station.id);
     if (!meta) return station;
-    return deepMerge(station, meta);
+    const merged = deepMerge(station, meta);
+    return stationValuesChanged(station, merged, Object.keys(meta))
+      ? merged
+      : station;
   });
 };
 
@@ -76,7 +103,12 @@ const applyDualMetadata = (
       merged = deepMerge(merged, { total_listeners: (liveMeta.now_playing as any).listeners });
     }
 
-    return merged;
+    return stationValuesChanged(station, merged, [
+      ...Object.keys(meta),
+      "total_listeners",
+    ])
+      ? merged
+      : station;
   });
 };
 

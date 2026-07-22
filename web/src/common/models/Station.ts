@@ -25,6 +25,9 @@ export interface IStationGroup {
   }[];
 }
 
+// Client code must treat station objects as IMMUTABLE: StationCard is
+// memoized by station reference, so mutating one in place (instead of
+// producing a new object) freezes that card's UI on screen.
 export interface IStation {
   id: number;
   slug: string;

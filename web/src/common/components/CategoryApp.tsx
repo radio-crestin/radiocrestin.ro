@@ -87,7 +87,7 @@ function CategoryContent({
     <NoInternetConnection>
       <div className="category-stations">
         {categoryStations.map((station) => (
-          <StationItem key={`${station.id}-${station.slug}`} {...station} />
+          <StationItem key={`${station.id}-${station.slug}`} station={station} />
         ))}
       </div>
       {ctx.selectedStation && <RadioPlayer />}

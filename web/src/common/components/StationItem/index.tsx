@@ -6,7 +6,7 @@ import HeadphoneIcon from "@/icons/Headphone";
 import Star from "@/icons/Star";
 import Heart from "@/icons/Heart";
 import useFavourite from "@/store/useFavourite";
-import { useContext, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useContext, useMemo, useRef } from "react";
 import { Context } from "@/context/ContextProvider";
 import useSwapTransition, { songSwapEqual } from "@/hooks/useSwapTransition";
 import useContentHeight from "@/hooks/useContentHeight";
@@ -17,7 +17,8 @@ import SparklesStar from "@/icons/SparklesStar";
 
 type BadgeType = "station_of_day" | "most_played" | null;
 
-interface StationItemProps extends IStation {
+interface StationItemProps {
+  station: IStation;
   badgeType?: BadgeType;
 }
 
@@ -31,14 +32,59 @@ const BADGE_CONFIG: Record<string, { tooltip: string; styleClass?: string }> = {
   },
 };
 
-const StationItem = ({ badgeType, ...data }: StationItemProps) => {
+// Context firewall: this thin wrapper is the only part that subscribes to the
+// app context, so the 10s metadata polls (which replace the ctx object every
+// cycle) reach the heavy card below only as stable props — cards whose station
+// object didn't change skip re-rendering entirely via the memo.
+const StationItem = ({ station, badgeType }: StationItemProps) => {
   const { ctx, setCtx } = useContext(Context);
-  const { favouriteItems, toggleFavourite } = useFavourite();
-  const [isStationFavourite, setIsStationFavourite] = useState(false);
-  const isActive = ctx.selectedStation?.slug === data.slug;
-  useEffect(() => {
-    setIsStationFavourite(favouriteItems.includes(data.slug));
-  }, [data.slug, favouriteItems]);
+  const isActive = ctx.selectedStation?.slug === station.slug;
+  // The click handler must read the *fresh* ctx.stations at click time, but
+  // its identity must stay stable or it would defeat the card's memo.
+  const ctxRef = useRef(ctx);
+  ctxRef.current = ctx;
+  const onSelect = useCallback(
+    (slug: string) => {
+      const current = ctxRef.current;
+      const found = current.stations?.find((s: IStation) => s.slug === slug);
+      if (found) {
+        setCtx({ selectedStation: found });
+        if (!current.inPagePlayback) {
+          window.history.pushState(null, "", `/${slug}/`);
+        }
+      }
+    },
+    [setCtx],
+  );
+  return (
+    <StationCard
+      station={station}
+      badgeType={badgeType}
+      isActive={isActive}
+      onSelect={onSelect}
+    />
+  );
+};
+
+interface StationCardProps {
+  station: IStation;
+  badgeType?: BadgeType;
+  isActive: boolean;
+  onSelect: (slug: string) => void;
+}
+
+const StationCard = memo(function StationCard({
+  station: data,
+  badgeType,
+  isActive,
+  onSelect,
+}: StationCardProps) {
+  // Per-card boolean selector: a favourite toggle re-renders only the cards
+  // whose heart actually flips, not all 64.
+  const isStationFavourite = useFavourite((s) =>
+    s.favouriteItems.includes(data.slug),
+  );
+  const toggleFavourite = useFavourite((s) => s.toggleFavourite);
 
   // Two-phase song-line swap (same motion as the header hero and player bar):
   // the rendered text trails the live poll by a 170ms fade-out, then the new
@@ -71,13 +117,7 @@ const StationItem = ({ badgeType, ...data }: StationItemProps) => {
 
   const handleStationClick = (e: React.MouseEvent) => {
     e.preventDefault();
-    const station = ctx.stations?.find((s: IStation) => s.slug === data.slug);
-    if (station) {
-      setCtx({ selectedStation: station });
-      if (!ctx.inPagePlayback) {
-        window.history.pushState(null, "", `/${data.slug}/`);
-      }
-    }
+    onSelect(data.slug);
   };
 
   return (
@@ -193,6 +233,6 @@ const StationItem = ({ badgeType, ...data }: StationItemProps) => {
       </div>
     </a>
   );
-};
+});
 
 export default StationItem;
