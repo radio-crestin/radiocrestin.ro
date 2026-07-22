@@ -257,6 +257,7 @@
     // so the card keeps its height when live song metadata replaces the
     // SSR'd station title / "Transmisiune live" pair
     min-height: 69px;
+    overflow-wrap: anywhere;
 
     h2 {
       color: var(--text-color);

@@ -6,6 +6,7 @@
   justify-content: flex-start;
   gap: 25px;
   width: 100%;
+  min-width: 0;
   max-width: 571px;
   max-height: 141px;
   padding: 15px 17px;
@@ -206,6 +207,7 @@
       -webkit-line-clamp: 2;
       -webkit-box-orient: vertical;
       overflow: hidden;
+      overflow-wrap: anywhere;
     }
 
     // Two-phase song swap (same keyframes as the player bar ticker): out on
