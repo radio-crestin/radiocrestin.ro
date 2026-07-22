@@ -45,6 +45,17 @@ const seo = seoStation(selectedStation);
 const lcpThumbSrc = getValidImageUrl(selectedStation.thumbnail_url);
 const lcpThumbSrcset = stationThumbImgProps(selectedStation.thumbnail_url, 224);
 
+// Entity reconciliation: sameAs ties this page to the station's Knowledge
+// Graph node (keyed by its official site) — without it the ~10 near-identical
+// RVE sister stations are ambiguous to Google. JSON-LD only, not a crawlable
+// link, so no authority is passed to the listed sites.
+const sameAsLinks = [
+  selectedStation.website,
+  selectedStation.facebook_page_id
+    ? `https://www.facebook.com/${selectedStation.facebook_page_id}`
+    : null,
+].filter((url): url is string => !!url && url.startsWith("http"));
+
 const radioStationSchema = JSON.stringify({
   "@context": "https://schema.org",
   "@type": "RadioStation",
@@ -54,6 +65,7 @@ const radioStationSchema = JSON.stringify({
   image: seo.imageUrl,
   genre: "Christian",
   description: selectedStation.description || `Ascultă ${selectedStation.title} live online pe Radio Creștin`,
+  ...(sameAsLinks.length > 0 && { sameAs: sameAsLinks }),
   potentialAction: {
     "@type": "ListenAction",
     target: seo.fullURL,

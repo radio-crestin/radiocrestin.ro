@@ -32,12 +32,15 @@ const handleImgError = (e: SyntheticEvent<HTMLImageElement>) => {
   stepImageFallback(e.currentTarget);
 };
 
-// Outbound station links carry ?ref= so stations can see the traffic we
-// send them; URL() keeps existing query strings/fragments intact
-const withRef = (url: string) => {
+// Outbound station links carry utm_source so the traffic we send shows up
+// *named* in stations' own analytics — GA4/Matomo/Plausible parse utm_*
+// natively, while a bare ?ref= is ignored by all of them unless the
+// destination site custom-parses it; URL() keeps existing query/fragments intact
+const withUtm = (url: string) => {
   try {
     const u = new URL(url);
-    u.searchParams.set("ref", "radiocrestin.ro");
+    u.searchParams.set("utm_source", "radiocrestin.ro");
+    u.searchParams.set("utm_medium", "referral");
     return u.toString();
   } catch {
     return url;
@@ -532,7 +535,7 @@ const ContentRight = () => {
               {station.website && (
                 <a
                   className={styles.meta_link}
-                  href={withRef(station.website)}
+                  href={withUtm(station.website)}
                   target="_blank"
                   rel="noopener"
                 >
@@ -543,7 +546,7 @@ const ContentRight = () => {
               {station.facebook_page_id && (
                 <a
                   className={styles.meta_link}
-                  href={withRef(`https://www.facebook.com/${station.facebook_page_id}`)}
+                  href={`https://www.facebook.com/${station.facebook_page_id}`}
                   target="_blank"
                   rel="noopener"
                   title={`${station.title} pe Facebook`}
