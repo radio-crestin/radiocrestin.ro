@@ -62,14 +62,21 @@ const applyMetadataToStations = (stations: IStation[], metadata: IStationMetadat
 
   const metadataMap = new Map(metadata.map(m => [m.id, m]));
 
-  return stations.map(station => {
+  let anyChanged = false;
+  const next = stations.map(station => {
     const meta = metadataMap.get(station.id);
     if (!meta) return station;
     const merged = deepMerge(station, meta);
-    return stationValuesChanged(station, merged, Object.keys(meta))
-      ? merged
-      : station;
+    if (stationValuesChanged(station, merged, Object.keys(meta))) {
+      anyChanged = true;
+      return merged;
+    }
+    return station;
   });
+  // A no-change poll keeps the ARRAY reference too — the ctx reducer bails
+  // out on identical values, so downstream effects keyed on ctx.stations
+  // (sort, favourites) don't re-fire every 10s.
+  return anyChanged ? next : stations;
 };
 
 /**
@@ -88,7 +95,8 @@ const applyDualMetadata = (
   const liveMap = new Map(liveMetadata.map(m => [m.id, m]));
   const offsetMap = new Map(offsetMetadata.map(m => [m.id, m]));
 
-  return stations.map(station => {
+  let anyChanged = false;
+  const next = stations.map(station => {
     const useOffset = isStationHls(station);
     const primary = useOffset ? offsetMap.get(station.id) : liveMap.get(station.id);
     const fallback = useOffset ? liveMap.get(station.id) : offsetMap.get(station.id);
@@ -103,13 +111,19 @@ const applyDualMetadata = (
       merged = deepMerge(merged, { total_listeners: (liveMeta.now_playing as any).listeners });
     }
 
-    return stationValuesChanged(station, merged, [
-      ...Object.keys(meta),
-      "total_listeners",
-    ])
-      ? merged
-      : station;
+    if (
+      stationValuesChanged(station, merged, [
+        ...Object.keys(meta),
+        "total_listeners",
+      ])
+    ) {
+      anyChanged = true;
+      return merged;
+    }
+    return station;
   });
+  // Same as applyMetadataToStations: unchanged polls preserve the array ref.
+  return anyChanged ? next : stations;
 };
 
 const updateSelectedStation = (
@@ -156,12 +170,10 @@ const useUpdateStationsMetadata = () => {
   const lastFetchTimestamp = useRef<number>(0);
   const lastFullRefreshTimestamp = useRef<number>(0);
   const initialFetchDone = useRef(false);
-  const hlsActive = usePlaybackState(s => s.hlsActive);
-  const hlsActiveRef = useRef(hlsActive);
-  hlsActiveRef.current = hlsActive;
-  const hlsPlaybackTimestamp = usePlaybackState(s => s.hlsPlaybackTimestamp);
-  const hlsPlaybackTimestampRef = useRef(hlsPlaybackTimestamp);
-  hlsPlaybackTimestampRef.current = hlsPlaybackTimestamp;
+  // hlsActive / hlsPlaybackTimestamp are only ever read inside the poll and
+  // refetch callbacks, so they are pulled with getState() at call time —
+  // subscribing reactively re-rendered this hook's host (the island root)
+  // on every ~6s FRAG_CHANGED tick just to fill a ref.
   const hlsSongId = usePlaybackState(s => s.hlsSongId);
   /** The song_id we last triggered an immediate fetch for — prevents re-fetching. */
   const lastFetchedHlsSongIdRef = useRef<number | null>(null);
@@ -204,7 +216,7 @@ const useUpdateStationsMetadata = () => {
     lastFetchedHlsSongIdRef.current = hlsSongId;
 
     // Fire-and-forget immediate metadata fetch with the HLS playback timestamp
-    const playbackTs = hlsPlaybackTimestampRef.current;
+    const playbackTs = usePlaybackState.getState().hlsPlaybackTimestamp;
     getStationsMetadata(undefined, playbackTs ?? undefined).then(metadata => {
       if (!metadata.length) return;
       const stations = stationsRef.current;
@@ -257,7 +269,8 @@ const useUpdateStationsMetadata = () => {
           return;
         }
 
-        const playbackTs = hlsActiveRef.current ? hlsPlaybackTimestampRef.current : null;
+        const { hlsActive, hlsPlaybackTimestamp } = usePlaybackState.getState();
+        const playbackTs = hlsActive ? hlsPlaybackTimestamp : null;
 
         let updatedStations: IStation[];
 

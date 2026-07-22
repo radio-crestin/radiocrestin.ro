@@ -144,7 +144,7 @@ const StationCard = memo(function StationCard({
       </div>
       <div className={styles.station_details}>
         <p className={styles.station_name}>
-          <PlayingIndicator />
+          <PlayingIndicator isActive={isActive} />
           {data.title}
           {badgeType && BADGE_CONFIG[badgeType] && (
             <span className={`${styles.promoted_badge} ${BADGE_CONFIG[badgeType].styleClass ? styles[BADGE_CONFIG[badgeType].styleClass!] : ""}`}>

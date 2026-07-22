@@ -14,12 +14,53 @@
 
   span {
     width: 3px;
-    min-height: 4px;
+    height: 14px;
     flex-shrink: 0;
     background: var(--text-color);
     border-radius: 2px;
-    transition: height 0.15s ease-out;
-    will-change: height;
+    // Resting bar ≈ the old 4px minimum, drawn by squashing the full-height
+    // bar — the animation below only ever touches transform, never layout.
+    transform: scaleY(0.29);
+    transform-origin: bottom;
+  }
+}
+
+// Staggered durations + negative delays desync the four bars so the loop
+// reads as random; alternate bounces each bar between rest and full height.
+.animating span {
+  animation: eq_bounce 0.5s ease-in-out infinite alternate;
+
+  &:nth-child(1) {
+    animation-duration: 0.42s;
+    animation-delay: -0.31s;
+  }
+  &:nth-child(2) {
+    animation-duration: 0.58s;
+    animation-delay: -0.17s;
+  }
+  &:nth-child(3) {
+    animation-duration: 0.47s;
+    animation-delay: -0.44s;
+  }
+  &:nth-child(4) {
+    animation-duration: 0.53s;
+    animation-delay: -0.62s;
+  }
+}
+
+@keyframes eq_bounce {
+  from {
+    transform: scaleY(0.29);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animating span {
+    animation: none;
+    transform: scaleY(0.7);
   }
 }
 

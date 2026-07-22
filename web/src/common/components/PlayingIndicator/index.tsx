@@ -1,53 +1,44 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
 import { PLAYBACK_STATE } from "@/models/enum";
 import usePlaybackState from "@/store/usePlaybackState";
 import usePlayer from "@/store/usePlayer";
 import styles from "./styles.module.scss";
 
-const MIN_HEIGHT = 4;
-const MAX_HEIGHT = 14;
+interface PlayingIndicatorProps {
+  /** One indicator lives in every grid/favourite card — only the active
+   * station's may animate, the rest must stay completely inert. */
+  isActive: boolean;
+}
 
-const PlayingIndicator = () => {
-  const { playbackState, hasError } = usePlaybackState();
-  const { playerVolume } = usePlayer();
-  const [heights, setHeights] = useState([MIN_HEIGHT, MIN_HEIGHT, MIN_HEIGHT, MIN_HEIGHT]);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
-
-  const isPlaying =
-    playbackState === PLAYBACK_STATE.PLAYING && playerVolume > 0 && !hasError;
-
-  useEffect(() => {
-    if (isPlaying) {
-      intervalRef.current = setInterval(() => {
-        setHeights([
-          MIN_HEIGHT + Math.random() * (MAX_HEIGHT - MIN_HEIGHT),
-          MIN_HEIGHT + Math.random() * (MAX_HEIGHT - MIN_HEIGHT),
-          MIN_HEIGHT + Math.random() * (MAX_HEIGHT - MIN_HEIGHT),
-          MIN_HEIGHT + Math.random() * (MAX_HEIGHT - MIN_HEIGHT),
-        ]);
-      }, 150);
-    } else {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
-      setHeights([MIN_HEIGHT, MIN_HEIGHT, MIN_HEIGHT, MIN_HEIGHT]);
-    }
-
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
-    };
-  }, [isPlaying]);
+// The bars are a pure CSS keyframe animation (compositor-only scaleY), so an
+// animating indicator produces zero React updates and zero DOM mutations.
+// The previous version ran a 150ms setInterval writing random inline heights
+// in EVERY mounted card whenever anything played (~65 hidden instances,
+// ~1,700 style writes/s) — burning CPU for hours and flooding the PostHog
+// session-replay recorder, which serializes every mutation.
+const PlayingIndicator = ({ isActive }: PlayingIndicatorProps) => {
+  // Boolean selectors gated on isActive: inactive instances never re-render
+  // on store writes, and nobody re-renders on unrelated high-frequency
+  // fields (hlsPlaybackTimestamp ticks every ~6s during HLS playback).
+  const isPlaying = usePlaybackState(
+    (s) =>
+      isActive && s.playbackState === PLAYBACK_STATE.PLAYING && !s.hasError,
+  );
+  const isAudible = usePlayer((s) => isActive && s.playerVolume > 0);
 
   return (
-    <span className={styles.playing_indicator}>
-      {heights.map((height, i) => (
-        <span key={i} style={{ height: `${height}px` }} />
-      ))}
+    <span
+      className={
+        isPlaying && isAudible
+          ? `${styles.playing_indicator} ${styles.animating}`
+          : styles.playing_indicator
+      }
+    >
+      <span />
+      <span />
+      <span />
+      <span />
     </span>
   );
 };

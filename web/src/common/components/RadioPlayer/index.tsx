@@ -52,8 +52,18 @@ const MAX_MEDIA_RETRIES = 20;
 
 export default function RadioPlayer() {
   const { ctx, setCtx } = useContext(Context);
-  const { playerVolume, setPlayerVolume } = usePlayer();
-  const { playbackState, setPlaybackState, setHasError, setHlsActive, setHlsPlaybackTimestamp, setHlsSongId } = usePlaybackState();
+  // Per-field selectors, not whole-store destructuring: the playback store
+  // also carries hlsPlaybackTimestamp, which ticks on every ~6s HLS fragment
+  // — a whole-store subscription would re-render the entire player for hours.
+  // Setters are identity-stable, so selecting them never triggers a render.
+  const playerVolume = usePlayer((s) => s.playerVolume);
+  const setPlayerVolume = usePlayer((s) => s.setPlayerVolume);
+  const playbackState = usePlaybackState((s) => s.playbackState);
+  const setPlaybackState = usePlaybackState((s) => s.setPlaybackState);
+  const setHasError = usePlaybackState((s) => s.setHasError);
+  const setHlsActive = usePlaybackState((s) => s.setHlsActive);
+  const setHlsPlaybackTimestamp = usePlaybackState((s) => s.setHlsPlaybackTimestamp);
+  const setHlsSongId = usePlaybackState((s) => s.setHlsSongId);
   const station = ctx.selectedStation;
   // stepStation also runs from MediaSession handlers registered in a
   // [station]-keyed effect — those closures read ctx through this ref so a
@@ -63,8 +73,9 @@ export default function RadioPlayer() {
   const retriesRef = useRef(MAX_MEDIA_RETRIES);
   const [streamState, setStreamState] = useState<{ type: STREAM_TYPE; slug: string } | null>(null);
   const streamType = streamState?.slug === station.slug ? streamState?.type ?? null : null;
-  const { favouriteItems, toggleFavourite } = useFavourite();
-  const { incrementPlayCount } = usePlayCount();
+  const favouriteItems = useFavourite((s) => s.favouriteItems);
+  const toggleFavourite = useFavourite((s) => s.toggleFavourite);
+  const incrementPlayCount = usePlayCount((s) => s.incrementPlayCount);
   const { refreshStations } = useRefreshStations();
   const [isFavorite, setIsFavorite] = useState(false);
   const [expanded, setExpanded] = useState(false);
@@ -476,6 +487,10 @@ export default function RadioPlayer() {
     // Same approach as the mobile app's SeekModeManager.
     liveSyncDuration: HLS_OFFSET_SECONDS,
     liveMaxLatencyDuration: HLS_OFFSET_SECONDS + 30,
+    // Live radio never seeks backwards, but the default (Infinity) keeps
+    // every played fragment in the SourceBuffer for the life of the hls
+    // instance — multi-hour sessions accumulate it all as tab memory.
+    backBufferLength: 90,
     // All policies: 3 retries with backoff. Handles transient 400s from
     // transcoder restarts producing new m3u8 playlists.
     manifestLoadPolicy: {
@@ -1052,7 +1067,17 @@ export default function RadioPlayer() {
         stepStation(-1);
       });
     }
-  }, [station]);
+    // Keyed on the displayed fields, not the station object: the 10s polls
+    // can mint a new selectedStation identity (e.g. a listener-count change)
+    // and re-creating MediaMetadata makes the browser re-fetch/decode the
+    // 512px artwork every time — 360×/hour over a long session.
+  }, [
+    station.slug,
+    station.title,
+    station.thumbnail_url,
+    station.now_playing?.song?.name,
+    station.now_playing?.song?.artist?.name,
+  ]);
 
   useSpaceBarPress(() => {
     if (
