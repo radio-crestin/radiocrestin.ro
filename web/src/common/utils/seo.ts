@@ -11,17 +11,39 @@ const absoluteImageUrl = (path: string) => {
 
 // Meta descriptions must be a single line and fit in a SERP snippet;
 // station descriptions arrive as multi-paragraph text with raw \r\n.
+// Truncation prefers a complete sentence, then a clause boundary — Google
+// discards descriptions that end mid-clause ("…relevant care își propune să…")
+// and substitutes its own snippet.
 export const metaDescription = (text: string, maxLength = 155) => {
   const clean = text.replace(/\s+/g, " ").trim();
   if (clean.length <= maxLength) return clean;
+  // +1 so a boundary sitting exactly on the limit still has its trailing space.
+  const head = clean.slice(0, maxLength + 1);
+  // The required trailing space keeps decimals ("92.2 MHz") from matching.
+  const sentenceEnd = Math.max(
+    head.lastIndexOf(". "),
+    head.lastIndexOf("! "),
+    head.lastIndexOf("? "),
+  );
+  // 80-char floor: a lone lead-in ("Ascultă X live online, gratuit.") is too
+  // thin for a snippet, so keep looking for a later break instead.
+  if (sentenceEnd + 1 >= 80) return clean.slice(0, sentenceEnd + 1);
+  const clauseEnd = Math.max(
+    head.lastIndexOf(", "),
+    head.lastIndexOf("; "),
+    head.lastIndexOf(": "),
+  );
+  if (clauseEnd >= 110) return `${clean.slice(0, clauseEnd)}…`;
   const cut = clean.slice(0, maxLength - 1);
   return `${cut.slice(0, cut.lastIndexOf(" "))}…`;
 };
 
 // Single source of truth for the station title pattern — used by the SSR
-// head (seoStation) and the client-side document.title update (RadioApp).
+// head (seoStation) and the client-side document.title update (RadioApp,
+// CategoryApp). "Live" sits next to the station name because that is the
+// query shape ("rve suceava live") and gets the exact phrase bolded in SERPs.
 export const stationTitle = (title?: string | null) =>
-  `${title || "Radio Creștin"} | Ascultă Live Radio Creștin Online`;
+  `${title || "Radio Creștin"} Live | Ascultă Radio Creștin Online`;
 
 export const seoStation = (station: IStation) => {
   return {
