@@ -87,6 +87,7 @@ export default function RadioPlayer() {
   const tickerRef = useRef<HTMLDivElement>(null);
   const [tickerMarquee, setTickerMarquee] = useState(false);
   const [tickerDuration, setTickerDuration] = useState(16);
+  const tickerWidthRef = useRef(0);
   // Slug of the station that was preselected without a user gesture (page-load
   // deep link or category default); its stream is not loaded until the autoplay
   // probe allows it or the user actually presses play.
@@ -340,7 +341,12 @@ export default function RadioPlayer() {
     let timer: ReturnType<typeof setTimeout> | null = null;
     const onResize = () => {
       if (timer) clearTimeout(timer);
-      timer = setTimeout(() => setTickerMarquee(false), 200);
+      timer = setTimeout(() => {
+        // Ignore height-only resizes (iOS toolbar) — they'd restart the marquee
+        const el = tickerRef.current;
+        if (el && Math.abs(el.clientWidth - tickerWidthRef.current) <= 1) return;
+        setTickerMarquee(false);
+      }, 200);
     };
     window.addEventListener("resize", onResize);
     return () => {
@@ -353,6 +359,7 @@ export default function RadioPlayer() {
     if (tickerMarquee) return;
     const el = tickerRef.current;
     if (!el || !shownSongText) return;
+    tickerWidthRef.current = el.clientWidth;
     // Static (clipped with ellipsis) for reduced-motion users
     if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
     if (el.scrollWidth > el.clientWidth + 1) {

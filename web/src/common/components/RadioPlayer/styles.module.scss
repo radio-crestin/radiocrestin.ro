@@ -696,6 +696,9 @@
   // bar's geometry doesn't move a pixel.
   padding: 1px 0 3px;
   margin-bottom: -3px;
+  // iOS font-boosting opt-out on the element itself, root overrides can't reach it
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 
   &[data-marquee="true"] {
     -webkit-mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
