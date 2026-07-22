@@ -492,6 +492,10 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  // Reset line-height:1 + overflow:hidden clips descenders (the g in
+  // "Gosen") — give them margin-compensated padding to paint into
+  padding-bottom: 3px;
+  margin-bottom: -3px;
 }
 
 .live_item_song {
@@ -501,6 +505,10 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  // Same descender room as .live_item_name (the −3px collapses with our
+  // margin-top, net row geometry unchanged)
+  padding-bottom: 3px;
+  margin-bottom: -3px;
 }
 
 .live_item_listeners {
