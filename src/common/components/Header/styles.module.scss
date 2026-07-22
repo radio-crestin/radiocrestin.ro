@@ -132,25 +132,33 @@
   background: #f43f3f;
   position: relative;
 
+  // Radar ping: a ring swelling off the dot's edge that dissolves as it
+  // grows (box-shadow spread). The old scale(2.6) clone of the filled disc
+  // read as a red smudge hovering behind the dot on chrome-less layouts.
   &::after {
     content: "";
     position: absolute;
     inset: 0;
     border-radius: 50%;
-    background: inherit;
-    animation: livePulse 1.8s ease-out infinite;
+    animation: livePing 1.8s ease-out infinite;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    &::after {
+      animation: none;
+    }
   }
 }
 
-@keyframes livePulse {
+@keyframes livePing {
+  // Brighter than the dot itself: a translucent ring of the base red goes
+  // muddy-maroon over dark surfaces, while the lifted coral stays a glow
   0% {
-    transform: scale(1);
-    opacity: 0.8;
+    box-shadow: 0 0 0 0 rgba(248, 113, 113, 0.55);
   }
-  70%,
+  75%,
   100% {
-    transform: scale(2.6);
-    opacity: 0;
+    box-shadow: 0 0 2px 5px rgba(248, 113, 113, 0);
   }
 }
 
@@ -342,11 +350,35 @@
       height: 31px;
       margin-bottom: 18px;
 
+      // Mobile renders the pill in status_slot_mobile, above the play CTA
       @include mixinHelper.onTablet {
-        height: 29px;
-        margin-bottom: 12px;
+        display: none;
+      }
+    }
+
+    .status_slot_mobile {
+      display: none;
+
+      // Eyebrow between logo and title (the phone twin of the desktop
+      // status_slot); single-line naked pill whose count reveal only
+      // animates width, so the height is stable by construction
+      @include mixinHelper.onTablet {
         display: flex;
-        justify-content: center;
+        align-items: center;
+        height: 22px;
+      }
+
+      // Naked: no chip chrome under the big title — the pulsing red dot +
+      // bold LIVE carry the status on their own
+      .status_pill {
+        border: none;
+        background: none;
+        padding: 0;
+        font-size: 13px;
+        // The tablet pill sets overflow:hidden (for the old truncating
+        // copy); with zero padding it crops the dot's ping ring at the
+        // pill's left edge, which reads as an off-center pulse
+        overflow: visible;
       }
     }
 
@@ -395,6 +427,69 @@
 
       @media (prefers-reduced-motion: reduce) {
         animation: none;
+      }
+    }
+
+    // Compact mobile pill content: hairline | headphones | bold count —
+    // glanceable and short enough that it never ellipsizes at 360px
+    .listeners_compact {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      min-width: 0;
+      overflow: hidden;
+    }
+
+    // "LIVE" → "LIVE | headphones count": one motion, nothing staged — the
+    // pill's edge glides open (0fr→1fr grid column, no measured widths) and
+    // unmasks the fully-drawn content in reading order, like a curtain.
+    // The content itself never fades or slides: a delayed fade-in reads as
+    // "expand, then text appears" — i.e. as lag. The -8px margin cancels
+    // the pill's flex gap while collapsed, keeping the closed pill
+    // symmetric around "LIVE".
+    .listeners_reveal {
+      display: grid;
+      grid-template-columns: 0fr;
+      margin-left: -8px;
+      visibility: hidden;
+      transition:
+        grid-template-columns 0.4s cubic-bezier(0.25, 0.9, 0.3, 1),
+        margin-left 0.4s cubic-bezier(0.25, 0.9, 0.3, 1),
+        visibility 0s linear 0.4s;
+
+      &.reveal_open {
+        grid-template-columns: 1fr;
+        margin-left: 0;
+        visibility: visible;
+        transition:
+          grid-template-columns 0.4s cubic-bezier(0.25, 0.9, 0.3, 1),
+          margin-left 0.4s cubic-bezier(0.25, 0.9, 0.3, 1),
+          visibility 0s;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        transition: none;
+
+        &.reveal_open {
+          transition: none;
+        }
+      }
+    }
+
+    .pill_divider {
+      width: 1px;
+      height: 13px;
+      flex-shrink: 0;
+      background: color-mix(in srgb, var(--text-color) 22%, transparent);
+    }
+
+    .hp_icon {
+      display: inline-flex;
+      flex-shrink: 0;
+
+      svg {
+        width: 13px;
+        height: 13px;
       }
     }
 
@@ -724,11 +819,26 @@
 
       @include mixinHelper.onTablet {
         justify-content: center;
-        // The row wraps into stacked centered lines here (stars / review
-        // pill / outbound links) — open up the line gap and give the last
-        // line air before the description starts
-        gap: 12px 16px;
-        margin: 12px 0 18px;
+        // Two centered lines here (stars+review link / outbound links) —
+        // modest line gap, breathing room after the big title above
+        gap: 10px 16px;
+        margin: 18px 0 16px;
+      }
+    }
+
+    // Desktop: display:contents keeps the divider + links as direct
+    // rating_row flex items (layout byte-identical). Mobile: a real flex
+    // group on a forced full-width line, so Site/Facebook can never split
+    // across lines or ride along with the reviews cluster.
+    .meta_links {
+      display: contents;
+
+      @include mixinHelper.onTablet {
+        display: flex;
+        flex-basis: 100%;
+        justify-content: center;
+        align-items: center;
+        gap: 16px;
       }
     }
 

@@ -19,6 +19,7 @@ import usePlaybackState from "@/store/usePlaybackState";
 import useSwapTransition from "@/hooks/useSwapTransition";
 import { PLAYBACK_STATE } from "@/models/enum";
 import PlayIcon from "@/icons/Play";
+import HeadphoneIcon from "@/icons/Headphone";
 import {
   DEFAULT_RADIO_IMG,
   getValidImageUrl,
@@ -481,32 +482,73 @@ const ContentRight = () => {
   const isUp = station.uptime?.is_up !== false;
   const listeners = station.total_listeners || 0;
 
+  // Two pills, two slots: desktop keeps the communal copy as the eyebrow
+  // above the title; mobile gets a compact glanceable version (headphones +
+  // count) in the meta cluster above the description, so nothing ever
+  // truncates on narrow screens — CSS hides the slot that doesn't belong
+  // to the breakpoint
+  const statusPill = (
+    <p className={styles.status_pill}>
+      {isUp ? (
+        <>
+          <span className={styles.live_dot} />
+          <strong>LIVE</strong>
+          {listeners > 0 && (
+            <span className={styles.listeners_text}>
+              · <strong>{roPlural(listeners, "persoană", "persoane")}</strong> ascultă
+              împreună cu tine
+            </span>
+          )}
+        </>
+      ) : (
+        <>
+          <span className={styles.offline_dot} />
+          <span className={styles.listeners_text}>Momentan indisponibil</span>
+        </>
+      )}
+    </p>
+  );
+
+  const statusPillMobile = (
+    <p className={styles.status_pill}>
+      {isUp ? (
+        <>
+          <span className={styles.live_dot} />
+          <strong>LIVE</strong>
+          {/* Always mounted: when the first fetch delivers a count, the
+              open class wipes the pill open (0fr→1fr) over the fully-drawn
+              content — mount-time rendering would just pop */}
+          <span
+            className={`${styles.listeners_reveal} ${listeners > 0 ? styles.reveal_open : ""}`}
+            aria-hidden={listeners <= 0}
+          >
+            <span className={styles.listeners_compact}>
+              <span className={styles.pill_divider} aria-hidden="true" />
+              <span className={styles.hp_icon} aria-hidden="true">
+                <HeadphoneIcon />
+              </span>
+              <strong>{listeners}</strong>
+            </span>
+          </span>
+        </>
+      ) : (
+        <>
+          <span className={styles.offline_dot} />
+          <span className={styles.listeners_text}>Momentan indisponibil</span>
+        </>
+      )}
+    </p>
+  );
+
   return (
     <div className={styles.right_content}>
       <div className={styles.station_details}>
-        <div className={styles.status_slot}>
-          <p className={styles.status_pill}>
-            {isUp ? (
-              <>
-                <span className={styles.live_dot} />
-                <strong>LIVE</strong>
-                {listeners > 0 && (
-                  <span className={styles.listeners_text}>
-                    · <strong>{roPlural(listeners, "persoană", "persoane")}</strong> ascultă
-                    împreună cu tine
-                  </span>
-                )}
-              </>
-            ) : (
-              <>
-                <span className={styles.offline_dot} />
-                <span className={styles.listeners_text}>Momentan indisponibil</span>
-              </>
-            )}
-          </p>
-        </div>
+        <div className={styles.status_slot}>{statusPill}</div>
 
         <div className={styles.title_container}>
+          {/* Mobile eyebrow above the logo — the phone twin of the desktop
+              status_slot (hidden there, shown here) */}
+          <div className={styles.status_slot_mobile}>{statusPillMobile}</div>
           <img
             src={getValidImageUrl(station.thumbnail_url)}
             {...stationThumbImgProps(station.thumbnail_url, 100)}
@@ -530,7 +572,7 @@ const ContentRight = () => {
             reviewsStats={station.reviews_stats}
           />
           {(station.website || station.facebook_page_id) && (
-            <>
+            <span className={styles.meta_links}>
               <span className={styles.rating_divider} aria-hidden="true" />
               {station.website && (
                 <a
@@ -555,7 +597,7 @@ const ContentRight = () => {
                   Facebook
                 </a>
               )}
-            </>
+            </span>
           )}
         </div>
 

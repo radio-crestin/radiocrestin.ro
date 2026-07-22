@@ -9,11 +9,14 @@
   margin-top: 10px;
   margin-bottom: 20px;
 
+  // One real line on phones: smaller stars + naked link instead of the old
+  // scale(0.8), which shrank pixels but not layout — the chip still wrapped
+  // onto its own centered line and stacked the hero three rows tall
   @include mixinHelper.onTablet {
-    margin-bottom: 10px;
-    margin-top: 10px;
+    margin-bottom: 6px;
+    margin-top: 6px;
     justify-content: center;
-    scale: 0.8;
+    gap: 4px 10px;
   }
 }
 
@@ -27,6 +30,15 @@
   align-items: center;
   justify-content: center;
   padding: 2px;
+
+  @include mixinHelper.onTablet {
+    padding: 1px;
+
+    svg {
+      width: 17px;
+      height: 17px;
+    }
+  }
 }
 
 .reviews_count {
@@ -44,6 +56,11 @@
     opacity: 1;
     text-decoration: underline;
   }
+
+  @include mixinHelper.onTablet {
+    font-size: 0.85rem;
+    margin-top: 0;
+  }
 }
 
 .add_review_button {
@@ -60,5 +77,22 @@
 
   &:hover {
     background-color: rgba(128, 128, 128, 0.35);
+  }
+
+  // Naked underlined link on the same line as the stars — the grey chip on
+  // its own row was one band too many for the phone hero
+  @include mixinHelper.onTablet {
+    background: none;
+    padding: 4px 0;
+    border-radius: 0;
+    color: var(--header-subtext-color);
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+
+    &:hover {
+      background: none;
+      color: var(--text-color);
+    }
   }
 }
