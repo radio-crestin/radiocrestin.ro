@@ -11,7 +11,11 @@ import { memo, useCallback, useContext, useMemo, useRef } from "react";
 import { Context } from "@/context/ContextProvider";
 import useSwapTransition, { songSwapEqual } from "@/hooks/useSwapTransition";
 import useContentHeight from "@/hooks/useContentHeight";
-import { getValidImageUrl, stepImageFallback } from "@/utils";
+import {
+  dropPointerFocus,
+  getValidImageUrl,
+  stepImageFallback,
+} from "@/utils";
 import OfflineStatus from "@/components/OfflineStatus";
 import PlayingIndicator from "@/components/PlayingIndicator";
 import SparklesStar from "@/icons/SparklesStar";
@@ -130,6 +134,7 @@ const StationCard = memo(function StationCard({
       data-active={isActive}
       href={`/${data.slug}/`}
       draggable={false}
+      onClickCapture={dropPointerFocus}
       onClick={handleStationClick}
     >
       <div className={styles.image_container}>

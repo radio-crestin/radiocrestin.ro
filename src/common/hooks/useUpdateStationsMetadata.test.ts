@@ -1,4 +1,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import {
+  stationValuesChanged,
+  applyMetadataToStations,
+} from "@/hooks/useUpdateStationsMetadata";
+import fallbackStations from "@/data/fallback-stations.json";
 
 // Re-implement the pure functions from useUpdateStationsMetadata for unit testing.
 // These match the implementations in the hook — if the hook's logic changes, these
@@ -583,5 +588,156 @@ describe("Song-boundary lag regression (the bug we fixed)", () => {
     const pdtMs = 1777624098000; // PDT 08:28:18, end ~08:28:23.999 (still song A)
     const fixed = newHandler(pdtMs, 6);
     expect(fakeApi(fixed)).toBe("O, nu-s mai tari ispitele ca harul");
+  });
+});
+
+// These tests exercise the REAL exported comparator (not a copy) — see
+// stationValuesChanged in useUpdateStationsMetadata.ts.
+describe("stationValuesChanged (live-update comparator)", () => {
+  const base = (): any => ({
+    id: 1,
+    slug: "x",
+    title: "X",
+    total_listeners: 10,
+    uptime: { is_up: true, latency_ms: 100, timestamp: "t1" },
+    now_playing: {
+      timestamp: "t1",
+      listeners: 10,
+      song: {
+        id: 5,
+        name: "Song",
+        thumbnail_url: "thumb-a",
+        artist: { id: 2, name: "Artist" },
+      },
+    },
+  });
+
+  it("returns false for identical stations", () => {
+    expect(stationValuesChanged(base(), base())).toBe(false);
+  });
+
+  it("ignores per-probe noise: latency_ms and both timestamps", () => {
+    const b = base();
+    b.uptime.latency_ms = 9999;
+    b.uptime.timestamp = "t2";
+    b.now_playing.timestamp = "t2";
+    expect(stationValuesChanged(base(), b)).toBe(false);
+  });
+
+  it.each([
+    ["song id", (b: any) => (b.now_playing.song.id = 6)],
+    ["song name", (b: any) => (b.now_playing.song.name = "Other")],
+    ["song thumbnail", (b: any) => (b.now_playing.song.thumbnail_url = "thumb-b")],
+    ["artist name", (b: any) => (b.now_playing.song.artist.name = "Other")],
+    ["now_playing.listeners", (b: any) => (b.now_playing.listeners = 11)],
+    ["total_listeners", (b: any) => (b.total_listeners = 11)],
+    ["uptime.is_up", (b: any) => (b.uptime.is_up = false)],
+  ])("detects a change in %s", (_label, mutate) => {
+    const b = base();
+    mutate(b);
+    expect(stationValuesChanged(base(), b)).toBe(true);
+  });
+
+  it("detects a song appearing (thumbnail arriving late has same id but new url)", () => {
+    const a = base();
+    a.now_playing.song = null;
+    expect(stationValuesChanged(a, base())).toBe(true);
+  });
+
+  it("detects a song disappearing", () => {
+    const b = base();
+    b.now_playing.song = null;
+    expect(stationValuesChanged(base(), b)).toBe(true);
+  });
+
+  it("treats stations without now_playing on both sides as unchanged", () => {
+    const a = base();
+    const b = base();
+    delete a.now_playing;
+    delete b.now_playing;
+    expect(stationValuesChanged(a, b)).toBe(false);
+  });
+});
+
+// CANARY: trips when the station data gains a new field in the objects the
+// 10s polls update. fallback-stations.json is a build-refreshed snapshot of
+// the real API, so a new field lands here on the next regeneration. If this
+// fails: decide whether the new field must update live (add it to
+// stationValuesChanged) or the 5-minute doFullRefresh path is enough — then
+// add it to the allowlist below either way.
+describe("metadata payload canary", () => {
+  // Union of the /stations snapshot and the /stations-metadata live payload
+  // shapes (verified against the live API on 2026-07-22).
+  const ALLOWED = {
+    now_playing: ["id", "timestamp", "listeners", "song"],
+    song: ["id", "name", "thumbnail_url", "artist"],
+    uptime: ["is_up", "latency_ms", "timestamp"],
+  };
+
+  it("poll-updated objects contain no unhandled fields", () => {
+    const stations: any[] = (fallbackStations as any)?.data?.stations ?? [];
+    expect(stations.length).toBeGreaterThan(0);
+    for (const s of stations) {
+      for (const [objName, allowed] of Object.entries(ALLOWED)) {
+        const obj =
+          objName === "now_playing"
+            ? s.now_playing
+            : objName === "song"
+              ? s.now_playing?.song
+              : s.uptime;
+        if (!obj) continue;
+        const unknown = Object.keys(obj).filter((k) => !allowed.includes(k));
+        expect(
+          unknown,
+          `New field(s) [${unknown}] in ${objName} of station "${s.slug}" — classify them in stationValuesChanged (live) or accept the 5-min refresh, then extend this allowlist`,
+        ).toEqual([]);
+      }
+    }
+  });
+});
+
+// Exercises the REAL exported applyMetadataToStations (single-fetch path).
+describe("applyMetadataToStations (single-fetch path)", () => {
+  const station = (): any => ({
+    id: 1,
+    slug: "x",
+    title: "X",
+    total_listeners: 10,
+    uptime: { is_up: true, latency_ms: 100, timestamp: "t1" },
+    now_playing: {
+      timestamp: "t1",
+      listeners: 10,
+      song: { id: 5, name: "Song", thumbnail_url: "u", artist: { id: 2, name: "A" } },
+    },
+  });
+
+  it("lifts now_playing.listeners into total_listeners (the field the UI renders)", () => {
+    const meta = { id: 1, now_playing: { listeners: 25 } } as any;
+    const result = applyMetadataToStations([station()], [meta]);
+    expect(result[0].total_listeners).toBe(25);
+    expect((result[0].now_playing as any).listeners).toBe(25);
+  });
+
+  it("leaves total_listeners alone when metadata carries no listeners", () => {
+    const meta = { id: 1, now_playing: { song: { id: 6, name: "New" } } } as any;
+    const result = applyMetadataToStations([station()], [meta]);
+    expect(result[0].total_listeners).toBe(10);
+    expect(result[0].now_playing.song.id).toBe(6);
+  });
+
+  it("keeps the exact array and station references when nothing changed", () => {
+    const stations = [station()];
+    const meta = {
+      id: 1,
+      now_playing: {
+        timestamp: "t2", // per-probe noise — must not count as a change
+        listeners: 10,
+        song: { id: 5, name: "Song", thumbnail_url: "u", artist: { id: 2, name: "A" } },
+      },
+      uptime: { is_up: true, latency_ms: 999, timestamp: "t2" },
+    } as any;
+    const result = applyMetadataToStations(stations, [meta]);
+    expect(result).toBe(stations);
+    expect(result[0]).toBe(stations[0]);
   });
 });
