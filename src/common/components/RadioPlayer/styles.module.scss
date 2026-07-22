@@ -683,12 +683,19 @@
 /* ── Song ticker: scrolls whenever „song · artist" overflows the line ── */
 .song_ticker {
   display: block;
-  margin-top: 3px;
+  margin-top: 2px;
   overflow: hidden;
   white-space: nowrap;
   font-size: 0.775rem;
   color: #b5b5b5;
   font-family: globalVariables.$dm-sans, serif;
+  // The global reset's line-height:1 leaves no room for descenders (g/j/p)
+  // or tall diacritics (Î) inside this overflow clip box. Let them paint
+  // into padding — clipping happens at the padding edge — and take the same
+  // amount back out of the flow (margin-top 3→2, margin-bottom −3) so the
+  // bar's geometry doesn't move a pixel.
+  padding: 1px 0 3px;
+  margin-bottom: -3px;
 
   &[data-marquee="true"] {
     -webkit-mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
