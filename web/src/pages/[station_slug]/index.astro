@@ -4,7 +4,7 @@ import RadioApp from "@/components/RadioApp";
 import FavoritesPrepaint from "@/components/FavoritesPrepaint.astro";
 import PinStations from "@/components/PinStations.astro";
 import { getStations, getStationReviews } from "@/services/getStations";
-import { cleanStationsMetadata } from "@/utils";
+import { cleanStationsMetadata, getValidImageUrl, stationThumbImgProps } from "@/utils";
 import { sortStationsByRecommendedScore } from "@/utils/stationScore";
 import { seoStation } from "@/utils/seo";
 import type { IReview, IStation } from "@/models/Station";
@@ -38,6 +38,12 @@ rawStations.forEach((station: IStation) => { station.is_favorite = false; });
 const stations = cleanStationsMetadata(rawStations);
 const selectedStation = stations.find((s: IStation) => s.slug === station_slug)!;
 const seo = seoStation(selectedStation);
+
+// Desktop LCP is the np_card thumbnail (hidden ≤768px, hence the media
+// condition — mobile must not pay for this fetch). Mirrors the <img>'s
+// srcset/sizes so the preload matches the exact candidate the img selects.
+const lcpThumbSrc = getValidImageUrl(selectedStation.thumbnail_url);
+const lcpThumbSrcset = stationThumbImgProps(selectedStation.thumbnail_url, 224);
 
 const radioStationSchema = JSON.stringify({
   "@context": "https://schema.org",
@@ -98,6 +104,16 @@ const breadcrumbSchema = JSON.stringify({
 ---
 
 <BaseLayout {...seo}>
+  <link
+    rel="preload"
+    as="image"
+    href={lcpThumbSrc}
+    imagesrcset={lcpThumbSrcset.srcSet}
+    imagesizes={lcpThumbSrcset.sizes}
+    fetchpriority="high"
+    media="(min-width: 769px)"
+    slot="head"
+  />
   <script type="application/ld+json" set:html={radioStationSchema} slot="head" />
   <script type="application/ld+json" set:html={breadcrumbSchema} slot="head" />
   <RadioApp client:load stations={stations} selectedStation={selectedStation} showReviews={true} initialReviews={initialReviews} />
