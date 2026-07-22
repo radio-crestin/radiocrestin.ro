@@ -14,6 +14,7 @@ import SparklesStar from "@/icons/SparklesStar";
 import { buildScoreSnapshot, sortByScore } from "@/utils/stationScore";
 import type { StationSnapshot } from "@/utils/stationScore";
 import { createSearchMatcher } from "@/utils/fuzzySearch";
+import { trackSearchPerformed, trackSortChanged } from "@/utils/posthog";
 
 type SortOption = "recommended" | "most_played" | "listeners" | "rating" | "alphabetical";
 
@@ -225,6 +226,8 @@ const Stations = () => {
   const [searchedValue, setSearchedValue] = useState("");
   const [sortBy, setSortByState] = useState<SortOption>("recommended");
 
+  const urlSeededQueryRef = useRef<string | null>(null);
+
   useEffect(() => {
     setSortByState(getSavedSort());
 
@@ -232,11 +235,13 @@ const Stations = () => {
     // WebSite JSON-LD (/?q={search_term_string}) actually works.
     const q = new URLSearchParams(window.location.search).get("q");
     if (q) {
+      urlSeededQueryRef.current = q.trim();
       setSearchedValue(q);
     }
   }, []);
 
   const setSortBy = (option: SortOption) => {
+    trackSortChanged(option);
     setSortByState(option);
     localStorage.setItem(STORAGE_KEY, option);
   };
@@ -314,6 +319,27 @@ const Stations = () => {
 
   useEffect(() => {
     handleSearch();
+  }, [searchedValue]);
+
+  // Track searches once typing settles (1.2s idle) with the final query and
+  // its result count — one event per search, not one per keystroke. The ref
+  // mirror is read at fire time, after filteredStations has settled.
+  const filteredCountRef = useRef(0);
+  filteredCountRef.current = filteredStations.length;
+  const lastTrackedSearchRef = useRef("");
+
+  useEffect(() => {
+    const query = searchedValue.trim();
+    if (!query || query === lastTrackedSearchRef.current) return;
+    const timer = window.setTimeout(() => {
+      lastTrackedSearchRef.current = query;
+      trackSearchPerformed(
+        query,
+        filteredCountRef.current,
+        query === urlSeededQueryRef.current ? "url" : "typed",
+      );
+    }, 1200);
+    return () => window.clearTimeout(timer);
   }, [searchedValue]);
 
   const handleSearch = () => {

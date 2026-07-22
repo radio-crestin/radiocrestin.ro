@@ -16,18 +16,11 @@ const useFavourite = create<IStore>()(
       toggleFavourite: (slug: string) => {
         set((state) => {
           const isFavourite = state.favouriteItems.includes(slug);
-          trackFavoriteToggled(slug, !isFavourite);
-          if (isFavourite) {
-            return {
-              favouriteItems: state.favouriteItems.filter(
-                (item: string) => item !== slug,
-              ),
-            };
-          } else {
-            return {
-              favouriteItems: [...state.favouriteItems, slug],
-            };
-          }
+          const favouriteItems = isFavourite
+            ? state.favouriteItems.filter((item: string) => item !== slug)
+            : [...state.favouriteItems, slug];
+          trackFavoriteToggled(slug, !isFavourite, undefined, favouriteItems);
+          return { favouriteItems };
         });
       },
     }),
