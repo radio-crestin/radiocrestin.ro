@@ -80,6 +80,8 @@ const knownImageSize = imageUrl === DEFAULT_SHARE_IMAGE
 
     <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
     <link rel="preconnect" href="https://api.radiocrestin.ro" crossorigin />
+    <!-- cdn serves plain <img> loads (song artwork) — no crossorigin, else the warmed socket lands in the wrong (CORS) pool -->
+    <link rel="preconnect" href="https://cdn.radiocrestin.ro" />
 
     <script type="application/ld+json" set:html={JSON.stringify({
       "@context": "https://schema.org",
