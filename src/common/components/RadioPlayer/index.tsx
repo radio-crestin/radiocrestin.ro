@@ -23,7 +23,8 @@ import { PLAYBACK_STATE } from "@/models/enum";
 import { toast } from "react-toastify";
 import Heart from "@/icons/Heart";
 import useFavourite from "@/store/useFavourite";
-import { captureException, getUserId, trackListeningStarted, trackListeningStopped, trackListeningStoppedBeacon, trackStationOpened } from "@/utils/posthog";
+import { captureException, getUserId, trackListeningStarted, trackListeningStopped, trackListeningStoppedBeacon, trackShareCompleted, trackStationOpened, trackStationUnreachable } from "@/utils/posthog";
+import { withShareUtm } from "@/utils/trafficSource";
 import type { IStationStreams } from "@/models/Station";
 import OfflineStatus from "@/components/OfflineStatus";
 import HeadphoneIcon from "@/icons/Headphone";
@@ -300,10 +301,13 @@ export default function RadioPlayer() {
         await navigator.share({
           title: station.title,
           text: `Ascultă și tu ${station.title}`,
-          url,
+          url: withShareUtm(url, "native_share"),
         });
+        // Sheet resolved = user picked a target — only then count the share
+        trackShareCompleted(station.slug, station.title, "native", "player_menu", station.id);
       } else {
-        await navigator.clipboard.writeText(url);
+        await navigator.clipboard.writeText(withShareUtm(url, "copy_link"));
+        trackShareCompleted(station.slug, station.title, "copy_link", "player_menu", station.id);
         toast.success("Linkul stației a fost copiat");
       }
     } catch {
@@ -979,6 +983,7 @@ export default function RadioPlayer() {
       setLoadKey((k) => k + 1);
     } else {
       setPlaybackState(PLAYBACK_STATE.STOPPED);
+      trackStationUnreachable(station.slug, station.title, streamType, station.id);
       captureException(
         new Error(
           `Hasn't been able to connect to the station - ${station.title}. Tried 20 times :P.`,

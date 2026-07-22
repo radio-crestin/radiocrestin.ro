@@ -1,5 +1,9 @@
 import React, { useEffect, useState } from "react";
 import styles from "./styles.module.scss";
+import {
+  trackWhatsAppVerseClicked,
+  trackWhatsAppVerseDismissed,
+} from "@/utils/posthog";
 
 const DISMISSED_KEY = "whatsapp-verse-dismissed";
 const TIME_KEY = "whatsapp-verse-seconds";
@@ -53,6 +57,7 @@ export default function WhatsAppBibleGroup() {
   }, []);
 
   const dismiss = () => {
+    trackWhatsAppVerseDismissed();
     localStorage.setItem(DISMISSED_KEY, "1");
     document.documentElement.setAttribute("data-wa-verse-hidden", "1");
   };
@@ -68,6 +73,7 @@ export default function WhatsAppBibleGroup() {
         href="https://chat.whatsapp.com/I78qjRg1RaI5UKTvEwZdNm"
         target="_blank"
         rel="noopener noreferrer"
+        onClick={trackWhatsAppVerseClicked}
       >
         <span className={styles.icon}>
           <svg

@@ -4,6 +4,8 @@ import styles from "./styles.module.scss";
 import type { IStation } from "@/models/Station";
 import { Context } from "@/context/ContextProvider";
 import { SHARE_URL } from "@/constants/constants";
+import { trackShareCompleted, type ShareChannel } from "@/utils/posthog";
+import { withShareUtm } from "@/utils/trafficSource";
 
 // Android/Material "share nodes" — the glyph this (mostly Android) audience
 // knows as share; the tray arrow below stays on the native-sheet row only
@@ -153,15 +155,22 @@ export default function ShareOnSocial() {
 
   if (!station) return null;
 
-  const url = `${SHARE_URL}/${station.slug}`;
-  const message = `Ascultă și tu ${station.title}: \n${url}`;
-  const facebookShareLink = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}&quote=${encodeURIComponent(message)}`;
-  const whatsappShareLink = `https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`;
-  const telegramShareLink = `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(`Ascultă și tu ${station.title}`)}`;
+  // Per-channel utm tags on the shared URL — arrivals from messaging/native
+  // apps carry no referrer, so this is the only way they attribute back
+  const shareUrl = (channel: ShareChannel) =>
+    withShareUtm(`${SHARE_URL}/${station.slug}`, channel === "native" ? "native_share" : channel);
+  const messageFor = (u: string) => `Ascultă și tu ${station.title}: \n${u}`;
+  const facebookShareLink = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl("facebook"))}&quote=${encodeURIComponent(messageFor(shareUrl("facebook")))}`;
+  const whatsappShareLink = `https://api.whatsapp.com/send?text=${encodeURIComponent(messageFor(shareUrl("whatsapp")))}`;
+  const telegramShareLink = `https://t.me/share/url?url=${encodeURIComponent(shareUrl("telegram"))}&text=${encodeURIComponent(`Ascultă și tu ${station.title}`)}`;
+
+  const trackShare = (channel: ShareChannel) =>
+    trackShareCompleted(station.slug, station.title, channel, "hero", station.id);
 
   const copyLink = async () => {
     try {
-      await navigator.clipboard.writeText(url);
+      await navigator.clipboard.writeText(shareUrl("copy_link"));
+      trackShare("copy_link");
       setCopied(true);
       window.clearTimeout(copyTimer.current);
       copyTimer.current = window.setTimeout(() => setCopied(false), 2000);
@@ -175,8 +184,10 @@ export default function ShareOnSocial() {
       await navigator.share({
         title: station.title,
         text: `Ascultă și tu ${station.title}`,
-        url,
+        url: shareUrl("native"),
       });
+      // Sheet resolved = user picked a target — only then count the share
+      trackShare("native");
       // Share completed — the task is done, tidy the menu away
       closeMenu();
     } catch {
@@ -206,7 +217,10 @@ export default function ShareOnSocial() {
             target="_blank"
             rel="noopener noreferrer"
             className={styles.menu_item}
-            onClick={closeMenu}
+            onClick={() => {
+              trackShare("whatsapp");
+              closeMenu();
+            }}
           >
             <span className={`${styles.menu_icon} ${styles.icon_whatsapp}`} aria-hidden="true">
               <img src="/icons/whatsapp.svg" alt="" width={17} height={17} />
@@ -218,7 +232,10 @@ export default function ShareOnSocial() {
             target="_blank"
             rel="noopener noreferrer"
             className={styles.menu_item}
-            onClick={closeMenu}
+            onClick={() => {
+              trackShare("facebook");
+              closeMenu();
+            }}
           >
             <span className={`${styles.menu_icon} ${styles.icon_facebook}`} aria-hidden="true">
               <img src="/icons/facebook.svg" alt="" width={16} height={16} />
@@ -230,7 +247,10 @@ export default function ShareOnSocial() {
             target="_blank"
             rel="noopener noreferrer"
             className={styles.menu_item}
-            onClick={closeMenu}
+            onClick={() => {
+              trackShare("telegram");
+              closeMenu();
+            }}
           >
             <span className={`${styles.menu_icon} ${styles.icon_telegram}`} aria-hidden="true">
               <TelegramIcon />

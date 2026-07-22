@@ -1,4 +1,5 @@
 import type { PostHog } from "posthog-js";
+import { classifyTrafficSource, type TrafficSource } from "@/utils/trafficSource";
 
 const POSTHOG_KEY = "phc_9lTquHDSyoFxkYq4VPd8cFiQ21VZd627Lv8jSV8S7Fi";
 
@@ -20,6 +21,14 @@ export const initPostHog = () => {
   initialized = true;
 
   const load = () => {
+    // Classified at entry: PostHog loads on idle, before any navigation could
+    // rewrite document.referrer or the landing query string
+    const traffic = classifyTrafficSource(
+      document.referrer,
+      new URLSearchParams(window.location.search),
+      window.location.hostname,
+    );
+
     import("posthog-js")
       .then(({ default: posthog }) => {
         posthog.init(POSTHOG_KEY, {
@@ -33,10 +42,23 @@ export const initPostHog = () => {
           persistence: "localStorage+cookie",
           session_idle_timeout_seconds: 14400, // 4 hours — keeps session alive during passive listening
           disable_surveys: true, // surveys unused — stops the 32KB surveys.js bundle from loading
+          loaded: (ph) => {
+            // Session-scoped so every event this visit carries the entry
+            // channel, while the next visit re-attributes from scratch.
+            // "internal" (own-domain referrer, e.g. station page → homepage)
+            // keeps whatever the session already registered.
+            if (traffic.source !== "internal") {
+              ph.register_for_session({
+                traffic_source: traffic.source,
+                ...(traffic.detail && { traffic_source_detail: traffic.detail }),
+              });
+            }
+          },
         });
 
         // Identify with the app's persistent user ID
         posthog.identify(getUserId());
+        syncPersonSnapshot(posthog, traffic);
 
         client = posthog;
         pending.forEach((fn) => fn(posthog));
@@ -67,6 +89,48 @@ export const getUserId = (): string => {
     localStorage.setItem(USER_ID_KEY, userId);
   }
   return userId;
+};
+
+const SORT_PREFERENCE_KEY = "station-sort-preference";
+const FAVOURITES_STORE_KEY = "favourites-store"; // zustand persist key (useFavourite)
+const SNAPSHOT_SYNCED_KEY = "ph_person_snapshot_synced";
+
+const readFavoriteSlugs = (): string[] => {
+  try {
+    const raw = localStorage.getItem(FAVOURITES_STORE_KEY);
+    if (!raw) return [];
+    const items = JSON.parse(raw)?.state?.favouriteItems;
+    return Array.isArray(items) ? items : [];
+  } catch {
+    return [];
+  }
+};
+
+// Once per session, snapshot long-lived preferences onto the person profile so
+// "what favourites / sort do users have" is answerable even for users who
+// never touch those controls again. Later changes keep the properties fresh
+// via $set piggybacked on favorite_toggled / sort_changed.
+const syncPersonSnapshot = (ph: PostHog, traffic: TrafficSource) => {
+  try {
+    if (sessionStorage.getItem(SNAPSHOT_SYNCED_KEY) === "1") return;
+    sessionStorage.setItem(SNAPSHOT_SYNCED_KEY, "1");
+  } catch {
+    // sessionStorage unavailable — sync anyway (worst case: once per pageview)
+  }
+  const favorites = readFavoriteSlugs();
+  const isEntry = traffic.source !== "internal";
+  ph.setPersonProperties(
+    {
+      favorite_stations: favorites,
+      favorite_count: favorites.length,
+      station_sort: localStorage.getItem(SORT_PREFERENCE_KEY) || "recommended",
+      // Last-touch channel, GA-style "last non-direct": a plain direct visit
+      // never overwrites a known acquisition source
+      ...(isEntry && traffic.source !== "direct" && { last_traffic_source: traffic.source }),
+    },
+    // First-touch — $set_once writes only if the person doesn't have it yet
+    isEntry ? { initial_traffic_source: traffic.source } : undefined,
+  );
 };
 
 const serializeError = (error: unknown): string => {
@@ -100,11 +164,21 @@ export const trackStationOpened = (stationSlug: string, stationName: string, sta
   }));
 };
 
-export const trackFavoriteToggled = (stationSlug: string, isFavorite: boolean, stationId?: number) => {
+export const trackFavoriteToggled = (
+  stationSlug: string,
+  isFavorite: boolean,
+  stationId?: number,
+  allFavorites?: string[],
+) => {
   withPostHog((ph) => ph.capture("favorite_toggled", {
     station_slug: stationSlug,
     is_favorite: isFavorite,
     ...(stationId != null && { station_id: stationId }),
+    // Keep the person profile's favourites list current so "which stations
+    // do users favourite most" can be answered from person properties
+    ...(allFavorites && {
+      $set: { favorite_stations: allFavorites, favorite_count: allFavorites.length },
+    }),
   }));
 };
 
@@ -157,6 +231,68 @@ export const trackListeningStoppedBeacon = (
   }, { transport: "sendBeacon" }));
 };
 
+
+export type ShareChannel = "whatsapp" | "facebook" | "telegram" | "copy_link" | "native";
+export type ShareSource = "hero" | "player_menu";
+
+export const trackShareCompleted = (
+  stationSlug: string,
+  stationName: string,
+  channel: ShareChannel,
+  source: ShareSource,
+  stationId?: number,
+) => {
+  withPostHog((ph) => ph.capture("share_completed", {
+    station_slug: stationSlug,
+    station_name: stationName,
+    channel,
+    source,
+    ...(stationId != null && { station_id: stationId }),
+  }));
+};
+
+export const trackSearchPerformed = (
+  query: string,
+  resultsCount: number,
+  source: "typed" | "url" = "typed",
+) => {
+  withPostHog((ph) => ph.capture("search_performed", {
+    query,
+    results_count: resultsCount,
+    has_results: resultsCount > 0,
+    source,
+  }));
+};
+
+export const trackStationUnreachable = (
+  stationSlug: string,
+  stationName: string,
+  streamType?: string | null,
+  stationId?: number,
+) => {
+  withPostHog((ph) => ph.capture("station_unreachable", {
+    station_slug: stationSlug,
+    station_name: stationName,
+    ...(streamType && { stream_type: streamType }),
+    ...(stationId != null && { station_id: stationId }),
+  }));
+};
+
+export const trackSortChanged = (sortBy: string) => {
+  withPostHog((ph) => ph.capture("sort_changed", {
+    sort_by: sortBy,
+    // Mirror onto the person profile — answers "what sort do users have"
+    $set: { station_sort: sortBy },
+  }));
+};
+
+export const trackWhatsAppVerseClicked = () => {
+  withPostHog((ph) => ph.capture("whatsapp_verse_clicked"));
+};
+
+export const trackWhatsAppVerseDismissed = () => {
+  withPostHog((ph) => ph.capture("whatsapp_verse_dismissed"));
+};
 
 export const trackReviewSubmitted = (
   stationSlug: string,
