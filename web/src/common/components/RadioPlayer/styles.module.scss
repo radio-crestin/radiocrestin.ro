@@ -172,7 +172,9 @@
 }
 
 .slider {
-  width: 100px;
+  // 84px (was 100px): returns width to the title/ticker now that the
+  // prev/next pair joined the control cluster
+  width: 84px;
   margin-top: 2px;
   -webkit-appearance: none;
   appearance: none;
@@ -226,23 +228,71 @@
   height: 40px;
   border: none;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.06);
+  // Bare glyph, no resting circle: the filled red heart already carries
+  // enough weight — a ghost disc made it compete with the play FAB. The
+  // circle only surfaces on hover as press affordance.
+  background: transparent;
   color: #c9c9c9;
   display: grid;
   place-items: center;
   cursor: pointer;
   padding: 0;
-  transition: background-color 0.2s ease;
+  flex-shrink: 0;
+  transition: background-color 0.2s ease, transform 0.12s ease;
 
   svg {
-    width: 18px;
-    height: 18px;
+    width: 20px;
+    height: 20px;
+    display: block;
+  }
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  &:active {
+    transform: scale(0.94);
+  }
+}
+
+// Prev/next station — ghost circles flanking the play FAB on all viewports
+// (the title's ellipsis/marquee absorbs the width they take on mobile)
+.skip_button {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+  color: #c9c9c9;
+  place-items: center;
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+  transition: background-color 0.2s ease, color 0.2s ease, transform 0.12s ease;
+
+  svg {
+    width: 20px;
+    height: 20px;
     display: block;
   }
 
   &:hover {
     background: rgba(255, 255, 255, 0.12);
+    color: #ffffff;
   }
+
+  &:active {
+    transform: scale(0.94);
+  }
+}
+
+// The player card is dark in both themes, so the white ring reads everywhere
+.heart_ghost:focus-visible,
+.skip_button:focus-visible,
+.play_button:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.55);
+  outline-offset: 3px;
 }
 
 /* ── Expanded panel (in-place, category pages) ──
@@ -447,14 +497,15 @@
 
   // Forgiving hit zone: taps in the card padding around the FAB mean
   // "play/pause", not "open the menu" — stretch the hit box to the card's
-  // top/right/bottom edges (2px container margin + card padding). Left stays
-  // small so the heart/row area keeps its own targets.
+  // top/bottom edges. Left/right stay small on desktop so the flanking
+  // prev/next buttons keep their own targets (mobile re-widens below, where
+  // the FAB is the only control).
   &::after {
     content: "";
     position: absolute;
     place-self: stretch;
     top: -10px;
-    right: -16px;
+    right: -4px;
     bottom: -10px;
     left: -4px;
   }
@@ -773,13 +824,13 @@
     width: 52px;
     height: 52px;
 
-    // Card padding is 15px 11px here; no heart beside the FAB, so the halo
-    // can reach further left too
+    // Skip buttons flank the FAB here too — keep the halo tall (card padding
+    // is 15px) but horizontally tight so prev/next keep their own targets
     &::after {
       top: -16px;
-      right: -13px;
+      right: -4px;
       bottom: -16px;
-      left: -8px;
+      left: -4px;
     }
   }
 

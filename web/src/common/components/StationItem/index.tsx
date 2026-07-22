@@ -6,6 +6,7 @@ import HeadphoneIcon from "@/icons/Headphone";
 import Star from "@/icons/Star";
 import Heart from "@/icons/Heart";
 import useFavourite from "@/store/useFavourite";
+import usePlayer from "@/store/usePlayer";
 import { memo, useCallback, useContext, useMemo, useRef } from "react";
 import { Context } from "@/context/ContextProvider";
 import useSwapTransition, { songSwapEqual } from "@/hooks/useSwapTransition";
@@ -48,6 +49,8 @@ const StationItem = ({ station, badgeType }: StationItemProps) => {
       const current = ctxRef.current;
       const found = current.stations?.find((s: IStation) => s.slug === slug);
       if (found) {
+        // Grid pick → player prev/next cycles the full list
+        usePlayer.getState().setPlaybackSource("all");
         setCtx({ selectedStation: found });
         if (!current.inPagePlayback) {
           window.history.pushState(null, "", `/${slug}/`);

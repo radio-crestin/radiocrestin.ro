@@ -6,6 +6,7 @@ import NavMenu from "@/components/NavMenu";
 import HeadphoneIcon from "@/icons/Headphone";
 import PlayIcon from "@/icons/Play";
 import { getValidImageUrl, roPlural, stepImageFallback } from "@/utils";
+import usePlayer from "@/store/usePlayer";
 import type { IStation } from "@/models/Station";
 
 const Navigation = () => (
@@ -60,6 +61,8 @@ const HeaderHomepage = () => {
   }
 
   const playStation = (station: IStation) => {
+    // Hero picks come from the featured trio, not the favourites strip
+    usePlayer.getState().setPlaybackSource("all");
     setCtx({ selectedStation: station });
     window.history.pushState(null, "", `/${station.slug}/`);
   };
