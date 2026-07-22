@@ -1502,7 +1502,11 @@ export default function RadioPlayer() {
           </div>
         </div>
 
+        {/* ph-no-capture keeps this element out of PostHog session replay —
+            replay otherwise rebuilds it with the live stream src and plays
+            radio audio while the recording is being watched. */}
         <audio
+          className="ph-no-capture"
           preload="none"
           id="audioPlayer"
           onPlaying={(e) => {
