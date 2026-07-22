@@ -81,6 +81,32 @@ export function stationsInGroup(
 
 export const DEFAULT_RADIO_IMG = "/images/radio-white-default.jpg";
 
+// Every local station thumbnail ships with a 512px companion file
+// (scripts/download-thumbnails.cjs) for high-DPI screens and share cards.
+// Remote URLs (stations added after the deploy) have no companion.
+export function stationThumb2x(url: string | null | undefined): string | null {
+  if (!url?.startsWith("/station-thumbnails/") || !url.endsWith(".webp")) {
+    return null;
+  }
+  if (url.endsWith("@2x.webp")) return url;
+  return `${url.slice(0, -".webp".length)}@2x.webp`;
+}
+
+// srcSet/sizes pair for <img>s whose station-thumbnail slot is large enough
+// that high-DPI screens outgrow the 256px base file. Width descriptors let
+// the browser pick per DPR: a 100px slot stays on the base file at 2x but
+// upgrades at 3x. Empty (attributes omitted) when there is no 2x companion —
+// the 512w claim is nominal for the few originals smaller than 512, which
+// ship at their real size.
+export function stationThumbImgProps(
+  url: string | null | undefined,
+  slotPx: number,
+): { srcSet?: string; sizes?: string } {
+  const twoX = stationThumb2x(url);
+  if (!url || !twoX || twoX === url) return {};
+  return { srcSet: `${url} 256w, ${twoX} 512w`, sizes: `${slotPx}px` };
+}
+
 export function getValidImageUrl(url: string | null | undefined, fallback: string = DEFAULT_RADIO_IMG): string {
   if (!url || url === "null" || url === "undefined" || url.trim() === "") {
     return fallback;
@@ -108,5 +134,10 @@ export function stepImageFallback(
   }
   const current = img.getAttribute("src") ?? "";
   const next = chain[chain.indexOf(current) + 1];
-  if (next && next !== current) img.src = next;
+  if (next && next !== current) {
+    // srcset candidates outrank src, so a surviving srcset would keep
+    // re-selecting the broken resource instead of the fallback.
+    img.removeAttribute("srcset");
+    img.src = next;
+  }
 }
