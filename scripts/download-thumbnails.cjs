@@ -15,6 +15,10 @@ const COLORS_PATH = path.join(
   "station-colors.json"
 );
 const THUMB_SIZE = 256;
+// 512px companion for high-DPI screens: the station-page hero renders at
+// 224 CSS px, so Retina needs 448+ real pixels. Consumed via srcset 2x and
+// as the og:image.
+const THUMB_SIZE_2X = 512;
 const QUALITY = 80;
 
 // ---------------------------------------------------------------------------
@@ -53,6 +57,38 @@ async function loadStations() {
   return stations;
 }
 
+// The API serves cdn.radiocrestin.ro proxy URLs pre-shrunk to w=250 — too
+// small for the 2x file, and already lossy-compressed. Prefer the original
+// upload (the proxy's `url` param, publicly readable), then the proxy bumped
+// to the 2x size (its signature only covers `url`, not `w`), then the URL
+// as-is.
+function sourceCandidates(thumbUrl) {
+  try {
+    const parsed = new URL(thumbUrl);
+    const origin = parsed.searchParams.get("url");
+    if (!origin) return [thumbUrl];
+    const bumped = new URL(thumbUrl);
+    bumped.searchParams.set("w", String(THUMB_SIZE_2X));
+    return [origin, bumped.toString(), thumbUrl];
+  } catch {
+    return [thumbUrl];
+  }
+}
+
+async function fetchFirst(urls) {
+  let lastErr = new Error("no candidate urls");
+  for (const url of urls) {
+    try {
+      const response = await fetch(url, { signal: AbortSignal.timeout(8000) });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      return Buffer.from(await response.arrayBuffer());
+    } catch (err) {
+      lastErr = err;
+    }
+  }
+  throw lastErr;
+}
+
 async function downloadThumbnails(stations) {
   console.log("Downloading and optimizing station thumbnails...");
 
@@ -64,6 +100,10 @@ async function downloadThumbnails(stations) {
   let skipped = 0;
   let failed = 0;
 
+  const isFresh = (file) =>
+    fs.existsSync(file) &&
+    Date.now() - fs.statSync(file).mtimeMs < 24 * 60 * 60 * 1000;
+
   const batchSize = 10;
   for (let i = 0; i < stations.length; i += batchSize) {
     const batch = stations.slice(i, i + batchSize);
@@ -71,14 +111,11 @@ async function downloadThumbnails(stations) {
       batch.map(async (station) => {
         const slug = station.slug;
         const outputPath = path.join(OUTPUT_DIR, `${slug}.webp`);
+        const outputPath2x = path.join(OUTPUT_DIR, `${slug}@2x.webp`);
 
-        // Skip if exists and < 24h old
-        if (fs.existsSync(outputPath)) {
-          const stat = fs.statSync(outputPath);
-          if (Date.now() - stat.mtimeMs < 24 * 60 * 60 * 1000) {
-            skipped++;
-            return;
-          }
+        if (isFresh(outputPath) && isFresh(outputPath2x)) {
+          skipped++;
+          return;
         }
 
         const thumbUrl = station.thumbnail_url;
@@ -88,17 +125,22 @@ async function downloadThumbnails(stations) {
         }
 
         try {
-          const response = await fetch(thumbUrl, {
-            signal: AbortSignal.timeout(8000),
-          });
-          if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-          const buffer = Buffer.from(await response.arrayBuffer());
+          const buffer = await fetchFirst(sourceCandidates(thumbUrl));
 
           await sharp(buffer)
             .resize(THUMB_SIZE, THUMB_SIZE, { fit: "cover" })
             .webp({ quality: QUALITY })
             .toFile(outputPath);
+
+          // withoutEnlargement: a ~260px original gains nothing from being
+          // inflated to 512 — ship it at its real size instead.
+          await sharp(buffer)
+            .resize(THUMB_SIZE_2X, THUMB_SIZE_2X, {
+              fit: "cover",
+              withoutEnlargement: true,
+            })
+            .webp({ quality: QUALITY })
+            .toFile(outputPath2x);
 
           downloaded++;
         } catch (err) {
@@ -327,7 +369,7 @@ async function extractStationColors(stations) {
   const fileSlugs = fs.existsSync(OUTPUT_DIR)
     ? fs
         .readdirSync(OUTPUT_DIR)
-        .filter((f) => f.endsWith(".webp"))
+        .filter((f) => f.endsWith(".webp") && !f.endsWith("@2x.webp"))
         .map((f) => f.slice(0, -".webp".length))
     : [];
 

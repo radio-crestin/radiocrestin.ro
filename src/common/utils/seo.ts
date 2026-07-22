@@ -1,6 +1,6 @@
 import type { IStation } from "@/models/Station";
 import { SITE_URL } from "@/constants/constants";
-import { getValidImageUrl } from "@/utils";
+import { getValidImageUrl, stationThumb2x } from "@/utils";
 
 export const DEFAULT_SHARE_IMAGE = `${SITE_URL}/favicon/android-chrome-512x512.png`;
 
@@ -31,11 +31,13 @@ export const seoStation = (station: IStation) => {
           `Ascultă ${station.title} live online, gratuit. ${station.description}`,
         )
       : SEO_DEFAULT.description,
+    // Share scrapers want ≥400px — use the 512px thumbnail companion.
     imageUrl: absoluteImageUrl(
-      getValidImageUrl(
-        station?.thumbnail_url,
-        "/favicon/android-chrome-512x512.png",
-      ),
+      stationThumb2x(station?.thumbnail_url) ??
+        getValidImageUrl(
+          station?.thumbnail_url,
+          "/favicon/android-chrome-512x512.png",
+        ),
     ),
     fullURL: station?.slug
       ? `${SITE_URL}/${station.slug}/`

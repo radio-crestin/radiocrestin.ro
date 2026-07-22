@@ -2,19 +2,23 @@ import { describe, it, expect } from "vitest";
 import { DEFAULT_RADIO_IMG, stepImageFallback } from "@/utils";
 
 // Node test env has no HTMLImageElement — a src-holding stub is all the
-// helper touches (getAttribute("src") + the src setter)
-const fakeImg = (src: string) => {
+// helper touches (getAttribute("src"), the src setter, removeAttribute)
+const fakeImg = (src: string, srcset?: string) => {
   const el = {
     src,
+    srcset,
     sets: 0,
     getAttribute: (name: string) => (name === "src" ? el.src : null),
+    removeAttribute: (name: string) => {
+      if (name === "srcset") el.srcset = undefined;
+    },
   };
   return new Proxy(el, {
     set(target, prop, value) {
       if (prop === "src") target.sets++;
       return Reflect.set(target, prop, value);
     },
-  }) as unknown as HTMLImageElement & { sets: number };
+  }) as unknown as HTMLImageElement & { sets: number; srcset?: string };
 };
 
 const SONG = "https://cdn.radiocrestin.ro/?url=song.jpg";
@@ -68,6 +72,15 @@ describe("stepImageFallback", () => {
     stepImageFallback(img, STATION);
     expect(img.src).toBe(DEFAULT_RADIO_IMG);
     expect(img.sets).toBe(1);
+  });
+
+  it("clears srcset when stepping so the fallback src actually wins", () => {
+    // srcset candidates outrank src — left in place, the browser would
+    // re-select the broken 2x resource instead of loading the fallback
+    const img = fakeImg(STATION, `${STATION} 256w, /station-thumbnails/rve-cluj@2x.webp 512w`);
+    stepImageFallback(img, STATION);
+    expect(img.src).toBe(DEFAULT_RADIO_IMG);
+    expect(img.srcset).toBeUndefined();
   });
 
   it("dedupes a station fallback that equals the default", () => {

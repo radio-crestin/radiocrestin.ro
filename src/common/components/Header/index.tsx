@@ -19,7 +19,13 @@ import usePlaybackState from "@/store/usePlaybackState";
 import useSwapTransition from "@/hooks/useSwapTransition";
 import { PLAYBACK_STATE } from "@/models/enum";
 import PlayIcon from "@/icons/Play";
-import { DEFAULT_RADIO_IMG, getValidImageUrl, roPlural, stepImageFallback } from "@/utils";
+import {
+  DEFAULT_RADIO_IMG,
+  getValidImageUrl,
+  roPlural,
+  stationThumbImgProps,
+  stepImageFallback,
+} from "@/utils";
 import { getStationColors } from "@/utils/stationColors";
 
 const handleImgError = (e: SyntheticEvent<HTMLImageElement>) => {
@@ -322,6 +328,7 @@ const ContentLeft = () => {
             loading={"lazy"}
             fetchPriority="high"
             src={getValidImageUrl(selectedStation.thumbnail_url)}
+            {...stationThumbImgProps(selectedStation.thumbnail_url, 224)}
             alt={selectedStation.title}
             width={224}
             height={224}
@@ -499,6 +506,7 @@ const ContentRight = () => {
         <div className={styles.title_container}>
           <img
             src={getValidImageUrl(station.thumbnail_url)}
+            {...stationThumbImgProps(station.thumbnail_url, 100)}
             alt="Radio Crestin"
             height={100}
             width={100}

@@ -26,12 +26,15 @@ const {
 } = Astro.props;
 
 // Known share-image sizes: the default icon is 512x512 and the generated
-// station thumbnails are 256x256; other images have unknown dimensions.
+// station thumbnails are 256x256 with a 512x512 @2x companion; other images
+// have unknown dimensions.
 const knownImageSize = imageUrl === DEFAULT_SHARE_IMAGE
   ? "512"
-  : imageUrl.includes("/station-thumbnails/")
-    ? "256"
-    : null;
+  : imageUrl.includes("@2x.webp")
+    ? "512"
+    : imageUrl.includes("/station-thumbnails/")
+      ? "256"
+      : null;
 ---
 
 <!doctype html>
