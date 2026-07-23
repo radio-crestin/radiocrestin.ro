@@ -52,12 +52,22 @@
 
     .station_details {
       min-width: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      // fixed like StationItem's: the song slot glides inside without resizing the card
+      height: 100px;
+
+      @include mixinHelper.onTablet {
+        height: 72px;
+      }
     }
 
     .station_name {
       display: flex;
       align-items: center;
       min-width: 0;
+      flex-shrink: 0;
       font-family: globalVariables.$inter;
       font-size: 1.2rem;
       font-weight: 500;
@@ -66,7 +76,21 @@
 
       @include mixinHelper.onTablet {
         font-size: 1.1rem;
+        // Fit the 72px station_details: title 2×17.6 + 4 + slot 32 = 71.2px
+        margin-bottom: 4px;
       }
+    }
+
+    .station_name_text {
+      min-width: 0;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      overflow-wrap: anywhere;
+      // pad the clamp's clip edge so line-height-1 descenders survive
+      padding-bottom: 3px;
+      margin-bottom: -3px;
     }
 
     .song_name, .artist_name {
@@ -85,6 +109,7 @@
     .song_slot {
       height: 16px;
       overflow: hidden;
+      flex-shrink: 0; // the fixed-height column must not squeeze the slot
       transition: height 0.25s ease, margin-top 0.25s ease;
 
       // The slot's BFC keeps child top margins inside it (pre-slot they
@@ -100,6 +125,10 @@
         // 5px + -5px = 0) so the lone title centers against the artwork.
         // Must mirror .station_name's margin-bottom.
         margin-top: -5px;
+
+        @include mixinHelper.onTablet {
+          margin-top: -4px;
+        }
       }
 
       @media (prefers-reduced-motion: reduce) {

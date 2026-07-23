@@ -94,7 +94,7 @@ const FavouriteItem = (data: IStation) => {
         <div className={styles.station_details}>
           <p className={styles.station_name}>
             <PlayingIndicator isActive={isActive} />
-            {data.title}
+            <span className={styles.station_name_text}>{data.title}</span>
           </p>
           {/* Height-animated song slot: hugs the rendered text and glides on
               1↔2-line changes instead of snapping. Collapses (centering the
