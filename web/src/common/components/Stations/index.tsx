@@ -196,6 +196,42 @@ function sortStations(
   return { sorted: list, stationOfDaySlug: null, mostPlayedSlugs };
 }
 
+interface FavouritesScrollAnchorProps {
+  count: number;
+  anchorRef: React.RefObject<HTMLDivElement | null>;
+}
+
+// iOS lacks scroll anchoring: compensate favourites-section changes above the
+// viewport by the anchor's measured movement (0 where the browser anchors
+// natively); class because getSnapshotBeforeUpdate is React's only pre-mutation read
+class FavouritesScrollAnchor extends React.Component<FavouritesScrollAnchorProps> {
+  getSnapshotBeforeUpdate(prevProps: FavouritesScrollAnchorProps): number | null {
+    if (prevProps.count === this.props.count) return null;
+    const anchor = this.props.anchorRef.current;
+    if (!anchor) return null;
+    const top = anchor.getBoundingClientRect().top;
+    // mutation seam: existing section's bottom edge, or the anchor on first insert
+    const section = document.querySelector('[data-info="favourite-section"]');
+    const seam = section ? section.getBoundingClientRect().bottom : top;
+    return seam <= 0 ? top : null;
+  }
+
+  componentDidUpdate(
+    _prevProps: FavouritesScrollAnchorProps,
+    _state: unknown,
+    snapshot: number | null,
+  ) {
+    const anchor = this.props.anchorRef.current;
+    if (snapshot === null || !anchor) return;
+    const shift = anchor.getBoundingClientRect().top - snapshot;
+    if (shift !== 0) window.scrollBy(0, shift);
+  }
+
+  render() {
+    return null;
+  }
+}
+
 const ChevronDown = ({ size = 12 }: { size?: number }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
     <path d="M6 9l6 6 6-6" />
@@ -258,6 +294,9 @@ const Stations = () => {
   if (!initialOrderRef.current && ctx.stations?.length) {
     initialOrderRef.current = new Map(ctx.stations.map((s: IStation, i: number) => [s.slug, i]));
   }
+
+  const favAnchorRef = useRef<HTMLDivElement>(null);
+  const favCount = ctx.favouriteStations?.length || 0;
 
   // Capture a score snapshot once stations have real listener data (the
   // initial static props set total_listeners to 0, so we wait for the
@@ -365,7 +404,8 @@ const Stations = () => {
       {ctx.favouriteStations?.length > 0 && (
         <FavouriteStationsSection stations={ctx.favouriteStations} />
       )}
-      <div className={`${styles.search_section}`} data-info={"stations-section"}>
+      <FavouritesScrollAnchor count={favCount} anchorRef={favAnchorRef} />
+      <div ref={favAnchorRef} className={`${styles.search_section}`} data-info={"stations-section"}>
         <div ref={sortRef} className={styles.sort_container}>
           <button
             className={`${styles.sort_button} ${showSortDropdown ? styles.sort_button_open : ""}`}
