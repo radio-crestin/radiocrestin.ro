@@ -510,11 +510,13 @@ const ContentRight = () => {
   );
 
   const statusPillMobile = (
-    <p className={styles.status_pill}>
+    <p className={`${styles.status_pill} ${isUp && listeners > 0 ? styles.pill_split : ""}`}>
       {isUp ? (
         <>
-          <span className={styles.live_dot} />
-          <strong>LIVE</strong>
+          <span className={styles.pill_live}>
+            <span className={styles.live_dot} />
+            <strong>LIVE</strong>
+          </span>
           {/* Always mounted: when the first fetch delivers a count, the
               open class wipes the pill open (0fr→1fr) over the fully-drawn
               content — mount-time rendering would just pop */}

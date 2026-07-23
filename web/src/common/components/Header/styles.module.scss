@@ -381,6 +381,22 @@
         // pill's left edge, which reads as an off-center pulse
         overflow: visible;
       }
+
+      .status_pill.pill_split {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0;
+        align-items: center;
+
+        .pill_live {
+          justify-self: end;
+          padding-right: 8px;
+        }
+
+        .listeners_reveal {
+          justify-self: start;
+        }
+      }
     }
 
     .status_pill {
@@ -429,6 +445,12 @@
       @media (prefers-reduced-motion: reduce) {
         animation: none;
       }
+    }
+
+    .pill_live {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
     }
 
     // Compact mobile pill content: hairline | headphones | bold count —
