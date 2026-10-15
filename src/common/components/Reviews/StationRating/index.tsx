@@ -5,6 +5,7 @@ import ReviewModal from "@/components/Reviews/ReviewModal";
 import ReviewsListModal from "@/components/Reviews/ReviewsListModal";
 import ReviewsModalShell from "@/components/Reviews/ReviewsModalShell";
 import { getStationReviews } from "@/services/getStations";
+import { stationTitle as stationPageTitle, stationReviewsTitle } from "@/utils/seo";
 import type { IReview, IReviewsStats } from "@/models/Station";
 
 interface StationRatingProps {
@@ -80,6 +81,17 @@ const StationRating: React.FC<StationRatingProps> = ({
       handleOpenReviewsList();
     }
   }, [handleOpenReviewsList]);
+
+  // The tab title follows the /reviews/ deep-link while the list is open,
+  // then reverts to the station title (RadioApp sets it on hydrate, before
+  // the auto-open above re-renders us, so this runs last).
+  useEffect(() => {
+    if (!isReviewsListModalOpen) return;
+    document.title = stationReviewsTitle(stationTitle);
+    return () => {
+      document.title = stationPageTitle(stationTitle);
+    };
+  }, [isReviewsListModalOpen, stationTitle]);
 
   // Handle browser back button
   useEffect(() => {
