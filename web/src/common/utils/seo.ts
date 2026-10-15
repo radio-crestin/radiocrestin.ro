@@ -67,6 +67,31 @@ export const seoStation = (station: IStation) => {
   };
 };
 
+export const stationReviewsTitle = (title?: string | null) =>
+  `Recenzii ${title || "Radio Creștin"} – Părerile Ascultătorilor | Radio Creștin`;
+
+// /{slug}/reviews/ is a modal deep-link over the station page. It is noindexed
+// (not just canonicalized) so it never competes with the station root in
+// search: the root already ships every review in its static HTML + JSON-LD.
+// Its own title/description still matter for the browser tab and link shares.
+export const seoStationReviews = (station: IStation) => {
+  const count = station?.reviews_stats?.number_of_reviews ?? 0;
+  const average = (station?.reviews_stats?.average_rating ?? 0)
+    .toFixed(1)
+    .replace(".", ",");
+  return {
+    ...seoStation(station),
+    title: stationReviewsTitle(station?.title),
+    description: metaDescription(
+      count > 0
+        ? `Citește ce spun ascultătorii despre ${station.title}: notă medie ${average}/5 (${count === 1 ? "o recenzie" : `${count} recenzii`}). Lasă și tu o recenzie!`
+        : `Citește recenziile ascultătorilor pentru ${station?.title} și lasă și tu o recenzie. Ascultă ${station?.title} live online, gratuit.`,
+    ),
+    fullURL: `${SITE_URL}/${station?.slug}/reviews/`,
+    noindex: true,
+  };
+};
+
 export const SEO_DEFAULT = {
   title: "Radio Creștin | Ascultă Radiouri Creștine Online Gratuit",
   description:

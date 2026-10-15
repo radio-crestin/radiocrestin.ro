@@ -61,9 +61,9 @@ async function generateSitemap() {
   </url>`
   );
 
-  // Only station root pages: /{slug}/recent-songs and /{slug}/reviews are
-  // modal deep-links that canonicalize to the station root, so listing them
-  // in the sitemap would advertise non-canonical URLs.
+  // Only station root pages: /{slug}/recent-songs (canonicalized to the
+  // station root) and /{slug}/reviews (noindexed) are modal deep-links, so
+  // listing them in the sitemap would advertise non-canonical URLs.
   const stationUrls = stations.map(
     (station) => `  <url>
     <loc>${SITE_URL}/${station.slug}/</loc>

@@ -4,7 +4,7 @@ import RadioApp from "@/components/RadioApp";
 import PinStations from "@/components/PinStations.astro";
 import { getStations } from "@/services/getStations";
 import { cleanStationsMetadata } from "@/utils";
-import { seoStation } from "@/utils/seo";
+import { seoStationReviews } from "@/utils/seo";
 import type { IStation } from "@/models/Station";
 
 export async function getStaticPaths() {
@@ -20,7 +20,7 @@ const rawStations = Astro.props.stations as IStation[];
 rawStations.forEach((station: IStation) => { station.is_favorite = false; });
 const stations = cleanStationsMetadata(rawStations);
 const selectedStation = stations.find((s: IStation) => s.slug === station_slug)!;
-const seo = seoStation(selectedStation);
+const seo = seoStationReviews(selectedStation);
 ---
 
 <BaseLayout {...seo}>
