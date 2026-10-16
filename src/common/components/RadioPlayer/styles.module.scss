@@ -700,9 +700,35 @@
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
 
+  // Edge fades painted over the scroll in the card's own colour rather than a
+  // mask-image: a mask over moving content is a render pass Chrome redraws
+  // every frame (~250 MB of GPU memory resident while a long title scrolls).
+  // Over the opaque card the result is the same pixels, and the scroll stays
+  // a plain compositor translate. isolation keeps the z-index local.
   &[data-marquee="true"] {
-    -webkit-mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
-    mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
+    position: relative;
+    isolation: isolate;
+
+    &::before,
+    &::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      z-index: 1;
+      width: 6%;
+      pointer-events: none;
+    }
+
+    &::before {
+      left: 0;
+      background: linear-gradient(90deg, var(--radio-player-container-bg), transparent);
+    }
+
+    &::after {
+      right: 0;
+      background: linear-gradient(270deg, var(--radio-player-container-bg), transparent);
+    }
   }
 
   &:not([data-marquee="true"]) {
@@ -742,8 +768,11 @@
   animation: songSwapOut 0.17s ease both;
 }
 
+// backwards, not both: the class stays on after the swap, and a filling
+// animation keeps the ticker its own compositor surface that the marquee
+// inside then redraws every frame (~250 MB of GPU memory in Chrome)
 .ticker_enter {
-  animation: songSwapIn 0.24s ease both;
+  animation: songSwapIn 0.24s ease backwards;
 }
 
 @keyframes songSwapOut {
