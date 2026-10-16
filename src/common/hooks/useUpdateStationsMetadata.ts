@@ -1,11 +1,12 @@
 import { useCallback, useContext, useEffect, useRef } from "react";
-import { getStations, getStationsMetadata } from "@/services/getStations";
-import type { IStationMetadata } from "@/services/getStations";
-import type { IStation } from "@/models/Station";
+import { getStations, getStationsMetadata, getStationSongHistory } from "@/services/getStations";
+import type { ISongHistoryItem, IStationMetadata } from "@/services/getStations";
+import type { ISong, IStation } from "@/models/Station";
 import { Context } from "@/context/ContextProvider";
 import { captureException } from "@/utils/posthog";
 import { preserveLocalThumbnails } from "@/utils";
 import usePlaybackState from "@/store/usePlaybackState";
+import type { IHlsNowPlaying } from "@/store/usePlaybackState";
 
 const FULL_REFRESH_INTERVAL = 5 * 60 * 1000; // 5 minutes
 
@@ -135,6 +136,95 @@ const applyDualMetadata = (
   return anyChanged ? next : stations;
 };
 
+/**
+ * Pins the station heard over hls.js to its audible song (IHlsNowPlaying):
+ * a poll or full refresh may enrich that song (same id, e.g. a thumbnail),
+ * but never replace it with the live one, or with the next one the poll's
+ * end-of-fragment timestamp can return a few seconds early. Unpinned while
+ * the song is unknown, so the offset poll still covers that gap.
+ */
+export const pinHlsNowPlaying = (
+  stations: IStation[],
+  heard: IHlsNowPlaying | null,
+): IStation[] => {
+  const song = heard?.song;
+  if (!heard || !song) return stations;
+  let changed = false;
+  const next = stations.map((station) => {
+    if (station.id !== heard.stationId || station.now_playing?.song?.id === song.id) {
+      return station;
+    }
+    changed = true;
+    return {
+      ...station,
+      now_playing: {
+        ...station.now_playing,
+        timestamp: new Date(heard.startedAt).toISOString(),
+        song,
+      },
+    };
+  });
+  return changed ? next : stations;
+};
+
+/** A history row sits within ~1 s of its boundary (EPOCH is whole seconds),
+ *  or up to ~10 s after it on stations whose rows are dated at ingestion. */
+const CHANGE_ROW_LEAD_MS = 1500;
+const CHANGE_ROW_LAG_MS = 20_000;
+
+/**
+ * The row that starts the song heard from a boundary, for a change the
+ * playlist announced without a song hint: the earliest history row in
+ * [B − 1.5 s, B + 20 s], skipping rows of the song heard before it (that song
+ * still running). The window is the same for every listener of the change,
+ * so it is shared from the CDN. Null when absent or the request failed.
+ */
+export const pickChangeRow = (
+  rows: ISongHistoryItem[],
+  startedAt: number,
+  songBefore: number | null,
+): ISongHistoryItem | null => {
+  let best: ISongHistoryItem | null = null;
+  let bestAt = Infinity;
+  for (const row of rows) {
+    const at = Date.parse(row.timestamp);
+    if (!row.song || !(at >= startedAt - CHANGE_ROW_LEAD_MS && at <= startedAt + CHANGE_ROW_LAG_MS)) {
+      continue;
+    }
+    if (songBefore != null && row.song.id === songBefore) continue;
+    if (at < bestAt) {
+      best = row;
+      bestAt = at;
+    }
+  }
+  return best;
+};
+
+/** Gaps between attempts while the change row is not ingested yet: 55 s in
+ *  total, above the measured 37.7 s ingestion lag. Playback joins ~20 s
+ *  behind live (the playlist's EXT-X-START), so the first try can be early. */
+const CHANGE_RETRY_DELAYS_MS = [3000, 7000, 15000, 30000];
+
+const resolveSongChange = async (
+  heard: IHlsNowPlaying,
+  songBefore: number | null,
+  isCurrent: () => boolean,
+): Promise<ISong | null> => {
+  const b = Math.floor(heard.startedAt / 1000);
+  for (let attempt = 0; ; attempt++) {
+    // A new to_timestamp per attempt, so a retry never meets the cached copy
+    // that lacked the row. The API rejects to > now + 2: stay 2 s behind.
+    const to = Math.min(b + CHANGE_ROW_LAG_MS / 1000 + attempt, Math.floor(Date.now() / 1000) - 2);
+    const page = await getStationSongHistory(heard.stationSlug, b - 2, Math.max(to, b - 2));
+    if (!isCurrent()) return null;
+    const row = pickChangeRow(page?.history ?? [], heard.startedAt, songBefore);
+    if (row?.song) return row.song as ISong;
+    if (attempt >= CHANGE_RETRY_DELAYS_MS.length) return null;
+    await new Promise((resolve) => setTimeout(resolve, CHANGE_RETRY_DELAYS_MS[attempt]));
+    if (!isCurrent()) return null;
+  }
+};
+
 const updateSelectedStation = (
   stations: IStation[],
   slug: string | undefined,
@@ -155,7 +245,10 @@ export const useRefreshStations = () => {
     try {
       const data = await getStations();
       if (data?.stations?.length > 0) {
-        const stations = preserveLocalThumbnails(ctx.stations ?? [], data.stations);
+        const stations = pinHlsNowPlaying(
+          preserveLocalThumbnails(ctx.stations ?? [], data.stations),
+          usePlaybackState.getState().hlsNowPlaying,
+        );
         setCtx({ stations });
         if (selectedStationSlug) {
           const updatedStation = stations.find(
@@ -179,13 +272,15 @@ const useUpdateStationsMetadata = () => {
   const lastFetchTimestamp = useRef<number>(0);
   const lastFullRefreshTimestamp = useRef<number>(0);
   const initialFetchDone = useRef(false);
-  // hlsActive / hlsPlaybackTimestamp are only ever read inside the poll and
-  // refetch callbacks, so they are pulled with getState() at call time —
-  // subscribing reactively re-rendered this hook's host (the island root)
-  // on every ~6s FRAG_CHANGED tick just to fill a ref.
-  const hlsSongId = usePlaybackState(s => s.hlsSongId);
-  /** The song_id we last triggered an immediate fetch for — prevents re-fetching. */
-  const lastFetchedHlsSongIdRef = useRef<number | null>(null);
+  // hlsActive / hlsPlaybackTimestamp are only ever read inside the poll
+  // callbacks, so they are pulled with getState() at call time — subscribing
+  // reactively re-rendered this hook's host (the island root) on every ~6s
+  // FRAG_CHANGED tick just to fill a ref. hlsNowPlaying only changes once
+  // per song.
+  const hlsNowPlaying = usePlaybackState(s => s.hlsNowPlaying);
+  /** The last song heard over HLS, per station: a history row of it dated
+   *  after the next boundary is that song still running, not the change. */
+  const lastHeardSongRef = useRef<{ stationId: number; songId: number } | null>(null);
 
   // Refs to avoid stale closures in the polling interval
   const stationsRef = useRef(ctx.stations);
@@ -206,39 +301,33 @@ const useUpdateStationsMetadata = () => {
     }
   }, []);
 
-  // Immediate metadata refetch when HLS ID3 detects a song change.
-  // Fires ONCE per new hlsSongId — after that the regular 10s poll takes over.
+  // The audio reached a song change announced by the HLS playlist. With the
+  // playlist's song hint the title is shown at once, without a request;
+  // otherwise the history API finds the row that starts at the boundary,
+  // retried until it is ingested. A hint arriving meanwhile supersedes the
+  // request. Nothing found leaves the station unpinned and the 10s offset
+  // poll covers it.
   useEffect(() => {
-    if (
-      hlsSongId == null ||
-      hlsSongId === lastFetchedHlsSongIdRef.current ||
-      !initialFetchDone.current
-    ) return;
-
-    // Check if the displayed song already matches — no fetch needed
-    const displayedSongId = ctx.selectedStation?.now_playing?.song?.id;
-    if (displayedSongId === hlsSongId) {
-      lastFetchedHlsSongIdRef.current = hlsSongId;
-      return;
-    }
-
-    lastFetchedHlsSongIdRef.current = hlsSongId;
-
-    // Fire-and-forget immediate metadata fetch with the HLS playback timestamp
-    const playbackTs = usePlaybackState.getState().hlsPlaybackTimestamp;
-    getStationsMetadata(undefined, playbackTs ?? undefined).then(metadata => {
-      if (!metadata.length) return;
+    if (!hlsNowPlaying) return;
+    if (hlsNowPlaying.song) {
+      lastHeardSongRef.current = { stationId: hlsNowPlaying.stationId, songId: hlsNowPlaying.song.id };
       const stations = stationsRef.current;
       if (!stations?.length) return;
-      const updatedStations = applyMetadataToStations(stations, metadata);
-      setCtx({ stations: updatedStations });
-      const slug = selectedStationSlugRef.current;
-      if (slug) {
-        const updatedStation = updatedStations.find((s: IStation) => s.slug === slug);
-        if (updatedStation) setCtx({ selectedStation: updatedStation });
-      }
-    }).catch(() => { /* next poll will catch up */ });
-  }, [hlsSongId]);
+      const pinned = pinHlsNowPlaying(stations, hlsNowPlaying);
+      if (pinned === stations) return;
+      setCtx({ stations: pinned });
+      updateSelectedStation(pinned, selectedStationSlugRef.current, setCtx);
+      return;
+    }
+    const before = lastHeardSongRef.current;
+    const songBefore = before?.stationId === hlsNowPlaying.stationId ? before.songId : null;
+    // A newer change, a hint, a stop or a station switch supersedes this one.
+    const isCurrent = () => usePlaybackState.getState().hlsNowPlaying === hlsNowPlaying;
+    resolveSongChange(hlsNowPlaying, songBefore, isCurrent).then(song => {
+      if (!song || !isCurrent()) return;
+      usePlaybackState.getState().setHlsNowPlaying({ ...hlsNowPlaying, song });
+    }).catch(() => { /* the 10s offset poll covers it */ });
+  }, [hlsNowPlaying]);
 
   useEffect(() => {
     const doFullRefresh = async () => {
@@ -248,7 +337,11 @@ const useUpdateStationsMetadata = () => {
           lastFetchTimestamp.current = getTimestamp();
           lastFullRefreshTimestamp.current = Date.now();
           initialFetchDone.current = true;
-          const stations = preserveLocalThumbnails(stationsRef.current ?? [], data.stations);
+          // A full refresh carries the LIVE now_playing, ahead of the HLS audio.
+          const stations = pinHlsNowPlaying(
+            preserveLocalThumbnails(stationsRef.current ?? [], data.stations),
+            usePlaybackState.getState().hlsNowPlaying,
+          );
           setCtx({ stations });
           // Use selected station slug, or fall back to URL path for new stations not in build
           const slug = selectedStationSlugRef.current
@@ -306,6 +399,7 @@ const useUpdateStationsMetadata = () => {
           updatedStations = applyMetadataToStations(stationsRef.current, metadata);
         }
 
+        updatedStations = pinHlsNowPlaying(updatedStations, usePlaybackState.getState().hlsNowPlaying);
         setCtx({ stations: updatedStations });
 
         const slug = selectedStationSlugRef.current;

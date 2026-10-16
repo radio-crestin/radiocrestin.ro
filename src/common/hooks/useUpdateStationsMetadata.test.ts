@@ -2,6 +2,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import {
   stationValuesChanged,
   applyMetadataToStations,
+  pinHlsNowPlaying,
+  pickChangeRow,
 } from "@/hooks/useUpdateStationsMetadata";
 import fallbackStations from "@/data/fallback-stations.json";
 
@@ -264,106 +266,6 @@ describe("HLS offset constant", () => {
   });
 });
 
-describe("HLS ID3 song change detection (fetch-once logic)", () => {
-  // Simulates the lastFetchedHlsSongIdRef guard that prevents infinite re-fetching
-
-  it("triggers fetch when hlsSongId changes and differs from displayed", () => {
-    let lastFetchedId: number | null = null;
-    const displayedSongId = 10;
-    let fetchTriggered = false;
-
-    const onHlsSongIdChange = (hlsSongId: number | null) => {
-      if (hlsSongId == null || hlsSongId === lastFetchedId) return;
-      if (displayedSongId === hlsSongId) {
-        lastFetchedId = hlsSongId;
-        return;
-      }
-      lastFetchedId = hlsSongId;
-      fetchTriggered = true;
-    };
-
-    // New song detected in HLS that differs from displayed
-    onHlsSongIdChange(42);
-    expect(fetchTriggered).toBe(true);
-    expect(lastFetchedId).toBe(42);
-  });
-
-  it("does NOT re-fetch for the same hlsSongId (fetch-once guarantee)", () => {
-    let lastFetchedId: number | null = null;
-    let fetchCount = 0;
-
-    const onHlsSongIdChange = (hlsSongId: number | null) => {
-      if (hlsSongId == null || hlsSongId === lastFetchedId) return;
-      lastFetchedId = hlsSongId;
-      fetchCount++;
-    };
-
-    // Same song ID arrives in multiple ID3 frames (every 6s segment)
-    onHlsSongIdChange(42);
-    onHlsSongIdChange(42);
-    onHlsSongIdChange(42);
-    onHlsSongIdChange(42);
-    expect(fetchCount).toBe(1);
-  });
-
-  it("skips fetch when hlsSongId matches the displayed song", () => {
-    let lastFetchedId: number | null = null;
-    const displayedSongId = 42;
-    let fetchTriggered = false;
-
-    const onHlsSongIdChange = (hlsSongId: number | null) => {
-      if (hlsSongId == null || hlsSongId === lastFetchedId) return;
-      if (displayedSongId === hlsSongId) {
-        lastFetchedId = hlsSongId;
-        return;
-      }
-      lastFetchedId = hlsSongId;
-      fetchTriggered = true;
-    };
-
-    // HLS reports same song that's already displayed
-    onHlsSongIdChange(42);
-    expect(fetchTriggered).toBe(false);
-    expect(lastFetchedId).toBe(42);
-  });
-
-  it("triggers new fetch when song changes again", () => {
-    let lastFetchedId: number | null = null;
-    let fetchCount = 0;
-
-    const onHlsSongIdChange = (hlsSongId: number | null) => {
-      if (hlsSongId == null || hlsSongId === lastFetchedId) return;
-      lastFetchedId = hlsSongId;
-      fetchCount++;
-    };
-
-    onHlsSongIdChange(42);
-    expect(fetchCount).toBe(1);
-
-    // Song changes to a different one
-    onHlsSongIdChange(99);
-    expect(fetchCount).toBe(2);
-
-    // Same song repeats — no fetch
-    onHlsSongIdChange(99);
-    expect(fetchCount).toBe(2);
-  });
-
-  it("does not trigger on null hlsSongId", () => {
-    let lastFetchedId: number | null = null;
-    let fetchCount = 0;
-
-    const onHlsSongIdChange = (hlsSongId: number | null) => {
-      if (hlsSongId == null || hlsSongId === lastFetchedId) return;
-      lastFetchedId = hlsSongId;
-      fetchCount++;
-    };
-
-    onHlsSongIdChange(null);
-    expect(fetchCount).toBe(0);
-  });
-});
-
 describe("HLS programDateTime extraction (FRAG_CHANGED)", () => {
   // Mirrors the FRAG_CHANGED handler in RadioPlayer/index.tsx:
   // we use the fragment's END time (PDT + duration) at second precision so
@@ -421,133 +323,6 @@ describe("HLS programDateTime extraction (FRAG_CHANGED)", () => {
     expect(liveTs - hlsTs!).toBeGreaterThanOrEqual(114);
     expect(liveTs - hlsTs!).toBeLessThanOrEqual(120);
     vi.useRealTimers();
-  });
-});
-
-describe("Per-fragment song_id attribution (FRAG_PARSING vs FRAG_CHANGED)", () => {
-  // Reproduces the bug we fixed:
-  //   FRAG_PARSING_METADATA fires for fragments queued ahead of the audio
-  //   pointer. If we set hlsSongId from parsing (old behaviour), the metadata
-  //   hook fires while playbackTs is still inside the previous song's range —
-  //   the API returns the OLD song, and the dedupe ref blocks a re-fetch when
-  //   the audio actually crosses into the new song.
-  //
-  //   New behaviour: parsing only stores a Map<pdt_ms, song_id>. FRAG_CHANGED
-  //   reads the map for the now-playing fragment and only then bumps hlsSongId.
-
-  const makePipeline = () => {
-    const fragSongIds = new Map<number, number>();
-    let hlsSongId: number | null = null;
-    let hlsPlaybackTimestamp: number | null = null;
-    let lastFetchedSongId: number | null = null;
-    let fetchCount = 0;
-    let lastFetchedAt: number | null = null;
-
-    const onFragParsingMetadata = (pdt: number, songId: number) => {
-      fragSongIds.set(pdt, songId);
-    };
-
-    const onFragChanged = (pdt: number, durationSec = 6) => {
-      const queryMs = pdt + Math.max(0, durationSec * 1000 - 1);
-      hlsPlaybackTimestamp = Math.floor(queryMs / 1000);
-      const songId = fragSongIds.get(pdt);
-      if (songId != null && songId !== hlsSongId) {
-        hlsSongId = songId;
-      }
-    };
-
-    const onHlsSongIdChanged = (displayedSongId: number | null) => {
-      if (hlsSongId == null || hlsSongId === lastFetchedSongId) return;
-      if (displayedSongId === hlsSongId) {
-        lastFetchedSongId = hlsSongId;
-        return;
-      }
-      lastFetchedSongId = hlsSongId;
-      lastFetchedAt = hlsPlaybackTimestamp;
-      fetchCount++;
-    };
-
-    return {
-      onFragParsingMetadata,
-      onFragChanged,
-      onHlsSongIdChanged,
-      get hlsSongId() { return hlsSongId; },
-      get hlsPlaybackTimestamp() { return hlsPlaybackTimestamp; },
-      get fetchCount() { return fetchCount; },
-      get lastFetchedAt() { return lastFetchedAt; },
-    };
-  };
-
-  it("stores parsed song_id in the map without bumping hlsSongId", () => {
-    const p = makePipeline();
-    p.onFragParsingMetadata(1000_000, 42);
-    p.onFragParsingMetadata(1006_000, 42);
-    p.onFragParsingMetadata(1012_000, 99); // future fragment with NEW song
-    expect(p.hlsSongId).toBeNull();
-    p.onHlsSongIdChanged(42);
-    expect(p.fetchCount).toBe(0);
-  });
-
-  it("bumps hlsSongId only when audio enters a fragment with a new song_id", () => {
-    const p = makePipeline();
-    // Three fragments parsed ahead — last one has a new song
-    p.onFragParsingMetadata(1000_000, 42);
-    p.onFragParsingMetadata(1006_000, 42);
-    p.onFragParsingMetadata(1012_000, 99);
-
-    // Initial display from getStations was a different song (e.g. 7).
-    // Audio enters fragment 1 → hlsSongId becomes 42 → fetch fires.
-    p.onFragChanged(1000_000);
-    p.onHlsSongIdChanged(7);
-    expect(p.hlsSongId).toBe(42);
-    expect(p.fetchCount).toBe(1);
-
-    // Audio enters fragment 2 — same song, no extra fetch.
-    p.onFragChanged(1006_000);
-    p.onHlsSongIdChanged(42);
-    expect(p.hlsSongId).toBe(42);
-    expect(p.fetchCount).toBe(1);
-
-    // Audio enters fragment 3 — new song. hlsSongId flips to 99 and fires a
-    // fetch using the playback timestamp captured at the moment of the change
-    // (inside the new song's fragment, not the previous one).
-    p.onFragChanged(1012_000);
-    p.onHlsSongIdChanged(42);
-    expect(p.hlsSongId).toBe(99);
-    expect(p.fetchCount).toBe(2);
-    expect(p.lastFetchedAt).toBeGreaterThanOrEqual(1012);
-  });
-
-  it("does not refetch when the displayed song already matches", () => {
-    const p = makePipeline();
-    p.onFragParsingMetadata(1000_000, 42);
-    p.onFragChanged(1000_000);
-    // Display is already showing 42 (set from the initial getStations payload)
-    p.onHlsSongIdChanged(42);
-    expect(p.fetchCount).toBe(0);
-  });
-
-  it("evicts old map entries beyond ~200 fragments", () => {
-    // Reproduces the bounded LRU-by-insertion-order behaviour we shipped in
-    // RadioPlayer (caps the map at 200 entries to avoid unbounded growth).
-    const map = new Map<number, number>();
-    const insert = (pdt: number, songId: number) => {
-      map.set(pdt, songId);
-      while (map.size > 200) {
-        const oldest = map.keys().next().value;
-        if (oldest === undefined) break;
-        map.delete(oldest);
-      }
-    };
-
-    for (let i = 0; i < 250; i++) {
-      insert(i * 6000, i);
-    }
-    expect(map.size).toBe(200);
-    expect(map.has(0)).toBe(false); // oldest evicted
-    expect(map.has(49 * 6000)).toBe(false); // first 50 evicted
-    expect(map.has(50 * 6000)).toBe(true);
-    expect(map.has(249 * 6000)).toBe(true); // newest preserved
   });
 });
 
@@ -739,5 +514,65 @@ describe("applyMetadataToStations (single-fetch path)", () => {
     const result = applyMetadataToStations(stations, [meta]);
     expect(result).toBe(stations);
     expect(result[0]).toBe(stations[0]);
+  });
+});
+
+describe("pinHlsNowPlaying (playlist owns the heard station's song)", () => {
+  const heardSong = { id: 31775, name: "Dumnezeu nemuritor", thumbnail_url: null, artist: { id: 4308, name: "Corina Petre", thumbnail_url: null } };
+  const heard = { stationId: 1, stationSlug: "x", startedAt: Date.parse("2026-10-15T17:15:09.000Z"), song: heardSong };
+  const station = (song: any, id = 1): any => ({
+    id,
+    slug: id === 1 ? "x" : "y",
+    total_listeners: 10,
+    now_playing: { timestamp: "t1", listeners: 10, song },
+  });
+
+  it("replaces the live song (ahead of the audio) with the heard one", () => {
+    const live = { id: 999, name: "Live song", thumbnail_url: "u", artist: { id: 1, name: "L" } };
+    const result = pinHlsNowPlaying([station(live)], heard);
+    expect(result[0].now_playing.song).toBe(heardSong);
+    expect(result[0].now_playing.timestamp).toBe("2026-10-15T17:15:09.000Z");
+    expect((result[0].now_playing as any).listeners).toBe(10);
+  });
+
+  it("keeps an API row of the same song (it may be richer, e.g. a thumbnail)", () => {
+    const api = { ...heardSong, thumbnail_url: "https://x/thumb.jpg" };
+    const stations = [station(api)];
+    const result = pinHlsNowPlaying(stations, heard);
+    expect(result).toBe(stations);
+    expect(result[0].now_playing.song.thumbnail_url).toBe("https://x/thumb.jpg");
+  });
+
+  it("leaves other stations and unknown songs alone", () => {
+    const other = [station({ id: 7, name: "Other" }, 2)];
+    expect(pinHlsNowPlaying(other, heard)).toBe(other);
+    const stations = [station({ id: 7, name: "Other" })];
+    expect(pinHlsNowPlaying(stations, { ...heard, song: null })).toBe(stations);
+    expect(pinHlsNowPlaying(stations, null)).toBe(stations);
+  });
+});
+
+describe("pickChangeRow (history row of a boundary without a hint)", () => {
+  const B = Date.parse("2026-10-15T17:15:09.342Z");
+  const row = (iso: string, id: number): any => ({ timestamp: iso, listeners: 1, song: { id, name: `s${id}`, thumbnail_url: null, artist: null } });
+
+  it("takes the row starting at the boundary", () => {
+    const rows = [row("2026-10-15T17:11:37.331+00:00", 1), row("2026-10-15T17:15:09.342987+00:00", 2)];
+    expect(pickChangeRow(rows, B, null)?.song?.id).toBe(2);
+  });
+
+  it("accepts rows dated at ingestion (up to 20 s late), not later items", () => {
+    expect(pickChangeRow([row("2026-10-15T17:15:19.900+00:00", 2)], B, null)?.song?.id).toBe(2);
+    expect(pickChangeRow([row("2026-10-15T17:15:40.000+00:00", 3)], B, null)).toBeNull();
+  });
+
+  it("takes the earliest row in the window, so a jingle right after is not shown early", () => {
+    const rows = [row("2026-10-15T17:15:17.000+00:00", 3), row("2026-10-15T17:15:09.342+00:00", 2)];
+    expect(pickChangeRow(rows, B, null)?.song?.id).toBe(2);
+  });
+
+  it("skips rows of the song heard before the boundary (that song still running)", () => {
+    const rows = [row("2026-10-15T17:15:10.000+00:00", 1), row("2026-10-15T17:15:12.000+00:00", 2)];
+    expect(pickChangeRow(rows, B, 1)?.song?.id).toBe(2);
   });
 });

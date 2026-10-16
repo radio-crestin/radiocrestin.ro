@@ -34,6 +34,8 @@ import { canAutoplayAudio } from "@/utils/autoplay";
 import usePlayCount from "@/store/usePlayCount";
 import { useRefreshStations } from "@/hooks/useUpdateStationsMetadata";
 import { getValidImageUrl, roPlural, stepImageFallback } from "@/utils";
+import { HlsSongTimeline, parseSongBoundaries, songFromHint } from "@/utils/hlsSongTimeline";
+import type { ISongBoundary } from "@/utils/hlsSongTimeline";
 import { getAdjacentStation } from "@/utils/stationQueue";
 import SkipPreviousIcon from "@/icons/SkipPrevious";
 import SkipNextIcon from "@/icons/SkipNext";
@@ -63,7 +65,7 @@ export default function RadioPlayer() {
   const setHasError = usePlaybackState((s) => s.setHasError);
   const setHlsActive = usePlaybackState((s) => s.setHlsActive);
   const setHlsPlaybackTimestamp = usePlaybackState((s) => s.setHlsPlaybackTimestamp);
-  const setHlsSongId = usePlaybackState((s) => s.setHlsSongId);
+  const setHlsNowPlaying = usePlaybackState((s) => s.setHlsNowPlaying);
   const station = ctx.selectedStation;
   // stepStation also runs from MediaSession handlers registered in a
   // [station]-keyed effect — those closures read ctx through this ref so a
@@ -99,11 +101,10 @@ export default function RadioPlayer() {
   const hlsRecoveryRef = useRef(0);
   const cleanupRef = useRef<(() => void) | null>(null);
   const isDestroyingRef = useRef(false);
-  // Maps fragment programDateTime (epoch ms) -> song_id parsed from ID3 frames.
-  // Populated when fragments are parsed (ahead of playback) and read at FRAG_CHANGED
-  // so we attribute song_id to the audio that's actually playing — not to a future
-  // fragment still in the buffer.
-  const fragSongIdsRef = useRef<Map<number, number>>(new Map());
+  // Song changes announced by the current station's playlist. Outlives the
+  // hls instance (every resume creates a new one) so hints seen at the live
+  // edge before a pause are still known when the audio reaches them.
+  const songTimelineRef = useRef<{ slug: string; timeline: HlsSongTimeline } | null>(null);
   const [loadKey, setLoadKey] = useState(0);
   const prevLoadKeyRef = useRef(0);
   const listeningStartRef = useRef<{ time: number; slug: string; title: string; id: number } | null>(null);
@@ -237,7 +238,7 @@ export default function RadioPlayer() {
       setStreamState(null);
       setHlsActive(false);
       setHlsPlaybackTimestamp(null);
-      setHlsSongId(null);
+      setHlsNowPlaying(null);
       retriesRef.current = MAX_MEDIA_RETRIES;
       isPausedRef.current = false;
       waitingForNetworkRef.current = false;
@@ -637,11 +638,11 @@ export default function RadioPlayer() {
       resetStuckTimer();
     });
 
-    // Track the actual playback timestamp from EXT-X-PROGRAM-DATE-TIME, plus
-    // the per-fragment song_id parsed earlier. Use the END of the fragment as
-    // the metadata query timestamp so song boundaries that fall mid-fragment
-    // (or just after the fragment's PDT, i.e. inside the same second) don't
-    // make the API return the previous song.
+    // Track the actual playback timestamp from EXT-X-PROGRAM-DATE-TIME for
+    // the 10s metadata poll. Use the END of the fragment as the query
+    // timestamp so song boundaries that fall mid-fragment (or just after the
+    // fragment's PDT, i.e. inside the same second) don't make the API return
+    // the previous song.
     hls.on(Hls.Events.FRAG_CHANGED, (_event, data) => {
       if (hls !== hlsInstanceRef.current) return;
       const pdt = data.frag.programDateTime;
@@ -650,45 +651,45 @@ export default function RadioPlayer() {
         const queryMs = pdt + Math.max(0, fragMs - 1);
         const epochSec = Math.floor(queryMs / 1000);
         setHlsPlaybackTimestamp(epochSec);
-        const songId = fragSongIdsRef.current.get(pdt);
-        if (songId != null) {
-          // Only fires the metadata hook when the song_id actually changes.
-          setHlsSongId(songId);
-        }
       }
     });
 
-    // ID3 metadata from HLS segments — store per-fragment song_id keyed by PDT.
-    // The backend injects TXXX frames with "song_id\0<id>" into every .ts segment.
-    // We don't push to state here: parsing fires for fragments queued ahead of
-    // the audio, so attributing them to "now playing" causes display to update
-    // before the audio actually reaches that song.
-    hls.on(Hls.Events.FRAG_PARSING_METADATA, (_event, data) => {
+    // The song the listener hears, straight from the playlist: every reload
+    // adds the song changes it announces (EXT-X-RC-METADATA-CHANGED,
+    // EXT-X-DATERANGE), and the PDT of the playhead (hls.playingDate, server
+    // wall clock like the boundaries) picks the one audible now. Checked on
+    // every timeupdate, so the title flips when the audio does, not when the
+    // change shows up at the live edge earlier.
+    let timelineEntry = songTimelineRef.current;
+    if (!timelineEntry || timelineEntry.slug !== station.slug) {
+      timelineEntry = { slug: station.slug, timeline: new HlsSongTimeline() };
+      songTimelineRef.current = timelineEntry;
+    }
+    const songTimeline = timelineEntry.timeline;
+    let heardChange: ISongBoundary | null = null;
+    const syncHeardSong = () => {
+      // Before play() currentTime is still 0, which hls.js maps to the start
+      // of the playlist window (minutes back) — only a playing element counts.
+      if (hls !== hlsInstanceRef.current || audio.paused) return;
+      const audible = hls.playingDate?.getTime();
+      if (audible == null) return;
+      const change = songTimeline.songChangeAt(audible);
+      // Same object = same song and same hint (a hint upgrade replaces it).
+      if (!change || change === heardChange) return;
+      heardChange = change;
+      setHlsNowPlaying({
+        stationId: station.id,
+        stationSlug: station.slug,
+        startedAt: change.at,
+        song: songFromHint(change.hint),
+      });
+    };
+    hls.on(Hls.Events.LEVEL_LOADED, (_event, data) => {
       if (hls !== hlsInstanceRef.current) return;
-      const pdt = data.frag.programDateTime;
-      if (!pdt) return;
-      for (const sample of data.samples) {
-        try {
-          const text = new TextDecoder("utf-8", { fatal: false }).decode(sample.data);
-          const match = text.match(/song_id\0(\d+)/);
-          if (match) {
-            const songId = parseInt(match[1], 10);
-            if (!isNaN(songId)) {
-              const map = fragSongIdsRef.current;
-              map.set(pdt, songId);
-              // Keep ~20 minutes of fragments at 6s each; evict oldest insertion order
-              while (map.size > 200) {
-                const oldest = map.keys().next().value;
-                if (oldest === undefined) break;
-                map.delete(oldest);
-              }
-            }
-          }
-        } catch {
-          // Ignore parse errors from non-text ID3 frames
-        }
-      }
+      songTimeline.add(parseSongBoundaries(data.details.m3u8));
+      syncHeardSong();
     });
+    audio.addEventListener("timeupdate", syncHeardSong);
 
     let isRecovering = false;
     hls.on(Hls.Events.ERROR, function (event, data) {
@@ -759,7 +760,8 @@ export default function RadioPlayer() {
       if (onCanPlayThrough) {
         audio.removeEventListener("canplaythrough", onCanPlayThrough);
       }
-      fragSongIdsRef.current.clear();
+      audio.removeEventListener("timeupdate", syncHeardSong);
+      setHlsNowPlaying(null);
       hls.destroy();
     };
   };
