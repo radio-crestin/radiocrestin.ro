@@ -188,23 +188,36 @@
   width: 9px;
   height: 9px;
   flex-shrink: 0;
-  border-radius: 50%;
-  background: #f43f3f;
   position: relative;
 
-  // Radar ping: a ring swelling off the dot's edge that dissolves as it
-  // grows (box-shadow spread). The old scale(2.6) clone of the filled disc
-  // read as a red smudge hovering behind the dot on chrome-less layouts.
+  &::before,
   &::after {
     content: "";
     position: absolute;
     inset: 0;
     border-radius: 50%;
+  }
+
+  // Radar ping: a ring swelling off the dot's edge that dissolves as it
+  // grows — a coral disc scaling out from under the dot, which draws the old
+  // box-shadow spread's ring (not the smudgy scale(2.6) clone of the base
+  // red). Transform/opacity only, so it runs on the compositor: animating
+  // box-shadow repainted the hero every frame and kept ~400 MB of GPU memory
+  // resident in Chrome for as long as the page stayed open. The gradient's
+  // soft rim stands in for the box-shadow blur.
+  &::before {
+    background: radial-gradient(closest-side, rgb(248, 113, 113) 80%, rgba(248, 113, 113, 0));
+    opacity: 0;
     animation: livePing 1.8s ease-out infinite;
   }
 
+  // The dot itself, stacked above the ping
+  &::after {
+    background: #f43f3f;
+  }
+
   @media (prefers-reduced-motion: reduce) {
-    &::after {
+    &::before {
       animation: none;
     }
   }
@@ -214,11 +227,14 @@
   // Brighter than the dot itself: a translucent ring of the base red goes
   // muddy-maroon over dark surfaces, while the lifted coral stays a glow
   0% {
-    box-shadow: 0 0 0 0 rgba(248, 113, 113, 0.55);
+    opacity: 0.55;
+    transform: scale(1);
   }
+  // 2.25× the dot: the soft rim ends where the old 5px spread + 2px blur did
   75%,
   100% {
-    box-shadow: 0 0 2px 5px rgba(248, 113, 113, 0);
+    opacity: 0;
+    transform: scale(2.25);
   }
 }
 
@@ -246,7 +262,10 @@
   font-size: 13px;
   font-weight: 500;
   color: var(--header-subtext-color);
-  animation: eyebrowIn 0.5s ease both;
+  // backwards, not both: the end keyframe is the resting style anyway, and a
+  // filling animation keeps the pill its own compositor surface that the
+  // ping inside then redraws every frame (~250 MB of GPU memory in Chrome)
+  animation: eyebrowIn 0.5s ease backwards;
 
   @media (prefers-reduced-motion: reduce) {
     animation: none;
