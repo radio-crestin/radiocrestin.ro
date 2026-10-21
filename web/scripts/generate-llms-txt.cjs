@@ -75,7 +75,7 @@ Cum funcționează: utilizatorul accesează site-ul, alege un post de radio din 
 
 ## Aplicația mobilă
 
-Aplicația Radio Creștin este disponibilă gratuit pe Android și iOS, cu un rating de 4.9 stele din 5 și peste 2175 de recenzii. Aplicația suportă și Apple CarPlay, permițând ascultarea radio creștin direct din mașină.
+Aplicația Radio Creștin este disponibilă gratuit pe Android și iOS, cu un rating de 4.9 stele din 5 și peste 2281 de recenzii. Aplicația suportă și Apple CarPlay, permițând ascultarea radio creștin direct din mașină.
 
 - [Radio Creștin pe Google Play (Android)](https://play.google.com/store/apps/details?id=com.radiocrestin.radio_crestin)
 - [Radio Creștin pe App Store (iOS)](https://apps.apple.com/ro/app/radio-crestin/id6451270471)

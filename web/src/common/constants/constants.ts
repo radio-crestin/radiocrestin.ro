@@ -5,7 +5,7 @@ export const IOS_APP_ID = "6451270471";
 export const ANDROID_PACKAGE = "com.radiocrestin.radio_crestin";
 
 export const APP_RATING = "4.9";
-export const APP_REVIEW_COUNT = "2175";
+export const APP_REVIEW_COUNT = "2281";
 
 // The reviews API has no author field yet — used only as the Review JSON-LD
 // author so the markup stays valid for Google; the UI shows no author name.
