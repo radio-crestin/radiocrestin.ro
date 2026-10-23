@@ -42,6 +42,16 @@ export const initPostHog = () => {
           persistence: "localStorage+cookie",
           session_idle_timeout_seconds: 14400, // 4 hours — keeps session alive during passive listening
           disable_surveys: true, // surveys unused — stops the 32KB surveys.js bundle from loading
+          // Overrides the project's canvas capture. The only canvas is the
+          // decorative hero wash (Header StationWash, 1400×680): rrweb
+          // WebP-encodes it with a synchronous toDataURL whenever it's
+          // inserted — inside the station-click task, ~650ms of an ~860ms
+          // click at 4× CPU — and again on every 5-min full snapshot. rrweb
+          // runs for every visitor, not only sampled sessions (sampling just
+          // gates the upload), so every visitor paid it.
+          session_recording: {
+            captureCanvas: { recordCanvas: false },
+          },
           loaded: (ph) => {
             // Session-scoped so every event this visit carries the entry
             // channel, while the next visit re-attributes from scratch.

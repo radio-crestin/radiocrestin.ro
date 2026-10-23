@@ -58,6 +58,14 @@ const formatDateLabel = (date: Date): string => {
   });
 };
 
+// Shared row-time formatter: toLocaleTimeString(locale, options) builds a
+// fresh ICU formatter per call, and every scroll-triggered append re-renders
+// all loaded rows. Same locale and options, so the output is identical.
+const SONG_TIME_FORMAT = new Intl.DateTimeFormat("ro-RO", {
+  hour: "2-digit",
+  minute: "2-digit",
+});
+
 const groupHistoryByDateAndHour = (items: ISongHistoryItem[]): GroupedHistory[] => {
   const groups = new Map<string, Map<string, ISongHistoryItem[]>>();
 
@@ -134,11 +142,7 @@ const HistoryGroups = React.memo<{
             <div className={styles.hour_header}>{hourGroup.hourLabel}</div>
             {hourGroup.songs.map((item, i) => {
               if (!item.song) return null;
-              const time = new Date(item.timestamp);
-              const timeStr = time.toLocaleTimeString("ro-RO", {
-                hour: "2-digit",
-                minute: "2-digit",
-              });
+              const timeStr = SONG_TIME_FORMAT.format(new Date(item.timestamp));
 
               return (
                 <a

@@ -2,6 +2,7 @@ import React, { useMemo } from "react";
 import styles from "./styles.module.scss";
 import Star from "@/icons/Star";
 import type { IReview, IReviewsStats } from "@/models/Station";
+import { formatReviewDate } from "@/utils";
 
 // Panel content only — the portal, backdrop, scroll lock and Escape/backdrop
 // closing live in ReviewsModalShell, which keeps one persistent overlay
@@ -121,12 +122,7 @@ const ReviewsListModal: React.FC<ReviewsListModalProps> = ({
                     ))}
                   </div>
                   <time className={styles.review_date} dateTime={review.created_at}>
-                    {new Date(review.created_at).toLocaleDateString("ro-RO", {
-                      year: "numeric",
-                      month: "long",
-                      day: "numeric",
-                      timeZone: "Europe/Bucharest",
-                    })}
+                    {formatReviewDate(review.created_at)}
                   </time>
                 </div>
                 {review.message && (
