@@ -1,9 +1,37 @@
-import React, { useEffect, useState } from "react";
+import React, { memo, useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import styles from "./styles.module.scss";
 import Star from "@/icons/Star";
 import { getStationReviews } from "@/services/getStations";
 import type { IReview } from "@/models/Station";
+import { formatReviewDate } from "@/utils";
+
+// Memoized on the reviews array (only replaced by a fetch): the section
+// re-renders with every station switch and 10s metadata poll, and
+// reconciling hundreds of rows (5 stars each) on each one is wasted work.
+const ReviewsList = memo(function ReviewsList({ reviews }: { reviews: IReview[] }) {
+  return (
+    <div className={styles.reviews_list}>
+      {reviews.map((review) => (
+        <div key={review.id} className={styles.review_item}>
+          <div className={styles.review_header}>
+            <div className={styles.review_stars}>
+              {[1, 2, 3, 4, 5].map((i) => (
+                <Star key={i} fillWidth={i <= review.stars ? 1 : 0} height={16} />
+              ))}
+            </div>
+            <time className={styles.review_date} dateTime={review.created_at}>
+              {formatReviewDate(review.created_at)}
+            </time>
+          </div>
+          {review.message && (
+            <p className={styles.review_message}>{review.message}</p>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+});
 
 interface StationReviewsSectionProps {
   stationId: number;
@@ -126,33 +154,7 @@ const StationReviewsSection: React.FC<StationReviewsSectionProps> = ({
   return (
     <section id="reviews" className={styles.reviews_section}>
       {header}
-      <div className={styles.reviews_list}>
-        {reviews.map((review) => (
-          <div key={review.id} className={styles.review_item}>
-            <div className={styles.review_header}>
-              <div className={styles.review_stars}>
-                {[1, 2, 3, 4, 5].map((i) => (
-                  <Star key={i} fillWidth={i <= review.stars ? 1 : 0} height={16} />
-                ))}
-              </div>
-              <time className={styles.review_date} dateTime={review.created_at}>
-                {/* timeZone pinned: the build runs on UTC, visitors don't —
-                    an unpinned format renders a different calendar day and
-                    breaks hydration (React #418) for late-evening reviews */}
-                {new Date(review.created_at).toLocaleDateString("ro-RO", {
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                  timeZone: "Europe/Bucharest",
-                })}
-              </time>
-            </div>
-            {review.message && (
-              <p className={styles.review_message}>{review.message}</p>
-            )}
-          </div>
-        ))}
-      </div>
+      <ReviewsList reviews={reviews} />
     </section>
   );
 };

@@ -4,6 +4,23 @@ import type { IStation, IStationGroup } from "@/models/Station";
 export const roPlural = (n: number, singular: string, plural: string) =>
   n === 1 ? `1 ${singular}` : n < 20 ? `${n} ${plural}` : `${n} de ${plural}`;
 
+// One shared formatter for review dates: toLocaleDateString(locale, options)
+// builds a fresh ICU formatter on every call (~0.1ms each with a timeZone) —
+// Radio Gosen's 225 reviews cost ~25ms per render (60ms+ at 4× CPU) inside
+// every station switch. Same locale and options, so the output is identical.
+// timeZone pinned: the build runs on UTC, visitors don't — an unpinned format
+// renders a different calendar day and breaks hydration (React #418) for
+// late-evening reviews.
+const REVIEW_DATE_FORMAT = new Intl.DateTimeFormat("ro-RO", {
+  year: "numeric",
+  month: "long",
+  day: "numeric",
+  timeZone: "Europe/Bucharest",
+});
+
+export const formatReviewDate = (isoDate: string) =>
+  REVIEW_DATE_FORMAT.format(new Date(isoDate));
+
 /**
  * clean the Stations metadata because the pages are rendered statically, and the metadata will pe loaded on client side.
  * @param stations
