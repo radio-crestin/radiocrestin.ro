@@ -35,6 +35,7 @@ import usePlayCount from "@/store/usePlayCount";
 import { useRefreshStations } from "@/hooks/useUpdateStationsMetadata";
 import { getValidImageUrl, roPlural, stepImageFallback } from "@/utils";
 import { HlsSongTimeline, parseSongBoundaries, songFromHint } from "@/utils/hlsSongTimeline";
+import { hlsStartVariantUrl, isHlsStartVariantUrl } from "@/utils/hlsStartVariant";
 import type { ISongBoundary } from "@/utils/hlsSongTimeline";
 import { getAdjacentStation } from "@/utils/stationQueue";
 import SkipPreviousIcon from "@/icons/SkipPrevious";
@@ -105,6 +106,9 @@ export default function RadioPlayer() {
   // hls instance (every resume creates a new one) so hints seen at the live
   // edge before a pause are still known when the audio reaches them.
   const songTimelineRef = useRef<{ slug: string; timeline: HlsSongTimeline } | null>(null);
+  // Stations whose 2-minute start variant (index-2m.m3u8) 404'd this session:
+  // they load index.m3u8 instead.
+  const noStartVariantSlugsRef = useRef<Set<string>>(new Set());
   const [loadKey, setLoadKey] = useState(0);
   const prevLoadKeyRef = useRef(0);
   const listeningStartRef = useRef<{ time: number; slug: string; title: string; id: number } | null>(null);
@@ -482,6 +486,12 @@ export default function RadioPlayer() {
       url.searchParams.set('s', getUserId());
     }
 
+    // HLS starts from the 2-minute variant: index.m3u8's near-live
+    // EXT-X-START would override liveSyncDuration (see hlsStartVariant.ts)
+    if (type === STREAM_TYPE.HLS && !noStartVariantSlugsRef.current.has(station.slug)) {
+      return hlsStartVariantUrl(url.toString()) ?? url.toString();
+    }
+
     return url.toString();
   };
 
@@ -489,12 +499,24 @@ export default function RadioPlayer() {
   // (e.g. transcoder restart producing a broken m3u8). After this, fall back.
   const HLS_STUCK_TIMEOUT_MS = 15_000;
 
+  // Buffered audio above which an in-place network recovery is free (doesn't
+  // spend hlsRecoveryRef): more than one hls.js retry cycle (~18s), so the
+  // listener hears nothing while it runs.
+  const HLS_FREE_RECOVERY_BUFFER_S = 20;
+
   const HLS_CONFIG: Partial<HlsConfig> = {
     // Play 2 minutes behind the live edge so metadata (fetched with the
     // same offset) matches the audio the user actually hears.
-    // Same approach as the mobile app's SeekModeManager.
+    // Same approach as the mobile app's SeekModeManager. The start position
+    // comes from the playlist's EXT-X-START (hls.js prefers it), hence the
+    // index-2m.m3u8 variant in getStreamUrl; this drives later resyncs.
     liveSyncDuration: HLS_OFFSET_SECONDS,
     liveMaxLatencyDuration: HLS_OFFSET_SECONDS + 30,
+    // Buffer everything up to the live edge (~115s at the 2-minute offset)
+    // instead of the default 30s: when the origin stops answering for a
+    // while (measured: ~20s hangs on every station at once) the buffer
+    // drains instead of the audio cutting out.
+    maxBufferLength: HLS_OFFSET_SECONDS,
     // Live radio never seeks backwards, but the default (Infinity) keeps
     // every played fragment in the SourceBuffer for the life of the hls
     // instance — multi-hour sessions accumulate it all as tab memory.
@@ -723,6 +745,20 @@ export default function RadioPlayer() {
       // Network errors
       if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
         const httpStatus = data.response?.code;
+        // The origin doesn't publish the start variant for this station (yet):
+        // reload it from index.m3u8 instead of cycling to the next stream type
+        if (
+          data.details === Hls.ErrorDetails.MANIFEST_LOAD_ERROR &&
+          httpStatus === 404 &&
+          isHlsStartVariantUrl(hls_stream_url)
+        ) {
+          console.warn(`[HLS] Start variant missing (HTTP 404), loading index.m3u8`);
+          isRecovering = false;
+          noStartVariantSlugsRef.current.add(station.slug);
+          setLoadKey((k) => k + 1);
+          return;
+        }
+
         // Permanent HTTP errors — in-place retry cannot help
         if (httpStatus === 403 || httpStatus === 410) {
           console.warn(`[HLS] Permanent network error (HTTP ${httpStatus}, ${data.details}), switching stream`);
@@ -735,9 +771,18 @@ export default function RadioPlayer() {
         // Transient errors (400, 404, timeouts, network hiccups) — recoverable.
         // 400/404 often happen during transcoder restarts when a new m3u8 arrives
         // referencing segments that don't exist yet. Restarting from live edge helps.
-        if (hlsRecoveryRef.current < 3) {
-          hlsRecoveryRef.current++;
-          console.warn(`[HLS] Recovering network error (attempt ${hlsRecoveryRef.current}, HTTP ${httpStatus}):`, data.details);
+        // With the 2-minute buffer playback rarely stalls, so onPlaying (which
+        // refills the budget) may not fire for hours: retries that run while
+        // plenty is buffered are free, or spaced-out origin hangs would add up
+        // to a needless switch to the MP3 stream.
+        const bufferedAhead = hls.mainForwardBufferInfo?.len ?? 0;
+        const freeRecovery = bufferedAhead > HLS_FREE_RECOVERY_BUFFER_S;
+        if (freeRecovery || hlsRecoveryRef.current < 3) {
+          if (!freeRecovery) hlsRecoveryRef.current++;
+          const attempt = freeRecovery
+            ? `${Math.round(bufferedAhead)}s buffered`
+            : `attempt ${hlsRecoveryRef.current}`;
+          console.warn(`[HLS] Recovering network error (${attempt}, HTTP ${httpStatus}):`, data.details);
           hls.startLoad(-1);
           resetStuckTimer();
           setTimeout(() => { isRecovering = false; }, 100);
