@@ -19,6 +19,9 @@ const THUMB_SIZE = 256;
 // 224 CSS px, so Retina needs 448+ real pixels. Consumed via srcset 2x and
 // as the og:image.
 const THUMB_SIZE_2X = 512;
+// 128px companion for the small logo slots (52-110 CSS px): what a phone's
+// station cards and homepage live panel pick via srcset.
+const THUMB_SIZE_SMALL = 128;
 const QUALITY = 80;
 
 // ---------------------------------------------------------------------------
@@ -112,8 +115,9 @@ async function downloadThumbnails(stations) {
         const slug = station.slug;
         const outputPath = path.join(OUTPUT_DIR, `${slug}.webp`);
         const outputPath2x = path.join(OUTPUT_DIR, `${slug}@2x.webp`);
+        const outputPathSmall = path.join(OUTPUT_DIR, `${slug}@sm.webp`);
 
-        if (isFresh(outputPath) && isFresh(outputPath2x)) {
+        if (isFresh(outputPath) && isFresh(outputPath2x) && isFresh(outputPathSmall)) {
           skipped++;
           return;
         }
@@ -141,6 +145,11 @@ async function downloadThumbnails(stations) {
             })
             .webp({ quality: QUALITY })
             .toFile(outputPath2x);
+
+          await sharp(buffer)
+            .resize(THUMB_SIZE_SMALL, THUMB_SIZE_SMALL, { fit: "cover" })
+            .webp({ quality: QUALITY })
+            .toFile(outputPathSmall);
 
           downloaded++;
         } catch (err) {
@@ -369,7 +378,7 @@ async function extractStationColors(stations) {
   const fileSlugs = fs.existsSync(OUTPUT_DIR)
     ? fs
         .readdirSync(OUTPUT_DIR)
-        .filter((f) => f.endsWith(".webp") && !f.endsWith("@2x.webp"))
+        .filter((f) => f.endsWith(".webp") && !f.includes("@"))
         .map((f) => f.slice(0, -".webp".length))
     : [];
 

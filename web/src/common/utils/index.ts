@@ -174,6 +174,28 @@ export function stationThumbImgProps(
   return { srcSet: `${url} 256w, ${twoX} 512w`, sizes: `${slotPx}px` };
 }
 
+// 128px companion (scripts/download-thumbnails.cjs) for the small logo slots —
+// station cards, favourites and the homepage live panel render 52-110 CSS px,
+// where the 256px base file is 4x the pixels a phone needs.
+export function stationThumbSmall(url: string | null | undefined): string | null {
+  const twoX = stationThumb2x(url);
+  if (!url || !twoX || twoX === url) return null;
+  return `${url.slice(0, -".webp".length)}@sm.webp`;
+}
+
+// srcSet/sizes pair for small station-logo slots: the browser picks the 128px
+// file while the slot needs at most 128 device pixels (a 70px card on a 1.75x
+// phone) and the 256px base file it loads today above that. Empty (attributes
+// omitted) for remote urls, which have no companion files.
+export function stationThumbSmallImgProps(
+  url: string | null | undefined,
+  sizes: string,
+): { srcSet?: string; sizes?: string } {
+  const small = stationThumbSmall(url);
+  if (!small) return {};
+  return { srcSet: `${small} 128w, ${url} 256w`, sizes };
+}
+
 export function getValidImageUrl(url: string | null | undefined, fallback: string = DEFAULT_RADIO_IMG): string {
   if (!url || url === "null" || url === "undefined" || url.trim() === "") {
     return fallback;

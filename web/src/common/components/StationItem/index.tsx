@@ -14,6 +14,7 @@ import useContentHeight from "@/hooks/useContentHeight";
 import {
   dropPointerFocus,
   getValidImageUrl,
+  stationThumbSmallImgProps,
   stepImageFallback,
 } from "@/utils";
 import OfflineStatus from "@/components/OfflineStatus";
@@ -140,6 +141,9 @@ const StationCard = memo(function StationCard({
       <div className={styles.image_container}>
         <img
           src={getValidImageUrl(data.now_playing?.song?.thumbnail_url || data?.thumbnail_url)}
+          {...(data.now_playing?.song?.thumbnail_url
+            ? {}
+            : stationThumbSmallImgProps(data.thumbnail_url, "(max-width: 768px) 70px, 110px"))}
           alt={`${data.title} | radiocrestin.ro`}
           loading={"lazy"}
           height={110}

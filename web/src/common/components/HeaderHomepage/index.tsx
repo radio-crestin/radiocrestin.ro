@@ -5,7 +5,7 @@ import { Context } from "@/context/ContextProvider";
 import NavMenu from "@/components/NavMenu";
 import HeadphoneIcon from "@/icons/Headphone";
 import PlayIcon from "@/icons/Play";
-import { getValidImageUrl, roPlural, stepImageFallback } from "@/utils";
+import { getValidImageUrl, roPlural, stationThumbSmallImgProps, stepImageFallback } from "@/utils";
 import usePlayer from "@/store/usePlayer";
 import type { IStation } from "@/models/Station";
 
@@ -146,6 +146,7 @@ const HeaderHomepage = () => {
                   <span className={styles.live_thumb}>
                     <img
                       src={getValidImageUrl(station.thumbnail_url)}
+                      {...stationThumbSmallImgProps(station.thumbnail_url, "52px")}
                       alt={`${station.title} | radiocrestin.ro`}
                       width={52}
                       height={52}
