@@ -17,7 +17,7 @@ import styles from "./styles.module.scss";
 
 interface ContactFormProps {
   kind: ContactKind;
-  /** Stations for the announcement form's picker, sorted by title. */
+  /** Stations for the station pickers (announcement, report), sorted by title. */
   stations?: StationOption[];
 }
 
@@ -34,11 +34,14 @@ const BANNERS = {
 const isRequired = (field: FieldDef, values: Values) =>
   typeof field.required === "function" ? field.required(values) : !!field.required;
 
-/** ?station=<slug> on the announcement form preselects that station. */
+/** ?station=<slug> preselects that station on the forms that pick one. */
 function initialValues(kind: ContactKind, stations: StationOption[]): Values {
-  if (kind !== "announcement" || typeof window === "undefined") return {};
+  if (typeof window === "undefined") return {};
   const slug = new URLSearchParams(window.location.search).get("station");
-  return stations.some((s) => s.slug === slug) ? { about: "station", station_slug: slug! } : {};
+  if (!slug || !stations.some((s) => s.slug === slug)) return {};
+  if (kind === "announcement") return { about: "station", station_slug: slug };
+  if (kind === "report") return { station_slug: slug };
+  return {};
 }
 
 function focusField(name: string) {

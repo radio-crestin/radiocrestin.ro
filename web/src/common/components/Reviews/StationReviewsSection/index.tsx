@@ -5,6 +5,7 @@ import Star from "@/icons/Star";
 import { getStationReviews } from "@/services/getStations";
 import type { IReview } from "@/models/Station";
 import { formatReviewDate } from "@/utils";
+import { CONTACT_PATHS, STATION_REPORT_LINK } from "@/components/Contact/copy";
 
 // Memoized on the reviews array (only replaced by a fetch): the section
 // re-renders with every station switch and 10s metadata poll, and
@@ -134,27 +135,23 @@ const StationReviewsSection: React.FC<StationReviewsSectionProps> = ({
     </div>
   );
 
-  if (isLoading) {
-    return (
-      <section id="reviews" className={styles.reviews_section}>
-        {header}
-        <p className={styles.loading}>Se incarca recenziile...</p>
-      </section>
-    );
-  }
-
-  if (reviews.length === 0) {
-    return (
-      <section id="reviews" className={styles.reviews_section}>
-        {header}
-      </section>
-    );
-  }
+  // A quiet way to tell us a station is broken, opened on this station.
+  const reportLink = (
+    <p className={styles.report_link}>
+      {STATION_REPORT_LINK.prefix}{" "}
+      <a href={`${CONTACT_PATHS.report}?station=${encodeURIComponent(stationSlug)}`}>{STATION_REPORT_LINK.link}</a>
+    </p>
+  );
 
   return (
     <section id="reviews" className={styles.reviews_section}>
       {header}
-      <ReviewsList reviews={reviews} />
+      {isLoading ? (
+        <p className={styles.loading}>Se incarca recenziile...</p>
+      ) : (
+        reviews.length > 0 && <ReviewsList reviews={reviews} />
+      )}
+      {reportLink}
     </section>
   );
 };

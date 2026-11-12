@@ -172,6 +172,8 @@ const contactSeo = (page: keyof typeof CONTACT_PATHS) => ({
 export const SEO_CONTACT = {
   hub: contactSeo("hub"),
   general: contactSeo("general"),
+  feedback: contactSeo("feedback"),
+  report: contactSeo("report"),
   station: contactSeo("station"),
   announcement: contactSeo("announcement"),
 };
