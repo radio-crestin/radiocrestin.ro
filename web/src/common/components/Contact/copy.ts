@@ -172,8 +172,8 @@ export const CONTACT_COPY = {
       station_name: { label: "Numele radioului", placeholder: "de exemplu, Radio Vocea Evangheliei" },
       website: { label: "Site-ul radioului", placeholder: "ex.: www.radio.ro", hint: "Adresa radioului pe internet." },
       listen_url: {
-        label: "Linkul streamului audio",
-        hint: "Pagina de pe care poți asculta radioul sau linkul transmisiei, dacă îl știi.",
+        label: "Link-ul streamului audio",
+        hint: "Pagina de pe care poți asculta radioul sau link-ul transmisiei, dacă îl știi.",
       },
       description: {
         label: "Scurtă descriere",
