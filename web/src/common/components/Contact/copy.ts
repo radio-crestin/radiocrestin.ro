@@ -169,18 +169,18 @@ export const CONTACT_COPY = {
       "Spune-ne despre post, iar noi îl vom verifica și îl vom adăuga. Nu ai nevoie de detalii tehnice: ajunge un link către site-ul postului.",
     sections: { station: "Despre post", extra: "Alte detalii" },
     fields: {
-      station_name: { label: "Numele postului", placeholder: "de exemplu, Radio Vocea Evangheliei" },
-      website: { label: "Site-ul postului", placeholder: "de exemplu, www.numele-postului.ro", hint: "Adresa postului pe internet." },
+      station_name: { label: "Numele radioului", placeholder: "de exemplu, Radio Vocea Evangheliei" },
+      website: { label: "Site-ul radioului", placeholder: "ex.: www.radio.ro", hint: "Adresa radioului pe internet." },
       listen_url: {
-        label: "Linkul pentru ascultare",
-        hint: "Pagina unde apeși pe Redă sau linkul transmisiei, dacă îl știi.",
+        label: "Linkul streamului audio",
+        hint: "Pagina de pe care poți asculta radioul sau linkul transmisiei, dacă îl știi.",
       },
       description: {
         label: "Scurtă descriere",
-        hint: "Ce transmite (muzică, predici, emisiuni) și din ce loc transmite.",
+        hint: "Ce transmite radioul (muzică, predici, emisiuni) și de unde.",
       },
       denomination: {
-        label: "De ce biserică sau confesiune aparține?",
+        label: "Cărei biserici sau confesiuni aparține radioul?",
         options: {
           pentecostal: "Penticostal",
           baptist: "Baptist",
@@ -200,13 +200,13 @@ export const CONTACT_COPY = {
       },
       denomination_other: { label: "Care anume?", placeholder: "Numele bisericii sau confesiunii" },
       mission: {
-        label: "Care este scopul postului?",
+        label: "Care este misiunea radioului?",
         hint: "De exemplu: vestirea Evangheliei, muzică de închinare, învățătură biblică sau slujirea unei biserici ori comunități locale.",
       },
-      logo: { label: "Logo-ul postului", hint: "Cel mai bine se vede o imagine pătrată." },
-      station_email: { label: "Adresa de e-mail a postului", hint: "Adresa la care poate fi contactat postul." },
+      logo: { label: "Logo-ul radioului", hint: "Cel mai bine se vede o imagine pătrată." },
+      station_email: { label: "Adresa de email a radioului", hint: "Adresa la care poți contacta radioul." },
       facebook_url: { label: "Pagina de Facebook", placeholder: "https://facebook.com/..." },
-      note: { label: "Mai este ceva ce ar trebui să știm?" },
+      note: { label: "Alte informații utile pe care ar trebui să le știm" },
     },
   },
   announcement: {
