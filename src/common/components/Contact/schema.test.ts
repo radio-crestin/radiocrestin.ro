@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isEmail, isHttpUrl, validate } from "./schema";
+import { isEmail, isHttpUrl, validate, withScheme } from "./schema";
 
 const codes = (errors: ReturnType<typeof validate>) =>
   Object.fromEntries(Object.entries(errors).map(([name, error]) => [name, error.code]));
@@ -136,5 +136,9 @@ describe("format checks", () => {
     expect(isHttpUrl("ftp://radio.ro")).toBe(false);
     expect(isHttpUrl("javascript:alert(1)")).toBe(false);
     expect(isHttpUrl("radio.ro")).toBe(false);
+    expect(withScheme("radio.ro")).toBe("https://radio.ro");
+    expect(withScheme("www.radio.ro/live")).toBe("https://www.radio.ro/live");
+    expect(withScheme("http://radio.ro")).toBe("http://radio.ro");
+    expect(isHttpUrl(withScheme("javascript:alert(1)"))).toBe(false);
   });
 });
