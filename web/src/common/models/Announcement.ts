@@ -76,7 +76,8 @@ export interface IAnnouncementFilters {
 // Optional blocks may be absent instead of null: the backend keeps the payload small.
 export interface IAnnouncement {
   slug: string;
-  priority?: number;
+  /** The admin's drag-and-drop order (ascending); the API already sends items in this order. */
+  position?: number;
   placement?: Placement;
   station_slugs?: string[];
   category?: IAnnouncementCategory;
@@ -99,6 +100,8 @@ export interface IAnnouncement {
 export interface IAnnouncementSettings {
   rotation_mode: RotationMode;
   max_per_load?: number;
+  /** Seconds between automatic moves to the next announcement; 0 or absent = off. */
+  autoplay_seconds?: number;
 }
 
 export interface IAnnouncementsResponse {

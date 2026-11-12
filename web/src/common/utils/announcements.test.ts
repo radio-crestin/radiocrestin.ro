@@ -14,7 +14,7 @@ const NOW = new Date("2026-11-12T10:00:00Z");
 const announcement = (slug: string, extra: Partial<IAnnouncement> = {}): IAnnouncement =>
   ({
     slug,
-    priority: 0,
+    position: 0,
     category: { slug: "community", name: "c", color: "#0F6E63", text_color: "#FFFFFF" },
     icon: { name: "info", url: null },
     title: slug,

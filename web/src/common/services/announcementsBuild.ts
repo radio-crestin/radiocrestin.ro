@@ -29,7 +29,7 @@ const compact = <T,>(value: T): T => {
 };
 
 // The island props are serialized into every page: keep only what rendering needs.
-const forProps = ({ priority, page, body_markdown, ...a }: IAnnouncement): IAnnouncement => compact(a);
+const forProps = ({ position, page, body_markdown, ...a }: IAnnouncement): IAnnouncement => compact(a);
 
 let snapshot: Promise<IAnnouncementsSnapshot> | null = null;
 const getShowableSnapshot = (): Promise<IAnnouncementsSnapshot> => {

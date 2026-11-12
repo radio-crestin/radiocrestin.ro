@@ -2,7 +2,7 @@ import React, { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useMemo
 import type { IAnnouncement } from "@/models/Announcement";
 import { getAnnouncement, recordAnnouncementEvent } from "@/services/announcements";
 import useAnnouncementsUi, { closeForm, openForm } from "@/store/useAnnouncementsUi";
-import { resolveWebAction, slugFromHash } from "@/utils/announcements";
+import { autoplaySeconds, resolveWebAction, rotateFrom, slugFromHash } from "@/utils/announcements";
 import { withRenderedMarkup } from "./content";
 import { homeItems } from "./context";
 import { markLive, takePendingTaps } from "./gate";
@@ -109,7 +109,15 @@ export interface SlotState {
 export default function Card({ onSlot }: { onSlot: (state: SlotState) => void }) {
   const { snapshot, visible, start, remove } = useAnnouncements();
   const items = useMemo(() => homeItems(snapshot).map(withRenderedMarkup), [snapshot]);
-  const shown = visible ? items.filter((a) => visible.has(a.slug)) : items;
+  // The visit's sequence: the server's order rotated to begin at the start item (SPEC "Order and
+  // rotation"). It is anchored on that item when the card takes over, so dismissing one later
+  // never shifts what comes next.
+  const anchorRef = useRef<string | null>(null);
+  if (visible && anchorRef.current === null) {
+    anchorRef.current = items.filter((a) => visible.has(a.slug))[start]?.slug ?? "";
+  }
+  const anchor = Math.max(0, items.findIndex((a) => a.slug === anchorRef.current));
+  const shown = visible ? rotateFrom(items, anchor).filter((a) => visible.has(a.slug)) : items;
   const shownRef = useRef(shown);
   shownRef.current = shown;
 
@@ -143,7 +151,13 @@ export default function Card({ onSlot }: { onSlot: (state: SlotState) => void })
   return (
     <>
       {items.length > 0 && !empty && (
-        <Carousel items={items} visible={visible} start={start} onExpire={onExpire} {...actions} />
+        <Carousel
+          items={items}
+          sequence={visible ? shown : null}
+          autoplay={autoplaySeconds(snapshot.settings)}
+          onExpire={onExpire}
+          {...actions}
+        />
       )}
       <AnnouncementPage />
       <FormHost />

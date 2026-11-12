@@ -149,12 +149,14 @@ export function annPrepaintBoot(d: PrepaintData, elig: typeof annEligibility) {
       hide.push(n ? "[data-ann-a]" : "[data-ann-r]");
       css +=
         "@media(" + (vp > "d" ? "max-width:767.9" : "min-width:768") + "px){" +
-        hide.join(",") + "{display:none!important}" +
+        // --h: in the autoplay stack the server's first slide stays laid out, invisible
+        hide.join(",") + "{display:none!important;--h:hidden}" +
         (n
-          ? pp + '[data-ann="' + first + '"]{display:grid!important' +
-            // fade "previous" on the first slide and "next" on the last (paging doesn't wrap)
-            (w.k ? "" : ";--pf:.4") + (w.k < n - 1 ? "" : ";--nf:.4") + "}" +
-            pp + '[data-ann-c]:before{content:"' + (w.k + 1) + " din " + n + '"}'
+          ? // The visit's sequence starts at this slide (the server order rotated to it), so it
+            // is "1 din n" with "previous" faded. --h shows it in the autoplay stack, where every
+            // slide is laid out and the inactive ones are invisible (Carousel.tsx).
+            pp + '[data-ann="' + first + '"]{display:grid!important;--h:visible!important;--pf:.4}' +
+            pp + '[data-ann-c]:before{content:"1 din ' + n + '"}'
           : "") +
         "}";
     });
