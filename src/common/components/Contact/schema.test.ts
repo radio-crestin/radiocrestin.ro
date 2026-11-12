@@ -1,0 +1,111 @@
+import { describe, expect, it } from "vitest";
+import { isEmail, isHttpUrl, validate } from "./schema";
+
+const codes = (errors: ReturnType<typeof validate>) =>
+  Object.fromEntries(Object.entries(errors).map(([name, error]) => [name, error.code]));
+
+describe("validate general", () => {
+  it("needs a message and an email; the name is optional", () => {
+    expect(codes(validate("general", {}))).toEqual({ message: "required", email: "required" });
+  });
+
+  it("accepts a complete message", () => {
+    expect(validate("general", { message: "Bună ziua, am o întrebare.", email: "a@b.ro" })).toEqual({});
+  });
+
+  it("asks for a longer message and a valid email", () => {
+    const errors = validate("general", { message: "Salut", email: "not-an-email" });
+    expect(errors.message).toEqual({ code: "too_short", params: { min: 10 } });
+    expect(errors.email.code).toBe("invalid_email");
+  });
+
+  it("rejects more pictures than allowed", () => {
+    const errors = validate("general", { message: "x".repeat(20), email: "a@b.ro" }, { images: 4 });
+    expect(errors.images).toEqual({ code: "too_many_files", params: { max: 3 } });
+  });
+});
+
+describe("validate station", () => {
+  const station = {
+    relation: "listener",
+    station_name: "Radio Test",
+    website: "https://radiotest.ro",
+    denomination: "baptist",
+    name: "Ion",
+    email: "ion@exemplu.ro",
+  };
+
+  it("accepts a listener's suggestion", () => {
+    expect(validate("station", station)).toEqual({});
+  });
+
+  it("needs the website or the listen link", () => {
+    expect(codes(validate("station", { ...station, website: "" }))).toEqual({
+      listen_url: "need_website_or_listen_url",
+    });
+  });
+
+  it("asks the station's representative to confirm consent", () => {
+    expect(codes(validate("station", { ...station, relation: "owner" }))).toEqual({
+      consent: "consent_required",
+    });
+    expect(validate("station", { ...station, relation: "owner", consent: "true" })).toEqual({});
+  });
+
+  it("asks which denomination when it is 'other'", () => {
+    expect(codes(validate("station", { ...station, denomination: "other" }))).toEqual({
+      denomination_other: "required",
+    });
+  });
+
+  it("rejects an unknown denomination and a non-http link", () => {
+    const errors = codes(validate("station", { ...station, denomination: "x", facebook_url: "javascript:alert(1)" }));
+    expect(errors).toEqual({ denomination: "invalid_choice", facebook_url: "invalid_url" });
+  });
+});
+
+describe("validate announcement", () => {
+  const announcement = {
+    about: "general",
+    title: "Concert de Crăciun",
+    summary: "Vă așteptăm la concert.",
+    name: "Ana",
+    email: "ana@exemplu.ro",
+  };
+
+  it("accepts a general announcement", () => {
+    expect(validate("announcement", announcement)).toEqual({});
+  });
+
+  it("needs a station when it is about one", () => {
+    expect(codes(validate("announcement", { ...announcement, about: "station" }))).toEqual({
+      station_slug: "required",
+    });
+  });
+
+  it("needs the end date after the start date", () => {
+    const errors = validate("announcement", { ...announcement, starts_on: "2026-12-20", ends_on: "2026-12-10" });
+    expect(codes(errors)).toEqual({ ends_on: "end_before_start" });
+  });
+
+  it("limits the title length", () => {
+    const errors = validate("announcement", { ...announcement, title: "x".repeat(81) });
+    expect(errors.title).toEqual({ code: "too_long", params: { max: 80 } });
+  });
+});
+
+describe("format checks", () => {
+  it("knows an email", () => {
+    expect(isEmail("nume@exemplu.ro")).toBe(true);
+    expect(isEmail("nume@exemplu")).toBe(false);
+    expect(isEmail("nu me@exemplu.ro")).toBe(false);
+  });
+
+  it("accepts only http(s) links with a domain", () => {
+    expect(isHttpUrl("https://radio.ro/live")).toBe(true);
+    expect(isHttpUrl("http://stream.radio.ro:8000/live.mp3")).toBe(true);
+    expect(isHttpUrl("ftp://radio.ro")).toBe(false);
+    expect(isHttpUrl("javascript:alert(1)")).toBe(false);
+    expect(isHttpUrl("radio.ro")).toBe(false);
+  });
+});

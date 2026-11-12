@@ -375,3 +375,7 @@ export const trackAnnouncement = (
 ) => {
   withPostHog((ph) => ph.capture(`announcement_${type}`, properties));
 };
+
+export const trackContactSubmitted = (kind: string, source: string) => {
+  withPostHog((ph) => ph.capture("contact_submitted", { kind, source }));
+};

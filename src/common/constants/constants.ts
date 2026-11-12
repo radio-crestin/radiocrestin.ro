@@ -26,3 +26,10 @@ export const CONSTANTS = {
   API_ENDPOINT: "https://api.radiocrestin.ro/api/v1/stations",
   REVIEWS_API_URL: "https://api.radiocrestin.ro/api/v1/reviews/",
 };
+
+// PUBLIC_CONTACT_API_URL points the contact forms at a local backend while testing.
+export const CONTACT_API_URL: string =
+  import.meta.env.PUBLIC_CONTACT_API_URL || "https://api.radiocrestin.ro/api/v1/contact/";
+
+// Cloudflare Turnstile is shown on the contact forms only when a site key is set at build time.
+export const TURNSTILE_SITE_KEY: string = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY || "";
