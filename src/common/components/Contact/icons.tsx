@@ -34,6 +34,20 @@ export const MegaphoneIcon = () => (
   </svg>
 );
 
+export const BulbIcon = () => (
+  <svg {...svgProps}>
+    <path d="M9 18h6M10 21h4" />
+    <path d="M12 3a6 6 0 0 0-3.6 10.8c.6.5 1 1.2 1 2V16h5.2v-.2c0-.8.4-1.5 1-2A6 6 0 0 0 12 3Z" />
+  </svg>
+);
+
+export const AlertIcon = () => (
+  <svg {...svgProps}>
+    <path d="M10.3 4.2 2.7 17.5A2 2 0 0 0 4.4 20.5h15.2a2 2 0 0 0 1.7-3L13.7 4.2a2 2 0 0 0-3.4 0Z" />
+    <path d="M12 9.5v4M12 17h.01" />
+  </svg>
+);
+
 export const CameraIcon = () => (
   <svg {...svgProps} width={20} height={20}>
     <path d="M4 8h3l1.5-2.5h7L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1Z" />

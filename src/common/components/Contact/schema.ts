@@ -1,7 +1,7 @@
 // The fields of each contact form, in display order, with the same limits the
 // API enforces (POST /api/v1/contact/). Rendering and validation both read this.
 
-export type ContactKind = "general" | "station" | "announcement";
+export type ContactKind = "general" | "feedback" | "report" | "station" | "announcement";
 
 export type FieldType =
   | "text"
@@ -54,6 +54,7 @@ export const DENOMINATIONS = [
 ] as const;
 
 const aboutStation = (v: Values) => v.about === "station";
+const otherProblem = (v: Values) => v.problem === "other";
 const otherDenomination = (v: Values) => v.denomination === "other";
 
 const contactSection = (nameRequired: boolean): SectionDef => ({
@@ -70,6 +71,35 @@ export const FORMS: Record<ContactKind, SectionDef[]> = {
     {
       fields: [
         { name: "message", type: "textarea", required: true, minLength: 10, maxLength: 5000, rows: 6 },
+        { name: "images", type: "images", maxFiles: 3 },
+      ],
+    },
+    contactSection(false),
+  ],
+  feedback: [
+    {
+      title: "idea",
+      fields: [
+        { name: "suggestion_type", type: "choice", required: true, options: ["feature", "improvement", "bug", "other"] },
+        { name: "area", type: "select", options: ["app", "website", "car", "tv", "other"] },
+        { name: "message", type: "textarea", required: true, minLength: 10, maxLength: 5000, rows: 5 },
+        { name: "images", type: "images", maxFiles: 3 },
+      ],
+    },
+    contactSection(false),
+  ],
+  report: [
+    {
+      title: "problem",
+      fields: [
+        { name: "station_slug", type: "station", required: true },
+        {
+          name: "problem",
+          type: "choice",
+          required: true,
+          options: ["not_playing", "poor_quality", "wrong_song_info", "wrong_details", "inappropriate_content", "other"],
+        },
+        { name: "message", type: "textarea", required: otherProblem, maxLength: 3000, rows: 4 },
         { name: "images", type: "images", maxFiles: 3 },
       ],
     },
@@ -115,6 +145,7 @@ export const FORMS: Record<ContactKind, SectionDef[]> = {
         { name: "summary", type: "textarea", required: true, maxLength: 280, rows: 3, counter: true },
         { name: "details", type: "textarea", maxLength: 5000, rows: 5 },
         { name: "link", type: "url", maxLength: 500 },
+        { name: "images", type: "images", maxFiles: 3 },
       ],
     },
     {
@@ -124,7 +155,6 @@ export const FORMS: Record<ContactKind, SectionDef[]> = {
         { name: "ends_on", type: "date" },
       ],
     },
-    { title: "pictures", fields: [{ name: "images", type: "images", maxFiles: 3 }] },
     contactSection(true),
   ],
 };

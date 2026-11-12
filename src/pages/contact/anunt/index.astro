@@ -1,16 +1,12 @@
 ---
 import BaseLayout from "../../../layouts/BaseLayout.astro";
 import ContactForm from "@/components/Contact/ContactForm";
-import { getStations } from "@/services/getStations";
+import { getStationOptions } from "@/services/getStationOptions";
 import { SEO_CONTACT } from "@/utils/seo";
 
-// Only what the station picker needs, so the page stays light.
-const { stations } = await getStations();
-const stationOptions = stations
-  .map(({ slug, title }) => ({ slug, title }))
-  .sort((a, b) => a.title.localeCompare(b.title, "ro"));
+const stations = await getStationOptions();
 ---
 
 <BaseLayout {...SEO_CONTACT.announcement}>
-  <ContactForm client:load kind="announcement" stations={stationOptions} />
+  <ContactForm client:load kind="announcement" stations={stations} />
 </BaseLayout>

@@ -4,6 +4,8 @@
 export const CONTACT_PATHS = {
   hub: "/contact/",
   general: "/contact/mesaj/",
+  report: "/contact/problema/",
+  feedback: "/contact/sugestie/",
   station: "/contact/radio-nou/",
   announcement: "/contact/anunt/",
 } as const;
@@ -70,6 +72,8 @@ export const CONTACT_COPY = {
     intro: "Spune-ne cu ce te putem ajuta. Alege varianta potrivită; durează doar câteva minute.",
     cards: {
       general: { title: "Trimite-ne un mesaj", text: "Întrebări, idei sau o problemă cu aplicația ori cu un post de radio." },
+      feedback: { title: "Propune o îmbunătățire", text: "Ai o idee pentru o funcție nouă sau pentru ceva ce am putea face mai bine?" },
+      report: { title: "Semnalează o problemă la un post", text: "Un post nu pornește, se aude prost sau are informații greșite?" },
       station: { title: "Adaugă un post de radio", text: "Lipsește un post creștin pe care îl asculți? Spune-ne despre el." },
       announcement: {
         title: "Cere publicarea unui anunț",
@@ -85,6 +89,69 @@ export const CONTACT_COPY = {
     fields: {
       message: { label: "Mesajul tău", placeholder: "Scrie mesajul aici…" },
       images: { label: "Capturi de ecran sau poze", hint: "Dacă ceva nu funcționează, o captură de ecran ne ajută mult." },
+    },
+  },
+  report: {
+    seoTitle: "Semnalează o problemă la un post de radio | Radio Creștin",
+    seoDescription:
+      "Un post de pe Radio Creștin nu pornește, se aude prost sau are informații greșite? Spune-ne și vom verifica cât de curând.",
+    title: "Semnalează o problemă la un post",
+    intro: "Spune-ne despre ce post este vorba și ce nu funcționează. Vom verifica cât de curând.",
+    sections: { problem: "Problema" },
+    fields: {
+      station_slug: { label: "Despre ce post este vorba?", placeholder: "Alege postul" },
+      problem: {
+        label: "Ce nu funcționează?",
+        options: {
+          not_playing: "Nu pornește sau se oprește mereu",
+          poor_quality: "Sunetul se aude prost",
+          wrong_song_info: "Apare titlul greșit al melodiei sau numele greșit al interpretului",
+          wrong_details: "Numele, logo-ul sau descrierea sunt greșite",
+          inappropriate_content: "Conținut care nu se potrivește unui post de radio creștin",
+          other: "Altceva",
+        },
+      },
+      message: {
+        label: "Spune-ne mai multe",
+        hint: "Când s-a întâmplat și ce ai văzut sau auzit.",
+        placeholder: "De exemplu: de azi-dimineață se oprește după câteva secunde.",
+      },
+      images: { label: "Capturi de ecran", hint: "O captură de ecran ne ajută să înțelegem mai repede problema." },
+    },
+  },
+  feedback: {
+    seoTitle: "Propune o îmbunătățire | Radio Creștin",
+    seoDescription:
+      "Ai o idee pentru aplicația sau site-ul Radio Creștin? Propune o funcție nouă sau o îmbunătățire. Citim fiecare mesaj.",
+    title: "Propune o îmbunătățire",
+    intro: "Citim fiecare idee. Spune-ne ce ai vrea să găsești în Radio Creștin sau ce am putea face mai bine.",
+    sections: { idea: "Ideea ta" },
+    fields: {
+      suggestion_type: {
+        label: "Ce ai vrea să ne spui?",
+        options: {
+          feature: "O idee pentru ceva nou",
+          improvement: "Cum am putea îmbunătăți ceva",
+          bug: "Ceva nu funcționează bine",
+          other: "Altceva",
+        },
+      },
+      area: {
+        label: "Unde?",
+        options: {
+          app: "În aplicația de telefon",
+          website: "Pe site",
+          car: "În mașină (Android Auto sau CarPlay)",
+          tv: "Pe televizor",
+          other: "În altă parte",
+        },
+      },
+      message: {
+        label: "Ideea ta",
+        hint: "Povestește-ne cu cuvintele tale, așa cum i-ai explica unui prieten.",
+        placeholder: "De exemplu: aș vrea să pot seta o alarmă cu postul meu preferat.",
+      },
+      images: { label: "Capturi de ecran sau poze", hint: "Poți adăuga una dacă te ajută să-ți explici ideea." },
     },
   },
   station: {
@@ -144,7 +211,7 @@ export const CONTACT_COPY = {
     title: "Cere publicarea unui anunț",
     intro:
       "Anunțurile apar într-un chenar mic în aplicația Radio Creștin și pe site. Completează detaliile, iar noi îl pregătim împreună cu tine.",
-    sections: { what: "Despre anunț", when: "Când să apară?", pictures: "Poze" },
+    sections: { what: "Despre anunț", when: "Când să apară?" },
     fields: {
       about: {
         label: "Despre ce este anunțul?",
@@ -178,4 +245,9 @@ export const CONTACT_COPY = {
       images: { label: "Poze", hint: "Un afiș sau o fotografie. Prima poză va fi coperta." },
     },
   },
+};
+
+export const STATION_REPORT_LINK = {
+  prefix: "Nu funcționează ceva la acest post?",
+  link: "Semnalează o problemă",
 };

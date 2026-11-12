@@ -4,12 +4,14 @@ import { CONTACT_COPY, CONTACT_PATHS } from "./copy";
 import { withAppContext } from "./appContext";
 import { useAppContext } from "./useAppContext";
 import { WHATSAPP_URL } from "./links";
-import { MessageIcon, MegaphoneIcon, RadioIcon } from "./icons";
+import { AlertIcon, BulbIcon, MessageIcon, MegaphoneIcon, RadioIcon } from "./icons";
 import type { ContactKind } from "./schema";
 import styles from "./styles.module.scss";
 
 const CARDS: { kind: ContactKind; Icon: () => React.ReactElement }[] = [
   { kind: "general", Icon: MessageIcon },
+  { kind: "feedback", Icon: BulbIcon },
+  { kind: "report", Icon: AlertIcon },
   { kind: "station", Icon: RadioIcon },
   { kind: "announcement", Icon: MegaphoneIcon },
 ];

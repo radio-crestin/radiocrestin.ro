@@ -86,6 +86,43 @@ describe("validate announcement", () => {
   });
 });
 
+describe("validate report", () => {
+  const report = { station_slug: "rve-timisoara", problem: "not_playing", email: "a@b.ro" };
+
+  it("needs only the station, the problem and an email", () => {
+    expect(validate("report", report)).toEqual({});
+    expect(codes(validate("report", {}))).toEqual({ station_slug: "required", problem: "required", email: "required" });
+  });
+
+  it("asks for details when the problem is something else", () => {
+    expect(codes(validate("report", { ...report, problem: "other" }))).toEqual({ message: "required" });
+    expect(validate("report", { ...report, problem: "other", message: "Se aude ecou." })).toEqual({});
+  });
+
+  it("rejects an unknown problem", () => {
+    expect(codes(validate("report", { ...report, problem: "x" }))).toEqual({ problem: "invalid_choice" });
+  });
+});
+
+describe("validate feedback", () => {
+  const feedback = { suggestion_type: "feature", message: "Aș vrea o alarmă cu postul preferat.", email: "a@b.ro" };
+
+  it("accepts an idea without an area", () => {
+    expect(validate("feedback", feedback)).toEqual({});
+  });
+
+  it("needs the type and a message of at least 10 characters", () => {
+    expect(codes(validate("feedback", { email: "a@b.ro", message: "scurt" }))).toEqual({
+      suggestion_type: "required",
+      message: "too_short",
+    });
+  });
+
+  it("rejects an unknown area", () => {
+    expect(codes(validate("feedback", { ...feedback, area: "radio" }))).toEqual({ area: "invalid_choice" });
+  });
+});
+
 describe("format checks", () => {
   it("knows an email", () => {
     expect(isEmail("nume@exemplu.ro")).toBe(true);

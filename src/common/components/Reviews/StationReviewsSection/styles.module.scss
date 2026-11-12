@@ -171,3 +171,18 @@
   color: var(--text-color);
 }
 
+
+.report_link {
+  margin: 20px 0 0;
+  font-size: 0.85rem;
+  color: var(--subtext-metadata-color);
+
+  a {
+    color: var(--link-color);
+    text-decoration: underline;
+  }
+}
+
+.section_header + .report_link {
+  margin-top: 0;
+}
