@@ -24,6 +24,10 @@ export const isForStation = (a: IAnnouncement, stationSlug: string): boolean =>
 
 
 // `#anunt/<slug>` opens an announcement's page dialog.
+/** Whether body markup shows any text (the backend may send "", null or empty tags). */
+export const hasBodyText = (html: string | null | undefined): html is string =>
+  !!html && html.replace(/<[^>]*>|&nbsp;|&#160;|\s/g, "") !== "";
+
 export const ANNOUNCEMENT_HASH_PREFIX = "#anunt/";
 
 export const slugFromHash = (hash: string): string | null => {
