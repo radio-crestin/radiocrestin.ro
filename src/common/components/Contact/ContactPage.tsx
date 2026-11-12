@@ -6,16 +6,16 @@ import { initPostHog } from "@/utils/posthog";
 import styles from "./styles.module.scss";
 
 interface ContactPageProps {
-  /** Shown inside the rounded panel, under the navigation (title, intro…). */
+  /** The page's heading: title, intro… */
   hero: ReactNode;
-  /** What follows the panel: the hub's cards or a form card. */
+  /** What follows the heading: the hub's options or a form. */
   children?: ReactNode;
 }
 
 /**
- * The shell every contact page shares, built like the homepage: a rounded
- * panel with the logo and settings menu, then the page content at the same
- * width as the homepage's sections, then the footer.
+ * The shell every contact page shares: one rounded panel like the homepage's,
+ * with the logo and settings menu, then a single centered column holding the
+ * heading and the page's content, then the footer.
  */
 export default function ContactPage({ hero, children }: ContactPageProps) {
   useEffect(() => {
@@ -24,7 +24,7 @@ export default function ContactPage({ hero, children }: ContactPageProps) {
 
   return (
     <ContextProvider initialState={{ stations: [], favouriteStations: [] }}>
-      <header className={styles.panel}>
+      <div className={styles.panel}>
         <div className={styles.panel_decor} aria-hidden="true" />
         <nav className={styles.nav}>
           <a href="/" className={styles.logo}>
@@ -33,9 +33,11 @@ export default function ContactPage({ hero, children }: ContactPageProps) {
           </a>
           <NavMenu />
         </nav>
-        <div className={styles.panel_body}>{hero}</div>
-      </header>
-      {children && <main className={styles.content}>{children}</main>}
+        <main className={styles.column}>
+          <header className={styles.header}>{hero}</header>
+          {children}
+        </main>
+      </div>
       <FooterLinks />
     </ContextProvider>
   );

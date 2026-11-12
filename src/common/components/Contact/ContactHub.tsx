@@ -5,20 +5,22 @@ import { contactOptions, type ContactOption } from "./options";
 import { ArrowIcon } from "./icons";
 import styles from "./styles.module.scss";
 
-function HubCard({ option }: { option: ContactOption }) {
+function OptionRow({ option }: { option: ContactOption }) {
   const { href, title, text, Icon, external, key } = option;
   return (
     <a
       href={href}
-      className={`${styles.hub_card} ${key === "whatsapp" ? styles.hub_card_whatsapp : ""}`}
+      className={`${styles.option} ${key === "whatsapp" ? styles.option_whatsapp : ""}`}
       {...(external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
     >
-      <span className={styles.hub_icon} aria-hidden="true">
+      <span className={styles.option_icon} aria-hidden="true">
         <Icon />
       </span>
-      <strong className={styles.hub_card_title}>{title}</strong>
-      <span className={styles.hub_card_text}>{text}</span>
-      <span className={styles.hub_arrow} aria-hidden="true">
+      <span className={styles.option_body}>
+        <strong className={styles.option_title}>{title}</strong>
+        <span className={styles.option_text}>{text}</span>
+      </span>
+      <span className={styles.option_arrow} aria-hidden="true">
         <ArrowIcon />
       </span>
     </a>
@@ -28,6 +30,9 @@ function HubCard({ option }: { option: ContactOption }) {
 export default function ContactHub() {
   const context = useAppContext();
   const copy = CONTACT_COPY.hub;
+  const options = contactOptions(context);
+  const forms = options.filter((option) => option.key !== "whatsapp");
+  const whatsapp = options.find((option) => option.key === "whatsapp");
 
   const hero = (
     <>
@@ -43,11 +48,16 @@ export default function ContactHub() {
 
   return (
     <ContactPage hero={hero}>
-      <h2 className={styles.content_heading}>{copy.cardsHeading}</h2>
-      <nav className={styles.hub_grid} aria-label={copy.cardsHeading}>
-        {contactOptions(context).map((option) => (
-          <HubCard key={option.key} option={option} />
+      <nav className={styles.options} aria-label={copy.cardsHeading}>
+        {forms.map((option) => (
+          <OptionRow key={option.key} option={option} />
         ))}
+        {/* WhatsApp comes last, set apart: the forms keep messages organized. */}
+        {whatsapp && (
+          <div className={styles.options_last}>
+            <OptionRow option={whatsapp} />
+          </div>
+        )}
       </nav>
     </ContactPage>
   );
