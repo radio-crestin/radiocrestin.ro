@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { submitContact } from "@/services/submitContact";
 import { trackContactSubmitted } from "@/utils/posthog";
 import ContactPage from "./ContactPage";
+import OtherOptions from "./OtherOptions";
 import Field, { inputId, type StationOption } from "./Field";
 import ImagePicker from "./ImagePicker";
 import Turnstile from "./Turnstile";
@@ -143,23 +144,25 @@ export default function ContactForm({ kind, stations = NO_STATIONS }: ContactFor
 
   if (phase === "sent") {
     return (
-      <ContactPage>
-        <div className={styles.success} role="status">
-          <span className={styles.success_icon}>
-            <CheckIcon />
-          </span>
-          <h1 className={styles.title}>{CONTACT_COPY.common.successTitle}</h1>
-          <p className={styles.intro}>{fill(CONTACT_COPY.common.successBody, { email: values.email ?? "" })}</p>
-          <div className={styles.success_actions}>
-            <button type="button" className={styles.secondary_button} onClick={reset}>
-              {CONTACT_COPY.common.successAgain}
-            </button>
-            <a href="/" className={styles.submit}>
-              {CONTACT_COPY.common.successHome}
-            </a>
+      <ContactPage
+        hero={
+          <div className={styles.success} role="status">
+            <span className={styles.success_icon}>
+              <CheckIcon />
+            </span>
+            <h1 className={styles.hero_title}>{CONTACT_COPY.common.successTitle}</h1>
+            <p className={styles.hero_intro}>{fill(CONTACT_COPY.common.successBody, { email: values.email ?? "" })}</p>
+            <div className={styles.success_actions}>
+              <a href="/" className={styles.submit}>
+                {CONTACT_COPY.common.successHome}
+              </a>
+              <button type="button" className={styles.secondary_button} onClick={reset}>
+                {CONTACT_COPY.common.successAgain}
+              </button>
+            </div>
           </div>
-        </div>
-      </ContactPage>
+        }
+      />
     );
   }
 
@@ -208,12 +211,18 @@ export default function ContactForm({ kind, stations = NO_STATIONS }: ContactFor
   const sections = copy as { sections?: Record<string, string> };
 
   return (
-    <ContactPage>
+    <ContactPage
+      hero={
+        <>
+          {backLink}
+          <h1 className={styles.hero_title}>{copy.title}</h1>
+          <p className={styles.hero_intro}>{copy.intro}</p>
+        </>
+      }
+    >
+      <div className={styles.form_layout}>
+      <div className={styles.card}>
       <div ref={topRef} />
-      {backLink}
-      <h1 className={styles.title}>{copy.title}</h1>
-      <p className={styles.intro}>{copy.intro}</p>
-
       {banner && (
         <div className={styles.banner} role="alert">
           {banner}
@@ -261,6 +270,9 @@ export default function ContactForm({ kind, stations = NO_STATIONS }: ContactFor
           {CONTACT_COPY.common.privacyPrefix} <a href={PRIVACY_URL}>{CONTACT_COPY.common.privacyLink}</a>.
         </p>
       </form>
+      </div>
+      <OtherOptions current={kind} context={context} />
+      </div>
     </ContactPage>
   );
 }

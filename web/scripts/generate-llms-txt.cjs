@@ -72,7 +72,7 @@ Cum funcționează: utilizatorul accesează site-ul, alege un post de radio din 
 - [Întrebări frecvente](${SITE_URL}/intrebari-frecvente/): răspunsuri despre ascultarea radioului creștin online
 - [Descarcă aplicația Radio Creștin](${SITE_URL}/descarca-aplicatia-radio-crestin/): aplicația mobilă gratuită pentru Android și iOS
 - [Church Hub](${SITE_URL}/church-hub/): program gratuit de proiecție versuri pentru biserică, alternativă la EasyWorship
-- [Contact](${SITE_URL}/contact/): Scrie echipei Radio Creștin: trimite un mesaj, recomandă un post de radio creștin sau cere publicarea unui anunț în aplicație și pe site.
+- [Contact](${SITE_URL}/contact/): Scrie echipei Radio Creștin: trimite un mesaj, recomandă un post de radio creștin sau creează un anunț în aplicație și pe site.
 
 ## Aplicația mobilă
 
