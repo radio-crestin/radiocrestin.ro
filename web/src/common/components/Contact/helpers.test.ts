@@ -2,6 +2,7 @@ import { existsSync } from "fs";
 import { resolve } from "path";
 import { describe, expect, it } from "vitest";
 import { readAppContext, withAppContext } from "./appContext";
+import { whatsappUrl } from "./links";
 import { CONTACT_PATHS } from "./copy";
 import { fill } from "./copyText";
 import { fitWithin, needsResize, outputTypeFor } from "./resizeImage";
@@ -18,6 +19,20 @@ describe("app context", () => {
       "/contact/mesaj/?source=app&platform=ios",
     );
     expect(withAppContext("/contact/", {})).toBe("/contact/");
+  });
+});
+
+describe("WhatsApp link", () => {
+  const text = (url: string) => new URL(url).searchParams.get("text");
+
+  it("tags messages from the app with its platform, version and device", () => {
+    const url = whatsappUrl({ source: "app", platform: "ios", app_version: "1.6.2", device_id: "abc" });
+    expect(url.startsWith("https://wa.me/40766338046?text=")).toBe(true);
+    expect(text(url)).toBe("[RadioCrestin/iOS/v1.6.2/abc]\n\nBuna ziua,\n");
+  });
+
+  it("tags messages from the website as such", () => {
+    expect(text(whatsappUrl({}))).toBe("Buna ziua [radiocrestin.ro]\n");
   });
 });
 

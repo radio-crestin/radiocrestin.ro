@@ -30,8 +30,6 @@ export const CONTACT_COPY = {
     tooLarge: "Pozele sunt prea mari împreună. Șterge una sau două și încearcă din nou.",
     network: "Nu am putut trimite mesajul. Verifică dacă ai internet și încearcă din nou.",
     server: "A apărut o problemă la noi. Te rugăm să încerci din nou peste câteva minute.",
-    whatsappPrefix: "Vrei să vorbești pe WhatsApp?",
-    whatsappLink: "Scrie-ne pe WhatsApp",
     chooseOption: "Alege…",
   },
   contactFields: {
