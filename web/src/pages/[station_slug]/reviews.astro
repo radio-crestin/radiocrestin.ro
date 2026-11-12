@@ -6,6 +6,7 @@ import { getStations } from "@/services/getStations";
 import { cleanStationsMetadata, toIslandStations } from "@/utils";
 import { seoStationReviews } from "@/utils/seo";
 import type { IStation } from "@/models/Station";
+import { getBuildSnapshot } from "@/services/announcementsBuild";
 
 export async function getStaticPaths() {
   const { stations } = await getStations();
@@ -21,9 +22,11 @@ rawStations.forEach((station: IStation) => { station.is_favorite = false; });
 const stations = cleanStationsMetadata(rawStations);
 const selectedStation = stations.find((s: IStation) => s.slug === station_slug)!;
 const seo = seoStationReviews(selectedStation);
+
+const announcements = await getBuildSnapshot(Astro.params.station_slug);
 ---
 
 <BaseLayout {...seo}>
-  <RadioApp client:load stations={toIslandStations(stations)} selectedStation={toIslandStations([selectedStation])[0]} showReviews={true} />
+  <RadioApp client:load announcements={announcements} stations={toIslandStations(stations)} selectedStation={toIslandStations([selectedStation])[0]} showReviews={true} />
   <PinStations />
 </BaseLayout>

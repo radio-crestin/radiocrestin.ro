@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useContext, useEffect, useRef, useState } from "react";
+import { StationAnnouncementsBell } from "@/components/Announcements";
 import type HlsType from "hls.js";
 import type { HlsConfig } from "hls.js";
 
@@ -1208,7 +1209,7 @@ export default function RadioPlayer() {
           }}
         />
       )}
-      <div className={styles.radio_player_container} ref={playerContainerRef}>
+      <div className={styles.radio_player_container} ref={playerContainerRef} data-radio-player>
         <div
           className={`${styles.radio_player} ${expanded || menuOpen ? styles.radio_player_open : ""}`}
           onClick={onRowClick}
@@ -1530,6 +1531,11 @@ export default function RadioPlayer() {
           </div>
 
           <div className={styles.play_button_container}>
+            <StationAnnouncementsBell
+              stationSlug={station.slug}
+              stationTitle={station.title}
+              variant="player"
+            />
             <button
               aria-label={isFavorite ? "Elimină de la favorite" : "Adaugă la favorite"}
               className={styles.heart_ghost}

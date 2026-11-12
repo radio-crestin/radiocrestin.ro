@@ -51,6 +51,12 @@
   }
 }
 
+// as wide as .container's box (800px content + 40px padding each side)
+.announcements {
+  max-width: 880px;
+  margin: 0 auto 20px;
+}
+
 .container {
   max-width: 800px;
   margin: 0 auto 5vh;

@@ -13,6 +13,7 @@ import { Context } from "@/context/ContextProvider";
 import ShareOnSocial from "@/components/ShareOnSocial";
 import NavMenu from "@/components/NavMenu";
 import StationRating from "@/components/Reviews/StationRating";
+import { StationAnnouncementsBell } from "@/components/Announcements";
 import SongHistory from "@/components/SongHistory";
 import songHistoryStyles from "@/components/SongHistory/styles.module.scss";
 import usePlaybackState from "@/store/usePlaybackState";
@@ -564,6 +565,15 @@ const ContentRight = () => {
 
   return (
     <div className={styles.right_content}>
+      {ctx.selectedStation && (
+        <div className={styles.announcements_bell}>
+          <StationAnnouncementsBell
+            stationSlug={ctx.selectedStation.slug}
+            stationTitle={ctx.selectedStation.title}
+            variant="header"
+          />
+        </div>
+      )}
       <div className={styles.station_details}>
         <div className={styles.status_slot}>{statusPill}</div>
 

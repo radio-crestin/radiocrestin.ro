@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useContext, useEffect, useRef, useState } from "react";
+import Announcements from "@/components/Announcements";
 import type { IStation } from "@/models/Station";
 import styles from "./styles.module.scss";
 import { Context } from "@/context/ContextProvider";
@@ -496,6 +497,8 @@ const Stations = () => {
         </div>
       </div>
       <div className={styles.stations_container}>
+        {/* The announcements card is the list's first item; hidden while searching. */}
+        <Announcements inGrid hidden={searchedValue !== ""} />
         {filteredStations.length === 0 ? (
           <div className={styles.no_results}>
             Nu am găsit niciun rezultat cu denumirea:{" "}

@@ -4,13 +4,13 @@
 .station_item {
   @include mixinHelper.center-content;
   justify-content: flex-start;
-  gap: 25px;
+  gap: var(--station-card-gap);
   width: 100%;
   min-width: 0;
   max-width: 571px;
   max-height: 141px;
-  padding: 15px 17px;
-  border-radius: 18px;
+  padding: var(--station-card-pad-y) var(--station-card-pad-x);
+  border-radius: var(--station-card-radius);
   box-shadow: 1px 1px 5px 0 rgba(0, 0, 0, 0.20);
   position: relative;
   z-index: 1;
@@ -46,28 +46,18 @@
 
   @include mixinHelper.onTablet {
     margin: 0 15px;
-    gap: 15px;
   }
 
   .image_container {
-    width: 110px;
-    height: 110px;
+    width: var(--station-card-media);
+    height: var(--station-card-media);
     flex-shrink: 0;
-
-    @include mixinHelper.onTablet {
-      width: 70px;
-      height: 70px;
-    }
 
     img {
       width: 100%;
       height: 100%;
-      border-radius: 21px;
+      border-radius: var(--station-card-media-radius);
       object-fit: cover;
-
-      @include mixinHelper.onTablet {
-        border-radius: 10px;
-      }
     }
   }
 
@@ -76,13 +66,12 @@
     justify-content: center;
     flex-direction: column;
     margin-right: 27px;
-    height: 110px;
+    height: var(--station-card-body);
     min-width: 0;
     flex: 1;
 
     @include mixinHelper.onTablet {
       margin-right: 45px;
-      height: 72px;
     }
 
     .station_name {

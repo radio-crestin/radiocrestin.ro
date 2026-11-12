@@ -1,5 +1,6 @@
 import type { PostHog } from "posthog-js";
 import { classifyTrafficSource, type TrafficSource } from "@/utils/trafficSource";
+import type { AnnouncementEventType, ClickTarget, Placement } from "@/models/Announcement";
 
 const POSTHOG_KEY = "phc_9lTquHDSyoFxkYq4VPd8cFiQ21VZd627Lv8jSV8S7Fi";
 
@@ -351,4 +352,34 @@ export const trackReviewSubmitted = (
     ...(stationId != null && { station_id: stationId }),
     ...(songId != null && { song_id: songId }),
   }));
+};
+
+export type FormTrackedEvent = "form_opened" | "form_step" | "form_submitted" | "form_closed";
+
+export const trackForm = (
+  event: FormTrackedEvent,
+  properties: { form_slug: string; announcement_slug: string; step?: number },
+) => {
+  withPostHog((ph) => ph.capture(event, properties));
+};
+
+export interface AnnouncementEventProperties {
+  announcement_slug: string;
+  announcement_category: string | null;
+  action_type: string | null;
+  position: number;
+  platform: "web";
+  target: ClickTarget | null;
+  placement: Placement;
+  station_slug: string | null;
+  video_provider?: string;
+  video_kind?: string;
+}
+
+/** Captures announcement_impression, announcement_clicked, … (names from the announcements SPEC). */
+export const trackAnnouncement = (
+  type: AnnouncementEventType,
+  properties: AnnouncementEventProperties,
+) => {
+  withPostHog((ph) => ph.capture(`announcement_${type}`, properties));
 };

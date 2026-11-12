@@ -2,9 +2,19 @@ import React, { useEffect, useState } from "react";
 import { isAndroid, isIOS } from "react-device-detect";
 import { QRCodeSVG } from "qrcode.react";
 import { getIOSStoreLink, getAndroidStoreLink, APP_RATING, APP_REVIEW_COUNT, SHARE_URL } from "@/constants/constants";
+import Announcements, { AnnouncementsProvider } from "@/components/Announcements";
+import type { IAnnouncementsSnapshot } from "@/models/Announcement";
 import styles from "../../pages/descarca-aplicatia-radio-crestin/styles.module.scss";
 
-export default function DescarcaApp() {
+export default function DescarcaApp({ announcements }: { announcements?: IAnnouncementsSnapshot }) {
+  return (
+    <AnnouncementsProvider snapshot={announcements}>
+      <DescarcaContent />
+    </AnnouncementsProvider>
+  );
+}
+
+function DescarcaContent() {
   // Rendered fully on the server so crawlers see the content; both store
   // badges stay visible (mobile users are auto-redirected to their store).
   const [source, setSource] = useState<string | undefined>(undefined);
@@ -46,6 +56,7 @@ export default function DescarcaApp() {
       </a>
 
       <div className={styles.content}>
+        <Announcements inContent className={styles.announcements} />
         <h1 className={styles.title}>Descarcă</h1>
         <h2 className={styles.app_name}>Radio Creștin</h2>
 

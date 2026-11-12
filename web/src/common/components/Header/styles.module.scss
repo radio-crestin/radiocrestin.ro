@@ -362,6 +362,14 @@
   max-width: 850px;
   width: 100%;
   min-width: 0;
+  position: relative;
+
+  .announcements_bell {
+    position: absolute;
+    top: 0;
+    right: 0;
+    z-index: 1;
+  }
 
   .station_details {
     .status_slot {

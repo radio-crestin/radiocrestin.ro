@@ -1,4 +1,6 @@
 import React, { useContext, useState, useEffect } from "react";
+import Announcements, { AnnouncementsProvider } from "@/components/Announcements";
+import type { IAnnouncementsSnapshot } from "@/models/Announcement";
 import { ContextProvider, Context } from "@/context/ContextProvider";
 import { ToastContainer } from "react-toastify";
 import NoInternetConnection from "@/components/NoInternetConnection";
@@ -70,6 +72,8 @@ function StatisticiContent() {
           </h1>
         </div>
 
+        <Announcements inContent className={styles.announcements} />
+
         {isLoading ? (
           <div className={styles.loading_container}>
             <div className={styles.loading_spinner}></div>
@@ -135,14 +139,18 @@ function StatisticiContent() {
 
 export default function StatisticiApp({
   stations,
+  announcements,
 }: {
   stations: IStation[];
+  announcements?: IAnnouncementsSnapshot;
 }) {
   return (
     <ContextProvider
       initialState={{ stations, favouriteStations: [] }}
     >
-      <StatisticiContent />
+      <AnnouncementsProvider snapshot={announcements}>
+        <StatisticiContent />
+      </AnnouncementsProvider>
     </ContextProvider>
   );
 }
