@@ -13,6 +13,7 @@ import { useAppContext } from "./useAppContext";
 import { buildSubmission, fromServerErrors } from "./submission";
 import { FORMS, fieldsOf, isVisible, validate, type ContactKind, type Errors, type FieldDef, type Values } from "./schema";
 import { CheckIcon } from "./icons";
+import { initialValues } from "./initialValues";
 import { PRIVACY_URL } from "./links";
 import styles from "./styles.module.scss";
 
@@ -34,16 +35,6 @@ const BANNERS = {
 
 const isRequired = (field: FieldDef, values: Values) =>
   typeof field.required === "function" ? field.required(values) : !!field.required;
-
-/** ?station=<slug> preselects that station on the forms that pick one. */
-function initialValues(kind: ContactKind, stations: StationOption[]): Values {
-  if (typeof window === "undefined") return {};
-  const slug = new URLSearchParams(window.location.search).get("station");
-  if (!slug || !stations.some((s) => s.slug === slug)) return {};
-  if (kind === "announcement") return { about: "station", station_slug: slug };
-  if (kind === "report") return { station_slug: slug };
-  return {};
-}
 
 function focusField(name: string) {
   const element = document.getElementById(inputId(name));
@@ -72,7 +63,7 @@ export default function ContactForm({ kind, stations = NO_STATIONS }: ContactFor
   // Once, on the client: the URL (and so ?station=) is only known there.
   useEffect(() => {
     startedAt.current = Date.now();
-    setValues(initialValues(kind, stations));
+    setValues(initialValues(kind, stations, window.location.search));
   }, []);
 
   const fileCounts = Object.fromEntries(Object.entries(files).map(([name, list]) => [name, list.length]));
