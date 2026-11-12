@@ -28,8 +28,7 @@ function OptionRow({ option }: { option: ContactOption }) {
 }
 
 const GROUPS = [
-  { key: "listeners", options: ["general", "feedback", "report"] },
-  { key: "stations", options: ["station", "announcement"] },
+  { key: "listeners", options: ["general", "feedback", "report", "station", "announcement"] },
   { key: "chat", options: ["whatsapp"] },
 ] as const;
 
