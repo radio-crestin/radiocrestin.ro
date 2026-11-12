@@ -64,7 +64,29 @@ body {
   }
 }
 
+// Station card geometry, shared by the station list and the announcements card so the
+// card lines up with the stations (same padding, media size and height).
+:root {
+  --station-card-pad-y: 15px;
+  --station-card-pad-x: 17px;
+  --station-card-gap: 25px;
+  --station-card-media: 110px;
+  --station-card-media-radius: 21px;
+  --station-card-body: 110px;
+  --station-card-radius: 18px;
+}
+
+@media screen and (max-width: 768px) {
+  :root {
+    --station-card-gap: 15px;
+    --station-card-media: 70px;
+    --station-card-media-radius: 10px;
+    --station-card-body: 72px;
+  }
+}
+
 :root, :root[data-theme='dark'] {
+  color-scheme: dark;
   --bg-body: #121212;
   --bg-header-container: #1E1E1E;
   --bg-favourite-intro: #1A1A1A;
@@ -97,6 +119,7 @@ body {
 
 /* Define the light theme variables */
 :root[data-theme='light'] {
+  color-scheme: light;
   --bg-body: #ffffff;
   --bg-header-container: #FFFBEF;
   --bg-favourite-intro: #FFFBEF;

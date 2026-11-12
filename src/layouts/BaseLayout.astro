@@ -2,6 +2,8 @@
 import "public/styles/_all.scss";
 import { SITE_URL } from "@/constants/constants";
 import { DEFAULT_SHARE_IMAGE } from "@/utils/seo";
+import { getBuildSnapshot } from "@/services/announcementsBuild";
+import { prepaintScript } from "@/utils/announcementsPrepaintScript";
 
 interface Props {
   title: string;
@@ -35,6 +37,7 @@ const knownImageSize = imageUrl === DEFAULT_SHARE_IMAGE
     : imageUrl.includes("/station-thumbnails/")
       ? "256"
       : null;
+const announcementsPrepaint = prepaintScript(await getBuildSnapshot(Astro.params.station_slug));
 ---
 
 <!doctype html>
@@ -118,7 +121,7 @@ const knownImageSize = imageUrl === DEFAULT_SHARE_IMAGE
 
     {extraHead && <Fragment set:html={extraHead} />}
 
-    <!-- Pre-paint flags: theme (prevent FOUC) + dismissed banners (prevent CLS) -->
+    <!-- Pre-paint theme flag (prevents FOUC) -->
     <script is:inline>
       (function() {
         var theme = localStorage.getItem('theme') || 'system';
@@ -127,13 +130,11 @@ const knownImageSize = imageUrl === DEFAULT_SHARE_IMAGE
           resolved = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
         }
         document.documentElement.setAttribute('data-theme', resolved);
-        if (localStorage.getItem('whatsapp-verse-dismissed')) {
-          document.documentElement.setAttribute('data-wa-verse-hidden', '1');
-        } else if (parseInt(localStorage.getItem('whatsapp-verse-seconds') || '0', 10) >= 300) {
-          document.documentElement.setAttribute('data-wa-verse-show', '1');
-        }
       })();
     </script>
+
+    <!-- Announcements: hide the ones this visitor shouldn't see before first paint (no layout shift) -->
+    {announcementsPrepaint && <script is:inline set:html={announcementsPrepaint} />}
 
     <!-- Google Analytics — deferred until after page is interactive -->
     <script is:inline>

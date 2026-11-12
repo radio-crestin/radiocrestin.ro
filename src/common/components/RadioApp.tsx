@@ -10,7 +10,8 @@ import Stations from "@/components/Stations";
 import DownloadAppBanner from "@/components/DownloadAppBanner";
 import FooterLinks from "@/components/FooterLinks";
 import RadioPlayer from "@/components/RadioPlayer";
-import WhatsAppBibleGroup from "@/components/WhatsAppBibleGroup";
+import { AnnouncementsProvider } from "@/components/Announcements";
+import type { IAnnouncementsSnapshot } from "@/models/Announcement";
 import StationReviewsSection from "@/components/Reviews/StationReviewsSection";
 import { Context } from "@/context/ContextProvider";
 import type { IReview, IStation } from "@/models/Station";
@@ -23,6 +24,8 @@ interface RadioAppProps {
   selectedStation?: IStation | null;
   showReviews?: boolean;
   initialReviews?: IReview[];
+  /** Build-time announcements snapshot, rendered into the HTML. */
+  announcements?: IAnnouncementsSnapshot;
 }
 
 interface RadioContentProps {
@@ -56,7 +59,6 @@ function RadioContent({ showReviews, initialStationId, initialReviews }: RadioCo
   return (
     <NoInternetConnection>
       {ctx.selectedStation ? <Header /> : <HeaderHomepage />}
-      <WhatsAppBibleGroup />
       <Stations />
       <DownloadAppBanner />
       {showReviews && ctx.selectedStation && (
@@ -83,6 +85,7 @@ export default function RadioApp({
   selectedStation = null,
   showReviews = false,
   initialReviews,
+  announcements,
 }: RadioAppProps) {
   const initialState = {
     stations,
@@ -92,11 +95,13 @@ export default function RadioApp({
 
   return (
     <ContextProvider initialState={initialState}>
-      <RadioContent
-        showReviews={showReviews}
-        initialStationId={selectedStation?.id}
-        initialReviews={initialReviews}
-      />
+      <AnnouncementsProvider snapshot={announcements}>
+        <RadioContent
+          showReviews={showReviews}
+          initialStationId={selectedStation?.id}
+          initialReviews={initialReviews}
+        />
+      </AnnouncementsProvider>
     </ContextProvider>
   );
 }

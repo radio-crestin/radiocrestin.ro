@@ -27,3 +27,9 @@
 - Station subpages (`/recent-songs`, `/reviews`, `/adauga-recenzie`) are modal deep-links
   excluded from the sitemap; `/recent-songs` canonicalizes to the station root, while
   `/reviews` (own "Recenzii …" title, `seoStationReviews`) and `adauga-recenzie` are noindexed
+
+## Announcements
+- Home card (first item of the station grid; top of the FAQ, Descarcă and Statistici content) + `#anunt/<slug>` page dialog + station bells/sheet (header and player): `src/common/components/Announcements/`; contract in the backend repo's announcements SPEC. The card's code is a lazy chunk (`lazy.tsx`, loaded by `gate.ts`) that hydrates the server markup.
+- No layout shift: pages fetch the list at build (`services/announcementsBuild.ts`, 2 s timeout) and server-render every item; the inline script from `utils/announcementsPrepaintScript.ts` (BaseLayout `<head>`) hides what this visitor must not see before first paint; `AnnouncementsProvider` adopts the same result after hydration. Eligibility lives in one place: `utils/announcementsPrepaint.ts`.
+- After load the fresh, CDN-cached list is stored in `announcements-feed` (removals apply on the next load; additions come with the next deploy). Local history (dismissed, impressions, rotation, seen, country) is in `store/useAnnouncementsStore.ts`.
+- To develop against a local backend or mock, build/run with `PUBLIC_ANNOUNCEMENTS_API_BASE=http://localhost:8080/api/v1 npm run dev`. `?anunturi-preview=<token>` shows unpublished announcements.

@@ -2,6 +2,7 @@
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import DescarcaApp from "@/components/DescarcaApp";
 import { SITE_URL, APP_RATING, APP_REVIEW_COUNT } from "@/constants/constants";
+import { getBuildSnapshot } from "@/services/announcementsBuild";
 
 const meta = {
   title: "Descarcă Aplicația Radio Creștin | iOS și Android",
@@ -29,9 +30,11 @@ const appSchema = JSON.stringify({
     priceCurrency: "RON",
   },
 });
+
+const announcements = await getBuildSnapshot();
 ---
 
 <BaseLayout {...meta} twitterCard="summary_large_image">
   <script type="application/ld+json" set:html={appSchema} slot="head" />
-  <DescarcaApp client:load />
+  <DescarcaApp client:load announcements={announcements} />
 </BaseLayout>

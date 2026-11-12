@@ -1,4 +1,6 @@
-import React, { ReactNode } from "react";
+import React, { type ReactNode } from "react";
+import Announcements, { AnnouncementsProvider } from "@/components/Announcements";
+import type { IAnnouncementsSnapshot } from "@/models/Announcement";
 import ThemeToggle from "@/components/ThemeToggle";
 import DownloadAppBanner from "@/components/DownloadAppBanner";
 import FooterLinks from "@/components/FooterLinks";
@@ -117,6 +119,8 @@ function FAQContent() {
         <ThemeToggle />
       </header>
 
+      <Announcements inContent className={styles.announcements} />
+
       <main className={styles.container}>
         <h1>Întrebări Frecvente</h1>
         <p className={styles.intro}>
@@ -154,10 +158,12 @@ function FAQContent() {
   );
 }
 
-export default function FAQApp() {
+export default function FAQApp({ announcements }: { announcements?: IAnnouncementsSnapshot }) {
   return (
     <ContextProvider initialState={{ stations: [], favouriteStations: [] }}>
-      <FAQContent />
+      <AnnouncementsProvider snapshot={announcements}>
+        <FAQContent />
+      </AnnouncementsProvider>
     </ContextProvider>
   );
 }

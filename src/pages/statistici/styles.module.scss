@@ -5,11 +5,12 @@
   color: var(--text-color);
   min-height: 80vh;
 
-  * {
+  // the announcements card brings its own colours
+  *:not(.announcements, .announcements *) {
     color: var(--text-color);
   }
 
-  a {
+  a:not(.announcements *) {
     color: var(--text-color);
     text-decoration: none;
 

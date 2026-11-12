@@ -9,6 +9,7 @@ import { sortStationsByRecommendedScore } from "@/utils/stationScore";
 import { SEO_DEFAULT } from "@/utils/seo";
 import { SITE_URL } from "@/constants/constants";
 import type { IStation } from "@/models/Station";
+import { getBuildSnapshot } from "@/services/announcementsBuild";
 
 const { stations: rawStations } = await getStations();
 rawStations.forEach((station: IStation) => { station.is_favorite = false; });
@@ -28,11 +29,13 @@ const stationListSchema = JSON.stringify({
     url: `${SITE_URL}/${station.slug}/`,
   })),
 });
+
+const announcements = await getBuildSnapshot();
 ---
 
 <BaseLayout {...SEO_DEFAULT}>
   <script type="application/ld+json" set:html={stationListSchema} slot="head" />
-  <RadioApp client:load stations={toIslandStations(stations)} />
+  <RadioApp client:load announcements={announcements} stations={toIslandStations(stations)} />
   <FavoritesPrepaint stations={stations} />
   <PinStations />
 </BaseLayout>

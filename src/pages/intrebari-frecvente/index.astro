@@ -2,6 +2,7 @@
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import FAQApp from "@/components/FAQApp";
 import { SEO_FAQ } from "@/utils/seo";
+import { getBuildSnapshot } from "@/services/announcementsBuild";
 
 const faqSchemaData = {
   "@context": "https://schema.org",
@@ -49,9 +50,11 @@ const faqSchemaData = {
     },
   ],
 };
+
+const announcements = await getBuildSnapshot();
 ---
 
 <BaseLayout {...SEO_FAQ}>
   <script type="application/ld+json" set:html={JSON.stringify(faqSchemaData)} slot="head" />
-  <FAQApp client:load />
+  <FAQApp client:load announcements={announcements} />
 </BaseLayout>

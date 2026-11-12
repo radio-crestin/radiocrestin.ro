@@ -5,12 +5,15 @@ import { getStations } from "@/services/getStations";
 import { cleanStationsMetadata } from "@/utils";
 import { SEO_STATISTICI } from "@/utils/seo";
 import type { IStation } from "@/models/Station";
+import { getBuildSnapshot } from "@/services/announcementsBuild";
 
 const { stations: rawStations } = await getStations();
 rawStations.forEach((station: IStation) => { station.is_favorite = false; });
 const stations = cleanStationsMetadata(rawStations);
+
+const announcements = await getBuildSnapshot();
 ---
 
 <BaseLayout {...SEO_STATISTICI}>
-  <StatisticiApp client:load stations={stations} />
+  <StatisticiApp client:load announcements={announcements} stations={stations} />
 </BaseLayout>
