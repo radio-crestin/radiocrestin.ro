@@ -61,8 +61,7 @@ export default function Turnstile({ onToken, resetKey }: TurnstileProps) {
       if (widgetRef.current) widgetRef.current.api.remove(widgetRef.current.id);
       widgetRef.current = null;
     };
-    // onToken is a state setter; rendering once is enough.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // Rendered once; onToken is a state setter.
   }, []);
 
   useEffect(() => {

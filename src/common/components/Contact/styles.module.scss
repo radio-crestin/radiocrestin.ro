@@ -36,6 +36,10 @@ $danger: #e5484d;
   font-size: 17px;
   text-decoration: none;
 
+  span {
+    color: inherit;
+  }
+
   img {
     width: 36px;
     height: 36px;
@@ -52,7 +56,12 @@ $danger: #e5484d;
   border-radius: 20px;
   line-height: 1.55;
 
-  @include mixinHelper.onMobile {
+  // The global reset paints every element black; text here follows the theme.
+  & * {
+    color: inherit;
+  }
+
+  @include mixinHelper.onTablet {
     padding: 24px 18px 28px;
     border-radius: 16px;
   }
@@ -76,7 +85,7 @@ $danger: #e5484d;
   font-weight: 700;
   line-height: 1.2;
 
-  @include mixinHelper.onMobile {
+  @include mixinHelper.onTablet {
     font-size: 1.6rem;
   }
 }
@@ -145,6 +154,7 @@ $danger: #e5484d;
 
   strong {
     font-size: 1.1rem;
+    font-weight: 700;
   }
 
   span {
@@ -271,8 +281,8 @@ input[type="date"].input {
 }
 
 .choices {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  display: flex;
+  flex-direction: column;
   gap: 10px;
 }
 
