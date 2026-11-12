@@ -44,7 +44,7 @@ export function FieldShell({
   const Label = isGroup ? "legend" : "label";
   const id = inputId(field.name);
   return (
-    <Wrapper className={styles.field} data-invalid={error ? "" : undefined}>
+    <Wrapper className={styles.field} data-invalid={error ? "" : undefined} data-half={field.half ? "" : undefined}>
       {copy.label && (
         <Label className={styles.label} {...(isGroup ? {} : { htmlFor: id })}>
           {copy.label}

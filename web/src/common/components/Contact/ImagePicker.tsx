@@ -24,9 +24,16 @@ function useObjectUrls(files: File[]) {
 export default function ImagePicker({ name, maxFiles, files, onChange, onError }: ImagePickerProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [processing, setProcessing] = useState(false);
+  const [dragging, setDragging] = useState(false);
   const urls = useObjectUrls(files);
   const copy = CONTACT_COPY.images;
   const isFull = files.length >= maxFiles;
+
+  function onDrop(event: React.DragEvent) {
+    event.preventDefault();
+    setDragging(false);
+    if (!isFull && !processing) addFiles(event.dataTransfer.files);
+  }
 
   async function addFiles(selected: FileList | null) {
     if (!selected?.length) return;
@@ -70,15 +77,29 @@ export default function ImagePicker({ name, maxFiles, files, onChange, onError }
         <button
           type="button"
           id={inputId(name)}
-          className={styles.add_images}
+          className={styles.dropzone}
+          data-dragging={dragging ? "" : undefined}
           disabled={processing}
           onClick={() => inputRef.current?.click()}
+          onDragOver={(e) => {
+            e.preventDefault();
+            setDragging(true);
+          }}
+          onDragLeave={() => setDragging(false)}
+          onDrop={onDrop}
         >
-          <CameraIcon />
-          {processing ? copy.processing : maxFiles === 1 ? copy.addOne : copy.add}
+          <span className={styles.dropzone_icon} aria-hidden="true">
+            <CameraIcon />
+          </span>
+          <span className={styles.dropzone_title}>
+            {processing ? copy.processing : dragging ? copy.dropHere : maxFiles === 1 ? copy.addOne : copy.add}
+          </span>
+          <span className={styles.dropzone_hint}>
+            <span className={styles.dropzone_drag}>{maxFiles === 1 ? copy.dropHintOne : copy.dropHint} · </span>
+            {maxFiles === 1 ? copy.limitOne : fill(copy.limit, { max: maxFiles })}
+          </span>
         </button>
       )}
-      <p className={styles.hint}>{maxFiles === 1 ? copy.limitOne : fill(copy.limit, { max: maxFiles })}</p>
       <input
         ref={inputRef}
         type="file"

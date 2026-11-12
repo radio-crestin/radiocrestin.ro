@@ -224,17 +224,24 @@ export default function ContactForm({ kind, stations = NO_STATIONS }: ContactFor
 
       <form className={styles.form} onSubmit={onSubmit} noValidate>
         {FORMS[kind].map((section, index) => {
-          const fields = section.fields.filter((field) => isVisible(field, values));
-          if (fields.length === 0) return null;
           const heading =
             section.title === "contact"
               ? CONTACT_COPY.common.yourDetails
               : section.title && sections.sections?.[section.title];
           return (
-            <section key={index} className={styles.section}>
-              {heading && <h2 className={styles.section_title}>{heading}</h2>}
-              {section.title === "contact" && <p className={styles.hint}>{CONTACT_COPY.common.yourDetailsHint}</p>}
-              {section.fields.map(renderField)}
+            <section key={index} className={styles.section} aria-labelledby={`contact-section-${index}`}>
+              <div className={styles.section_head}>
+                <span className={styles.step} aria-hidden="true">
+                  {index + 1}
+                </span>
+                <div>
+                  <h2 className={styles.section_title} id={`contact-section-${index}`}>
+                    {heading}
+                  </h2>
+                  {section.title === "contact" && <p className={styles.section_hint}>{CONTACT_COPY.common.yourDetailsHint}</p>}
+                </div>
+              </div>
+              <div className={styles.fields}>{section.fields.map(renderField)}</div>
             </section>
           );
         })}
