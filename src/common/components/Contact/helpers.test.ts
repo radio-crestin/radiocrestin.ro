@@ -3,6 +3,7 @@ import { resolve } from "path";
 import { describe, expect, it } from "vitest";
 import { readAppContext, withAppContext } from "./appContext";
 import { whatsappUrl } from "./links";
+import { initialValues } from "./initialValues";
 import { CONTACT_PATHS } from "./copy";
 import { fill } from "./copyText";
 import { fitWithin, needsResize, outputTypeFor } from "./resizeImage";
@@ -98,5 +99,23 @@ describe("copy", () => {
     for (const path of Object.values(CONTACT_PATHS)) {
       expect(existsSync(resolve(__dirname, "../../../pages", `.${path}index.astro`)), path).toBe(true);
     }
+  });
+});
+
+describe("answers filled in by the link", () => {
+  const stations = [{ slug: "aripi-spre-cer", title: "Aripi Spre Cer" }];
+
+  it("picks a known station", () => {
+    expect(initialValues("report", stations, "?station=aripi-spre-cer")).toEqual({ station_slug: "aripi-spre-cer" });
+    expect(initialValues("announcement", stations, "?station=aripi-spre-cer")).toEqual({
+      about: "station",
+      station_slug: "aripi-spre-cer",
+    });
+    expect(initialValues("report", stations, "?station=unknown")).toEqual({});
+  });
+
+  it("picks what a suggestion is about, if it is one of the options", () => {
+    expect(initialValues("feedback", stations, "?type=bug&source=app")).toEqual({ suggestion_type: "bug" });
+    expect(initialValues("feedback", stations, "?type=hack")).toEqual({});
   });
 });
