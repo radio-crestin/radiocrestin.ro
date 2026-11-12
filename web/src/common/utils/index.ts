@@ -59,6 +59,56 @@ export function cleanStationsMetadata(stations: IStation[]) {
 }
 
 /**
+ * Island props are serialized into every page's HTML, 64 stations at a time.
+ * Keeps only the fields the islands read before their first API refresh,
+ * which replaces every station object with the full one. Dropped: posts,
+ * e-mail, proxy/DVR URLs, uptime probe details, __typename tags and other
+ * fields no client code reads.
+ */
+export function toIslandStations(stations: IStation[]): IStation[] {
+  return stations.map((s) => {
+    const song = s.now_playing?.song;
+    return {
+      id: s.id,
+      slug: s.slug,
+      order: s.order,
+      title: s.title,
+      website: s.website,
+      facebook_page_id: s.facebook_page_id,
+      stream_url: s.stream_url,
+      hls_stream_url: s.hls_stream_url,
+      thumbnail_url: s.thumbnail_url,
+      total_listeners: s.total_listeners,
+      description: s.description,
+      station_streams: s.station_streams?.map(({ type, stream_url, order }) => ({
+        type,
+        stream_url,
+        order,
+      })),
+      uptime: s.uptime && { is_up: s.uptime.is_up },
+      now_playing: s.now_playing && {
+        id: s.now_playing.id,
+        song: song && {
+          id: song.id,
+          name: song.name,
+          thumbnail_url: song.thumbnail_url,
+          artist: song.artist && {
+            id: song.artist.id,
+            name: song.artist.name,
+            thumbnail_url: song.artist.thumbnail_url,
+          },
+        },
+      },
+      reviews_stats: s.reviews_stats && {
+        number_of_reviews: s.reviews_stats.number_of_reviews,
+        average_rating: s.reviews_stats.average_rating,
+      },
+      is_favorite: s.is_favorite,
+    } as IStation;
+  });
+}
+
+/**
  * Full API refreshes bring cdn.radiocrestin.ro thumbnail URLs that are pixel-
  * identical to the build-time /station-thumbnails/ files already painted by
  * SSR. Swapping the src re-downloads every logo from a cold origin and

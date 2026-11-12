@@ -3,7 +3,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 import RadioApp from "@/components/RadioApp";
 import PinStations from "@/components/PinStations.astro";
 import { getStations } from "@/services/getStations";
-import { cleanStationsMetadata } from "@/utils";
+import { cleanStationsMetadata, toIslandStations } from "@/utils";
 import { SEO_404 } from "@/utils/seo";
 import type { IStation } from "@/models/Station";
 
@@ -13,6 +13,6 @@ const stations = cleanStationsMetadata(rawStations);
 ---
 
 <BaseLayout {...SEO_404}>
-  <RadioApp client:load stations={stations} />
+  <RadioApp client:load stations={toIslandStations(stations)} />
   <PinStations />
 </BaseLayout>

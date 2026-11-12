@@ -4,7 +4,7 @@ import RadioApp from "@/components/RadioApp";
 import FavoritesPrepaint from "@/components/FavoritesPrepaint.astro";
 import PinStations from "@/components/PinStations.astro";
 import { getStations } from "@/services/getStations";
-import { cleanStationsMetadata } from "@/utils";
+import { cleanStationsMetadata, toIslandStations } from "@/utils";
 import { sortStationsByRecommendedScore } from "@/utils/stationScore";
 import { SEO_DEFAULT } from "@/utils/seo";
 import { SITE_URL } from "@/constants/constants";
@@ -32,7 +32,7 @@ const stationListSchema = JSON.stringify({
 
 <BaseLayout {...SEO_DEFAULT}>
   <script type="application/ld+json" set:html={stationListSchema} slot="head" />
-  <RadioApp client:load stations={stations} />
+  <RadioApp client:load stations={toIslandStations(stations)} />
   <FavoritesPrepaint stations={stations} />
   <PinStations />
 </BaseLayout>

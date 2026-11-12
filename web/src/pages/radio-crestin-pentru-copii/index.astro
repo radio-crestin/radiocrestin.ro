@@ -1,7 +1,7 @@
 ---
 import CategoryLayout from "../../layouts/CategoryLayout.astro";
 import { getStations } from "@/services/getStations";
-import { cleanStationsMetadata, stationsInGroup } from "@/utils";
+import { cleanStationsMetadata, stationsInGroup, toIslandStations } from "@/utils";
 import { SEO_RADIO_COPII } from "@/utils/seo";
 import type { IStation } from "@/models/Station";
 
@@ -39,7 +39,7 @@ const faqs = [
   seo={SEO_RADIO_COPII}
   h1="Radio Creștin pentru Copii"
   lead="Radio creștin pentru copii, online și gratuit: cântecele creștine, povestiri biblice și emisiuni gândite special pentru cei mici. Conținut potrivit pentru copii, pe care îl poți lăsa pornit fără grijă — acasă, în mașină sau înainte de somn."
-  stations={stations}
+  stations={toIslandStations(stations)}
   groupStations={groupStations}
   stationsHeading="Stații radio creștine pentru copii – ascultă live"
   variant="kids"
