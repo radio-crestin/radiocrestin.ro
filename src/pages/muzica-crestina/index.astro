@@ -1,7 +1,7 @@
 ---
 import CategoryLayout from "../../layouts/CategoryLayout.astro";
 import { getStations } from "@/services/getStations";
-import { cleanStationsMetadata, stationsInGroup } from "@/utils";
+import { cleanStationsMetadata, stationsInGroup, toIslandStations } from "@/utils";
 import { SEO_MUZICA_CRESTINA } from "@/utils/seo";
 import type { IStation } from "@/models/Station";
 
@@ -40,7 +40,7 @@ const faqs = [
   seo={SEO_MUZICA_CRESTINA}
   h1="Muzică Creștină Online"
   lead="Ascultă muzică creștină online, gratuit: radiouri creștine din România și din diaspora care transmit muzică non-stop. Alegi stația, apeși play și asculți — fără cont și fără descărcări."
-  stations={stations}
+  stations={toIslandStations(stations)}
   groupStations={groupStations}
   defaultStationSlug="radio-gosen"
   stationsHeading="Radiouri creștine cu muzică – ascultă live"
