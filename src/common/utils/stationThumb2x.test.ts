@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { stationThumb2x, stationThumbImgProps } from "@/utils";
+import {
+  stationThumb2x,
+  stationThumbImgProps,
+  stationThumbSmall,
+  stationThumbSmallImgProps,
+} from "@/utils";
 
 describe("stationThumb2x", () => {
   it("derives the @2x companion for a local thumbnail", () => {
@@ -53,5 +58,31 @@ describe("stationThumbImgProps", () => {
   it("is empty for null/undefined", () => {
     expect(stationThumbImgProps(null, 100)).toEqual({});
     expect(stationThumbImgProps(undefined, 100)).toEqual({});
+  });
+});
+
+describe("stationThumbSmallImgProps", () => {
+  it("pairs the 128px companion with the 256px base file", () => {
+    expect(stationThumbSmall("/station-thumbnails/rve-cluj.webp")).toBe(
+      "/station-thumbnails/rve-cluj@sm.webp",
+    );
+    expect(
+      stationThumbSmallImgProps("/station-thumbnails/rve-cluj.webp", "52px"),
+    ).toEqual({
+      srcSet:
+        "/station-thumbnails/rve-cluj@sm.webp 128w, /station-thumbnails/rve-cluj.webp 256w",
+      sizes: "52px",
+    });
+  });
+
+  it("is empty for remote, @2x and missing urls", () => {
+    for (const url of [
+      "https://cdn.radiocrestin.ro/?url=x",
+      "/station-thumbnails/rve-cluj@2x.webp",
+      null,
+      undefined,
+    ]) {
+      expect(stationThumbSmallImgProps(url, "52px")).toEqual({});
+    }
   });
 });

@@ -12,6 +12,7 @@ import { Context } from "@/context/ContextProvider";
 import {
   dropPointerFocus,
   getValidImageUrl,
+  stationThumbSmallImgProps,
   stepImageFallback,
 } from "@/utils";
 import OfflineStatus from "@/components/OfflineStatus";
@@ -85,6 +86,7 @@ const FavouriteItem = (data: IStation) => {
       <div className={styles.image_container}>
         <img
           src={getValidImageUrl(data.thumbnail_url)}
+          {...stationThumbSmallImgProps(data.thumbnail_url, "(max-width: 768px) 70px, 100px")}
           alt={`${data.title} | radiocrestin.ro`}
           loading={"lazy"}
           height={100}
