@@ -284,6 +284,11 @@
   letter-spacing: -0.005em;
 }
 
+// no body: nothing to keep the title apart from (beats the layouts' own title margins)
+.ann-text > .ann-title:last-child {
+  margin-bottom: 0;
+}
+
 .ann-body {
   margin: 0;
   font-size: 14px;

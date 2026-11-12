@@ -330,14 +330,6 @@ export const trackSortChanged = (sortBy: string) => {
   }));
 };
 
-export const trackWhatsAppVerseClicked = () => {
-  withPostHog((ph) => ph.capture("whatsapp_verse_clicked"));
-};
-
-export const trackWhatsAppVerseDismissed = () => {
-  withPostHog((ph) => ph.capture("whatsapp_verse_dismissed"));
-};
-
 export const trackReviewSubmitted = (
   stationSlug: string,
   stationName: string,

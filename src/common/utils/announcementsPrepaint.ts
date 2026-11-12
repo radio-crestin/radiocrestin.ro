@@ -18,6 +18,8 @@ export interface PrepaintItem {
   e?: number;
   /** max_impressions */
   m?: number;
+  /** 1 when closing the old, hard-coded banner (LEGACY_DISMISSED_KEY) dismissed this one */
+  l?: 1;
   /**
    * filters, only the non-empty ones: p = the web viewports allowed ("m", "d", both, or ""
    * for app-only), ci / ce = countries include / exclude, lo = normalised locales
@@ -40,6 +42,8 @@ export interface PrepaintLocal {
   impressions?: Record<string, number>;
   rotationCursor?: number;
   country?: string | null;
+  /** the LEGACY_DISMISSED_KEY value; set means the old banner was closed */
+  w?: unknown;
 }
 
 /** The last fresh list: when it was fetched (ms) and its slugs. */
@@ -86,13 +90,13 @@ export function annEligibility(
       const s = it.s;
       const f = it.f || {};
       const c = local.country;
-      if ((local.dismissed || {})[s]) return false;
+      if ((local.dismissed || {})[s] || (it.l && local.w)) return false;
       // comparisons with an absent field are false, so absent means "no limit"
       if (((local.impressions || {})[s] || 0) >= it.m! || it.a! > now || it.e! <= now) return false;
-      if (feed && feed.t > d.b && feed.s.indexOf(s) < 0) return false;
-      if (f.p != null && f.p.indexOf(vp) < 0) return false;
+      if (feed && feed.t > d.b && !feed.s.includes(s)) return false;
+      if (f.p != null && !f.p.includes(vp)) return false;
       if (f.lo && !f.lo.some((l) => l === lang || l === lang.split("-")[0])) return false;
-      if ((f.ci || f.ce) && (!c || (f.ci && f.ci.indexOf(c) < 0) || (f.ce || []).indexOf(c) >= 0)) return false;
+      if ((f.ci || f.ce) && (!c || (f.ci && !f.ci.includes(c)) || (f.ce || []).includes(c))) return false;
       return !!it.st || ++homeCount <= d.x;
     });
     const h = v.filter((it) => !it.st).map((it) => it.s);
@@ -104,6 +108,13 @@ export function annEligibility(
   return { m: view("m"), d: view("d") };
 }
 
+/**
+ * The old, hard-coded WhatsApp banner stored its own "closed" flag; a visitor who closed it
+ * has dismissed the announcement that replaced it.
+ */
+export const LEGACY_DISMISSED_KEY = "whatsapp-verse-dismissed";
+export const LEGACY_SLUG = "whatsapp-versetul-zilei";
+
 /** Reads local state, writes the hiding <style> and leaves the result on window.__ann. */
 export function annPrepaintBoot(d: PrepaintData, elig: typeof annEligibility) {
   try {
@@ -114,7 +125,9 @@ export function annPrepaintBoot(d: PrepaintData, elig: typeof annEligibility) {
     // Slugs go into CSS selectors: keep only plain ones (the build already did; this is the backstop).
     const ok = (x: string) => /^[\w-]{1,100}$/.test(x);
     d.i = d.i.filter((it) => ok(it.s) && (it.st || []).every(ok));
-    const r = elig(d, (read("announcements-store") || {}).state || {}, read("announcements-feed"), lang, Date.now(), Math.random());
+    const local: PrepaintLocal = (read("announcements-store") || {}).state || {};
+    local.w = read("whatsapp-verse-dismissed"); // LEGACY_DISMISSED_KEY, inlined
+    const r = elig(d, local, read("announcements-feed"), lang, Date.now(), Math.random());
     // Rules for the server markup only: the card drops data-ann-pp once its code has taken over.
     const pp = "[data-ann-pp] ";
     let css = "";
@@ -125,17 +138,17 @@ export function annPrepaintBoot(d: PrepaintData, elig: typeof annEligibility) {
       const hide: string[] = [];
       const bells: Record<string, boolean> = {};
       d.i.forEach((it) => {
-        const shown = w.v.indexOf(it.s) >= 0;
+        const shown = w.v.includes(it.s);
         if (!shown) hide.push('[data-ann="' + it.s + '"]');
         (it.st || []).forEach((s) => (bells[s] = bells[s] || shown));
       });
       for (const s in bells) if (!bells[s]) hide.push('[data-ann-b="' + s + '"]');
-      if (!n) hide.push("[data-ann-r]");
       if (n < 2) hide.push("[data-ann-m]");
-      // The server shows the first slide (data-ann-a); show the rotation's start slide instead.
-      if (n) hide.push("[data-ann-a]");
+      // No slide: hide the card. Otherwise the server's first slide (data-ann-a) gives way to the
+      // rotation's start slide.
+      hide.push(n ? "[data-ann-a]" : "[data-ann-r]");
       css +=
-        "@media(" + (vp > "d" ? "max-width:767.9px" : "min-width:768px") + "){" +
+        "@media(" + (vp > "d" ? "max-width:767.9" : "min-width:768") + "px){" +
         hide.join(",") + "{display:none!important}" +
         (n
           ? pp + '[data-ann="' + first + '"]{display:grid!important' +
@@ -145,9 +158,8 @@ export function annPrepaintBoot(d: PrepaintData, elig: typeof annEligibility) {
           : "") +
         "}";
     });
-    const el = document.createElement("style");
-    el.textContent = css;
-    document.head.append(el);
+    // Only plain slugs and numbers reach the CSS, so it can't close the <style> early.
+    document.write("<style>" + css + "</style>");
     (window as unknown as { __ann: PrepaintResult }).__ann = r;
   } catch (e) {
     // Without localStorage everything in the snapshot shows; the island agrees.
@@ -169,6 +181,7 @@ export const toPrepaintData = (snapshot: IAnnouncementsSnapshot): PrepaintData =
     .map((a) => {
       const f = a.filters || {};
       const item: PrepaintItem = { s: a.slug };
+      if (a.slug === LEGACY_SLUG) item.l = 1;
       if (a.placement === "station") item.st = (a.station_slugs || []).filter((s) => SAFE_SLUG.test(s));
       if (time(a.starts_at)) item.a = time(a.starts_at);
       if (time(a.ends_at)) item.e = time(a.ends_at);

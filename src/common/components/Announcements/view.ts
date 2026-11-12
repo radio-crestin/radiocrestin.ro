@@ -12,6 +12,7 @@ import {
 import useAnnouncementsStore from "@/store/useAnnouncementsStore";
 import {
   annEligibility,
+  LEGACY_DISMISSED_KEY,
   MOBILE_QUERY,
   toPrepaintData,
   type PrepaintFeed,
@@ -32,9 +33,10 @@ interface View {
 
 const useView = create<View>(() => ({ result: null, mobile: false, removed: new Set(), preview: null }));
 
-const readStoredFeed = (): PrepaintFeed | null => {
+/** A JSON value from localStorage, read the way the pre-paint script reads it. */
+const readStored = <T,>(key: string): T | null => {
   try {
-    return JSON.parse(localStorage.getItem(FEED_KEY)!);
+    return JSON.parse(localStorage.getItem(key)!);
   } catch {
     return null;
   }
@@ -44,8 +46,8 @@ const readStoredFeed = (): PrepaintFeed | null => {
 const computeEligibility = (snapshot: IAnnouncementsSnapshot): PrepaintResult =>
   annEligibility(
     toPrepaintData(snapshot),
-    useAnnouncementsStore.getState(),
-    readStoredFeed(),
+    { ...useAnnouncementsStore.getState(), w: readStored(LEGACY_DISMISSED_KEY) },
+    readStored<PrepaintFeed>(FEED_KEY),
     navigator.language.toLowerCase(),
     Date.now(),
     Math.random(),

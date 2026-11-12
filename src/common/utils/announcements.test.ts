@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import type { IAnnouncement } from "@/models/Announcement";
 import {
+  hasBodyText,
   pageTarget,
   isForStation,
   resolveWebAction,
@@ -139,5 +140,17 @@ describe("pageTarget", () => {
     expect(pageTarget(0, 3, -1)).toBeNull();
     expect(pageTarget(2, 3, 1)).toBeNull();
     expect(pageTarget(0, 1, 1)).toBeNull();
+  });
+});
+
+describe("hasBodyText", () => {
+  it("is false for missing or empty bodies", () => {
+    for (const empty of [undefined, null, "", "  ", "<p></p>", "<p> &nbsp; </p>", "<br>"]) {
+      expect(hasBodyText(empty)).toBe(false);
+    }
+  });
+
+  it("is true when any text shows", () => {
+    expect(hasBodyText("Primește-l <b>zilnic</b>")).toBe(true);
   });
 });

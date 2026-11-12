@@ -4,6 +4,7 @@ import { PREPAINT_CODE, prepaintScript } from "@/utils/announcementsPrepaintScri
 import {
   annEligibility,
   annPrepaintBoot,
+  LEGACY_SLUG,
   toPrepaintData,
   type PrepaintData,
   type PrepaintItem,
@@ -92,6 +93,35 @@ describe("annEligibility", () => {
   });
 });
 
+describe("the old WhatsApp banner's dismissal", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("marks only its successor in the compact data", () => {
+    const d = toPrepaintData({
+      built_at: BUILT,
+      settings: { rotation_mode: "fixed", max_per_load: 5 },
+      announcements: [{ slug: LEGACY_SLUG }, { slug: "other" }],
+    } as unknown as IAnnouncementsSnapshot);
+    expect(d.i).toEqual([{ s: LEGACY_SLUG, l: 1 }, { s: "other" }]);
+  });
+
+  it("hides the successor, and nothing else, once the old banner was closed", () => {
+    const items = [{ s: LEGACY_SLUG, l: 1 as const }, { s: "other" }];
+    expect(run(items, { w: 1 }).d.h).toEqual(["other"]);
+    expect(run(items, { w: null }).d.h).toEqual([LEGACY_SLUG, "other"]);
+  });
+
+  it("is read by the inline script from the old banner's own key", () => {
+    const written: string[] = [];
+    vi.stubGlobal("localStorage", { getItem: (k: string) => (k === "whatsapp-verse-dismissed" ? "1" : null) });
+    vi.stubGlobal("navigator", { language: "ro-RO" });
+    vi.stubGlobal("document", { write: (html: string) => written.push(html) });
+    vi.stubGlobal("window", {});
+    annPrepaintBoot(data([{ s: LEGACY_SLUG, l: 1 }, { s: "other" }]), annEligibility);
+    expect(written[0]).toContain(`[data-ann="${LEGACY_SLUG}"],[data-ann-m],[data-ann-a]{display:none!important}`);
+  });
+});
+
 describe("annPrepaintBoot", () => {
   afterEach(() => vi.unstubAllGlobals());
 
@@ -100,7 +130,7 @@ describe("annPrepaintBoot", () => {
     const win: Record<string, unknown> = {};
     vi.stubGlobal("localStorage", { getItem: (k: string) => (k in stored ? JSON.stringify(stored[k]) : null) });
     vi.stubGlobal("navigator", { language: "ro-RO" });
-    vi.stubGlobal("document", { createElement: () => ({}), head: { append: (el: object) => appended.push(el) } });
+    vi.stubGlobal("document", { write: (html: string) => appended.push({ textContent: html.replace(/^<style>|<\/style>$/g, "") }) });
     vi.stubGlobal("window", win);
     annPrepaintBoot(data(items), annEligibility);
     return { css: appended[0]?.textContent ?? "", result: win.__ann };
@@ -126,7 +156,7 @@ describe("annPrepaintBoot", () => {
         getItem: (k: string) => (k === "announcements-store" ? JSON.stringify({ state: { rotationCursor: cursor } }) : null),
       });
       vi.stubGlobal("navigator", { language: "ro-RO" });
-      vi.stubGlobal("document", { createElement: () => ({}), head: { append: (el: object) => appended.push(el) } });
+      vi.stubGlobal("document", { write: (html: string) => appended.push({ textContent: html.replace(/^<style>|<\/style>$/g, "") }) });
       vi.stubGlobal("window", {});
       annPrepaintBoot(data([{ s: "a" }, { s: "b" }, { s: "c" }], 1), annEligibility);
       return appended[0].textContent ?? "";
@@ -141,7 +171,7 @@ describe("annPrepaintBoot", () => {
       getItem: (k: string) => (k === "announcements-store" ? JSON.stringify({ state: { rotationCursor: 4 } }) : null),
     });
     vi.stubGlobal("navigator", { language: "ro-RO" });
-    vi.stubGlobal("document", { createElement: () => ({}), head: { append: (el: object) => appended.push(el) } });
+    vi.stubGlobal("document", { write: (html: string) => appended.push({ textContent: html.replace(/^<style>|<\/style>$/g, "") }) });
     vi.stubGlobal("window", {});
     annPrepaintBoot(data([{ s: "a" }, { s: "b" }, { s: "c" }], 1), annEligibility);
     // the middle of three: neither button faded
@@ -151,14 +181,14 @@ describe("annPrepaintBoot", () => {
 
   it("hides the whole card when nothing is left", () => {
     const { css, result } = boot([{ s: "a" }], { "announcements-store": { state: { dismissed: { a: "x" } } } });
-    expect(css).toContain("[data-ann-r],[data-ann-m]{display:none!important}}");
+    expect(css).toContain("[data-ann-m],[data-ann-r]{display:none!important}}");
     expect(result).toMatchObject({ d: { h: [] } });
   });
 
   it("hides nothing when storage holds corrupt JSON", () => {
     vi.stubGlobal("localStorage", { getItem: () => "{oops" });
     const appended: object[] = [];
-    vi.stubGlobal("document", { createElement: () => ({}), head: { append: (el: object) => appended.push(el) } });
+    vi.stubGlobal("document", { write: (html: string) => appended.push({ textContent: html.replace(/^<style>|<\/style>$/g, "") }) });
     vi.stubGlobal("navigator", { language: "ro" });
     vi.stubGlobal("window", {});
     annPrepaintBoot(data([{ s: "a" }]), annEligibility);
@@ -220,7 +250,7 @@ describe("prepaintScript", () => {
     new Function("localStorage", "navigator", "document", "window", code)(
       { getItem: () => null },
       { language: "ro-RO" },
-      { createElement: () => ({}), head: { append: (el: object) => appended.push(el) } },
+      { write: (html: string) => appended.push({ textContent: html.replace(/^<style>|<\/style>$/g, "") }) },
       win,
     );
     expect(appended[0].textContent).toContain('[data-ann="a"]{display:grid!important;--pf:.4;--nf:.4}');
@@ -250,7 +280,7 @@ describe("prepaintScript safety", () => {
     new Function("localStorage", "navigator", "document", "window", code)(
       { getItem: () => null },
       { language: "ro-RO" },
-      { createElement: () => ({}), head: { append: (el: object) => appended.push(el) } },
+      { write: (html: string) => appended.push({ textContent: html.replace(/^<style>|<\/style>$/g, "") }) },
       {},
     );
     return appended[0]?.textContent ?? "";

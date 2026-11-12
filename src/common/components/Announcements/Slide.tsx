@@ -1,6 +1,6 @@
 import React from "react";
 import type { ClickTarget, IAnnouncement, IAnnouncementAction, IAnnouncementButton } from "@/models/Announcement";
-import { resolveWebAction } from "@/utils/announcements";
+import { hasBodyText, resolveWebAction } from "@/utils/announcements";
 import { colorVars } from "@/utils/announcementColors";
 export { colorVars };
 import { CloseGlyph } from "./icons";
@@ -168,7 +168,7 @@ const Slide = ({
           <CategoryTag announcement={a} />
         </div>
         <h3 className={styles.title}>{a.title}</h3>
-        {a.body_html && <p className={styles.body} dangerouslySetInnerHTML={{ __html: a.body_html }} />}
+        {hasBodyText(a.body_html) && <p className={styles.body} dangerouslySetInnerHTML={{ __html: a.body_html }} />}
       </div>
       <div className={styles.side}>
         {nav}
