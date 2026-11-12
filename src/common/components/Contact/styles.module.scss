@@ -110,7 +110,7 @@ $danger: #e5484d;
 .column {
   position: relative;
   z-index: 1;
-  max-width: 680px;
+  max-width: 840px;
   margin: 56px auto 0;
   line-height: 1.55;
 
@@ -187,9 +187,9 @@ $danger: #e5484d;
 }
 
 .hero_intro {
-  max-width: 600px;
+  max-width: 720px;
   margin: 0;
-  font-size: 17px;
+  font-size: 18px;
   line-height: 1.65;
   color: var(--header-subtext-color) !important;
 
@@ -249,7 +249,7 @@ $danger: #e5484d;
   display: flex;
   align-items: center;
   gap: 16px;
-  padding: 18px 18px 18px 18px;
+  padding: 22px 22px;
   border-radius: 20px;
   border: 1px solid $line;
   background: color-mix(in srgb, var(--bg-body) 55%, transparent);
@@ -312,7 +312,7 @@ $danger: #e5484d;
 }
 
 .option_title {
-  font-size: 1.08rem;
+  font-size: 1.15rem;
   font-weight: 700;
   line-height: 1.3;
 
@@ -322,7 +322,7 @@ $danger: #e5484d;
 }
 
 .option_text {
-  font-size: 0.93rem;
+  font-size: 1rem;
   line-height: 1.45;
   color: var(--subtext-metadata-color) !important;
 
@@ -381,7 +381,7 @@ $danger: #e5484d;
 
 // Each part of a form is a card on the panel, numbered so the way through is clear.
 .section {
-  padding: 28px 30px 30px;
+  padding: 32px 36px 36px;
   border-radius: 24px;
   border: 1px solid $line;
   background: color-mix(in srgb, var(--bg-body) 45%, transparent);
@@ -418,14 +418,14 @@ $danger: #e5484d;
 
 .section_title {
   margin: 3px 0 0;
-  font-size: 1.2rem;
+  font-size: 1.3rem;
   font-weight: 700;
   line-height: 1.3;
 }
 
 .section_hint {
   margin: 4px 0 0;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   color: var(--subtext-metadata-color) !important;
 }
 
@@ -467,7 +467,7 @@ $danger: #e5484d;
 .label {
   padding: 0;
   font-weight: 600;
-  font-size: 1rem;
+  font-size: 1.05rem;
 }
 
 .optional {
@@ -477,7 +477,7 @@ $danger: #e5484d;
 
 .hint {
   margin: -2px 0 2px;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   color: var(--subtext-metadata-color);
 }
 
@@ -591,7 +591,7 @@ input[type="date"].input {
   gap: 2px;
 
   small {
-    font-size: 0.9rem;
+    font-size: 0.95rem;
     font-weight: 400;
     color: var(--subtext-metadata-color);
   }
@@ -610,7 +610,7 @@ input[type="date"].input {
 .error {
   margin: 0;
   color: $danger;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   font-weight: 500;
 }
 
@@ -730,7 +730,7 @@ input[type="date"].input {
 }
 
 .dropzone_hint {
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   color: var(--subtext-metadata-color) !important;
 }
 
@@ -813,7 +813,7 @@ input[type="date"].input {
 .privacy {
   margin: 4px 0 0;
   text-align: center;
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   color: var(--subtext-metadata-color);
 
   a {
