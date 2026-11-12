@@ -68,7 +68,7 @@ const Actions = ({ announcement, onPrimary, onDismiss }: { announcement: IAnnoun
       className={`${styles.cta} ${STYLE_CLASS[button.style] ?? ""}`}
       onActivate={() => onPrimary(announcement, "button")}
     >
-      {button.label}
+      <span className={styles.ctaLabel}>{button.label}</span>
       <ButtonIcon button={button} />
     </ActionControl>
   );

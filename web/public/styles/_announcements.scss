@@ -250,13 +250,12 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  min-width: 0;
   min-height: 22px;
   margin-bottom: 5px;
 }
 
 .ann-tag {
-  display: inline-flex;
-  align-items: center;
   height: 21px;
   padding: 0 9px;
   border-radius: 999px;
@@ -266,6 +265,14 @@
   background: var(--tag-bg);
   color: var(--tag-fg);
   white-space: nowrap;
+  // on the narrowest phones a long category name is cut short rather than run under the arrows
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: inline-block;
+  line-height: 21px;
+  vertical-align: middle;
 }
 
 .ann-count {
@@ -328,12 +335,13 @@
   margin-top: 18px;
 }
 
+// A long label wraps (to two lines on narrow cards) instead of pushing "Ascunde" out of the card.
 .ann-cta {
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  height: 40px;
-  padding: 0 16px;
+  min-height: 40px;
+  padding: 5px 16px;
   border: 0;
   border-radius: 8px;
   cursor: pointer;
@@ -342,8 +350,9 @@
   font: inherit;
   font-size: 14px;
   font-weight: 600;
+  line-height: 1.25;
+  text-align: left;
   text-decoration: none;
-  white-space: nowrap;
 
   svg {
     width: 15px;
@@ -356,8 +365,23 @@
   }
 }
 
+.ann-ctaLabel {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
 .ann-ctaIcon {
   display: inline-flex;
+  flex-shrink: 0;
+}
+
+// In the card's button row the main button gives way first: it shrinks to its widest word
+// before the row wraps (it keeps at least 11rem, so the label takes about two lines at most),
+// and only then does "Ascunde" move to a line of its own, still right-aligned.
+.ann-actions .ann-cta {
+  flex: 1 1 0;
+  max-width: max-content;
+  min-width: min(100%, 11rem);
 }
 
 .ann-ctaOutline {
@@ -369,8 +393,8 @@
 .ann-ctaText {
   background: transparent;
   color: var(--c-ink);
-  padding: 0 4px;
-  height: 32px;
+  padding: 4px;
+  min-height: 32px;
 
   &:hover {
     text-decoration: underline;
@@ -615,6 +639,11 @@
   min-width: 56px;
   text-align: center;
   font-size: 13px;
+
+  // the narrowest phones keep the arrows and give the category name the room
+  @media (max-width: 374px) {
+    display: none;
+  }
 }
 
 // Phones: icon beside tag, title and body (with the navigation on the tag row), and the
@@ -661,6 +690,7 @@
 
     .ann-actions {
       grid-area: acts;
+      flex-wrap: wrap;
       justify-content: flex-start;
       margin-top: 14px;
     }
