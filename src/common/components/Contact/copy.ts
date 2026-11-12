@@ -44,6 +44,9 @@ export const CONTACT_COPY = {
     limit: "Cel mult {max} poze (JPG, PNG sau WebP).",
     limitOne: "O poză (JPG, PNG sau WebP).",
     processing: "Se pregătește poza…",
+    dropHint: "sau trage pozele aici",
+    dropHintOne: "sau trage poza aici",
+    dropHere: "Lasă pozele aici",
   },
   errors: {
     required: "Te rugăm să completezi acest câmp.",
@@ -70,6 +73,7 @@ export const CONTACT_COPY = {
     title: { before: "Cu ce te putem ", accent: "ajuta", after: "?" },
     intro: "Alege varianta potrivită; durează doar câteva minute.",
     cardsHeading: "Alege cu ce ai nevoie de ajutor",
+    groups: { listeners: "Pentru ascultători", stations: "Pentru posturi și biserici", chat: "Preferi să vorbim?" },
     whatsappCard: { title: "Scrie-ne pe WhatsApp", text: "Preferi să vorbim pe chat? Scrie-ne direct pe WhatsApp." },
     cards: {
       general: { title: "Trimite-ne un mesaj", text: "Întrebări, idei sau o problemă cu aplicația ori cu un post de radio." },
@@ -87,6 +91,7 @@ export const CONTACT_COPY = {
     seoDescription: "Scrie echipei Radio Creștin cu întrebări, sugestii sau probleme legate de aplicație ori de un post de radio.",
     title: "Trimite-ne un mesaj",
     intro: "Scrie-ne despre orice: o întrebare, o idee sau ceva care nu funcționează.",
+    sections: { message: "Spune-ne mai multe" },
     fields: {
       message: { label: "Mesajul tău", placeholder: "Scrie mesajul aici…" },
       images: { label: "Capturi de ecran sau poze", hint: "Dacă ceva nu funcționează, o captură de ecran ne ajută mult." },

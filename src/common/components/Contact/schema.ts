@@ -28,6 +28,8 @@ export interface FieldDef {
   options?: readonly string[];
   rows?: number;
   counter?: boolean;
+  /** Shares a row with the next half-width field on wide screens. */
+  half?: boolean;
 }
 
 export interface SectionDef {
@@ -60,8 +62,8 @@ const otherDenomination = (v: Values) => v.denomination === "other";
 const contactSection = (nameRequired: boolean): SectionDef => ({
   title: "contact",
   fields: [
-    { name: "name", type: "text", required: nameRequired, maxLength: 100 },
-    { name: "email", type: "email", required: true, maxLength: 254 },
+    { name: "name", type: "text", required: nameRequired, maxLength: 100, half: true },
+    { name: "email", type: "email", required: true, maxLength: 254, half: true },
     { name: "phone", type: "tel", maxLength: 40 },
   ],
 });
@@ -69,6 +71,7 @@ const contactSection = (nameRequired: boolean): SectionDef => ({
 export const FORMS: Record<ContactKind, SectionDef[]> = {
   general: [
     {
+      title: "message",
       fields: [
         { name: "message", type: "textarea", required: true, minLength: 10, maxLength: 5000, rows: 6 },
         { name: "images", type: "images", maxFiles: 3 },
@@ -110,8 +113,8 @@ export const FORMS: Record<ContactKind, SectionDef[]> = {
       title: "station",
       fields: [
         { name: "station_name", type: "text", required: true, maxLength: 120 },
-        { name: "website", type: "url", maxLength: 500 },
-        { name: "listen_url", type: "url", maxLength: 500 },
+        { name: "website", type: "url", maxLength: 500, half: true },
+        { name: "listen_url", type: "url", maxLength: 500, half: true },
         { name: "description", type: "textarea", maxLength: 1500, rows: 3 },
         { name: "denomination", type: "select", required: true, options: DENOMINATIONS },
         {
@@ -151,8 +154,8 @@ export const FORMS: Record<ContactKind, SectionDef[]> = {
     {
       title: "when",
       fields: [
-        { name: "starts_on", type: "date" },
-        { name: "ends_on", type: "date" },
+        { name: "starts_on", type: "date", half: true },
+        { name: "ends_on", type: "date", half: true },
       ],
     },
     contactSection(true),

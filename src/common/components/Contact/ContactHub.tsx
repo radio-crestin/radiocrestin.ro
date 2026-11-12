@@ -27,12 +27,16 @@ function OptionRow({ option }: { option: ContactOption }) {
   );
 }
 
+const GROUPS = [
+  { key: "listeners", options: ["general", "feedback", "report"] },
+  { key: "stations", options: ["station", "announcement"] },
+  { key: "chat", options: ["whatsapp"] },
+] as const;
+
 export default function ContactHub() {
   const context = useAppContext();
   const copy = CONTACT_COPY.hub;
   const options = contactOptions(context);
-  const forms = options.filter((option) => option.key !== "whatsapp");
-  const whatsapp = options.find((option) => option.key === "whatsapp");
 
   const hero = (
     <>
@@ -48,16 +52,21 @@ export default function ContactHub() {
 
   return (
     <ContactPage hero={hero}>
-      <nav className={styles.options} aria-label={copy.cardsHeading}>
-        {forms.map((option) => (
-          <OptionRow key={option.key} option={option} />
+      <nav className={styles.groups} aria-label={copy.cardsHeading}>
+        {GROUPS.map((group) => (
+          <section key={group.key} className={styles.group} aria-labelledby={`contact-group-${group.key}`}>
+            <h2 className={styles.group_title} id={`contact-group-${group.key}`}>
+              {copy.groups[group.key]}
+            </h2>
+            <div className={styles.options}>
+              {options
+                .filter((option) => (group.options as readonly string[]).includes(option.key))
+                .map((option) => (
+                  <OptionRow key={option.key} option={option} />
+                ))}
+            </div>
+          </section>
         ))}
-        {/* WhatsApp comes last, set apart: the forms keep messages organized. */}
-        {whatsapp && (
-          <div className={styles.options_last}>
-            <OptionRow option={whatsapp} />
-          </div>
-        )}
       </nav>
     </ContactPage>
   );
