@@ -6,6 +6,8 @@ export interface FieldCopy {
   hint?: string;
   placeholder?: string;
   options?: Record<string, string>;
+  /** A smaller second line under each option of a choice question. */
+  optionHints?: Record<string, string>;
 }
 
 /** Fills {name} placeholders: fill("{count}/{max}", { count: 3, max: 80 }) → "3/80". */
