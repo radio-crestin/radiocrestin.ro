@@ -1,7 +1,7 @@
 import type { ReactElement } from "react";
 import { CONTACT_COPY, CONTACT_PATHS } from "./copy";
 import { withAppContext, type AppContext } from "./appContext";
-import { WHATSAPP_URL } from "./links";
+import { whatsappUrl } from "./links";
 import { AlertIcon, BulbIcon, MegaphoneIcon, MessageIcon, RadioIcon, WhatsAppIcon } from "./icons";
 import type { ContactKind } from "./schema";
 
@@ -33,6 +33,6 @@ export function contactOptions(context: AppContext): ContactOption[] {
       text: cards[kind].text,
       Icon,
     })),
-    { key: "whatsapp", href: WHATSAPP_URL, ...whatsappCard, Icon: WhatsAppIcon, external: true },
+    { key: "whatsapp", href: whatsappUrl(context), ...whatsappCard, Icon: WhatsAppIcon, external: true },
   ];
 }
