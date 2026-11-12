@@ -27,7 +27,6 @@ describe("validate general", () => {
 
 describe("validate station", () => {
   const station = {
-    relation: "listener",
     station_name: "Radio Test",
     website: "https://radiotest.ro",
     denomination: "baptist",
@@ -35,7 +34,7 @@ describe("validate station", () => {
     email: "ion@exemplu.ro",
   };
 
-  it("accepts a listener's suggestion", () => {
+  it("accepts a suggestion with a website", () => {
     expect(validate("station", station)).toEqual({});
   });
 
@@ -43,13 +42,6 @@ describe("validate station", () => {
     expect(codes(validate("station", { ...station, website: "" }))).toEqual({
       listen_url: "need_website_or_listen_url",
     });
-  });
-
-  it("asks the station's representative to confirm consent", () => {
-    expect(codes(validate("station", { ...station, relation: "owner" }))).toEqual({
-      consent: "consent_required",
-    });
-    expect(validate("station", { ...station, relation: "owner", consent: "true" })).toEqual({});
   });
 
   it("asks which denomination when it is 'other'", () => {

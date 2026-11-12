@@ -45,7 +45,7 @@ describe("submission", () => {
   it("sends only the visible fields, trimmed, with the app context", () => {
     const { fields, files } = buildSubmission(
       "station",
-      { relation: "listener", station_name: " Radio ", denomination: "baptist", denomination_other: "hidden", consent: "true" },
+      { station_name: " Radio ", denomination: "baptist", denomination_other: "hidden", relation: "stale" },
       { logo: [] },
       extras,
     );
@@ -55,7 +55,7 @@ describe("submission", () => {
     expect(fields.device_id).toBe("abc");
     expect(fields.elapsed_ms).toBe("12346");
     expect(fields).not.toHaveProperty("denomination_other");
-    expect(fields).not.toHaveProperty("consent");
+    expect(fields).not.toHaveProperty("relation");
     expect(files).toEqual({ logo: [] });
   });
 

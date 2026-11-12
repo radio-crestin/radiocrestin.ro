@@ -13,8 +13,7 @@ export type FieldType =
   | "select"
   | "station"
   | "date"
-  | "images"
-  | "checkbox";
+  | "images";
 
 export type Values = Record<string, string>;
 
@@ -54,7 +53,6 @@ export const DENOMINATIONS = [
   "unknown",
 ] as const;
 
-const isOwner = (v: Values) => v.relation === "owner";
 const aboutStation = (v: Values) => v.about === "station";
 const otherDenomination = (v: Values) => v.denomination === "other";
 
@@ -81,7 +79,6 @@ export const FORMS: Record<ContactKind, SectionDef[]> = {
     {
       title: "station",
       fields: [
-        { name: "relation", type: "choice", required: true, options: ["owner", "listener"] },
         { name: "station_name", type: "text", required: true, maxLength: 120 },
         { name: "website", type: "url", maxLength: 500 },
         { name: "listen_url", type: "url", maxLength: 500 },
@@ -107,7 +104,6 @@ export const FORMS: Record<ContactKind, SectionDef[]> = {
       ],
     },
     contactSection(true),
-    { fields: [{ name: "consent", type: "checkbox", required: true, showIf: isOwner }] },
   ],
   announcement: [
     {
@@ -170,7 +166,6 @@ function checkField(field: FieldDef, value: string, fileCount: number): FieldErr
       ? { code: "too_many_files", params: { max: field.maxFiles } }
       : null;
   }
-  if (field.type === "checkbox") return value === "true" ? null : { code: "consent_required" };
   if (!value) return null;
   if (field.maxLength && value.length > field.maxLength)
     return { code: "too_long", params: { max: field.maxLength } };
@@ -194,7 +189,7 @@ export function validate(
     if (!isVisible(field, values)) continue;
     const value = (values[field.name] ?? "").trim();
     if (!value && field.type !== "images" && isRequired(field, values)) {
-      errors[field.name] = { code: field.type === "checkbox" ? "consent_required" : "required" };
+      errors[field.name] = { code: "required" };
       continue;
     }
     const error = checkField(field, value, fileCounts[field.name] ?? 0);

@@ -59,7 +59,6 @@ export const CONTACT_COPY = {
     file_too_large: "Poza este prea mare (cel mult 10 MB).",
     unsupported_image: "Nu putem folosi acest fișier. Alege o poză JPG, PNG sau WebP.",
     image_too_large_dimensions: "Poza are dimensiuni prea mari. Alege una mai mică.",
-    consent_required: "Te rugăm să confirmi că postul este de acord.",
     need_website_or_listen_url: "Adaugă cel puțin un link: site-ul postului sau pagina unde poate fi ascultat.",
     captcha_failed: "Te rugăm să confirmi că nu ești robot și să încerci din nou.",
   },
@@ -97,7 +96,6 @@ export const CONTACT_COPY = {
       "Spune-ne despre post, iar noi îl vom verifica și îl vom adăuga. Nu ai nevoie de detalii tehnice: ajunge un link către site-ul postului.",
     sections: { station: "Despre post", extra: "Alte detalii" },
     fields: {
-      relation: { label: "Cine ești?", options: { owner: "Reprezint postul de radio", listener: "Sunt ascultător" } },
       station_name: { label: "Numele postului", placeholder: "de exemplu, Radio Vocea Evangheliei" },
       website: { label: "Site-ul postului", placeholder: "https://", hint: "Adresa postului pe internet." },
       listen_url: {
@@ -137,7 +135,6 @@ export const CONTACT_COPY = {
       station_email: { label: "Adresa de e-mail a postului", hint: "Adresa la care poate fi contactat postul." },
       facebook_url: { label: "Pagina de Facebook", placeholder: "https://facebook.com/..." },
       note: { label: "Mai este ceva ce ar trebui să știm?" },
-      consent: { label: "Confirm că postul este de acord să apară pe Radio Creștin." },
     },
   },
   announcement: {

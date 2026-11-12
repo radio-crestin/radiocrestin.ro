@@ -146,18 +146,6 @@ function Control({ field, copy, value, error, required, stations, onChange }: Fi
         </select>
       );
     }
-    case "checkbox":
-      return (
-        <label className={styles.checkbox}>
-          <input
-            {...common}
-            type="checkbox"
-            checked={value === "true"}
-            onChange={(e) => onChange(e.target.checked ? "true" : "")}
-          />
-          <span>{copy.label}</span>
-        </label>
-      );
     default:
       return (
         <input
@@ -182,10 +170,8 @@ export default function Field(props: FieldProps) {
     field.counter && field.maxLength
       ? fill(CONTACT_COPY.common.charCount, { count: value.length, max: field.maxLength })
       : undefined;
-  // The checkbox carries its own label next to the box.
-  const shellCopy = field.type === "checkbox" ? { label: "" } : copy;
   return (
-    <FieldShell field={field} copy={shellCopy} error={error} required={required || field.type === "checkbox"} counter={counter}>
+    <FieldShell field={field} copy={copy} error={error} required={required} counter={counter}>
       <Control {...props} />
     </FieldShell>
   );

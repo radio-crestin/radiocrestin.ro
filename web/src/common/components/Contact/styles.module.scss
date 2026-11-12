@@ -341,30 +341,6 @@ input[type="date"].input {
   }
 }
 
-.checkbox {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 14px;
-  border: 1px solid $line;
-  border-radius: 12px;
-  background: $fill;
-  cursor: pointer;
-  font-weight: 500;
-
-  input {
-    width: 22px;
-    height: 22px;
-    margin: 1px 0 0;
-    flex-shrink: 0;
-    accent-color: #e2960a;
-  }
-
-  .field[data-invalid] & {
-    border-color: $danger;
-  }
-}
-
 .below {
   display: flex;
   justify-content: space-between;
