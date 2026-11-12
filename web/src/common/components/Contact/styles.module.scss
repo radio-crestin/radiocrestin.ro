@@ -16,7 +16,7 @@ $danger: #e5484d;
   position: relative;
   max-width: 1350px;
   margin: 15px auto 0;
-  padding: 28px 35px 56px;
+  padding: 28px 35px 72px;
   box-sizing: border-box;
   border-radius: 50px;
   background: var(--bg-header-container);
@@ -106,14 +106,40 @@ $danger: #e5484d;
   }
 }
 
-.panel_body {
+// One centered column for the heading and the content, on every contact page.
+.column {
   position: relative;
   z-index: 1;
-  max-width: 1230px;
-  margin: 64px auto 0;
+  max-width: 680px;
+  margin: 56px auto 0;
+  line-height: 1.55;
 
   @include mixinHelper.onTablet {
-    margin-top: 30px;
+    margin-top: 28px;
+  }
+}
+
+.header {
+  margin-bottom: 36px;
+
+  @include mixinHelper.onTablet {
+    margin-bottom: 26px;
+  }
+}
+
+// The form's own icon, the same one its option shows on the hub.
+.header_icon {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  margin-bottom: 18px;
+  border-radius: 18px;
+  background: rgba(253, 174, 28, 0.14);
+  color: #c77d00 !important;
+
+  :global([data-theme="dark"]) & {
+    color: $accent !important;
   }
 }
 
@@ -136,9 +162,9 @@ $danger: #e5484d;
 }
 
 .hero_title {
-  margin: 0 0 16px;
+  margin: 0 0 14px;
   font-family: globalVariables.$dm-sans-bold, serif;
-  font-size: 3rem;
+  font-size: 2.6rem;
   font-weight: 700;
   line-height: 1.12;
   letter-spacing: -0.02em;
@@ -176,7 +202,7 @@ $danger: #e5484d;
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  margin-bottom: 20px;
+  margin-bottom: 26px;
   padding: 7px 14px;
   border-radius: 999px;
   border: 1px solid color-mix(in srgb, var(--text-color) 13%, transparent);
@@ -192,94 +218,34 @@ $danger: #e5484d;
   }
 }
 
-// Same width and side padding as the homepage's sections under the panel.
-.content {
-  max-width: 1230px;
-  margin: 40px auto 72px;
-  padding: 0 35px;
-  color: var(--text-color);
+// ---- Hub: the options as one list, WhatsApp last ----
 
-  @include mixinHelper.onTablet {
-    margin: 24px auto 48px;
-    padding: 0 16px;
-  }
+.options {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
-.content_heading {
-  margin: 0 0 18px;
-  font-size: 1.35rem;
-  font-weight: 700;
-  color: var(--text-color);
-
-  @include mixinHelper.onTablet {
-    font-size: 1.15rem;
-    margin-bottom: 14px;
-  }
+.options_last {
+  margin-top: 14px;
+  padding-top: 26px;
+  border-top: 1px solid $line;
 }
 
-// A form sits in a card like the station cards: same surface, rounded.
-.card {
-  max-width: 760px;
-  padding: 36px 40px 40px;
-  background: var(--bg-header-container);
-  color: var(--text-color);
-  border-radius: 30px;
-  line-height: 1.55;
-
-  & * {
-    color: inherit;
-  }
-
-  @include mixinHelper.onTablet {
-    padding: 24px 18px 28px;
-    border-radius: 20px;
-  }
-}
-
-// ---- Hub ----
-
-.hub_grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 18px;
-
-  @include mixinHelper.onSmallDesktop {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  @include mixinHelper.onTablet {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 12px;
-  }
-}
-
-.hub_card {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  grid-template-areas:
-    "icon arrow"
-    "title title"
-    "text text";
-  align-content: start;
-  padding: 24px 24px 26px;
-  border-radius: 18px;
-  border: 1px solid transparent;
-  background: var(--bg-header-container);
-  color: var(--text-color);
+.option {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 18px 18px 18px 18px;
+  border-radius: 20px;
+  border: 1px solid $line;
+  background: color-mix(in srgb, var(--bg-body) 55%, transparent);
   text-decoration: none;
-  transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
-
-  & * {
-    color: inherit;
-  }
+  transition: border-color 0.15s ease, background-color 0.15s ease, transform 0.15s ease;
 
   &:hover {
-    transform: translateY(-3px);
-    border-color: rgba(253, 174, 28, 0.45);
-    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.18);
-  }
-
-  &:active {
+    border-color: rgba(253, 174, 28, 0.55);
+    background: color-mix(in srgb, var(--bg-body) 85%, transparent);
     transform: translateY(-1px);
   }
 
@@ -291,34 +257,24 @@ $danger: #e5484d;
   @media (prefers-reduced-motion: reduce) {
     transition: none;
 
-    &:hover,
-    &:active {
+    &:hover {
       transform: none;
     }
   }
 
   @include mixinHelper.onTablet {
-    grid-template-columns: auto 1fr auto;
-    grid-template-areas:
-      "icon title arrow"
-      "icon text arrow";
-    align-items: center;
-    column-gap: 14px;
-    min-height: 0;
-    padding: 16px;
-
-    &:hover {
-      transform: none;
-    }
+    gap: 14px;
+    padding: 14px;
+    border-radius: 16px;
   }
 }
 
-.hub_icon {
-  grid-area: icon;
+.option_icon {
+  flex-shrink: 0;
   display: grid;
   place-items: center;
-  width: 54px;
-  height: 54px;
+  width: 52px;
+  height: 52px;
   border-radius: 16px;
   background: rgba(253, 174, 28, 0.14);
   color: #c77d00 !important;
@@ -328,173 +284,76 @@ $danger: #e5484d;
   }
 
   @include mixinHelper.onTablet {
-    width: 48px;
-    height: 48px;
+    width: 46px;
+    height: 46px;
     border-radius: 14px;
   }
 }
 
-.hub_card_title {
-  grid-area: title;
-  margin-top: 22px;
-  font-size: 1.15rem;
+.option_body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.option_title {
+  font-size: 1.08rem;
   font-weight: 700;
   line-height: 1.3;
 
   @include mixinHelper.onTablet {
-    margin-top: 0;
-    font-size: 1.02rem;
+    font-size: 1rem;
   }
 }
 
-.hub_card_text {
-  grid-area: text;
-  margin-top: 6px;
-  font-size: 0.95rem;
-  line-height: 1.5;
+.option_text {
+  font-size: 0.93rem;
+  line-height: 1.45;
   color: var(--subtext-metadata-color) !important;
 
   @include mixinHelper.onTablet {
-    margin-top: 2px;
-    font-size: 0.88rem;
+    font-size: 0.87rem;
   }
 }
 
-.hub_arrow {
-  grid-area: arrow;
-  display: grid;
-  place-items: center;
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
-  border: 1px solid $line;
-  color: var(--subtext-metadata-color) !important;
-  transition: background-color 0.15s, color 0.15s, border-color 0.15s;
-
-  .hub_card:hover & {
-    background: $accent;
-    border-color: $accent;
-    color: #1a1a1a !important;
-  }
-
-  @include mixinHelper.onTablet {
-    width: 32px;
-    height: 32px;
-    border: none;
-  }
-}
-
-.hub_card.hub_card_whatsapp {
-  .hub_icon {
-    background: rgba(37, 211, 102, 0.14);
-    color: #128c4a !important;
-
-    :global([data-theme="dark"]) & {
-      color: #25d366 !important;
-    }
-  }
-
-  &:hover {
-    border-color: rgba(37, 211, 102, 0.5);
-
-    .hub_arrow {
-      background: #25d366;
-      border-color: #25d366;
-    }
-  }
-}
-
-// ---- Form pages: the form card with the other options beside it ----
-
-.form_layout {
-  display: grid;
-  grid-template-columns: minmax(0, 760px) minmax(260px, 340px);
-  justify-content: space-between;
-  align-items: start;
-  gap: 32px;
-
-  @include mixinHelper.onSmallDesktop {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 24px;
-  }
-}
-
-.other_options {
-  position: sticky;
-  top: 24px;
-  padding: 22px;
-  border-radius: 18px;
-  background: var(--bg-header-container);
-  color: var(--text-color);
-
-  & * {
-    color: inherit;
-  }
-
-  nav {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-
-  @include mixinHelper.onSmallDesktop {
-    position: static;
-    max-width: 760px;
-  }
-}
-
-.other_options_title {
-  margin: 0 0 12px;
-  font-size: 1rem;
-  font-weight: 700;
-}
-
-.other_option {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 8px;
-  border-radius: 12px;
-  font-size: 0.95rem;
-  font-weight: 600;
-  text-decoration: none;
-  transition: background-color 0.15s;
-
-  &:hover {
-    background: $fill;
-  }
-
-  &:focus-visible {
-    outline: 2px solid $accent;
-    outline-offset: 1px;
-  }
-}
-
-.other_option_icon {
+.option_arrow {
   flex-shrink: 0;
   display: grid;
   place-items: center;
   width: 36px;
   height: 36px;
-  border-radius: 11px;
-  background: rgba(253, 174, 28, 0.14);
-  color: #c77d00 !important;
+  border-radius: 50%;
+  color: var(--subtext-metadata-color) !important;
+  transition: background-color 0.15s, color 0.15s;
 
-  :global([data-theme="dark"]) & {
-    color: $accent !important;
+  .option:hover & {
+    background: $accent;
+    color: #1a1a1a !important;
   }
 
-  svg {
-    width: 20px;
-    height: 20px;
+  @include mixinHelper.onTablet {
+    width: 30px;
+    height: 30px;
   }
+}
 
-  .hub_card_whatsapp & {
+.option_whatsapp {
+  .option_icon {
     background: rgba(37, 211, 102, 0.14);
     color: #128c4a !important;
 
     :global([data-theme="dark"]) & {
       color: #25d366 !important;
+    }
+  }
+
+  &:hover {
+    border-color: rgba(37, 211, 102, 0.55);
+
+    .option_arrow {
+      background: #25d366;
     }
   }
 }
@@ -514,8 +373,8 @@ $danger: #e5484d;
   padding-top: 8px;
 
   & + & {
-    margin-top: 12px;
-    padding-top: 22px;
+    margin-top: 22px;
+    padding-top: 30px;
     border-top: 1px solid $line;
   }
 }

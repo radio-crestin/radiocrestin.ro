@@ -2,7 +2,6 @@ import React, { useEffect, useRef, useState } from "react";
 import { submitContact } from "@/services/submitContact";
 import { trackContactSubmitted } from "@/utils/posthog";
 import ContactPage from "./ContactPage";
-import OtherOptions from "./OtherOptions";
 import Field, { inputId, type StationOption } from "./Field";
 import ImagePicker from "./ImagePicker";
 import Turnstile from "./Turnstile";
@@ -13,6 +12,7 @@ import { useAppContext } from "./useAppContext";
 import { buildSubmission, fromServerErrors } from "./submission";
 import { FORMS, fieldsOf, isVisible, validate, type ContactKind, type Errors, type FieldDef, type Values } from "./schema";
 import { CheckIcon } from "./icons";
+import { FORM_ICONS } from "./options";
 import { initialValues } from "./initialValues";
 import { PRIVACY_URL } from "./links";
 import styles from "./styles.module.scss";
@@ -200,19 +200,21 @@ export default function ContactForm({ kind, stations = NO_STATIONS }: ContactFor
   }
 
   const sections = copy as { sections?: Record<string, string> };
+  const FormIcon = FORM_ICONS[kind];
 
   return (
     <ContactPage
       hero={
         <>
           {backLink}
+          <span className={styles.header_icon} aria-hidden="true">
+            <FormIcon />
+          </span>
           <h1 className={styles.hero_title}>{copy.title}</h1>
           <p className={styles.hero_intro}>{copy.intro}</p>
         </>
       }
     >
-      <div className={styles.form_layout}>
-      <div className={styles.card}>
       <div ref={topRef} />
       {banner && (
         <div className={styles.banner} role="alert">
@@ -261,9 +263,6 @@ export default function ContactForm({ kind, stations = NO_STATIONS }: ContactFor
           {CONTACT_COPY.common.privacyPrefix} <a href={PRIVACY_URL}>{CONTACT_COPY.common.privacyLink}</a>.
         </p>
       </form>
-      </div>
-      <OtherOptions current={kind} context={context} />
-      </div>
     </ContactPage>
   );
 }

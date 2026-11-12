@@ -14,19 +14,20 @@ export interface ContactOption {
   external?: boolean;
 }
 
-const FORM_ICONS: [ContactKind, () => ReactElement][] = [
-  ["general", MessageIcon],
-  ["feedback", BulbIcon],
-  ["report", AlertIcon],
-  ["station", RadioIcon],
-  ["announcement", MegaphoneIcon],
-];
+/** Each form's icon, in hub order. */
+export const FORM_ICONS: Record<ContactKind, () => ReactElement> = {
+  general: MessageIcon,
+  feedback: BulbIcon,
+  report: AlertIcon,
+  station: RadioIcon,
+  announcement: MegaphoneIcon,
+};
 
 /** Every way to reach us, in hub order: the five forms, then WhatsApp. */
 export function contactOptions(context: AppContext): ContactOption[] {
   const { cards, whatsappCard } = CONTACT_COPY.hub;
   return [
-    ...FORM_ICONS.map(([kind, Icon]) => ({
+    ...(Object.entries(FORM_ICONS) as [ContactKind, () => ReactElement][]).map(([kind, Icon]) => ({
       key: kind,
       href: withAppContext(CONTACT_PATHS[kind], context),
       title: cards[kind].title,

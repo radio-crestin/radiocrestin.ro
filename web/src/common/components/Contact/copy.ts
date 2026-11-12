@@ -70,7 +70,6 @@ export const CONTACT_COPY = {
     title: { before: "Cu ce te putem ", accent: "ajuta", after: "?" },
     intro: "Alege varianta potrivită; durează doar câteva minute.",
     cardsHeading: "Alege cu ce ai nevoie de ajutor",
-    otherOptions: "Alte moduri în care te putem ajuta",
     whatsappCard: { title: "Scrie-ne pe WhatsApp", text: "Preferi să vorbim pe chat? Scrie-ne direct pe WhatsApp." },
     cards: {
       general: { title: "Trimite-ne un mesaj", text: "Întrebări, idei sau o problemă cu aplicația ori cu un post de radio." },
