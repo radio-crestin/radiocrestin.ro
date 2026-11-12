@@ -20,15 +20,15 @@ export const initPostHog = () => {
   if (typeof window === "undefined" || initialized) return;
   initialized = true;
 
-  const load = () => {
-    // Classified at entry: PostHog loads on idle, before any navigation could
-    // rewrite document.referrer or the landing query string
-    const traffic = classifyTrafficSource(
-      document.referrer,
-      new URLSearchParams(window.location.search),
-      window.location.hostname,
-    );
+  // Classified at entry, before PostHog loads: a station click in the
+  // meantime pushState()s away the landing query string
+  const traffic = classifyTrafficSource(
+    document.referrer,
+    new URLSearchParams(window.location.search),
+    window.location.hostname,
+  );
 
+  const load = () => {
     import("posthog-js")
       .then(({ default: posthog }) => {
         posthog.init(POSTHOG_KEY, {
@@ -81,12 +81,45 @@ export const initPostHog = () => {
       });
   };
 
-  // requestIdleCallback is unavailable on Safari/iOS — a large share of listeners
-  if ("requestIdleCallback" in window) {
-    requestIdleCallback(load, { timeout: 4000 });
-  } else {
-    setTimeout(load, 1500);
+  afterFirstPaint(() => {
+    // requestIdleCallback is unavailable on Safari/iOS — a large share of listeners
+    if ("requestIdleCallback" in window) {
+      requestIdleCallback(load, { timeout: 4000 });
+    } else {
+      setTimeout(load, 1500);
+    }
+  });
+};
+
+// Runs `fn` once the first contentful paint is on screen. Hydration often ends
+// before the first frame is presented, and an idle callback alone can then
+// start the ~73KB posthog-js download ahead of it, competing with the page's
+// own first-render bytes. Falls back to running right away where paint timing
+// is unsupported, and after 3s where no paint comes (background tabs).
+const afterFirstPaint = (fn: () => void) => {
+  let done = false;
+  const run = () => {
+    if (done) return;
+    done = true;
+    fn();
+  };
+  if (
+    typeof PerformanceObserver === "undefined" ||
+    !PerformanceObserver.supportedEntryTypes?.includes("paint")
+  ) {
+    run();
+    return;
   }
+  const observer = new PerformanceObserver((list) => {
+    if (list.getEntriesByName("first-contentful-paint").length === 0) return;
+    observer.disconnect();
+    run();
+  });
+  observer.observe({ type: "paint", buffered: true });
+  setTimeout(() => {
+    observer.disconnect();
+    run();
+  }, 3000);
 };
 
 const USER_ID_KEY = "radio_crestin_user_id";
