@@ -171,6 +171,10 @@ const isRequired = (field: FieldDef, values: Values) =>
 /** Same rule as the API: an email has one @, no spaces, and a dotted domain. */
 export const isEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 
+/** People type "radio.ro" or "www.radio.ro"; links without a scheme get https://, as on the server. */
+export const withScheme = (value: string) =>
+  /^[a-z][a-z0-9+.-]*:/i.test(value) ? value : `https://${value}`;
+
 export const isHttpUrl = (value: string) => {
   try {
     const url = new URL(value);
@@ -202,7 +206,7 @@ function checkField(field: FieldDef, value: string, fileCount: number): FieldErr
   if (field.minLength && value.length < field.minLength)
     return { code: "too_short", params: { min: field.minLength } };
   if (field.type === "email" && !isEmail(value)) return { code: "invalid_email" };
-  if (field.type === "url" && !isHttpUrl(value)) return { code: "invalid_url" };
+  if (field.type === "url" && !isHttpUrl(withScheme(value))) return { code: "invalid_url" };
   if (field.type === "date" && !isDate(value)) return { code: "invalid_date" };
   if (field.options && !field.options.includes(value)) return { code: "invalid_choice" };
   return null;

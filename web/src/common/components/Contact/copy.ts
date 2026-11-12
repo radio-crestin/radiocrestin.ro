@@ -52,7 +52,7 @@ export const CONTACT_COPY = {
     too_long: "Te rugăm să scrii cel mult {max} caractere.",
     too_short: "Te rugăm să scrii puțin mai mult (cel puțin {min} caractere).",
     invalid_email: "Adresa de e-mail nu pare corectă. Verific-o, te rugăm.",
-    invalid_url: "Linkul nu pare corect. Trebuie să înceapă cu https://",
+    invalid_url: "Linkul acesta nu pare corect. Verifică-l, de exemplu: radiocrestin.ro",
     invalid_choice: "Te rugăm să alegi una dintre opțiuni.",
     invalid_date: "Te rugăm să alegi o dată validă.",
     end_before_start: "Data de sfârșit trebuie să fie după data de început.",
@@ -164,10 +164,9 @@ export const CONTACT_COPY = {
     sections: { station: "Despre post", extra: "Alte detalii" },
     fields: {
       station_name: { label: "Numele postului", placeholder: "de exemplu, Radio Vocea Evangheliei" },
-      website: { label: "Site-ul postului", placeholder: "https://", hint: "Adresa postului pe internet." },
+      website: { label: "Site-ul postului", placeholder: "de exemplu, www.numele-postului.ro", hint: "Adresa postului pe internet." },
       listen_url: {
         label: "Linkul pentru ascultare",
-        placeholder: "https://",
         hint: "Pagina unde apeși pe Redă sau linkul transmisiei, dacă îl știi.",
       },
       description: {
@@ -237,7 +236,6 @@ export const CONTACT_COPY = {
       },
       link: {
         label: "Link cu mai multe informații",
-        placeholder: "https://",
         hint: "Un site, un eveniment de pe Facebook sau un formular de înscriere.",
       },
       starts_on: { label: "De la", hint: "Lasă necompletat ca să apară imediat ce este gata." },

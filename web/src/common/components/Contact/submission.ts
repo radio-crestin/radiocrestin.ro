@@ -1,6 +1,6 @@
 import type { ContactSubmission } from "@/services/submitContact";
 import type { AppContext } from "./appContext";
-import { fieldsOf, isVisible, type ContactKind, type Errors, type Values } from "./schema";
+import { fieldsOf, isVisible, type ContactKind, type Errors, type Values, withScheme } from "./schema";
 
 interface Extras {
   context: AppContext;
@@ -30,7 +30,10 @@ export function buildSubmission(
   for (const field of fieldsOf(kind)) {
     if (!isVisible(field, values)) continue;
     if (field.type === "images") submissionFiles[field.name] = files[field.name] ?? [];
-    else fields[field.name] = (values[field.name] ?? "").trim();
+    else {
+      const value = (values[field.name] ?? "").trim();
+      fields[field.name] = field.type === "url" && value ? withScheme(value) : value;
+    }
   }
   return { fields, files: submissionFiles };
 }
