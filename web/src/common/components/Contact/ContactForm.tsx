@@ -47,7 +47,9 @@ function focusField(name: string) {
   element?.focus({ preventScroll: true });
 }
 
-export default function ContactForm({ kind, stations = [] }: ContactFormProps) {
+const NO_STATIONS: StationOption[] = [];
+
+export default function ContactForm({ kind, stations = NO_STATIONS }: ContactFormProps) {
   const copy = CONTACT_COPY[kind];
   const context = useAppContext();
   const [values, setValues] = useState<Values>({});
@@ -63,10 +65,11 @@ export default function ContactForm({ kind, stations = [] }: ContactFormProps) {
   const startedAt = useRef(0);
   const topRef = useRef<HTMLDivElement>(null);
 
+  // Once, on the client: the URL (and so ?station=) is only known there.
   useEffect(() => {
     startedAt.current = Date.now();
     setValues(initialValues(kind, stations));
-  }, [kind, stations]);
+  }, []);
 
   const fileCounts = Object.fromEntries(Object.entries(files).map(([name, list]) => [name, list.length]));
 
