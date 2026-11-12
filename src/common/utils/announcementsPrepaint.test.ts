@@ -118,7 +118,7 @@ describe("the old WhatsApp banner's dismissal", () => {
     vi.stubGlobal("document", { write: (html: string) => written.push(html) });
     vi.stubGlobal("window", {});
     annPrepaintBoot(data([{ s: LEGACY_SLUG, l: 1 }, { s: "other" }]), annEligibility);
-    expect(written[0]).toContain(`[data-ann="${LEGACY_SLUG}"],[data-ann-m],[data-ann-a]{display:none!important}`);
+    expect(written[0]).toContain(`[data-ann="${LEGACY_SLUG}"],[data-ann-m],[data-ann-a]{display:none!important;--h:hidden}`);
   });
 });
 
@@ -142,14 +142,14 @@ describe("annPrepaintBoot", () => {
       { "announcements-store": { state: { impressions: { st: 1 } } } },
     );
     expect(css).toContain(
-      '@media(max-width:767.9px){[data-ann="b"],[data-ann="st"],[data-ann-b="radio-elim"],[data-ann-m],[data-ann-a]{display:none!important}' +
-        '[data-ann-pp] [data-ann="a"]{display:grid!important;--pf:.4;--nf:.4}[data-ann-pp] [data-ann-c]:before{content:"1 din 1"}}',
+      '@media(max-width:767.9px){[data-ann="b"],[data-ann="st"],[data-ann-b="radio-elim"],[data-ann-m],[data-ann-a]{display:none!important;--h:hidden}' +
+        '[data-ann-pp] [data-ann="a"]{display:grid!important;--h:visible!important;--pf:.4}[data-ann-pp] [data-ann-c]:before{content:"1 din 1"}}',
     );
-    expect(css).toContain('@media(min-width:768px){[data-ann="st"],[data-ann-b="radio-elim"],[data-ann-a]{display:none!important}');
+    expect(css).toContain('@media(min-width:768px){[data-ann="st"],[data-ann-b="radio-elim"],[data-ann-a]{display:none!important;--h:hidden}');
     expect(css).toContain('[data-ann-pp] [data-ann-c]:before{content:"1 din 2"}}');
   });
 
-  it("fades previous on the first slide and next on the last", () => {
+  it("starts every visit's sequence at 1, with previous faded, whatever the rotation", () => {
     const css = (cursor: number) => {
       const appended: { textContent?: string }[] = [];
       vi.stubGlobal("localStorage", {
@@ -161,8 +161,12 @@ describe("annPrepaintBoot", () => {
       annPrepaintBoot(data([{ s: "a" }, { s: "b" }, { s: "c" }], 1), annEligibility);
       return appended[0].textContent ?? "";
     };
-    expect(css(0)).toContain('[data-ann="a"]{display:grid!important;--pf:.4}');
-    expect(css(2)).toContain('[data-ann="c"]{display:grid!important;--nf:.4}');
+    expect(css(0)).toContain('[data-ann="a"]{display:grid!important;--h:visible!important;--pf:.4}');
+    expect(css(0)).toContain('content:"1 din 3"');
+    // the last in server order starts the visit: still first of its sequence, next not faded
+    expect(css(2)).toContain('[data-ann="c"]{display:grid!important;--h:visible!important;--pf:.4}');
+    expect(css(2)).toContain('content:"1 din 3"');
+    expect(css(2)).not.toContain("--nf");
   });
 
   it("starts on the rotation's slide", () => {
@@ -174,14 +178,14 @@ describe("annPrepaintBoot", () => {
     vi.stubGlobal("document", { write: (html: string) => appended.push({ textContent: html.replace(/^<style>|<\/style>$/g, "") }) });
     vi.stubGlobal("window", {});
     annPrepaintBoot(data([{ s: "a" }, { s: "b" }, { s: "c" }], 1), annEligibility);
-    // the middle of three: neither button faded
-    expect(appended[0].textContent).toContain('[data-ann="b"]{display:grid!important}');
-    expect(appended[0].textContent).toContain('content:"2 din 3"');
+    // cursor 4 of three starts on "b": the sequence is b, c, a
+    expect(appended[0].textContent).toContain('[data-ann="b"]{display:grid!important;--h:visible!important;--pf:.4}');
+    expect(appended[0].textContent).toContain('content:"1 din 3"');
   });
 
   it("hides the whole card when nothing is left", () => {
     const { css, result } = boot([{ s: "a" }], { "announcements-store": { state: { dismissed: { a: "x" } } } });
-    expect(css).toContain("[data-ann-m],[data-ann-r]{display:none!important}}");
+    expect(css).toContain("[data-ann-m],[data-ann-r]{display:none!important;--h:hidden}}");
     expect(result).toMatchObject({ d: { h: [] } });
   });
 
@@ -253,7 +257,7 @@ describe("prepaintScript", () => {
       { write: (html: string) => appended.push({ textContent: html.replace(/^<style>|<\/style>$/g, "") }) },
       win,
     );
-    expect(appended[0].textContent).toContain('[data-ann="a"]{display:grid!important;--pf:.4;--nf:.4}');
+    expect(appended[0].textContent).toContain('[data-ann="a"]{display:grid!important;--h:visible!important;--pf:.4}');
     expect(PREPAINT_CODE.length).toBeLessThan(1536);
   });
 });

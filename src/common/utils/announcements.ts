@@ -88,6 +88,23 @@ export const resolveWebAction = (action: IAnnouncementAction | null | undefined)
   }
 };
 
+/**
+ * The visit's sequence: the server's order (never re-sorted) rotated to begin at `start`
+ * (start…n-1, then 0…start-1). Paging stops at both ends of it, so every item stays reachable.
+ */
+export const rotateFrom = <T,>(items: T[], start: number): T[] =>
+  start > 0 && start < items.length ? [...items.slice(start), ...items.slice(0, start)] : items;
+
+const AUTOPLAY_MIN_S = 3;
+const AUTOPLAY_MAX_S = 60;
+
+/** settings.autoplay_seconds as a usable interval: 0 (off) or 3–60 seconds. */
+export const autoplaySeconds = (settings: { autoplay_seconds?: unknown } | null | undefined): number => {
+  const s = Number(settings?.autoplay_seconds);
+  if (!Number.isFinite(s) || s <= 0) return 0;
+  return Math.min(AUTOPLAY_MAX_S, Math.max(AUTOPLAY_MIN_S, s));
+};
+
 /** Paging stops at the ends (no wrap-around): the index `step` away, or null past an end. */
 export const pageTarget = (index: number, count: number, step: number): number | null => {
   const target = index + step;

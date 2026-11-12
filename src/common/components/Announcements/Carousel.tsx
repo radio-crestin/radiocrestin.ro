@@ -4,22 +4,29 @@ import Slide, { type SlideHandlers } from "./Slide";
 import { NextGlyph, PrevGlyph } from "./icons";
 import { T } from "./strings";
 import styles from "./styles";
+import { useAutoplay } from "./useAutoplay";
 import { useHalfVisible, useImpressionAfterDelay } from "./useImpression";
 import { pageTarget } from "@/utils/announcements";
 
 const SWIPE_MIN_PX = 40;
 
 interface CarouselProps extends SlideHandlers {
-  /** Every home item in the snapshot; only the current one is displayed. */
+  /** Every home item in the snapshot, in the server's order; all are in the markup. */
   items: IAnnouncement[];
-  /** null before the island takes over: then the pre-paint style decides what shows. */
-  visible: Set<string> | null;
-  start: number;
+  /**
+   * The visit's sequence (the server's order rotated to the start item, without the ones this
+   * visitor must not see); null before the island takes over, when the pre-paint style decides.
+   */
+  sequence: IAnnouncement[] | null;
+  /** autoplay_seconds (0 = off). On: every slide is laid out in one cell (styles .ann-stack). */
+  autoplay: number;
   onImpression: (announcement: IAnnouncement) => void;
   onExpire: (announcement: IAnnouncement) => void;
 }
 
 const hidden = { display: "none" } as const;
+/** In the autoplay stack: laid out (it counts for the card's height) but invisible. */
+const stacked = { "--h": "hidden" } as React.CSSProperties;
 
 /**
  * Animates the viewport from its current height to the new slide's height. Only user actions
@@ -49,10 +56,17 @@ const useHeightAnimation = (viewport: React.RefObject<HTMLDivElement | null>, ke
   return prepare;
 };
 
-export default function Carousel({ items, visible, start, onDismiss, onImpression, onExpire, onPrimary }: CarouselProps) {
-  const takenOver = visible !== null;
+export default function Carousel({ items, sequence, autoplay, onDismiss, onImpression, onExpire, onPrimary }: CarouselProps) {
+  const takenOver = sequence !== null;
+  const stack = autoplay > 0;
   const [expired, setExpired] = useState<Set<string>>(() => new Set());
-  const shown = visible ? items.filter((a) => visible.has(a.slug) && !expired.has(a.slug)) : items;
+  const shown = sequence ? sequence.filter((a) => !expired.has(a.slug)) : items;
+  // In the stack, what was laid out at takeover stays laid out (so the height never changes by
+  // itself): the sequence plus the server's first slide, which the stack style keeps in place.
+  const laidOutRef = useRef<Set<string> | null>(null);
+  if (stack && sequence && !laidOutRef.current) {
+    laidOutRef.current = new Set([...sequence.map((a) => a.slug), items[0]?.slug]);
+  }
   const count = shown.length;
   const multi = count > 1;
   const [index, setIndex] = useState<number | null>(null);
@@ -63,9 +77,11 @@ export default function Carousel({ items, visible, start, onDismiss, onImpressio
   // A swipe ends with a click on the slide; it must not count as a card tap.
   const swipedRef = useRef(false);
 
-  const active = takenOver && count ? Math.min(index ?? start, count - 1) : null;
+  const active = takenOver && count ? Math.min(index ?? 0, count - 1) : null;
   const current = active === null ? null : shown[active];
-  const prepareHeight = useHeightAnimation(viewportRef, current?.slug);
+  const animateHeight = useHeightAnimation(viewportRef, current?.slug);
+  // the stack is always as tall as its tallest slide: nothing to animate
+  const prepareHeight = useCallback(() => !stack && animateHeight(), [stack, animateHeight]);
 
   // Each slide has its own previous/next buttons, so the clicked one disappears with its slide:
   // move focus to the same button on the new slide (or to the other one at an end).
@@ -90,6 +106,10 @@ export default function Carousel({ items, visible, start, onDismiss, onImpressio
     [shown, prepareHeight],
   );
 
+  // Not a user page: no swipe, no stop, and the impression still waits for 50% / 1 s.
+  const autoplayNext = () => active !== null && active < count - 1 && goTo(active + 1);
+  const autoplayState = useAutoplay({ seconds: autoplay, count, active, onScreen }, autoplayNext);
+
   useImpressionAfterDelay(onScreen, current?.slug ?? null, () => current && onImpression(current));
 
   // hide_after_seconds counts only the time this announcement is on screen. Taking it away
@@ -113,9 +133,10 @@ export default function Carousel({ items, visible, start, onDismiss, onImpressio
 
   const pendingExpiry = useRef<Set<string>>(new Set());
   const markExpired = (a: IAnnouncement) => pendingExpiry.current.add(a.slug);
-  // Paging stops at the ends; arrows, keys and swipes all go through here.
+  // Paging stops at the ends; arrows, keys and swipes all go through here (and stop autoplay).
   const navigate = (step: number) => {
     if (active === null) return;
+    autoplayState.stop();
     const target = pageTarget(active, count, step);
     if (target === null) return;
     const leaving = shown[active];
@@ -161,20 +182,24 @@ export default function Carousel({ items, visible, start, onDismiss, onImpressio
   );
 
   // Dismissing changes the height too: animate it like a navigation.
+  const stopAutoplay = autoplayState.stop;
   const onDismissAnimated = useCallback(
     (a: IAnnouncement) => {
+      stopAutoplay();
       prepareHeight();
       setEntering(null);
       onDismiss(a);
     },
-    [onDismiss, prepareHeight],
+    [onDismiss, prepareHeight, stopAutoplay],
   );
 
   // Before takeover the server's first slide shows (data-ann-a), unless the pre-paint style
   // picks another; afterwards only the current slide is displayed.
+  // In the autoplay stack the others stay laid out but invisible instead.
   const slideStyle = (a: IAnnouncement, i: number) => {
-    if (!takenOver) return i === 0 ? undefined : hidden;
-    return a === current ? undefined : hidden;
+    if (!takenOver) return i === 0 ? undefined : stack ? stacked : hidden;
+    if (a === current) return undefined;
+    return stack && laidOutRef.current?.has(a.slug) ? stacked : hidden;
   };
 
   // Previous, "i din N", next: one cluster inside each slide, beside its buttons (wide) or on
@@ -228,8 +253,14 @@ export default function Carousel({ items, visible, start, onDismiss, onImpressio
       onPointerDown={onPointerDown}
       onPointerUp={onPointerUp}
       onKeyDown={onKeyDown}
+      {...(stack && autoplayState.handlers)}
     >
-      <div className={styles.viewport} ref={viewportRef} aria-live="polite">
+      {/* Autoplay moves on by itself: announce only what the user brings up. */}
+      <div
+        className={`${styles.viewport} ${stack ? styles.stack : ""}`}
+        ref={viewportRef}
+        aria-live={autoplayState.running ? "off" : "polite"}
+      >
         {items.map((a, i) => (
           <Slide
             key={a.slug}

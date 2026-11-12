@@ -194,6 +194,23 @@
   }
 }
 
+// Autoplay on: every slide is laid out in one grid cell, so the card is as tall as its tallest
+// slide from first paint and never changes height by itself. Only the current one is visible
+// (--h, set inline by the carousel and, before hydration, by the pre-paint style); the server's
+// first slide stays laid out even when the pre-paint style hides it (data-ann-a).
+.ann-stack {
+  display: grid;
+
+  > .ann-slide {
+    grid-area: 1 / 1;
+    visibility: var(--h, visible);
+  }
+
+  > [data-ann-a] {
+    display: grid !important;
+  }
+}
+
 .ann-slide[data-enter] {
   animation: ann-enter 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
@@ -582,13 +599,10 @@
 }
 
 // At the first / last slide the previous / next button fades and is disabled (paging doesn't
-// wrap). Before hydration the pre-paint style sets --pf / --nf on the start slide instead.
+// wrap). Before hydration the pre-paint style fades "previous" on the start slide with --pf
+// (the visit's sequence begins there).
 .ann-navPrev {
   opacity: var(--pf, 1);
-}
-
-.ann-navNext {
-  opacity: var(--nf, 1);
 }
 
 .ann-navBtn:disabled {
