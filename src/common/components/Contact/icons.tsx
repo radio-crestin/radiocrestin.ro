@@ -61,3 +61,16 @@ export const CheckIcon = () => (
     <path d="m8 12.5 2.8 2.8L16.5 9.5" />
   </svg>
 );
+
+export const WhatsAppIcon = () => (
+  <svg {...svgProps}>
+    <path d="M3.5 20.5 5 16a8.5 8.5 0 1 1 3 3l-4.5 1.5Z" />
+    <path d="M9 8.5c0 3.5 3 6.5 6.5 6.5l1-1.6-2-1-1 1a5 5 0 0 1-2.9-2.9l1-1-1-2L9 8.5Z" />
+  </svg>
+);
+
+export const ArrowIcon = () => (
+  <svg {...svgProps} width={20} height={20} strokeWidth={2}>
+    <path d="M5 12h14M13 6l6 6-6 6" />
+  </svg>
+);

@@ -67,16 +67,20 @@ export const CONTACT_COPY = {
   hub: {
     seoTitle: "Contact | Radio Creștin",
     seoDescription:
-      "Scrie echipei Radio Creștin: trimite un mesaj, recomandă un post de radio creștin sau cere publicarea unui anunț în aplicație și pe site.",
-    title: "Contactează-ne",
-    intro: "Spune-ne cu ce te putem ajuta. Alege varianta potrivită; durează doar câteva minute.",
+      "Scrie echipei Radio Creștin: trimite un mesaj, recomandă un post de radio creștin sau creează un anunț în aplicație și pe site.",
+    eyebrow: "Contact",
+    title: { before: "Cu ce te putem ", accent: "ajuta", after: "?" },
+    intro: "Alege varianta potrivită; durează doar câteva minute.",
+    cardsHeading: "Alege cu ce ai nevoie de ajutor",
+    otherOptions: "Alte moduri în care te putem ajuta",
+    whatsappCard: { title: "Scrie-ne pe WhatsApp", text: "Preferi să vorbim pe chat? Scrie-ne direct pe WhatsApp." },
     cards: {
       general: { title: "Trimite-ne un mesaj", text: "Întrebări, idei sau o problemă cu aplicația ori cu un post de radio." },
       feedback: { title: "Propune o îmbunătățire", text: "Ai o idee pentru o funcție nouă sau pentru ceva ce am putea face mai bine?" },
       report: { title: "Semnalează o problemă la un post", text: "Un post nu pornește, se aude prost sau are informații greșite?" },
       station: { title: "Adaugă un post de radio", text: "Lipsește un post creștin pe care îl asculți? Spune-ne despre el." },
       announcement: {
-        title: "Cere publicarea unui anunț",
+        title: "Creează un anunț",
         text: "Un eveniment, o campanie sau o veste de la postul tău ori de la biserică, afișată în aplicație și pe site.",
       },
     },
@@ -204,10 +208,10 @@ export const CONTACT_COPY = {
     },
   },
   announcement: {
-    seoTitle: "Cere publicarea unui anunț | Radio Creștin",
+    seoTitle: "Creează un anunț | Radio Creștin",
     seoDescription:
       "Împărtășește cu ascultătorii Radio Creștin un eveniment, o campanie sau o veste de la postul tău creștin ori de la biserică, în aplicație și pe site.",
-    title: "Cere publicarea unui anunț",
+    title: "Creează un anunț",
     intro:
       "Anunțurile apar într-un chenar mic în aplicația Radio Creștin și pe site. Completează detaliile, iar noi îl pregătim împreună cu tine.",
     sections: { what: "Despre anunț", when: "Când să apară?" },
