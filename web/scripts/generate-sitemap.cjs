@@ -19,6 +19,10 @@ const STATIC_PAGES = [
   { path: "/privacy-policy/", priority: "0.3", changefreq: "yearly" },
   { path: "/terms-of-service/", priority: "0.3", changefreq: "yearly" },
   { path: "/statistici/", priority: "0.5", changefreq: "daily" },
+  { path: "/contact/", priority: "0.5", changefreq: "yearly" },
+  { path: "/contact/mesaj/", priority: "0.4", changefreq: "yearly" },
+  { path: "/contact/radio-nou/", priority: "0.5", changefreq: "yearly" },
+  { path: "/contact/anunt/", priority: "0.5", changefreq: "yearly" },
 ];
 
 async function generateSitemap() {

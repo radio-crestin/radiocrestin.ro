@@ -74,13 +74,7 @@ export default function FooterLinks({ showStoreBadges = true }: FooterLinksProps
               <a href="/statistici/">Statistici</a>
               <a href="/intrebari-frecvente/">Întrebări frecvente</a>
               <a href="/church-hub/">Church Hub</a>
-              <a
-                href="https://wa.me/40766338046?text=Buna%20ziua%20[radiocrestin.ro]%0A"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                Contact
-              </a>
+              <a href="/contact/">Contact</a>
             </div>
             <div className={styles.col}>
               <p className={styles.col_title}>Dezvoltatori</p>

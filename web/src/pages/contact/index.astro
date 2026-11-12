@@ -1,0 +1,9 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import ContactHub from "@/components/Contact/ContactHub";
+import { SEO_CONTACT } from "@/utils/seo";
+---
+
+<BaseLayout {...SEO_CONTACT.hub}>
+  <ContactHub client:load />
+</BaseLayout>

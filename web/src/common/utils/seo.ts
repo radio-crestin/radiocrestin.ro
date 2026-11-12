@@ -1,6 +1,7 @@
 import type { IStation } from "@/models/Station";
 import { SITE_URL } from "@/constants/constants";
 import { getValidImageUrl, stationThumb2x } from "@/utils";
+import { CONTACT_COPY, CONTACT_PATHS } from "@/components/Contact/copy";
 
 export const DEFAULT_SHARE_IMAGE = `${SITE_URL}/favicon/android-chrome-512x512.png`;
 
@@ -159,4 +160,18 @@ export const SEO_CHURCH_HUB = {
     "Church Hub: program gratuit de proiecție versuri și versete pentru biserică — alternativă open-source la EasyWorship. 40.000+ cântări. Windows/macOS.",
   imageUrl: `${SITE_URL}/images/church-hub/control-room.png`,
   fullURL: `${SITE_URL}/church-hub/`,
+};
+
+const contactSeo = (page: keyof typeof CONTACT_PATHS) => ({
+  title: CONTACT_COPY[page].seoTitle,
+  description: CONTACT_COPY[page].seoDescription,
+  imageUrl: DEFAULT_SHARE_IMAGE,
+  fullURL: `${SITE_URL}${CONTACT_PATHS[page]}`,
+});
+
+export const SEO_CONTACT = {
+  hub: contactSeo("hub"),
+  general: contactSeo("general"),
+  station: contactSeo("station"),
+  announcement: contactSeo("announcement"),
 };

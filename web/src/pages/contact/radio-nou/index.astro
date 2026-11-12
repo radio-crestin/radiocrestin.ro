@@ -1,0 +1,9 @@
+---
+import BaseLayout from "../../../layouts/BaseLayout.astro";
+import ContactForm from "@/components/Contact/ContactForm";
+import { SEO_CONTACT } from "@/utils/seo";
+---
+
+<BaseLayout {...SEO_CONTACT.station}>
+  <ContactForm client:load kind="station" />
+</BaseLayout>
