@@ -121,7 +121,10 @@ function Control({ field, copy, value, error, required, stations, onChange }: Fi
                 checked={value === option}
                 onChange={() => onChange(option)}
               />
-              <span>{copy.options?.[option] ?? option}</span>
+              <span className={styles.choice_text}>
+                {copy.options?.[option] ?? option}
+                {copy.optionHints?.[option] && <small>{copy.optionHints[option]}</small>}
+              </span>
             </label>
           ))}
         </div>

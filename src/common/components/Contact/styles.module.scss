@@ -312,12 +312,32 @@ input[type="date"].input {
     font-weight: 600;
   }
 
+  &:has(small) {
+    align-items: flex-start;
+
+    input {
+      margin-top: 2px;
+    }
+  }
+
   &:has(input:focus-visible) {
     box-shadow: 0 0 0 3px $focus-ring;
   }
 
   .field[data-invalid] & {
     border-color: $danger;
+  }
+}
+
+.choice_text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+
+  small {
+    font-size: 0.9rem;
+    font-weight: 400;
+    color: var(--subtext-metadata-color);
   }
 }
 

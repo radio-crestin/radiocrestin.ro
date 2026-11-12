@@ -151,7 +151,14 @@ export const CONTACT_COPY = {
     fields: {
       about: {
         label: "Despre ce este anunțul?",
-        options: { station: "Un post de radio", general: "Altceva (un eveniment, o campanie, o biserică…)" },
+        options: {
+          station: "Despre ceva ce se întâmplă la un post de radio",
+          general: "Despre un alt eveniment sau o altă veste",
+        },
+        optionHints: {
+          station: "O emisiune nouă, o transmisie specială, un eveniment sau o campanie a postului.",
+          general: "Un eveniment la biserică, un concert, o conferință sau o campanie.",
+        },
       },
       station_slug: { label: "Ce post de radio?", placeholder: "Alege postul" },
       title: {
