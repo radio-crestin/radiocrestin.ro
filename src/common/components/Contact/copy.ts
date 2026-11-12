@@ -68,7 +68,7 @@ export const CONTACT_COPY = {
   hub: {
     seoTitle: "Contact | Radio Creștin",
     seoDescription:
-      "Scrie echipei Radio Creștin: trimite un mesaj, recomandă un post de radio creștin sau creează un anunț în aplicație și pe site.",
+      "Scrie echipei Radio Creștin: trimite un mesaj, recomandă un post de radio creștin sau propune un anunț în aplicație și pe site.",
     eyebrow: "Contact",
     title: { before: "Cu ce te putem ", accent: "ajuta", after: "?" },
     intro: "Alege varianta potrivită; durează doar câteva minute.",
@@ -81,7 +81,7 @@ export const CONTACT_COPY = {
       report: { title: "Semnalează o problemă la un post", text: "Un post nu pornește, se aude prost sau are informații greșite?" },
       station: { title: "Adaugă un post de radio", text: "Lipsește un post creștin pe care îl asculți? Spune-ne despre el." },
       announcement: {
-        title: "Creează un anunț",
+        title: "Propune un anunț",
         text: "Un eveniment, o campanie sau o veste de la postul tău ori de la biserică, afișată în aplicație și pe site.",
       },
     },
@@ -210,10 +210,10 @@ export const CONTACT_COPY = {
     },
   },
   announcement: {
-    seoTitle: "Creează un anunț | Radio Creștin",
+    seoTitle: "Propune un anunț | Radio Creștin",
     seoDescription:
       "Împărtășește cu ascultătorii Radio Creștin un eveniment, o campanie sau o veste de la postul tău creștin ori de la biserică, în aplicație și pe site.",
-    title: "Creează un anunț",
+    title: "Propune un anunț",
     intro:
       "Anunțurile apar într-un chenar mic în aplicația Radio Creștin și pe site. Completează detaliile, iar noi îl pregătim împreună cu tine.",
     sections: { what: "Despre anunț", when: "Când să apară?" },
