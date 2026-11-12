@@ -28,7 +28,7 @@ function OptionRow({ option }: { option: ContactOption }) {
 }
 
 const GROUPS = [
-  { key: "listeners", options: ["general", "feedback", "report", "station", "announcement"] },
+  { key: "forms", options: ["general", "feedback", "report", "station", "announcement"] },
   { key: "chat", options: ["whatsapp"] },
 ] as const;
 
@@ -53,10 +53,16 @@ export default function ContactHub() {
     <ContactPage hero={hero}>
       <nav className={styles.groups} aria-label={copy.cardsHeading}>
         {GROUPS.map((group) => (
-          <section key={group.key} className={styles.group} aria-labelledby={`contact-group-${group.key}`}>
-            <h2 className={styles.group_title} id={`contact-group-${group.key}`}>
-              {copy.groups[group.key]}
-            </h2>
+          <section
+            key={group.key}
+            className={styles.group}
+            aria-labelledby={group.key === "chat" ? `contact-group-${group.key}` : undefined}
+          >
+            {group.key === "chat" && (
+              <h2 className={styles.group_title} id={`contact-group-${group.key}`}>
+                {copy.groups.chat}
+              </h2>
+            )}
             <div className={styles.options}>
               {options
                 .filter((option) => (group.options as readonly string[]).includes(option.key))
