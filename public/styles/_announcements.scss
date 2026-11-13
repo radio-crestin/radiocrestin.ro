@@ -559,6 +559,11 @@
 // right-aligned under the pager, sharing its right edge.
 .ann-carousel {
   --ann-pager: 36px;
+  // The label TEXT lines up, not its pill: the pill moves left by its padding and up by the
+  // space above the text's cap height (Inter at 11.5px on a 21px line), so the text starts on
+  // the title's left edge and its cap top sits on the icon's top. The fill reaches past both.
+  --tag-pad: 9px;
+  --tag-lift: 6px;
 
   .ann-slide {
     grid-template-columns: auto minmax(0, 1fr) auto;
@@ -592,8 +597,8 @@
       position: absolute;
       inset: 0;
       margin: auto;
-      width: 50%;
-      height: 50%;
+      width: 55%;
+      height: 55%;
       min-width: 18px;
       min-height: 18px;
     }
@@ -609,16 +614,16 @@
     grid-column: 2;
     grid-row: 1;
     min-height: 0;
-    margin: 0;
+    margin: calc(-1 * var(--tag-lift)) 0 0 calc(-1 * var(--tag-pad));
   }
 
-  // Centred on the tag line without making that row taller (negative margins take back the
-  // pager's extra height), so the title follows the tag directly.
+  // Centred on the label line without making that row taller (negative margins take back the
+  // pager's extra height and follow the label's lift), so the title follows the label directly.
   .ann-nav {
     grid-column: 3;
     grid-row: 1;
     justify-self: end;
-    margin: calc((21px - var(--ann-pager)) / 2) 0 calc((21px - var(--ann-pager)) / 2) 12px;
+    margin: calc((21px - var(--ann-pager)) / 2 - var(--tag-lift)) 0 calc((21px - var(--ann-pager)) / 2) 12px;
   }
 
   // At the bottom of its row, so a tile taller than the block (a large icon) leaves the space
