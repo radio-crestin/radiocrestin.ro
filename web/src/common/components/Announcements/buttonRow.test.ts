@@ -89,13 +89,24 @@ describe("the home card's layout", () => {
     expect(icon).toMatch(/grid-row: 1\/span 2;.*align-self: stretch;.*aspect-ratio: 1;/);
     expect(icon).toMatch(/min-height: var\(--ann-icon, 52px\);.*max-height: 72px/);
     // the glyph is out of the flow, so it never sizes the tile
-    expect(rule(".ann-carousel .ann-icon svg")).toMatch(/position: absolute;.*width: 50%;.*min-width: 18px/);
+    expect(rule(".ann-carousel .ann-icon svg")).toMatch(/position: absolute;.*width: 55%;.*min-width: 18px/);
     expect(rule(".ann-carousel .ann-title")).toMatch(/grid-row: 2;.*align-self: end/);
   });
 
-  it("keeps the pager on the tag line without making it taller", () => {
-    expect(rule(".ann-carousel .ann-nav")).toContain("margin: calc((21px - var(--ann-pager)) / 2) 0 calc((21px - var(--ann-pager)) / 2) 12px");
-    expect(rule(".ann-carousel .ann-meta")).toMatch(/grid-row: 1;.*min-height: 0/);
+  it("lines up the label's text, not its pill, with the title and the icon top", () => {
+    // the pill moves left by its padding and up by the space above the text's cap height
+    expect(css).toMatch(/\.ann-carousel \{ --ann-pager: 36px; --tag-pad: 9px; --tag-lift: 6px; \}/);
+    expect(rule(".ann-tag")).toMatch(/padding: 0 9px;.*font-size: 11.5px/);
+    expect(rule(".ann-tag")).toContain("line-height: 21px");
+    expect(rule(".ann-carousel .ann-meta")).toMatch(
+      /grid-row: 1;.*min-height: 0;.*margin: calc\(-1 \* var\(--tag-lift\)\) 0 0 calc\(-1 \* var\(--tag-pad\)\)/,
+    );
+  });
+
+  it("keeps the pager on the label line without making it taller", () => {
+    expect(rule(".ann-carousel .ann-nav")).toContain(
+      "margin: calc((21px - var(--ann-pager)) / 2 - var(--tag-lift)) 0 calc((21px - var(--ann-pager)) / 2) 12px",
+    );
   });
 
   it("starts the description at the card's left edge, under the icon", () => {
