@@ -22,11 +22,12 @@
   color-scheme: dark;
 }
 
-// Colour hierarchy (SPEC "Color hierarchy by importance"): the accent is spent on the main
-// button only. The tag and the icon tile are neutral, or a faint tint when the admin gave the
-// category a colour (set inline by utils/announcementColors.ts, using --tag-tint / --tag-ink
-// below so the tint suits the theme).
+// Colours (SPEC "Color hierarchy by importance" and "Accent hue on the icon tile and tag"):
 //   --c / --btn-fg: the button (site accent unless the admin chose one).
+//   The tag and the icon tile are neutral, unless the announcement has a hue (its button colour,
+//   else its category colour): then utils/announcementColors.ts writes --icon-* / --tag-* inline
+//   from the per-theme shares below (a soft fill, and an ink blended toward white or black that
+//   reads at AA; --hue-*-d / --hue-*-l lower the ink share for hues that need it).
 .ann-slide,
 .ann-sheet {
   --c: var(--link-color);
@@ -35,9 +36,12 @@
   --tag-bg: var(--a-ctrl);
   --tag-fg: var(--a-muted);
   --icon-bg: var(--a-ctrl);
-  --tag-tint: 20%;
-  --tag-ink: 55%;
-  --tag-ink-base: #ffffff;
+  --hue-tile: 16%;
+  --hue-edge: 30%;
+  --hue-fill: 18%;
+  --hue-glyph: var(--hue-glyph-d, 65%);
+  --hue-tag: var(--hue-tag-d, 50%);
+  --hue-toward: #ffffff;
 }
 
 :root[data-theme="light"] {
@@ -57,9 +61,11 @@
   .ann-sheet {
     --btn-fg: #ffffff;
     --c-ink: var(--c);
-    --tag-tint: 14%;
-    --tag-ink: 72%;
-    --tag-ink-base: #000000;
+    --hue-tile: 12%;
+    --hue-fill: 14%;
+    --hue-glyph: var(--hue-glyph-l, 55%);
+    --hue-tag: var(--hue-tag-l, 45%);
+    --hue-toward: #000000;
   }
 }
 
@@ -248,8 +254,8 @@
   display: grid;
   place-items: center;
   background: var(--icon-bg);
-  border: 1px solid var(--a-border);
-  color: var(--a-muted);
+  border: 1px solid var(--icon-border, var(--a-border));
+  color: var(--icon-fg, var(--a-muted));
 
   svg {
     width: 23px;
@@ -358,7 +364,6 @@
   margin-top: 18px;
 }
 
-// A long label wraps (to two lines on narrow cards) instead of pushing "Ascunde" out of the card.
 .ann-cta {
   display: inline-flex;
   align-items: center;
@@ -398,17 +403,19 @@
   flex-shrink: 0;
 }
 
-// In the card's button row the main button gives way first: it shrinks to its widest word
-// before the row wraps (it keeps at least 11rem, so the label takes about two lines at most),
-// and only then does "Ascunde" move to a line of its own, still right-aligned.
-// Phones only: wider cards size the button row from its content, so a short label must not be
-// stretched to 11rem there (it overlapped the "next" arrow).
-@media (max-width: 640px) {
-  .ann-actions .ann-cta {
-    flex: 1 1 0;
-    max-width: max-content;
-    min-width: min(100%, 11rem);
-  }
+// Buttons fit their content and never stretch. When the row is too narrow it wraps; a label
+// too long even for a line of its own wraps inside its button, to two lines at most.
+.ann-actions .ann-cta {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.ann-actions .ann-ctaLabel {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
 }
 
 .ann-ctaOutline {
@@ -429,14 +436,13 @@
   }
 }
 
-// "✕ Ascunde": a quiet button, always last and right-aligned in the button row.
+// "✕ Ascunde": a quiet button, always last in the button row, right after the main one.
 .ann-dismiss {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   height: 40px;
   padding: 0 13px 0 11px;
-  margin-left: auto;
   border: 1px solid var(--a-border);
   border-radius: 8px;
   background: var(--a-ctrl);
@@ -545,60 +551,98 @@
 
 }
 
-// ---------- home card: laid out like a station card ----------
-// Same padding, media size and minimum height as the station cards (the --station-card-*
-// tokens in base.scss). Longer text may make it taller.
+// ---------- home card (SPEC "Layout v2", UPDATE 3) ----------
+// Row 1: [icon] [tag over title] ··· [pager]. The icon is a square exactly as tall as the tag +
+// title block beside it (its top on the tag's top, its bottom on the title's last line), at
+// least the announcement's icon size and at most 72px. The description (and, on phones, the
+// buttons) start at the card's left edge, under the icon. Desktop: the buttons sit
+// right-aligned under the pager, sharing its right edge.
 .ann-carousel {
+  --ann-pager: 36px;
+
   .ann-slide {
-    grid-template-columns: var(--station-card-media) minmax(0, 1fr) auto;
-    grid-template-areas: "icon text side";
-    align-items: center;
-    column-gap: var(--station-card-gap);
-    min-height: calc(var(--station-card-body) + 2 * var(--station-card-pad-y));
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-rows: auto auto auto auto;
+    align-items: start;
+    column-gap: 14px;
+    row-gap: 0;
     padding: var(--station-card-pad-y) var(--station-card-pad-x);
   }
 
-  .ann-icon {
-    grid-area: icon;
-    width: var(--station-card-media);
-    height: var(--station-card-media);
-    border-radius: var(--station-card-media-radius);
+  .ann-text,
+  .ann-side {
+    display: contents;
+  }
 
+  // Stretched over the tag and title rows; aspect-ratio makes it square at that height.
+  .ann-icon {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+    align-self: stretch;
+    aspect-ratio: 1;
+    width: auto;
+    height: auto;
+    min-height: var(--ann-icon, 52px);
+    max-height: 72px;
+    border-radius: 24%;
+    position: relative;
+
+    // out of the flow, so the glyph never sizes the tile (only the tag and title do)
     svg {
-      width: 42%;
-      height: 42%;
+      position: absolute;
+      inset: 0;
+      margin: auto;
+      width: 50%;
+      height: 50%;
+      min-width: 18px;
+      min-height: 18px;
     }
 
     img {
-      border-radius: var(--station-card-media-radius);
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
     }
   }
 
-  .ann-text {
-    grid-area: text;
-    padding-right: 0;
-  }
-
   .ann-meta {
-    margin-bottom: 8px;
+    grid-column: 2;
+    grid-row: 1;
+    min-height: 0;
+    margin: 0;
   }
 
+  // Centred on the tag line without making that row taller (negative margins take back the
+  // pager's extra height), so the title follows the tag directly.
+  .ann-nav {
+    grid-column: 3;
+    grid-row: 1;
+    justify-self: end;
+    margin: calc((21px - var(--ann-pager)) / 2) 0 calc((21px - var(--ann-pager)) / 2) 12px;
+  }
+
+  // At the bottom of its row, so a tile taller than the block (a large icon) leaves the space
+  // between tag and title, never under the title.
   .ann-title {
-    margin: 0 0 6px;
+    grid-column: 2;
+    grid-row: 2;
+    align-self: end;
+    margin: 6px 0 0;
   }
 
-  // Previous / "i din N" / next, then the buttons, centred together on the right.
-  .ann-side {
-    grid-area: side;
-    display: flex;
-    align-items: center;
-    gap: 20px;
+  .ann-body {
+    grid-column: 1 / 3;
+    grid-row: 3;
+    margin-top: 12px;
   }
 
   .ann-actions {
-    flex-wrap: nowrap;
+    grid-column: 3;
+    grid-row: 2 / span 3;
+    justify-self: end;
+    justify-content: flex-end;
     gap: 8px;
-    margin: 0;
+    margin: calc((var(--ann-pager) - 21px) / 2 + 8px) 0 0 24px;
   }
 }
 
@@ -670,53 +714,30 @@
   }
 }
 
-// Phones: icon beside tag, title and body (with the navigation on the tag row), and the
-// buttons in their own row below.
+// Phones: the title also takes the pager's column, and the buttons come last, under the
+// description, from the card's left edge.
 @media (max-width: 640px) {
   .ann-carousel {
-    .ann-slide {
-      grid-template-columns: var(--station-card-media) minmax(0, 1fr) auto;
-      grid-template-areas:
-        "icon meta nav"
-        "icon title title"
-        "icon body body"
-        "acts acts acts";
-      row-gap: 0;
-    }
-
-    .ann-text,
-    .ann-side {
-      display: contents;
-    }
-
-    .ann-meta {
-      grid-area: meta;
-      margin: 0 0 8px;
-    }
-
-    .ann-nav {
-      grid-area: nav;
-      align-self: start;
-      margin: -2px -4px 6px 0;
-    }
+    --ann-pager: 32px;
 
     .ann-title {
-      grid-area: title;
+      grid-column: 2 / -1;
       font-size: 16px;
     }
 
     .ann-body {
-      grid-area: body;
+      grid-column: 1 / -1;
       font-size: 13.5px;
       -webkit-line-clamp: 3;
       line-clamp: 3;
     }
 
     .ann-actions {
-      grid-area: acts;
-      flex-wrap: wrap;
+      grid-column: 1 / -1;
+      grid-row: 4;
+      justify-self: stretch;
       justify-content: flex-start;
-      margin-top: 14px;
+      margin: 14px 0 0;
     }
   }
 
@@ -1281,3 +1302,4 @@
     animation: none;
   }
 }
+

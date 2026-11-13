@@ -73,6 +73,8 @@ export interface IAnnouncementFilters {
   locales?: string[];
 }
 
+export type IconSize = "small" | "medium" | "large";
+
 // Optional blocks may be absent instead of null: the backend keeps the payload small.
 export interface IAnnouncement {
   slug: string;
@@ -81,7 +83,14 @@ export interface IAnnouncement {
   placement?: Placement;
   station_slugs?: string[];
   category?: IAnnouncementCategory;
-  icon?: { name?: string | null; url?: string | null; /** website: added at build time */ svg?: string } | null;
+  icon?: {
+    name?: string | null;
+    url?: string | null;
+    /** small 40, medium 52 (default), large 72 px (SPEC "Layout v2") */
+    size?: IconSize | null;
+    /** website: added at build time */
+    svg?: string;
+  } | null;
   title: string;
   /** Sanitized server-side (strong, em, a, br). */
   body_html?: string;
