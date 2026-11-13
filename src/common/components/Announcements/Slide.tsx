@@ -1,5 +1,5 @@
 import React from "react";
-import type { ClickTarget, IAnnouncement, IAnnouncementAction, IAnnouncementButton } from "@/models/Announcement";
+import type { ClickTarget, IAnnouncement, IAnnouncementAction, IAnnouncementButton, IconSize } from "@/models/Announcement";
 import { hasBodyText, resolveWebAction } from "@/utils/announcements";
 import { colorVars } from "@/utils/announcementColors";
 export { colorVars };
@@ -110,6 +110,14 @@ interface SlideProps extends SlideHandlers {
   style?: React.CSSProperties;
 }
 
+/** The icon tile's minimum size (SPEC "Layout v2"); medium is the stylesheet's default. */
+const ICON_PX: Record<IconSize, number> = { small: 40, medium: 52, large: 72 };
+export const iconSizeVar = (a: IAnnouncement): React.CSSProperties => {
+  const size = a.icon?.size;
+  if (!size || size === "medium" || !(size in ICON_PX)) return {};
+  return { "--ann-icon": `${ICON_PX[size]}px` } as React.CSSProperties;
+};
+
 const isFromControl = (target: EventTarget) => !!(target as HTMLElement).closest("a,button");
 
 /**
@@ -147,7 +155,7 @@ const Slide = ({
       data-ann-a={serverFirst ? "" : undefined}
       data-enter={entering ? "" : undefined}
       className={`${styles.slide} ${tappable ? styles.tappable : ""} ${className}`}
-      style={{ ...colorVars(a), ...style }}
+      style={{ ...colorVars(a), ...iconSizeVar(a), ...style }}
       aria-roledescription={T.slide}
       aria-label={label}
       aria-hidden={!active}
