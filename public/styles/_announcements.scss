@@ -102,6 +102,12 @@
   }
 }
 
+// The site's CSS reset gives every span color:black; inside announcements a span takes its
+// parent's colour unless a class says otherwise (zero specificity, so any class wins).
+:where(.ann-ann, .ann-sheet, .ann-pop) span {
+  color: inherit;
+}
+
 // ---------- slot ----------
 .ann-slot {
   max-width: 1230px;
@@ -395,10 +401,14 @@
 // In the card's button row the main button gives way first: it shrinks to its widest word
 // before the row wraps (it keeps at least 11rem, so the label takes about two lines at most),
 // and only then does "Ascunde" move to a line of its own, still right-aligned.
-.ann-actions .ann-cta {
-  flex: 1 1 0;
-  max-width: max-content;
-  min-width: min(100%, 11rem);
+// Phones only: wider cards size the button row from its content, so a short label must not be
+// stretched to 11rem there (it overlapped the "next" arrow).
+@media (max-width: 640px) {
+  .ann-actions .ann-cta {
+    flex: 1 1 0;
+    max-width: max-content;
+    min-width: min(100%, 11rem);
+  }
 }
 
 .ann-ctaOutline {
