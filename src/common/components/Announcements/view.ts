@@ -10,6 +10,7 @@ import {
   startFlushingAnnouncementEvents,
 } from "@/services/announcements";
 import useAnnouncementsStore from "@/store/useAnnouncementsStore";
+import { stationFirst } from "@/utils/announcements";
 import {
   annEligibility,
   LEGACY_DISMISSED_KEY,
@@ -93,7 +94,7 @@ const start = (snapshot: IAnnouncementsSnapshot) => {
   if (token) {
     fetchAnnouncementsPreview(token).then((preview) => {
       if (!preview) return;
-      const snapshotOfPreview = { ...preview, built_at: Date.now() };
+      const snapshotOfPreview = stationFirst({ ...preview, built_at: Date.now() }, snapshot.station_slug);
       useView.setState({ preview: snapshotOfPreview, result: computeEligibility(snapshotOfPreview) });
     });
   } else {

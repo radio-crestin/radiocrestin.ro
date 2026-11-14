@@ -17,7 +17,8 @@ type LazyModule = typeof import("./lazy");
 interface ServerMarkup {
   /** The snapshot the markup was rendered from: the dev server fetches a fresh one per request. */
   builtAt?: number;
-  card?: string;
+  /** Per station page ("" elsewhere): a station's own announcements lead its card. */
+  cards: Record<string, string>;
   bells: Record<string, string>;
 }
 
@@ -25,15 +26,17 @@ interface ServerMarkup {
 // (prepareAnnouncementsMarkup, from the page's frontmatter) and looked up while the island
 // renders. Kept on globalThis: the build may load this module more than once.
 const server = globalThis as { __announcementsMarkup?: ServerMarkup };
-const markup = (): ServerMarkup => (server.__announcementsMarkup ??= { bells: {} });
+const markup = (): ServerMarkup => (server.__announcementsMarkup ??= { cards: {}, bells: {} });
 const bellKey = (variant: string, station: string) => `${variant}:${station}`;
 
-/** Server only: render the card (once per build) and this page's station bells. */
+/** Server only: render the card (once per station page, once for the rest) and this page's station bells. */
 export const prepareAnnouncementsMarkup = async (snapshot: IAnnouncementsSnapshot, stationSlug?: string) => {
   const { renderCard, renderBell } = await import("./ssr");
-  if (markup().builtAt !== snapshot.built_at) server.__announcementsMarkup = { builtAt: snapshot.built_at, bells: {} };
+  if (markup().builtAt !== snapshot.built_at) {
+    server.__announcementsMarkup = { builtAt: snapshot.built_at, cards: {}, bells: {} };
+  }
   const m = markup();
-  if (m.card === undefined) m.card = homeItems(snapshot).length ? renderCard(snapshot) : "";
+  m.cards[stationSlug ?? ""] ??= homeItems(snapshot).length ? renderCard(snapshot) : "";
   if (stationSlug && hasStationAnnouncements(snapshot, stationSlug)) {
     for (const variant of ["header", "player"] as const) {
       m.bells[bellKey(variant, stationSlug)] ??= renderBell(snapshot, { stationSlug, stationTitle: "", variant });
@@ -84,7 +87,7 @@ function Announcements({ inHome = false, inContent = false, className = "" }: An
   const hasHome = homeItems(snapshot).length > 0;
   const slotRef = useRef<HTMLDivElement>(null);
   const [slot, setSlot] = useState<SlotState>(CLEAR);
-  const html = useServerMarkup(() => markup().card, SLOT);
+  const html = useServerMarkup(() => markup().cards[snapshot.station_slug ?? ""], SLOT);
 
   useEffect(() => {
     // the dialogs are needed even without a card: station sheets, shared #anunt/<slug> links

@@ -5,6 +5,7 @@ import { getAnnouncementsSnapshot } from "@/services/announcements";
 import { buttonIconSvg, ICON_SVGS } from "@/services/announcementIconSvgs";
 import { prepareAnnouncementsMarkup } from "@/components/Announcements";
 import { contentStore } from "@/components/Announcements/content";
+import { stationFirst } from "@/utils/announcements";
 
 const withIconSvgs = (a: IAnnouncement): IAnnouncement => ({
   ...a,
@@ -56,7 +57,7 @@ const withoutRenderedMarkup = (a: IAnnouncement): IAnnouncement => {
 };
 
 /**
- * The snapshot one page renders: the home announcements, plus the station's own on a station
+ * The snapshot one page renders: the home announcements, led by the station's own on a station
  * page (station links are full page loads, so no other station's are ever needed there).
  */
 export const getBuildSnapshot = async (stationSlug?: string): Promise<IAnnouncementsSnapshot> => {
@@ -64,7 +65,8 @@ export const getBuildSnapshot = async (stationSlug?: string): Promise<IAnnouncem
   for (const a of s.announcements) contentStore[a.slug] = a;
   const forThisPage = (a: IAnnouncement) =>
     (a.placement ?? "home") === "home" || (!!stationSlug && (a.station_slugs ?? []).includes(stationSlug));
-  const page = { ...s, announcements: s.announcements.filter(forThisPage).map(withoutRenderedMarkup) };
+  const ordered = stationFirst({ ...s, announcements: s.announcements.filter(forThisPage) }, stationSlug);
+  const page = { ...ordered, announcements: ordered.announcements.map(withoutRenderedMarkup) };
   await prepareAnnouncementsMarkup(page, stationSlug);
   return page;
 };

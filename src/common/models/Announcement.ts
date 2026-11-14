@@ -122,6 +122,8 @@ export interface IAnnouncementsResponse {
 export interface IAnnouncementsSnapshot extends IAnnouncementsResponse {
   /** When the build fetched it (ms); a newer stored feed can only remove items from it. */
   built_at: number;
+  /** The station page it was built for; its own announcements lead the card there (stationFirst). */
+  station_slug?: string;
 }
 
 export interface IAnnouncementEvent {
