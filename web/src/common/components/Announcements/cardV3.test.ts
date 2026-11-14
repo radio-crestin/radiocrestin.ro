@@ -65,6 +65,12 @@ describe("the home card's layout", () => {
     expect(rule(css, ".ann-inHome .ann-carousel .ann-actions")).toMatch(/grid-column: 3;.*grid-row: 1\/-1;.*align-self: end;.*justify-self: end/);
   });
 
+  it("centres the buttons on the text's line when there is no pager", () => {
+    expect(rule(css, ".ann-inHome .ann-carousel .ann-slide:not(:has(.ann-nav)) .ann-actions")).toContain("align-self: center");
+    const phone = "@media screen and (max-width: 768px)";
+    expect(rule(css, ".ann-inHome .ann-carousel .ann-slide:not(:has(.ann-nav)) .ann-title", phone)).toContain("margin-right: 0");
+  });
+
   it("on phones, keeps the title clear of the arrows and puts the buttons below", () => {
     const phone = "@media screen and (max-width: 768px)";
     expect(rule(css, ".ann-inHome .ann-carousel .ann-text", phone)).toContain("display: contents");
