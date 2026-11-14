@@ -4,6 +4,7 @@ import { SAFE_SLUG } from "@/utils/announcementsPrepaint";
 import type {
   IAnnouncement,
   IAnnouncementAction,
+  IAnnouncementsSnapshot,
   Placement,
 } from "@/models/Announcement";
 
@@ -21,6 +22,25 @@ export const placementOf = (a: IAnnouncement): Placement => a.placement ?? "home
 
 export const isForStation = (a: IAnnouncement, stationSlug: string): boolean =>
   placementOf(a) === "station" && (a.station_slugs ?? []).includes(stationSlug);
+
+/**
+ * A station page's snapshot: the station's own announcements move into the card, ahead of the
+ * home ones, and the order is fixed so rotation never starts the card on another announcement.
+ */
+export const stationFirst = (snapshot: IAnnouncementsSnapshot, stationSlug?: string): IAnnouncementsSnapshot => {
+  if (!stationSlug) return snapshot;
+  const own = snapshot.announcements.filter((a) => isForStation(a, stationSlug));
+  const result = { ...snapshot, station_slug: stationSlug };
+  if (!own.length) return result;
+  return {
+    ...result,
+    settings: { ...snapshot.settings, rotation_mode: "fixed" },
+    announcements: [
+      ...own.map((a) => ({ ...a, placement: "home" as const, station_slugs: [] })),
+      ...snapshot.announcements.filter((a) => !own.includes(a)),
+    ],
+  };
+};
 
 
 // `#anunt/<slug>` opens an announcement's page dialog.

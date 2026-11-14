@@ -1,11 +1,12 @@
 import { describe, it, expect } from "vitest";
-import type { IAnnouncement } from "@/models/Announcement";
+import type { IAnnouncement, IAnnouncementsSnapshot } from "@/models/Announcement";
 import {
   hasBodyText,
   pageTarget,
   isForStation,
   resolveWebAction,
   slugFromHash,
+  stationFirst,
   type AnnouncementsLocalState,
 } from "@/utils/announcements";
 
@@ -152,5 +153,34 @@ describe("hasBodyText", () => {
 
   it("is true when any text shows", () => {
     expect(hasBodyText("Primește-l <b>zilnic</b>")).toBe(true);
+  });
+});
+
+describe("stationFirst", () => {
+  const verse = announcement("versetul-zilei");
+  const own = announcement("share-a-thon", { placement: "station", station_slugs: ["micul-samaritean"] });
+  const other = announcement("alt-post", { placement: "station", station_slugs: ["alt-radio"] });
+  const snapshot: IAnnouncementsSnapshot = {
+    settings: { rotation_mode: "rotate" },
+    announcements: [verse, own, other],
+    built_at: 1,
+  };
+
+  it("puts the station's own announcements first in the card, in a fixed order", () => {
+    const page = stationFirst(snapshot, "micul-samaritean");
+    expect(page.announcements.map((a) => a.slug)).toEqual(["share-a-thon", "versetul-zilei", "alt-post"]);
+    expect(page.announcements[0]).toMatchObject({ placement: "home", station_slugs: [] });
+    expect(page.settings.rotation_mode).toBe("fixed");
+    expect(page.station_slug).toBe("micul-samaritean");
+  });
+
+  it("keeps the order and rotation of a station without announcements", () => {
+    const page = stationFirst(snapshot, "fara-anunturi");
+    expect(page.announcements).toEqual(snapshot.announcements);
+    expect(page.settings.rotation_mode).toBe("rotate");
+  });
+
+  it("leaves pages that are not a station's unchanged", () => {
+    expect(stationFirst(snapshot)).toBe(snapshot);
   });
 });
