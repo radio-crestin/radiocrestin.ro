@@ -402,6 +402,8 @@ const Stations = () => {
 
   return (
     <div className={styles.container}>
+      {/* Above the favourites (or the search row without them); it stays while searching. */}
+      <Announcements inHome />
       {ctx.favouriteStations?.length > 0 && (
         <FavouriteStationsSection stations={ctx.favouriteStations} />
       )}
@@ -497,8 +499,6 @@ const Stations = () => {
         </div>
       </div>
       <div className={styles.stations_container}>
-        {/* The announcements card is the list's first item; hidden while searching. */}
-        <Announcements inGrid hidden={searchedValue !== ""} />
         {filteredStations.length === 0 ? (
           <div className={styles.no_results}>
             Nu am găsit niciun rezultat cu denumirea:{" "}

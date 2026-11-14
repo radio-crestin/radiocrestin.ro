@@ -122,28 +122,17 @@
   transition: opacity 0.28s ease, transform 0.28s ease;
 }
 
-// The first item of the station list (a flex-wrap row with a 20px gap): a full row, with
-// the same side margins the station cards get at each breakpoint (StationItem styles).
-.ann-inGrid {
-  flex: 0 0 100%;
+// Above "Stații favorite:" (SPEC "Website home placement v2"): the favourites section's box
+// (Stations/styles.module.scss .favourite_section), so the card's edges match the favourite
+// cards, the heading and the station grid; 36px under the hero or the station header.
+.ann-inHome {
+  max-width: 1230px;
   width: 100%;
-  max-width: none;
-  margin: 0;
+  margin: 36px auto 0;
 
-  // Two station cards per row at max-width 45% each (content box, plus 2 × 17px padding)
-  // and a 20px gap: span exactly that row.
   @media screen and (max-width: 1378px) {
-    flex-basis: calc(90% + 4 * 17px + 20px);
-  }
-
-  @media screen and (max-width: 1160px) {
-    flex-basis: calc(100% - 50px);
-    margin: 0 25px;
-  }
-
-  @media screen and (max-width: 768px) {
-    flex-basis: calc(100% - 30px);
-    margin: 0 15px;
+    width: calc(100% - 30px);
+    padding: 0 15px;
   }
 }
 

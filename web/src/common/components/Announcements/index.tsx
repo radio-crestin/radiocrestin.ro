@@ -68,12 +68,10 @@ const useServerMarkup = (prepared: () => string | undefined, selector: string) =
   )[0];
 
 interface AnnouncementsProps {
-  /** The first, full-width item of the station list. */
-  inGrid?: boolean;
+  /** Above "Stații favorite:" (or the station list), in the favourites' column. */
+  inHome?: boolean;
   /** Fill the parent (a page's own content column) instead of the 1230px station column. */
   inContent?: boolean;
-  /** Not shown (e.g. while the station list is being searched). */
-  hidden?: boolean;
   className?: string;
 }
 
@@ -81,7 +79,7 @@ const CLEAR: SlotState = { empty: false, faded: false };
 const SLOT = "[data-ann-r]";
 
 /** The home announcements card (plus the page, form and station dialogs it hosts). */
-function Announcements({ inGrid = false, inContent = false, hidden = false, className = "" }: AnnouncementsProps) {
+function Announcements({ inHome = false, inContent = false, className = "" }: AnnouncementsProps) {
   const snapshot = useSnapshot();
   const hasHome = homeItems(snapshot).length > 0;
   const slotRef = useRef<HTMLDivElement>(null);
@@ -111,8 +109,8 @@ function Announcements({ inGrid = false, inContent = false, hidden = false, clas
       ref={slotRef}
       data-ann-r=""
       data-ann-pp=""
-      className={`${styles.slot} ${inGrid ? styles.inGrid : ""} ${inContent ? styles.inContent : ""} ${slot.faded ? styles.faded : ""} ${className}`}
-      hidden={hidden || slot.empty}
+      className={`${styles.slot} ${inHome ? styles.inHome : ""} ${inContent ? styles.inContent : ""} ${slot.faded ? styles.faded : ""} ${className}`}
+      hidden={slot.empty}
       dangerouslySetInnerHTML={{ __html: html }}
     />
   );
