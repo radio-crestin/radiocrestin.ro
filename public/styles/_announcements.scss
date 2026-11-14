@@ -1424,6 +1424,11 @@
     justify-content: flex-end;
     margin: 0 0 0 20px;
   }
+
+  // no pager (a single announcement): the buttons are centred on the text's line
+  .ann-slide:not(:has(.ann-nav)) .ann-actions {
+    align-self: center;
+  }
 }
 
 // a grey "·" between the title and the category, like the station subtitle's separator
@@ -1460,6 +1465,11 @@
       align-self: start;
       margin-right: 76px;
       font-size: 1.1rem;
+    }
+
+    // no pager: the title may use the whole line
+    .ann-slide:not(:has(.ann-nav)) .ann-title {
+      margin-right: 0;
     }
 
     .ann-meta {
