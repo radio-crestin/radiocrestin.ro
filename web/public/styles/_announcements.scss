@@ -1445,6 +1445,14 @@
   }
 }
 
+// tablets: the text column is narrow enough that a two-line description needs a third line
+@media screen and (min-width: 769px) and (max-width: 1099px) {
+  .ann-inHome .ann-carousel .ann-body {
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+  }
+}
+
 // a grey "·" between the title and the category, like the station subtitle's separator
 @media screen and (min-width: 769px) {
   .ann-inHome .ann-carousel .ann-tag::before {
@@ -1492,13 +1500,13 @@
       margin: 4px 0 0;
     }
 
-    // three lines on a phone's narrow column, where two cut most descriptions short
+    // five lines on a phone's narrow column, so a two-line description still fits whole
     .ann-body {
       grid-column: 2;
       grid-row: 3;
       margin-top: 2px;
-      -webkit-line-clamp: 3;
-      line-clamp: 3;
+      -webkit-line-clamp: 5;
+      line-clamp: 5;
     }
 
     // compact arrows exactly in the listener count's spot (no "i din n")
