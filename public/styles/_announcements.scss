@@ -1297,3 +1297,159 @@
   }
 }
 
+
+// ---------- home card v3: a sibling of the station tiles (SPEC "Card v3", the owner's A-line) ----------
+// On the station tile's own tokens (base.scss --station-card-*): surface, radius, padding, logo
+// box and radius, title type (StationItem .station_name) and subtitle type (.song_name). The icon
+// tile is the soft hue tint at the logo's size with a big hue glyph; the category is a subtitle
+// line in the hue, then the description in the song line's grey. Desktop: the pager in the
+// listener count's spot (top-right), the buttons in the heart's (bottom-right). Phones: compact
+// arrows in the listener spot, the buttons below, across the card.
+.ann-inHome .ann-carousel {
+  border-radius: var(--station-card-radius);
+
+  .ann-slide {
+    position: relative;
+    grid-template-columns: var(--station-card-media) fit-content(55%) minmax(0, 1fr) auto;
+    // the text block centred between two flexible rows, like the station details
+    grid-template-rows: minmax(0, 1fr) auto auto auto minmax(0, 1fr);
+    column-gap: var(--station-card-gap);
+    row-gap: 0;
+    align-items: center;
+    min-height: calc(var(--station-card-media) + 2 * var(--station-card-pad-y));
+    padding: var(--station-card-pad-y) var(--station-card-pad-x);
+  }
+
+  .ann-icon {
+    grid-column: 1;
+    grid-row: 1 / -1;
+    align-self: center;
+    width: var(--station-card-media);
+    height: var(--station-card-media);
+    min-height: 0;
+    max-height: none;
+    aspect-ratio: auto;
+    border-radius: var(--station-card-media-radius);
+
+    svg {
+      width: 46%;
+      height: 46%;
+    }
+  }
+
+  // the station name's type (StationItem .station_name)
+  .ann-title {
+    grid-column: 2;
+    grid-row: 2;
+    align-self: center;
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 500;
+    line-height: 1.25;
+    letter-spacing: 0;
+    color: var(--text-color);
+  }
+
+  // the song / artist line's type (StationItem .song_name)
+  .ann-body {
+    grid-column: 2 / 4;
+    grid-row: 4;
+    margin: 2px 0 0;
+    font-size: 0.8rem;
+    line-height: 1.4;
+    color: var(--subtext-metadata-color);
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+  }
+
+  // the category as a subtitle line in the hue (--tag-fg), with no pill
+  .ann-meta {
+    grid-column: 2 / 4;
+    grid-row: 3;
+    margin: 5px 0 0;
+  }
+
+  .ann-tag {
+    height: auto;
+    padding: 0;
+    background: none;
+    border-radius: 0;
+    font-size: 0.8rem;
+    font-weight: 500;
+    line-height: 1.4;
+    letter-spacing: 0;
+  }
+
+  // the listener count's spot (StationItem .total_listeners: top 15px, right 15px)
+  .ann-nav {
+    position: absolute;
+    top: 11px;
+    right: 13px;
+    margin: 0;
+  }
+
+  // the heart's spot: bottom-right, beside the text
+  .ann-actions {
+    grid-column: 4;
+    grid-row: 1 / -1;
+    align-self: end;
+    justify-self: end;
+    justify-content: flex-end;
+    margin: 0 0 0 20px;
+  }
+}
+
+@media screen and (max-width: 768px) {
+  .ann-inHome .ann-carousel {
+    .ann-slide {
+      grid-template-columns: var(--station-card-media) minmax(0, 1fr);
+      grid-template-rows: auto auto auto auto;
+      align-content: start;
+      align-items: start;
+    }
+
+    .ann-icon {
+      grid-row: 1 / 4;
+      align-self: start;
+    }
+
+    // leaves room for the pager in the top-right corner
+    .ann-title {
+      grid-column: 2;
+      grid-row: 1;
+      align-self: start;
+      margin-right: 76px;
+      font-size: 1.1rem;
+    }
+
+    .ann-meta {
+      grid-column: 2;
+      grid-row: 2;
+    }
+
+    .ann-body {
+      grid-column: 2;
+      grid-row: 3;
+    }
+
+    // compact arrows in the listener count's spot (no "i din n")
+    .ann-nav {
+      top: 9px;
+      right: 11px;
+
+      .ann-count {
+        display: none;
+      }
+    }
+
+    // the buttons go below, across the card
+    .ann-actions {
+      grid-column: 1 / -1;
+      grid-row: 4;
+      justify-self: start;
+      justify-content: flex-start;
+      margin: 14px 0 0;
+    }
+  }
+
+}
