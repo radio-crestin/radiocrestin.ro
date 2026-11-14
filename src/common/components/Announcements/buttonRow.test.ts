@@ -61,13 +61,23 @@ describe("the card's button row with a long label", () => {
     expect(html.indexOf("ann-ctaLabel")).toBeLessThan(html.indexOf("ann-dismiss"));
   });
 
-  it("fits each button to its content, wrapping the row before the label", () => {
+  it("keeps every label on one line, the buttons at their content width and the same height", () => {
     expect(rule(".ann-cta")).not.toContain("nowrap");
-    expect(rule(".ann-cta")).toContain("min-height: 40px");
-    expect(rule(".ann-actions .ann-cta")).toMatch(/flex: 0 1 auto;.*min-width: 0/);
+    expect(rule(".ann-ctaLabel")).toMatch(/overflow: hidden;.*white-space: nowrap;.*text-overflow: ellipsis/);
+    expect(rule(".ann-actions .ann-cta")).toMatch(/flex: 0 1 auto;.*min-width: 0;.*max-width: 100%;.*height: 40px/);
+    expect(rule(".ann-dismiss")).toContain("height: 40px");
+    expect(css).not.toContain(".ann-actions .ann-ctaLabel");
     expect(css).not.toMatch(/min-width: min\(100%, 11rem\)/);
+  });
+
+  it("wraps the row, right-aligned, when the buttons don't fit side by side", () => {
     expect(rule(".ann-actions")).toContain("flex-wrap: wrap");
-    expect(rule(".ann-actions .ann-ctaLabel")).toMatch(/-webkit-line-clamp: 2/);
+    expect(css).toMatch(/\.ann-actions \{ justify-content: flex-end; \}/);
+  });
+
+  it("gives the main button its full label as a title, for a label cut short", () => {
+    const html = renderToString(createElement(Slide, { announcement, onPrimary: noop, onDismiss: noop }));
+    expect(html).toContain(`title="${LONG_LABEL}"`);
   });
 
   it("renders a short label as is, with Ascunde right after it", () => {
@@ -114,10 +124,10 @@ describe("the home card's layout", () => {
     expect(rule(".ann-carousel .ann-body", "@media (max-width: 640px)")).toContain("grid-column: 1/-1");
   });
 
-  it("puts the buttons under the pager on desktop, and last from the left edge on phones", () => {
+  it("puts the buttons under the pager on desktop, and last, right-aligned, on phones", () => {
     expect(rule(".ann-carousel .ann-actions")).toMatch(/grid-column: 3;.*justify-self: end;.*justify-content: flex-end/);
     expect(rule(".ann-carousel .ann-actions", "@media (max-width: 640px)")).toMatch(
-      /grid-column: 1\/-1;.*grid-row: 4;.*justify-content: flex-start/,
+      /grid-column: 1\/-1;.*grid-row: 4;.*justify-content: flex-end/,
     );
   });
 
