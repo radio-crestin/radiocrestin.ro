@@ -47,20 +47,29 @@ describe("the home card on the station tile's tokens", () => {
 });
 
 describe("the home card's layout", () => {
-  it("shows the category as a subtitle line in the hue, with no pill", () => {
-    expect(rule(css, ".ann-inHome .ann-carousel .ann-tag")).toMatch(/height: auto;.*padding: 0;.*background: none;.*font-size: 0.8rem/);
-    expect(rule(css, ".ann-inHome .ann-carousel .ann-meta")).toMatch(/grid-row: 3;.*margin: 5px 0 0/);
+  it("puts the category on the title's line, on its baseline, after a grey dot (desktop)", () => {
+    expect(rule(css, ".ann-inHome .ann-carousel .ann-text")).toMatch(/display: flex;.*flex-wrap: wrap;.*align-items: baseline/);
+    expect(rule(css, ".ann-inHome .ann-carousel .ann-title")).toMatch(/order: 1;.*align-self: baseline/);
+    expect(rule(css, ".ann-inHome .ann-carousel .ann-meta")).toMatch(/order: 2;.*align-self: baseline/);
+    // an inline label: an inline-block with overflow:hidden would sit on its bottom edge
+    expect(rule(css, ".ann-inHome .ann-carousel .ann-tag")).toMatch(/display: inline;.*padding: 0;.*overflow: visible;.*background: none/);
+    expect(rule(css, ".ann-inHome .ann-carousel .ann-body")).toMatch(/order: 3;.*flex-basis: 100%;.*max-width: none/);
+    expect(css).toMatch(/@media screen and \(min-width: 769px\) \{ \.ann-inHome \.ann-carousel \.ann-tag::before \{ content: "·";/);
     expect(css).not.toMatch(/ann-tagPill|ann-tagLine|ann-v3B/);
   });
 
-  it("puts the pager in the listener count's spot and the buttons in the heart's", () => {
-    expect(rule(css, ".ann-inHome .ann-carousel .ann-nav")).toMatch(/position: absolute;.*top: 11px;.*right: 13px/);
-    expect(rule(css, ".ann-inHome .ann-carousel .ann-actions")).toMatch(/grid-column: 4;.*grid-row: 1\/-1;.*align-self: end;.*justify-self: end/);
+  it("puts the pager exactly in the listener count's spot and the buttons in the heart's", () => {
+    expect(rule(tile, ".station_item .total_listeners")).toMatch(/position: absolute;.*top: 15px;.*right: 15px/);
+    // no grid placement, so it is placed in the card's padding box, not a grid area
+    expect(rule(css, ".ann-inHome .ann-carousel .ann-nav")).toMatch(/position: absolute;.*top: 15px;.*right: 15px;.*grid-area: auto/);
+    expect(rule(css, ".ann-inHome .ann-carousel .ann-actions")).toMatch(/grid-column: 3;.*grid-row: 1\/-1;.*align-self: end;.*justify-self: end/);
   });
 
   it("on phones, keeps the title clear of the arrows and puts the buttons below", () => {
     const phone = "@media screen and (max-width: 768px)";
+    expect(rule(css, ".ann-inHome .ann-carousel .ann-text", phone)).toContain("display: contents");
     expect(rule(css, ".ann-inHome .ann-carousel .ann-title", phone)).toContain("margin-right: 76px");
+    expect(rule(css, ".ann-inHome .ann-carousel .ann-nav", phone)).toMatch(/top: 15px;.*right: 15px/);
     expect(rule(css, ".ann-inHome .ann-carousel .ann-nav .ann-count", phone)).toContain("display: none");
     expect(rule(css, ".ann-inHome .ann-carousel .ann-actions", phone)).toMatch(/grid-column: 1\/-1;.*grid-row: 4/);
   });

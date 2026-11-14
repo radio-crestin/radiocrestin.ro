@@ -1298,21 +1298,23 @@
 }
 
 
-// ---------- home card v3: a sibling of the station tiles (SPEC "Card v3", the owner's A-line) ----------
+// ---------- home card v3: a sibling of the station tiles (SPEC "Card v3", A-line + UPDATE 1) ----------
 // On the station tile's own tokens (base.scss --station-card-*): surface, radius, padding, logo
 // box and radius, title type (StationItem .station_name) and subtitle type (.song_name). The icon
-// tile is the soft hue tint at the logo's size with a big hue glyph; the category is a subtitle
-// line in the hue, then the description in the song line's grey. Desktop: the pager in the
-// listener count's spot (top-right), the buttons in the heart's (bottom-right). Phones: compact
-// arrows in the listener spot, the buttons below, across the card.
+// tile is the soft hue tint at the logo's size with a big hue glyph. Desktop: the category sits
+// on the title's line, to its right on its baseline (in the hue, after a grey "·"), wrapping under
+// it only when it doesn't fit; the description below in the song line's grey; the pager exactly
+// in the listener count's spot (top 15px, right 15px) and the buttons in the heart's
+// (bottom-right). Phones: the category as its own line, compact arrows in the listener spot, the
+// buttons below, across the card.
 .ann-inHome .ann-carousel {
   border-radius: var(--station-card-radius);
 
   .ann-slide {
     position: relative;
-    grid-template-columns: var(--station-card-media) fit-content(55%) minmax(0, 1fr) auto;
+    grid-template-columns: var(--station-card-media) minmax(0, 1fr) auto;
     // the text block centred between two flexible rows, like the station details
-    grid-template-rows: minmax(0, 1fr) auto auto auto minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) auto minmax(0, 1fr);
     column-gap: var(--station-card-gap);
     row-gap: 0;
     align-items: center;
@@ -1337,11 +1339,23 @@
     }
   }
 
-  // the station name's type (StationItem .station_name)
-  .ann-title {
+  // title, then the category on its baseline, then the description on a line of its own
+  .ann-text {
     grid-column: 2;
     grid-row: 2;
-    align-self: center;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    column-gap: 8px;
+    min-width: 0;
+    padding: 0;
+  }
+
+  // the station name's type (StationItem .station_name)
+  .ann-title {
+    order: 1;
+    align-self: baseline;
+    min-width: 0;
     margin: 0;
     font-size: 1.2rem;
     font-weight: 500;
@@ -1350,28 +1364,21 @@
     color: var(--text-color);
   }
 
-  // the song / artist line's type (StationItem .song_name)
-  .ann-body {
-    grid-column: 2 / 4;
-    grid-row: 4;
-    margin: 2px 0 0;
-    font-size: 0.8rem;
-    line-height: 1.4;
-    color: var(--subtext-metadata-color);
-    -webkit-line-clamp: 2;
-    line-clamp: 2;
-  }
-
-  // the category as a subtitle line in the hue (--tag-fg), with no pill
+  // the category, in the hue (--tag-fg), with no pill
   .ann-meta {
-    grid-column: 2 / 4;
-    grid-row: 3;
-    margin: 5px 0 0;
+    order: 2;
+    align-self: baseline;
+    min-height: 0;
+    margin: 0;
   }
 
+  // inline (not an inline-block with overflow:hidden, whose baseline would be its bottom edge),
+  // so it sits on the title's baseline
   .ann-tag {
+    display: inline;
     height: auto;
     padding: 0;
+    overflow: visible;
     background: none;
     border-radius: 0;
     font-size: 0.8rem;
@@ -1380,22 +1387,48 @@
     letter-spacing: 0;
   }
 
-  // the listener count's spot (StationItem .total_listeners: top 15px, right 15px)
+  // the song / artist line's type (StationItem .song_name)
+  // a line of its own (no max-width: it would let the line break land beside the category)
+  .ann-body {
+    order: 3;
+    flex-basis: 100%;
+    max-width: none;
+    margin: 5px 0 0;
+    font-size: 0.8rem;
+    line-height: 1.4;
+    color: var(--subtext-metadata-color);
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+  }
+
+  // the listener count's spot (StationItem .total_listeners: top 15px, right 15px). No grid
+  // placement: an absolutely positioned grid child would be placed in its grid area instead
+  // of the card's padding box.
   .ann-nav {
     position: absolute;
-    top: 11px;
-    right: 13px;
+    top: 15px;
+    right: 15px;
+    grid-area: auto;
     margin: 0;
   }
 
   // the heart's spot: bottom-right, beside the text
   .ann-actions {
-    grid-column: 4;
+    grid-column: 3;
     grid-row: 1 / -1;
     align-self: end;
     justify-self: end;
     justify-content: flex-end;
     margin: 0 0 0 20px;
+  }
+}
+
+// a grey "·" between the title and the category, like the station subtitle's separator
+@media screen and (min-width: 769px) {
+  .ann-inHome .ann-carousel .ann-tag::before {
+    content: "·";
+    margin-right: 8px;
+    color: var(--subtext-metadata-color);
   }
 }
 
@@ -1413,6 +1446,10 @@
       align-self: start;
     }
 
+    .ann-text {
+      display: contents;
+    }
+
     // leaves room for the pager in the top-right corner
     .ann-title {
       grid-column: 2;
@@ -1425,17 +1462,19 @@
     .ann-meta {
       grid-column: 2;
       grid-row: 2;
+      margin: 4px 0 0;
     }
 
     .ann-body {
       grid-column: 2;
       grid-row: 3;
+      margin-top: 2px;
     }
 
-    // compact arrows in the listener count's spot (no "i din n")
+    // compact arrows exactly in the listener count's spot (no "i din n")
     .ann-nav {
-      top: 9px;
-      right: 11px;
+      top: 15px;
+      right: 15px;
 
       .ann-count {
         display: none;
