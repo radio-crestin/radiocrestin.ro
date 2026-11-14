@@ -27,16 +27,18 @@ interface ActionLinkProps {
   action: IAnnouncementAction | null | undefined;
   className: string;
   onActivate: () => void;
+  /** The full label, for a label cut short with an ellipsis. */
+  title?: string;
   children: React.ReactNode;
 }
 
 /** A link for URL actions (keeps middle-click and "open in new tab"), a button for the page dialog. */
-export const ActionControl = ({ action, className, onActivate, children }: ActionLinkProps) => {
+export const ActionControl = ({ action, className, onActivate, title, children }: ActionLinkProps) => {
   const resolved = resolveWebAction(action);
   if (!resolved) return null;
   if (resolved.kind !== "link") {
     return (
-      <button type="button" className={className} onClick={onActivate}>
+      <button type="button" className={className} title={title} onClick={onActivate}>
         {children}
       </button>
     );
@@ -44,6 +46,7 @@ export const ActionControl = ({ action, className, onActivate, children }: Actio
   return (
     <a
       className={className}
+      title={title}
       href={resolved.href}
       onClick={onActivate}
       {...(resolved.newTab && { target: "_blank", rel: "noopener noreferrer" })}
@@ -66,6 +69,7 @@ const Actions = ({ announcement, onPrimary, onDismiss }: { announcement: IAnnoun
     <ActionControl
       action={button.action}
       className={`${styles.cta} ${STYLE_CLASS[button.style] ?? ""}`}
+      title={button.label}
       onActivate={() => onPrimary(announcement, "button")}
     >
       <span className={styles.ctaLabel}>{button.label}</span>
