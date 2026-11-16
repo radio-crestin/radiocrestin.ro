@@ -9,7 +9,7 @@ import { sortStationsByRecommendedScore } from "@/utils/stationScore";
 import { seoStation } from "@/utils/seo";
 import type { IReview, IStation } from "@/models/Station";
 import { ANONYMOUS_REVIEW_AUTHOR, SITE_URL } from "@/constants/constants";
-import { getBuildSnapshot } from "@/services/announcementsBuild";
+import { getRadioBuildSnapshot } from "@/services/announcementsBuild";
 
 export async function getStaticPaths() {
   const { stations } = await getStations();
@@ -115,7 +115,7 @@ const breadcrumbSchema = JSON.stringify({
   ],
 });
 
-const announcements = await getBuildSnapshot(Astro.params.station_slug);
+const announcements = await getRadioBuildSnapshot(Astro.params.station_slug);
 ---
 
 <BaseLayout {...seo}>

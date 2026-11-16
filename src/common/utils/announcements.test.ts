@@ -183,4 +183,13 @@ describe("stationFirst", () => {
   it("leaves pages that are not a station's unchanged", () => {
     expect(stationFirst(snapshot)).toBe(snapshot);
   });
+
+  // RadioApp applies it to every station's snapshot as the selected station changes in place
+  it("follows a station change made without a page load", () => {
+    const home = (page: IAnnouncementsSnapshot) =>
+      page.announcements.filter((a) => (a.placement ?? "home") === "home").map((a) => a.slug);
+    expect(home(stationFirst(snapshot, "micul-samaritean"))).toEqual(["share-a-thon", "versetul-zilei"]);
+    expect(home(stationFirst(snapshot, "alt-radio"))).toEqual(["alt-post", "versetul-zilei"]);
+    expect(home(stationFirst(snapshot))).toEqual(["versetul-zilei"]);
+  });
 });

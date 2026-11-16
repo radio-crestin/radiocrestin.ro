@@ -72,22 +72,25 @@ const refreshInBackground = async () => {
   }
 };
 
-let started = false;
+/** Rotate mode starts one slide further on the next load (or station change). */
+const advanceRotationIfShown = (snapshot: IAnnouncementsSnapshot, result: PrepaintResult) => {
+  if (result.m.h.length + result.d.h.length && snapshot.settings.rotation_mode === "rotate") {
+    useAnnouncementsStore.getState().advanceRotation();
+  }
+};
+
+/** The snapshot `result` was decided for; null until the first component takes over. */
+let decidedFor: IAnnouncementsSnapshot | null = null;
 
 /** Once per page view, when the first announcements component takes over. */
 const start = (snapshot: IAnnouncementsSnapshot) => {
-  if (started) return;
-  started = true;
+  decidedFor = snapshot;
   const prepainted = (window as unknown as { __ann?: PrepaintResult }).__ann;
   const result = prepainted ?? computeEligibility(snapshot);
   const query = window.matchMedia(MOBILE_QUERY);
   useView.setState({ result, mobile: query.matches });
   query.addEventListener("change", () => useView.setState({ mobile: query.matches }));
-
-  // Rotate mode starts one slide further on the next load.
-  if (result.m.h.length + result.d.h.length && snapshot.settings.rotation_mode === "rotate") {
-    useAnnouncementsStore.getState().advanceRotation();
-  }
+  advanceRotationIfShown(snapshot, result);
 
   startFlushingAnnouncementEvents();
   const token = new URLSearchParams(location.search).get(PREVIEW_PARAM);
@@ -103,6 +106,23 @@ const start = (snapshot: IAnnouncementsSnapshot) => {
 };
 
 /**
+ * Another station (or the home page) without a page load (RadioApp): decided again, as a new
+ * load would, so the home card also moves on to its next announcement.
+ */
+const decideAgain = (snapshot: IAnnouncementsSnapshot) => {
+  decidedFor = snapshot;
+  if (useView.getState().preview) return;
+  const result = computeEligibility(snapshot);
+  useView.setState({ result });
+  advanceRotationIfShown(snapshot, result);
+};
+
+const decideFor = (snapshot: IAnnouncementsSnapshot) => {
+  if (!decidedFor) start(snapshot);
+  else if (snapshot !== decidedFor) decideAgain(snapshot);
+};
+
+/**
  * The snapshot and what may show. On its first render a component matches the server markup
  * (visible = null); it takes over in a layout effect, before the browser paints.
  */
@@ -110,7 +130,7 @@ export const useAnnouncements = () => {
   const built = useSnapshot();
   const [live, setLive] = useState(false);
   useLayoutEffect(() => {
-    start(built);
+    decideFor(built);
     setLive(true);
   }, [built]);
 

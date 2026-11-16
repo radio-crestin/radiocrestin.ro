@@ -56,17 +56,31 @@ const withoutRenderedMarkup = (a: IAnnouncement): IAnnouncement => {
   });
 };
 
-/**
- * The snapshot one page renders: the home announcements, led by the station's own on a station
- * page (station links are full page loads, so no other station's are ever needed there).
- */
-export const getBuildSnapshot = async (stationSlug?: string): Promise<IAnnouncementsSnapshot> => {
+const isHome = (a: IAnnouncement) => (a.placement ?? "home") === "home";
+
+const showableSnapshot = async (keep: (a: IAnnouncement) => boolean): Promise<IAnnouncementsSnapshot> => {
   const s = await getShowableSnapshot();
   for (const a of s.announcements) contentStore[a.slug] = a;
-  const forThisPage = (a: IAnnouncement) =>
-    (a.placement ?? "home") === "home" || (!!stationSlug && (a.station_slugs ?? []).includes(stationSlug));
-  const ordered = stationFirst({ ...s, announcements: s.announcements.filter(forThisPage) }, stationSlug);
+  return { ...s, announcements: s.announcements.filter(keep) };
+};
+
+/** The home announcements, led by the station's own on a station page; prepares the card's markup. */
+export const getBuildSnapshot = async (stationSlug?: string): Promise<IAnnouncementsSnapshot> => {
+  const forThisPage = (a: IAnnouncement) => isHome(a) || (!!stationSlug && (a.station_slugs ?? []).includes(stationSlug));
+  const ordered = stationFirst(await showableSnapshot(forThisPage), stationSlug);
   const page = { ...ordered, announcements: ordered.announcements.map(withoutRenderedMarkup) };
   await prepareAnnouncementsMarkup(page, stationSlug);
   return page;
+};
+
+/**
+ * For the radio pages (RadioApp), where picking a station, the player's previous / next and
+ * Back change the station without a page load: every station's announcements, in the API's
+ * order. The island puts the selected station's first (stationFirst), and the server markup is
+ * this page's card.
+ */
+export const getRadioBuildSnapshot = async (stationSlug?: string): Promise<IAnnouncementsSnapshot> => {
+  await getBuildSnapshot(stationSlug);
+  const all = await showableSnapshot(() => true);
+  return { ...all, announcements: all.announcements.map(withoutRenderedMarkup) };
 };

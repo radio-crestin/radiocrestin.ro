@@ -9,7 +9,7 @@ import { sortStationsByRecommendedScore } from "@/utils/stationScore";
 import { SEO_DEFAULT } from "@/utils/seo";
 import { SITE_URL } from "@/constants/constants";
 import type { IStation } from "@/models/Station";
-import { getBuildSnapshot } from "@/services/announcementsBuild";
+import { getRadioBuildSnapshot } from "@/services/announcementsBuild";
 
 const { stations: rawStations } = await getStations();
 rawStations.forEach((station: IStation) => { station.is_favorite = false; });
@@ -30,7 +30,7 @@ const stationListSchema = JSON.stringify({
   })),
 });
 
-const announcements = await getBuildSnapshot();
+const announcements = await getRadioBuildSnapshot();
 ---
 
 <BaseLayout {...SEO_DEFAULT}>

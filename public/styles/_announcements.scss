@@ -1530,3 +1530,47 @@
   }
 
 }
+
+// Compact arrows in the card's top-right corner, on the buttons' right edge, so they sit apart
+// from the buttons instead of crowding them. Touch screens keep a 44px-tall tap area.
+.ann-inHome .ann-carousel {
+  --ann-arrow: 26px;
+
+  .ann-nav {
+    top: 10px;
+    right: var(--station-card-pad-x);
+    gap: 4px;
+  }
+
+  .ann-navBtn {
+    width: var(--ann-arrow);
+    height: var(--ann-arrow);
+
+    svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    @media (pointer: coarse) {
+      &::before {
+        inset: calc((var(--ann-arrow) - 44px) / 2) -2px;
+      }
+    }
+  }
+}
+
+@media screen and (max-width: 768px) {
+  .ann-inHome .ann-carousel {
+    --ann-arrow: 28px;
+
+    .ann-nav {
+      top: 12px;
+      right: 12px;
+    }
+
+    // room for the two arrows beside the title
+    .ann-title {
+      margin-right: 64px;
+    }
+  }
+}

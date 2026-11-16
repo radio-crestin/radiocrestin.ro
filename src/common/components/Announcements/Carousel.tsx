@@ -56,7 +56,7 @@ const useHeightAnimation = (viewport: React.RefObject<HTMLDivElement | null>, ke
   return prepare;
 };
 
-export default function Carousel({ items, sequence, autoplay, onDismiss, onImpression, onExpire, onPrimary }: CarouselProps) {
+export default function Carousel({ items, sequence, autoplay, onDismiss, onImpression, onExpire, onPrimary, onLink }: CarouselProps) {
   const takenOver = sequence !== null;
   const stack = autoplay > 0;
   const [expired, setExpired] = useState<Set<string>>(() => new Set());
@@ -273,6 +273,7 @@ export default function Carousel({ items, sequence, autoplay, onDismiss, onImpre
             style={slideStyle(a, i)}
             onPrimary={onPrimaryUnlessSwiped}
             onDismiss={onDismissAnimated}
+            onLink={onLink}
           />
         ))}
       </div>

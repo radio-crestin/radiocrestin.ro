@@ -33,7 +33,7 @@ export default function useAnnouncementActions({ stationSlug = null, positionOf,
     (
       a: IAnnouncement,
       type: Parameters<typeof recordAnnouncementEvent>[1],
-      extra: { target?: ClickTarget; actionType?: string | null } = {},
+      extra: { target?: ClickTarget; actionType?: string | null; linkUrl?: string } = {},
     ) => recordAnnouncementEvent(a, type, { position: positionOf(a), stationSlug, ...extra }),
     [positionOf, stationSlug],
   );
@@ -47,6 +47,11 @@ export default function useAnnouncementActions({ stationSlug = null, positionOf,
       const opensHere = resolveWebAction(a.button?.action)?.kind !== "link";
       if (target === "card" || opensHere) followAction(a, a.button?.action);
     },
+    [record],
+  );
+
+  const onLink = useCallback(
+    (a: IAnnouncement, href: string) => record(a, "clicked", { target: "link", linkUrl: href }),
     [record],
   );
 
@@ -69,5 +74,5 @@ export default function useAnnouncementActions({ stationSlug = null, positionOf,
     [record],
   );
 
-  return { onPrimary, onDismiss, onImpression };
+  return { onPrimary, onDismiss, onLink, onImpression };
 }

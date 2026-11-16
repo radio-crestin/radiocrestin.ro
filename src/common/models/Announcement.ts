@@ -15,8 +15,8 @@ export type ButtonStyle = "filled" | "outline" | "text" | "hidden";
 
 export type Placement = "home" | "station";
 
-/** What was tapped for a `clicked` event: the whole card or its button. */
-export type ClickTarget = "card" | "button";
+/** What was tapped for a `clicked` event: the whole card, its button or a link in its description. */
+export type ClickTarget = "card" | "button" | "link";
 
 export type AnnouncementEventType =
   | "impression"

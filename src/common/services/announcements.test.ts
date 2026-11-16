@@ -232,6 +232,17 @@ describe("recordAnnouncementEvent", () => {
     expect(send.mock.calls[0][0][1].target).toBe("card");
   });
 
+  it("records a link in the description as a click on a link, with where it goes", () => {
+    const send = vi.fn();
+    const queue = createEventQueue(send);
+    recordAnnouncementEvent(a, "clicked", { position: 0, target: "link", linkUrl: "https://example.org/doneaza" }, queue);
+    expect(send.mock.calls[0][0][0]).toMatchObject({ type: "clicked", target: "link" });
+    expect(trackAnnouncementMock.mock.calls[0][1]).toMatchObject({
+      target: "link",
+      link_url: "https://example.org/doneaza",
+    });
+  });
+
   it("carries the placement and station of station announcements", () => {
     const send = vi.fn();
     const queue = createEventQueue(send);
