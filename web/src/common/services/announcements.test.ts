@@ -97,19 +97,61 @@ describe("fetchAnnouncementsFeed", () => {
 });
 
 describe("getAnnouncementsSnapshot", () => {
-  it("fetches once per build, stamps built_at, and falls back to an empty list", async () => {
+  const LIST = '{"announcements":[{"slug":"a"}]}';
+  const freshSnapshot = async () => {
     vi.resetModules();
     delete (globalThis as { __announcementsSnapshot?: unknown }).__announcementsSnapshot;
-    const fetchMock = setFetch(async () => {
-      throw new Error("down");
-    });
-    const { getAnnouncementsSnapshot: snapshot } = await import("@/services/announcements");
+    return (await import("@/services/announcements")).getAnnouncementsSnapshot;
+  };
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllEnvs();
+    delete (globalThis as { __announcementsSnapshot?: unknown }).__announcementsSnapshot;
+  });
+
+  it("fetches once per build and stamps built_at", async () => {
+    const fetchMock = setFetch(async () => makeResponse(200, LIST));
+    const snapshot = await freshSnapshot();
     const first = await snapshot();
-    const second = await snapshot();
-    expect(first.announcements).toEqual([]);
+    expect(first.announcements).toEqual([{ slug: "a" }]);
     expect(first.built_at).toEqual(expect.any(Number));
-    expect(second).toBe(first);
+    expect(await snapshot()).toBe(first);
     expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("retries a failed read and uses the list once it comes", async () => {
+    vi.useFakeTimers();
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    const answers = [
+      async () => { throw new TypeError("fetch failed"); },
+      async () => makeResponse(503, "busy"),
+      async () => makeResponse(200, LIST),
+    ];
+    const fetchMock = setFetch(() => answers.shift()!());
+    const snapshot = await freshSnapshot();
+    const result = snapshot();
+    await vi.runAllTimersAsync();
+    expect((await result).announcements).toEqual([{ slug: "a" }]);
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+  });
+
+  it("fails the build when every try fails, saying why", async () => {
+    vi.useFakeTimers();
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    setFetch(async () => makeResponse(200, "<html>challenge</html>"));
+    const snapshot = await freshSnapshot();
+    const result = snapshot();
+    const failure = expect(result).rejects.toThrow(/after 3 tries.*not JSON: <html>challenge/);
+    await vi.runAllTimersAsync();
+    await failure;
+    expect(warn).toHaveBeenCalledTimes(3);
+  });
+
+  it("falls back to an empty list on the dev server", async () => {
+    vi.stubEnv("MODE", "development");
+    setFetch(async () => { throw new TypeError("fetch failed"); });
+    const snapshot = await freshSnapshot();
+    expect((await snapshot()).announcements).toEqual([]);
   });
 });
 
