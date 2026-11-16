@@ -54,7 +54,7 @@ describe("the button label's colour", () => {
 });
 
 describe("the card's button row with a long label", () => {
-  const html = renderToString(createElement(Slide, { announcement, onPrimary: noop, onDismiss: noop }));
+  const html = renderToString(createElement(Slide, { announcement, onPrimary: noop, onDismiss: noop, onLink: noop }));
 
   it("keeps the whole label, in a wrappable span, before Ascunde", () => {
     expect(html).toContain(`<span class="ann-ctaLabel">${LONG_LABEL}</span>`);
@@ -76,7 +76,7 @@ describe("the card's button row with a long label", () => {
   });
 
   it("gives the main button its full label as a title, for a label cut short", () => {
-    const html = renderToString(createElement(Slide, { announcement, onPrimary: noop, onDismiss: noop }));
+    const html = renderToString(createElement(Slide, { announcement, onPrimary: noop, onDismiss: noop, onLink: noop }));
     expect(html).toContain(`title="${LONG_LABEL}"`);
   });
 
@@ -86,6 +86,7 @@ describe("the card's button row with a long label", () => {
         announcement: { ...announcement, button: { ...announcement.button!, label: "Intră în grup" } },
         onPrimary: noop,
         onDismiss: noop,
+        onLink: noop,
       }),
     );
     expect(html).toContain('<span class="ann-ctaLabel">Intră în grup</span>');
@@ -150,6 +151,7 @@ describe("the home card's layout", () => {
         } as IAnnouncement,
         onPrimary: noop,
         onDismiss: noop,
+        onLink: noop,
       }),
     );
     const style = html.match(/<section[^>]*style="([^"]*)"/)?.[1] ?? "";

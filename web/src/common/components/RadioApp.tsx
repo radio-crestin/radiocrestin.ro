@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useRef } from "react";
+import React, { useContext, useEffect, useMemo, useRef } from "react";
 import { ContextProvider } from "@/context/ContextProvider";
 import { ToastContainer } from "react-toastify";
 import NoInternetConnection from "@/components/NoInternetConnection";
@@ -18,13 +18,14 @@ import type { IReview, IStation } from "@/models/Station";
 import { initPostHog } from "@/utils/posthog";
 import { getPrepaintFavouriteStations } from "@/utils/prepaintFavourites";
 import { stationTitle } from "@/utils/seo";
+import { stationFirst } from "@/utils/announcements";
 
 interface RadioAppProps {
   stations: IStation[];
   selectedStation?: IStation | null;
   showReviews?: boolean;
   initialReviews?: IReview[];
-  /** Build-time announcements snapshot, rendered into the HTML. */
+  /** Build-time announcements snapshot (every station's), rendered into the HTML. */
   announcements?: IAnnouncementsSnapshot;
 }
 
@@ -80,6 +81,23 @@ function RadioContent({ showReviews, initialStationId, initialReviews }: RadioCo
   );
 }
 
+/**
+ * The selected station's announcements lead the card. Picking a station, the player's previous /
+ * next and Back change it without a page load, so the card follows it here.
+ */
+function SelectedStationAnnouncements({
+  snapshot,
+  children,
+}: {
+  snapshot?: IAnnouncementsSnapshot;
+  children: React.ReactNode;
+}) {
+  const { ctx } = useContext(Context);
+  const slug = ctx.selectedStation?.slug;
+  const forStation = useMemo(() => snapshot && stationFirst(snapshot, slug), [snapshot, slug]);
+  return <AnnouncementsProvider snapshot={forStation}>{children}</AnnouncementsProvider>;
+}
+
 export default function RadioApp({
   stations,
   selectedStation = null,
@@ -95,13 +113,13 @@ export default function RadioApp({
 
   return (
     <ContextProvider initialState={initialState}>
-      <AnnouncementsProvider snapshot={announcements}>
+      <SelectedStationAnnouncements snapshot={announcements}>
         <RadioContent
           showReviews={showReviews}
           initialStationId={selectedStation?.id}
           initialReviews={initialReviews}
         />
-      </AnnouncementsProvider>
+      </SelectedStationAnnouncements>
     </ContextProvider>
   );
 }

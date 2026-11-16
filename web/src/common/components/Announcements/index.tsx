@@ -3,9 +3,10 @@
 // (gate.ts). The server writes the card's markup into the slot; the page's island treats it
 // as opaque HTML, and the chunk later hydrates it in a React root of its own, so loading it
 // moves nothing and nothing in the island (re-renders, context updates) can disturb it.
-import React, { memo, useEffect, useRef, useState } from "react";
+import React, { memo, useCallback, useEffect, useRef, useState } from "react";
 import type { IAnnouncementsSnapshot } from "@/models/Announcement";
 import type { SlotState } from "./Card";
+import type { CardRoot } from "./lazy";
 import { homeItems, useSnapshot } from "./context";
 import { whenNeeded } from "./gate";
 import styles from "./styles";
@@ -64,11 +65,16 @@ const loadChunk = (): Promise<LazyModule> =>
         }),
     ));
 
-/** On the server: the prepared markup; in the browser: what the server left in the element. */
+/**
+ * On the server: the prepared markup; in the browser: what the server left in the element. As
+ * one dangerouslySetInnerHTML object for good: React 19 compares it by identity, and a new one
+ * on a re-render would reset the element's HTML under the root that renders inside it.
+ */
 const useServerMarkup = (prepared: () => string | undefined, selector: string) =>
-  useState(() =>
-    typeof document === "undefined" ? (prepared() ?? "") : (document.querySelector(selector)?.innerHTML ?? ""),
-  )[0];
+  useState(() => ({
+    __html:
+      typeof document === "undefined" ? (prepared() ?? "") : (document.querySelector(selector)?.innerHTML ?? ""),
+  }))[0];
 
 interface AnnouncementsProps {
   /** Above "Stații favorite:" (or the station list), in the favourites' column. */
@@ -89,22 +95,40 @@ function Announcements({ inHome = false, inContent = false, className = "" }: An
   const [slot, setSlot] = useState<SlotState>(CLEAR);
   const html = useServerMarkup(() => markup().cards[snapshot.station_slug ?? ""], SLOT);
 
+  const onSlot = useCallback(
+    (next: SlotState) => setSlot((prev) => (prev.empty === next.empty && prev.faded === next.faded ? prev : next)),
+    [],
+  );
+
+  // One root for the card, hydrated over the server markup; a station change (RadioApp) shows
+  // the new snapshot in it. Unmounted a task later: never while the page's own root commits.
+  const card = useRef<CardRoot | null>(null);
+  const hydrated = useRef(false);
   useEffect(() => {
     // the dialogs are needed even without a card: station sheets, shared #anunt/<slug> links
-    if (!snapshot.announcements.length && !location.hash.startsWith("#anunt/")) return;
-    let root: { unmount: () => void } | undefined;
+    if (!card.current && !snapshot.announcements.length && !location.hash.startsWith("#anunt/")) return;
     let cancelled = false;
     loadChunk().then((m) => {
       if (cancelled) return;
-      root = m.mountCard(slotRef.current, snapshot, (next) =>
-        setSlot((prev) => (prev.empty === next.empty && prev.faded === next.faded ? prev : next)),
-      );
+      setSlot(CLEAR);
+      const current = card.current;
+      if (current && current.container === slotRef.current) return current.show(snapshot);
+      if (current) setTimeout(current.unmount);
+      card.current = m.mountCard(slotRef.current, snapshot, onSlot, !hydrated.current);
+      hydrated.current = true;
     });
     return () => {
       cancelled = true;
-      root?.unmount();
     };
-  }, [snapshot]);
+  }, [snapshot, onSlot]);
+
+  useEffect(
+    () => () => {
+      const current = card.current;
+      if (current) setTimeout(current.unmount);
+    },
+    [],
+  );
 
   if (!hasHome) return null;
   return (
@@ -114,7 +138,7 @@ function Announcements({ inHome = false, inContent = false, className = "" }: An
       data-ann-pp=""
       className={`${styles.slot} ${inHome ? styles.inHome : ""} ${inContent ? styles.inContent : ""} ${slot.faded ? styles.faded : ""} ${className}`}
       hidden={slot.empty}
-      dangerouslySetInnerHTML={{ __html: html }}
+      dangerouslySetInnerHTML={html}
     />
   );
 }
@@ -155,6 +179,6 @@ export const StationAnnouncementsBell = memo(function StationAnnouncementsBell(p
 
   if (!has) return null;
   return (
-    <span ref={ref} data-ann-bell-root={key} className={styles.bellRoot} dangerouslySetInnerHTML={{ __html: html }} />
+    <span ref={ref} data-ann-bell-root={key} className={styles.bellRoot} dangerouslySetInnerHTML={html} />
   );
 });

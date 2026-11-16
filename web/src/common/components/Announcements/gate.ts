@@ -8,7 +8,9 @@ const SLOTS = "[data-ann-r],[data-ann-b]";
 export interface PendingTap {
   /** Announcement slug, or the station slug for a bell. */
   slug: string;
-  kind: "link" | "primary" | "dismiss" | "card" | "bell";
+  kind: "link" | "bodyLink" | "primary" | "dismiss" | "card" | "bell";
+  /** For a bodyLink: where it goes. */
+  href?: string;
 }
 
 let pending: PendingTap[] = [];
@@ -26,7 +28,10 @@ export const takePendingTaps = (kinds: PendingTap["kind"][]): PendingTap[] => {
   return taken;
 };
 
+const BODY_LINK = ".ann-body a[href]";
+
 const tapKind = (el: Element): PendingTap["kind"] | null => {
+  if (el.closest(BODY_LINK)) return "bodyLink";
   if (el.closest("a[href]")) return "link";
   const button = el.closest("button");
   if (!button) return "card";
@@ -110,11 +115,12 @@ export const whenNeeded = (): Promise<void> =>
             ? slot.getAttribute("data-ann-b")
             : el.closest("section[data-ann]")?.getAttribute("data-ann");
         if (!kind || !slug) return;
-        if (kind !== "link") {
+        if (kind !== "link" && kind !== "bodyLink") {
           e.preventDefault();
           e.stopPropagation();
         }
-        pending.push({ slug, kind });
+        const href = kind === "bodyLink" ? el.closest<HTMLAnchorElement>(BODY_LINK)?.href : undefined;
+        pending.push({ slug, kind, href });
         go();
       },
       { capture: true },

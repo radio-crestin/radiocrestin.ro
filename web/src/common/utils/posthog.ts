@@ -366,6 +366,7 @@ export interface AnnouncementEventProperties {
   station_slug: string | null;
   video_provider?: string;
   video_kind?: string;
+  link_url?: string;
 }
 
 /** Captures announcement_impression, announcement_clicked, … (names from the announcements SPEC). */

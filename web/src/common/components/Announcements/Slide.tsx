@@ -12,6 +12,8 @@ export interface SlideHandlers {
   onPrimary: (announcement: IAnnouncement, target: ClickTarget) => void;
   /** "✕ Ascunde": hide this announcement for good on this device. */
   onDismiss: (announcement: IAnnouncement) => void;
+  /** A link in the description (e.g. "Donează"), which navigates by itself. */
+  onLink: (announcement: IAnnouncement, href: string) => void;
 }
 
 /** The button's icon, as SVG markup prepared at build time (absent for client-fetched items). */
@@ -144,7 +146,9 @@ const Slide = ({
   const focusable = tappable && a.button?.style === "hidden";
 
   const onClick = (e: React.MouseEvent) => {
-    if (tappable && !isFromControl(e.target)) handlers.onPrimary(a, "card");
+    const bodyLink = (e.target as HTMLElement).closest<HTMLAnchorElement>(`.${styles.body} a[href]`);
+    if (bodyLink) handlers.onLink(a, bodyLink.href);
+    else if (tappable && !isFromControl(e.target)) handlers.onPrimary(a, "card");
   };
   const onKeyDown = (e: React.KeyboardEvent) => {
     if (focusable && e.target === e.currentTarget && (e.key === "Enter" || e.key === " ")) {

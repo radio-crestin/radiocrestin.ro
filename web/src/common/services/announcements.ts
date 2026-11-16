@@ -188,8 +188,10 @@ export const startFlushingAnnouncementEvents = (queue: EventQueue = announcement
 
 export interface AnnouncementEventContext {
   position: number;
-  /** For `clicked`: whether the whole card or its button was tapped. */
+  /** For `clicked`: whether the whole card, its button or a link in its description was tapped. */
   target?: ClickTarget | null;
+  /** For a `clicked` on a link in the description: where it goes. */
+  linkUrl?: string;
   /** Defaults to the primary button's action type. */
   actionType?: string | null;
   /** The station page or player the announcement was shown in. */
@@ -228,6 +230,7 @@ export const recordAnnouncementEvent = (
     placement,
     station_slug: stationSlug,
     ...(context.video && { video_provider: context.video.provider, video_kind: context.video.kind }),
+    ...(context.linkUrl && { link_url: context.linkUrl }),
   });
   if (type === "clicked") queue.flush();
 };

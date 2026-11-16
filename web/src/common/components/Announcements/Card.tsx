@@ -136,10 +136,11 @@ export default function Card({ onSlot }: { onSlot: (state: SlotState) => void })
     if (visible === null) return;
     document.querySelectorAll("[data-ann-pp]").forEach((el) => el.removeAttribute("data-ann-pp"));
     markLive();
-    for (const tap of takePendingTaps(["primary", "card", "dismiss", "link"])) {
+    for (const tap of takePendingTaps(["primary", "card", "dismiss", "link", "bodyLink"])) {
       const a = shownRef.current.find((x) => x.slug === tap.slug);
       if (!a) continue;
       if (tap.kind === "dismiss") actions.onDismiss(a);
+      else if (tap.kind === "bodyLink") actions.onLink(a, tap.href ?? "");
       else if (tap.kind === "link") recordAnnouncementEvent(a, "clicked", { position: positionOf(a), target: "button" });
       // a card tap on a link can't be replayed (it would be a pop-up); the rest open here
       else if (tap.kind === "primary" || resolveWebAction(a.button?.action)?.kind !== "link") actions.onPrimary(a, tap.kind === "card" ? "card" : "button");

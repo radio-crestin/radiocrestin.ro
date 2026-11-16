@@ -8,22 +8,46 @@ import Card, { type SlotState } from "./Card";
 import { AnnouncementsProvider } from "./context";
 import { StationAnnouncementsBell, type BellProps } from "./StationAnnouncements";
 
-/** The card in `slot` (its server markup), or, without one, just the dialogs it hosts. */
+export interface CardRoot {
+  /** The slot it renders in (null: only the dialogs, in a host of its own). */
+  container: HTMLElement | null;
+  /** Shows another snapshot (a station change in RadioApp): the card starts over, as on a new load. */
+  show: (snapshot: IAnnouncementsSnapshot) => void;
+  unmount: () => void;
+}
+
+/**
+ * The card in `slot`, or, without one, just the dialogs it hosts. With `hydrate` it adopts the
+ * server markup; otherwise (a slot that appeared after a station change) it renders afresh.
+ */
 export const mountCard = (
   slot: HTMLElement | null,
   snapshot: IAnnouncementsSnapshot,
   onSlot: (state: SlotState) => void,
-): Root => {
-  const tree = (
-    <AnnouncementsProvider snapshot={snapshot}>
+  hydrate: boolean,
+): CardRoot => {
+  let generation = 0;
+  // a new key per snapshot remounts the card, so its state (rotation anchor, page) starts over
+  const tree = (s: IAnnouncementsSnapshot) => (
+    <AnnouncementsProvider key={generation++} snapshot={s}>
       <Card onSlot={onSlot} />
     </AnnouncementsProvider>
   );
-  if (slot) return hydrateRoot(slot, tree);
-  const host = document.body.appendChild(document.createElement("div"));
-  const root = createRoot(host);
-  root.render(tree);
-  return root;
+  const host = slot ?? document.body.appendChild(document.createElement("div"));
+  let root: Root;
+  if (slot && hydrate) root = hydrateRoot(slot, tree(snapshot));
+  else {
+    root = createRoot(host);
+    root.render(tree(snapshot));
+  }
+  return {
+    container: slot,
+    show: (s) => root.render(tree(s)),
+    unmount: () => {
+      root.unmount();
+      if (!slot) host.remove();
+    },
+  };
 };
 
 export const mountBell = (el: HTMLElement, snapshot: IAnnouncementsSnapshot, props: BellProps): Root =>
