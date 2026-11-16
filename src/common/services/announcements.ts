@@ -24,7 +24,9 @@ export const ANNOUNCEMENTS_API_BASE: string =
   import.meta.env.PUBLIC_ANNOUNCEMENTS_API_BASE || API_BASE;
 
 const MAX_EVENTS_PER_REQUEST = 100;
-const BUILD_TIMEOUT_MS = 2000;
+const BUILD_TIMEOUT_MS = 10_000;
+const BUILD_ATTEMPTS = 3;
+const BUILD_RETRY_DELAY_MS = 2000;
 export const EVENTS_FLUSH_INTERVAL_MS = 5000;
 
 export const EMPTY_ANNOUNCEMENTS: IAnnouncementsResponse = {
@@ -69,19 +71,69 @@ const toResponse = (data: any): IAnnouncementsResponse | null =>
       }
     : null;
 
+const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/** One build-time read of the list: the list, or why there is none. */
+const readListForBuild = async (): Promise<IAnnouncementsResponse | string> => {
+  try {
+    const response = await fetch(LIST_URL, {
+      headers: { accept: "application/json" },
+      signal: timeoutSignal(BUILD_TIMEOUT_MS),
+    });
+    const body = await response.text();
+    if (!response.ok) return `HTTP ${response.status}: ${body.slice(0, 200)}`;
+    try {
+      return toResponse(JSON.parse(body)) ?? `no announcements list in: ${body.slice(0, 200)}`;
+    } catch {
+      return `not JSON: ${body.slice(0, 200)}`;
+    }
+  } catch (error) {
+    return describeError(error);
+  }
+};
+
+/** Node's fetch says only "fetch failed"; the cause names the DNS, TLS or socket error. */
+const describeError = (error: unknown): string => {
+  if (!(error instanceof Error)) return String(error);
+  const cause = error.cause ? ` (cause: ${describeError(error.cause)})` : "";
+  return `${error.name}: ${error.message}${cause}`;
+};
+
 /**
- * The list as it is at build time, rendered into the HTML. One request per build;
- * a slow or failing API gives an empty snapshot instead of a slow build.
+ * The list for the build, tried BUILD_ATTEMPTS times. Throws when every try fails: a failed
+ * build keeps the last good site live, while an empty snapshot would hide every card.
+ */
+const fetchListForBuild = async (): Promise<IAnnouncementsResponse> => {
+  let problem = "";
+  for (let attempt = 1; attempt <= BUILD_ATTEMPTS; attempt++) {
+    const result = await readListForBuild();
+    if (typeof result !== "string") return result;
+    problem = result;
+    console.warn(`[announcements] build read ${attempt}/${BUILD_ATTEMPTS} of ${LIST_URL} failed: ${problem}`);
+    if (attempt < BUILD_ATTEMPTS) await wait(BUILD_RETRY_DELAY_MS * attempt);
+  }
+  throw new Error(
+    `Announcements API unreadable at build time after ${BUILD_ATTEMPTS} tries (${LIST_URL}): ${problem}. ` +
+      "Failing the build so the live site keeps its announcements.",
+  );
+};
+
+/**
+ * The list as it is at build time, rendered into the HTML. One read per build; when the API
+ * can't be read the build fails (the dev server falls back to an empty list instead).
  */
 // Kept on globalThis: the build may load this module more than once (layout and page chunks),
 // and the inline script and the island must see exactly the same snapshot.
 const buildCache = globalThis as { __announcementsSnapshot?: Promise<IAnnouncementsSnapshot> };
 export const getAnnouncementsSnapshot = (): Promise<IAnnouncementsSnapshot> => {
+  const isDev = import.meta.env.MODE === "development";
   // The dev server renders on every request: fetch fresh there instead of once per process.
-  if (import.meta.env.MODE === "development") delete buildCache.__announcementsSnapshot;
-  return (buildCache.__announcementsSnapshot ??= fetchJson(LIST_URL, {}, BUILD_TIMEOUT_MS)
-    .catch(() => null)
-    .then((data) => ({ ...(toResponse(data) ?? EMPTY_ANNOUNCEMENTS), built_at: Date.now() })));
+  if (isDev) delete buildCache.__announcementsSnapshot;
+  const readList = () => (isDev ? fetchJson(LIST_URL).catch(() => null).then(toResponse) : fetchListForBuild());
+  return (buildCache.__announcementsSnapshot ??= readList().then((data) => ({
+    ...(data ?? EMPTY_ANNOUNCEMENTS),
+    built_at: Date.now(),
+  })));
 };
 
 /** The fresh list (the same for everyone, CDN-cached); null when it can't be read. */
