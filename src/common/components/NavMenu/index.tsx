@@ -123,7 +123,10 @@ const ThemeSwitcher = () => {
             <button
               key={value}
               className={`${styles.theme_option} ${theme === value ? styles.theme_option_active : ""}`}
-              onClick={() => setTheme(value)}
+              onClick={() => {
+                setTheme(value);
+                close();
+              }}
               aria-label={label}
               aria-pressed={theme === value}
               title={label}
