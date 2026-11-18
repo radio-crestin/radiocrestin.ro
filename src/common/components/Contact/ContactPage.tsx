@@ -31,7 +31,7 @@ export default function ContactPage({ hero, children }: ContactPageProps) {
             <img src="/images/radiocrestin_logo.png" alt="Logo Radio Creștin" width={40} height={40} />
             <span>Radio Creștin</span>
           </a>
-          <NavMenu />
+          <NavMenu contactActive />
         </nav>
         <main className={styles.column}>
           <header className={styles.header}>{hero}</header>
