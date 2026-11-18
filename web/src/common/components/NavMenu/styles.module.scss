@@ -1,36 +1,91 @@
-@use "public/styles/mixinHelper";
+// Header actions: a Contact text link and a round theme button outlined
+// like the hero's secondary CTA.
 
-.menu_root {
-  position: relative;
+.actions {
   display: flex;
   align-items: center;
+  gap: 10px;
 }
 
-// Desktop trigger: settings gear, spins slightly while the menu is open
-.settings_button {
-  display: flex;
+%outlined_control {
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
   height: 40px;
+  border-radius: 999px;
+  border: 1.5px solid var(--bg-active-station-border, rgba(128, 128, 128, 0.35));
   background: transparent;
-  border: none;
-  cursor: pointer;
-  padding: 0;
-  border-radius: 10px;
   color: var(--text-color);
-  transition: background-color 0.2s ease;
+  font-family: inherit;
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    transform 0.1s ease;
+
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      background-color: var(--bg-active-station);
+      border-color: transparent;
+    }
+  }
+
+  &:active {
+    transform: scale(0.97);
+  }
+
+  // reset.scss paints every span black; labels follow the control
+  span {
+    color: inherit;
+  }
+
+  &:focus-visible {
+    outline: 2px solid #fdae1c;
+    outline-offset: 2px;
+  }
+}
+
+// A plain text link: no outline, the label brightens to amber on hover
+.contact_link {
+  display: inline-flex;
+  align-items: center;
+  height: 40px;
+  padding: 0 10px;
+  color: var(--header-subtext-color);
+  font-size: 15px;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color 0.15s ease;
+
+  &:hover {
+    color: var(--text-color);
+  }
+
+  &:focus-visible {
+    outline: 2px solid #fdae1c;
+    outline-offset: 2px;
+    border-radius: 8px;
+  }
+}
+
+.contact_link_active {
+  color: var(--text-color);
+}
+
+.theme_root {
+  position: relative;
+  display: flex;
+}
+
+.round_button {
+  @extend %outlined_control;
+  width: 36px;
+  height: 36px;
+  padding: 0;
 
   svg {
     transition: transform 0.35s ease;
-  }
-
-  &:hover {
-    background-color: var(--bg-hover, rgba(0, 0, 0, 0.05));
-  }
-
-  &.settings_open svg {
-    transform: rotate(45deg);
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -38,208 +93,106 @@
       transition: none;
     }
   }
+}
 
-  @include mixinHelper.onTablet {
-    display: none;
+.round_button_open {
+  background-color: var(--bg-active-station);
+  border-color: transparent;
+
+  svg {
+    transform: rotate(-15deg);
   }
 }
 
-// Mobile trigger: the classic hamburger, lines fold into an X
-.hamburger {
-  display: none;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  gap: 5px;
-  width: 40px;
-  height: 40px;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  padding: 8px;
-  border-radius: 8px;
-  transition: background-color 0.2s ease;
-
-  &:hover {
-    background-color: var(--bg-hover, rgba(0, 0, 0, 0.05));
-  }
-
-  @include mixinHelper.onTablet {
-    display: flex;
-  }
-
-  .hamburger_line {
-    display: block;
-    width: 22px;
-    height: 2px;
-    background-color: var(--text-color);
-    border-radius: 2px;
-    transition: all 0.3s ease;
-
-    &.open {
-      &:nth-child(1) {
-        transform: translateY(7px) rotate(45deg);
-      }
-
-      &:nth-child(2) {
-        opacity: 0;
-      }
-
-      &:nth-child(3) {
-        transform: translateY(-7px) rotate(-45deg);
-      }
-    }
-  }
-}
-
-// Glass card in the family of the hero panels: icon chips lead each row,
-// the theme row carries an inline segmented picker on the right
-.dropdown {
+// Tooltip-style glass pill under the theme button, its arrow pointing at it
+.popover {
   position: absolute;
-  top: 52px;
+  top: calc(100% + 10px);
   right: 0;
-  background: color-mix(in srgb, var(--station-card-color) 88%, transparent);
+  z-index: 100;
+  display: flex;
+  gap: 2px;
+  padding: 4px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--station-card-color) 92%, transparent);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border-radius: 16px;
-  padding: 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 250px;
-  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.28);
   border: 1px solid rgba(128, 128, 128, 0.22);
-  z-index: 100;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.25);
   transform-origin: top right;
-  animation: menuPop 0.18s ease;
+  animation: popoverIn 0.16s ease;
 
-  &.dropdown_closing {
-    animation: menuPopOut 0.15s ease forwards;
+  &::before {
+    content: "";
+    position: absolute;
+    top: -5px;
+    right: 13px;
+    width: 8px;
+    height: 8px;
+    background: var(--station-card-color);
+    border-top: 1px solid rgba(128, 128, 128, 0.22);
+    border-left: 1px solid rgba(128, 128, 128, 0.22);
+    border-top-left-radius: 2px;
+    transform: rotate(45deg);
   }
 
   @media (prefers-reduced-motion: reduce) {
     animation: none;
-
-    &.dropdown_closing {
-      animation: none;
-    }
   }
 }
 
-.menu_item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  cursor: pointer;
-  padding: 9px 10px;
-  border-radius: 11px;
-  text-decoration: none;
-  transition: background-color 0.15s ease;
+.popover_closing {
+  animation: popoverOut 0.14s ease forwards;
 
-  &:hover {
-    background-color: rgba(128, 128, 128, 0.1);
-  }
-
-  &:active {
-    background-color: rgba(128, 128, 128, 0.16);
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
   }
 }
 
-// The app-download row only makes sense on phones — hidden on desktop,
-// where the gear trigger lives
-.menu_item_mobile_only {
-  display: none;
-
-  @include mixinHelper.onTablet {
-    display: flex;
-  }
-}
-
-// The theme row is a control surface, not a link — no row-level hover
-.menu_item_theme {
-  cursor: default;
-
-  &:hover,
-  &:active {
-    background-color: transparent;
-  }
-}
-
-.menu_icon {
+.theme_option {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 34px;
-  height: 34px;
-  flex-shrink: 0;
-  border-radius: 10px;
-  background: rgba(128, 128, 128, 0.12);
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
   color: var(--text-color);
-}
+  cursor: pointer;
+  opacity: 0.55;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease,
+    opacity 0.15s ease;
 
-.menu_icon_accent {
-  background: rgba(253, 174, 28, 0.16);
-  color: #e79008;
-}
+  &:hover {
+    opacity: 1;
+    background: rgba(128, 128, 128, 0.14);
+  }
 
-// Solid brand green like the real app icon — the glyph asset is white,
-// so a tinted chip would swallow it
-.menu_icon_whatsapp {
-  background: linear-gradient(180deg, #57d163 0%, #23b33a 100%);
-}
-
-.menu_label {
-  flex: 1;
-  color: var(--text-color);
-  font-size: 14.5px;
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-.menu_divider {
-  height: 1px;
-  margin: 5px 10px;
-  background: rgba(128, 128, 128, 0.16);
-}
-
-.theme_segment {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  padding: 3px;
-  border-radius: 10px;
-  background: rgba(128, 128, 128, 0.12);
-
-  button {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 30px;
-    height: 26px;
-    border: none;
-    background: transparent;
-    border-radius: 8px;
-    cursor: pointer;
-    padding: 0;
-    color: var(--text-color);
-    opacity: 0.6;
-    transition:
-      background-color 0.15s ease,
-      opacity 0.15s ease;
-
-    &:hover {
-      opacity: 1;
-    }
-
-    &.segment_active {
-      background: var(--bg-active-station);
-      border: 1px solid var(--bg-active-station-border);
-      opacity: 1;
-    }
+  &:focus-visible {
+    outline: 2px solid #fdae1c;
+    outline-offset: 1px;
   }
 }
 
-@keyframes menuPop {
+.theme_option_active {
+  opacity: 1;
+  color: #f5a312;
+  background: rgba(253, 174, 28, 0.15);
+
+  &:hover {
+    background: rgba(253, 174, 28, 0.2);
+  }
+}
+
+:global([data-theme="light"]) .theme_option_active {
+  color: #c47500;
+}
+
+@keyframes popoverIn {
   from {
     opacity: 0;
     transform: translateY(-6px) scale(0.96);
@@ -250,7 +203,7 @@
   }
 }
 
-@keyframes menuPopOut {
+@keyframes popoverOut {
   from {
     opacity: 1;
     transform: translateY(0) scale(1);
