@@ -19,9 +19,10 @@ const Icon = ({ size, children }: { size: number; children: React.ReactNode }) =
   </svg>
 );
 
-const MessageIcon = ({ size = 16 }: { size?: number }) => (
+const MailIcon = ({ size = 16 }: { size?: number }) => (
   <Icon size={size}>
-    <path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z" />
+    <rect width="20" height="16" x="2" y="4" rx="2" />
+    <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
   </Icon>
 );
 
@@ -156,7 +157,7 @@ const NavMenu = ({ contactActive = false }: { contactActive?: boolean }) => (
       aria-label="Contact"
       title="Contact"
     >
-      <MessageIcon />
+      <MailIcon />
     </a>
     <ThemeSwitcher />
   </div>
