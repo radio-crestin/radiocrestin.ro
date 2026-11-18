@@ -116,7 +116,7 @@ const ThemeSwitcher = () => {
         aria-label="Alege tema"
         aria-haspopup="true"
         aria-expanded={isOpen}
-        title="Alege tema"
+        data-tooltip="Temă"
       >
         <CurrentIcon size={16} />
       </button>
@@ -155,7 +155,7 @@ const NavMenu = ({ contactActive = false }: { contactActive?: boolean }) => (
       className={`${styles.round_button} ${contactActive ? styles.round_button_current : ""}`}
       aria-current={contactActive ? "page" : undefined}
       aria-label="Contact"
-      title="Contact"
+      data-tooltip="Contact"
     >
       <MailIcon />
     </a>

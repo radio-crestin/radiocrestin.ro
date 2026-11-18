@@ -52,9 +52,54 @@
 
 .round_button {
   @extend %outlined_control;
+  position: relative;
   width: 36px;
   height: 36px;
   padding: 0;
+
+  // Hover label under the button, in the popover's glass style
+  &::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 50%;
+    z-index: 100;
+    padding: 5px 10px;
+    border-radius: 8px;
+    background: color-mix(in srgb, var(--station-card-color) 92%, transparent);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(128, 128, 128, 0.22);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+    color: var(--text-color);
+    font-size: 12.5px;
+    font-weight: 600;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    transform: translate(-50%, -4px);
+    transition:
+      opacity 0.15s ease,
+      transform 0.15s ease;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    &:hover::after {
+      opacity: 1;
+      transform: translate(-50%, 0);
+      transition-delay: 0.25s;
+    }
+  }
+
+  &:focus-visible::after {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+
+  // The open popover takes the label's place
+  &.round_button_open::after {
+    display: none;
+  }
 
   svg {
     transition: transform 0.35s ease;
