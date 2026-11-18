@@ -1,10 +1,10 @@
-// Header actions: a Contact text link and a round theme button outlined
-// like the hero's secondary CTA.
+// Header actions: two round icon buttons (Contact, theme) outlined like the
+// hero's secondary CTA.
 
 .actions {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
 %outlined_control {
@@ -45,34 +45,6 @@
   }
 }
 
-// A plain text link: no outline, the label brightens to amber on hover
-.contact_link {
-  display: inline-flex;
-  align-items: center;
-  height: 40px;
-  padding: 0 10px;
-  color: var(--header-subtext-color);
-  font-size: 15px;
-  font-weight: 600;
-  text-decoration: none;
-  white-space: nowrap;
-  transition: color 0.15s ease;
-
-  &:hover {
-    color: var(--text-color);
-  }
-
-  &:focus-visible {
-    outline: 2px solid #fdae1c;
-    outline-offset: 2px;
-    border-radius: 8px;
-  }
-}
-
-.contact_link_active {
-  color: var(--text-color);
-}
-
 .theme_root {
   position: relative;
   display: flex;
@@ -93,6 +65,12 @@
       transition: none;
     }
   }
+}
+
+// The page the button leads to is the one open
+.round_button_current {
+  background-color: var(--bg-active-station);
+  border-color: transparent;
 }
 
 .round_button_open {
