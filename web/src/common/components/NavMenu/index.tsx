@@ -19,6 +19,12 @@ const Icon = ({ size, children }: { size: number; children: React.ReactNode }) =
   </svg>
 );
 
+const MessageIcon = ({ size = 16 }: { size?: number }) => (
+  <Icon size={size}>
+    <path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z" />
+  </Icon>
+);
+
 const MonitorIcon = ({ size = 18 }: { size?: number }) => (
   <Icon size={size}>
     <rect width="20" height="14" x="2" y="3" rx="2" />
@@ -140,15 +146,17 @@ const ThemeSwitcher = () => {
   );
 };
 
-// Header actions shared by every page: a Contact link and the theme switcher.
+// Header actions shared by every page: a Contact icon button and the theme switcher.
 const NavMenu = ({ contactActive = false }: { contactActive?: boolean }) => (
   <div className={styles.actions}>
     <a
       href="/contact/"
-      className={`${styles.contact_link} ${contactActive ? styles.contact_link_active : ""}`}
+      className={`${styles.round_button} ${contactActive ? styles.round_button_current : ""}`}
       aria-current={contactActive ? "page" : undefined}
+      aria-label="Contact"
+      title="Contact"
     >
-      Contact
+      <MessageIcon />
     </a>
     <ThemeSwitcher />
   </div>
