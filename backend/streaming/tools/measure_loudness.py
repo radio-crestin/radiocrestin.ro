@@ -27,11 +27,15 @@ import json
 import re
 import subprocess
 import sys
+import urllib.parse
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import asdict, dataclass
 
-STATIONS_URL = "https://api.radiocrestin.ro/api/v1/stations"
+# GraphQL, not /api/v1/stations: that REST payload has no audio_gain_db, so
+# every current gain read as 0 and a re-run stacked new gains on old ones.
+STATIONS_URL = "https://api.radiocrestin.ro/v1/graphql?" + urllib.parse.urlencode(
+    {"query": "{ stations { slug hls_stream_url audio_gain_db } }"})
 # -16 LUFS: the AES streaming recommendation (TD1008), the level Apple Music
 # and most podcast apps play at; loud enough on a phone at full volume.
 DEFAULT_TARGET_LUFS = -16.0
