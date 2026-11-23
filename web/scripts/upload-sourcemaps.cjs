@@ -5,7 +5,7 @@
  *
  * Why this script exists: posthog-cli derives the commit/git info ONLY from
  * CI env vars it recognises (GitHub Actions: GITHUB_*, Vercel: VERCEL_*). On
- * Cloudflare Pages (which exposes CF_PAGES_*) or a plain local build it cannot
+ * Cloudflare Workers Builds (WORKERS_CI_*), Pages (CF_PAGES_*) or a plain local build it cannot
  * determine the commit and fails with "Could not determine commit ID", so the
  * upload was silently broken outside GitHub Actions. We normalise the SHA/branch
  * from whatever environment we're in and shim the GITHUB_* vars posthog-cli
@@ -24,12 +24,14 @@ const git = (args) => {
 
 const sha =
   process.env.GITHUB_SHA ||
+  process.env.WORKERS_CI_COMMIT_SHA ||
   process.env.CF_PAGES_COMMIT_SHA ||
   process.env.VERCEL_GIT_COMMIT_SHA ||
   git(["rev-parse", "HEAD"]);
 
 const branch =
   process.env.GITHUB_REF_NAME ||
+  process.env.WORKERS_CI_BRANCH ||
   process.env.CF_PAGES_BRANCH ||
   process.env.VERCEL_GIT_COMMIT_REF ||
   git(["rev-parse", "--abbrev-ref", "HEAD"]) ||
