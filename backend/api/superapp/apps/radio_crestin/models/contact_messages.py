@@ -20,7 +20,12 @@ class ContactStatus(models.TextChoices):
     NEW = 'new', _('New')
     IN_PROGRESS = 'in_progress', _('In progress')
     DONE = 'done', _('Done')
+    REJECTED = 'rejected', _('Not accepted')
     SPAM = 'spam', _('Spam')
+
+
+# Statuses that need no more work; the admin list hides them unless asked.
+CLOSED_STATUSES = (ContactStatus.DONE, ContactStatus.REJECTED, ContactStatus.SPAM)
 
 
 class ContactMessage(models.Model):

@@ -27,7 +27,7 @@ from .announcement_events import AnnouncementEvent, AnnouncementEventTarget, Ann
 from .announcement_stat_buckets import AnnouncementStatBucket, StatGranularity
 from .forms import Form, FormKind, FormQuestion, QuestionType
 from .form_submissions import FormSubmission
-from .contact_messages import ContactImageRole, ContactKind, ContactMessage, ContactMessageImage, ContactStatus
+from .contact_messages import CLOSED_STATUSES, ContactImageRole, ContactKind, ContactMessage, ContactMessageImage, ContactStatus
 
 __all__ = [
     'Artists',
@@ -77,6 +77,7 @@ __all__ = [
     'QuestionType',
     'FormSubmission',
     'ContactImageRole',
+    'CLOSED_STATUSES',
     'ContactKind',
     'ContactMessage',
     'ContactMessageImage',

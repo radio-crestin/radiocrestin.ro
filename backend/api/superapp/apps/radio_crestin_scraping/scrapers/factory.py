@@ -4,6 +4,7 @@ from .base import BaseScraper
 from .shoutcast import ShoutcastScraper
 from .icecast import IcecastScraper
 from .radio_co import RadioCoScraper
+from .azuracast import AzuraCastScraper
 from .shoutcast_xml import ShoutcastXmlScraper
 from .stream_id3 import StreamId3Scraper
 from .uptime import UptimeScraper
@@ -20,6 +21,7 @@ class ScraperFactory:
         'shoutcast': ShoutcastScraper,
         'icecast': IcecastScraper,
         'radio_co': RadioCoScraper,
+        'azuracast': AzuraCastScraper,
         'shoutcast_xml': ShoutcastXmlScraper,
         'stream_id3': StreamId3Scraper,
         'uptime_ffmpeg': UptimeScraper,

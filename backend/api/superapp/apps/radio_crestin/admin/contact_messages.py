@@ -9,7 +9,7 @@ from unfold.enums import ActionVariant
 
 from superapp.apps.admin_portal.admin import SuperAppModelAdmin
 from superapp.apps.admin_portal.sites import superapp_admin_site
-from ..models import ContactKind, ContactMessage, ContactStatus
+from ..models import CLOSED_STATUSES, ContactKind, ContactMessage, ContactStatus
 from ..services import contact_drafts, contact_form
 
 ANSWER_LABELS = {
@@ -64,13 +64,44 @@ def _answer_html(name, value):
     return format_html('<span style="white-space:pre-wrap">{}</span>', value)
 
 
+class StatusFilter(admin.SimpleListFilter):
+    """Shows only open messages (New, In progress) until another status or "All" is picked."""
+
+    title = _('Status')
+    parameter_name = 'status'
+    ALL = 'all'
+
+    def lookups(self, request, model_admin):
+        return [(self.ALL, _('All')), *ContactStatus.choices]
+
+    def queryset(self, request, queryset):
+        if self.value() is None:
+            return queryset.exclude(status__in=CLOSED_STATUSES)
+        if self.value() == self.ALL:
+            return queryset
+        return queryset.filter(status=self.value())
+
+    def choices(self, changelist):
+        yield {
+            'selected': self.value() is None,
+            'query_string': changelist.get_query_string(remove=[self.parameter_name]),
+            'display': _('Open'),
+        }
+        for value, label in self.lookup_choices:
+            yield {
+                'selected': self.value() == value,
+                'query_string': changelist.get_query_string({self.parameter_name: value}),
+                'display': label,
+            }
+
+
 @admin.register(ContactMessage, site=superapp_admin_site)
 class ContactMessageAdmin(SuperAppModelAdmin):
     list_display = ['subject', 'kind', 'status', 'name', 'email', 'source', 'created_at']
-    list_filter = ['kind', 'status', 'source']
+    list_filter = ['kind', StatusFilter, 'source']
     search_fields = ['subject', 'name', 'email', 'message']
     date_hierarchy = 'created_at'
-    actions = ['mark_done', 'mark_spam']
+    actions = ['mark_done', 'mark_rejected', 'mark_spam']
     actions_detail = ['create_draft_station', 'create_draft_announcement']
     fieldsets = [
         (None, {'fields': ['status', 'admin_notes', 'drafts_display']}),
@@ -130,6 +161,10 @@ class ContactMessageAdmin(SuperAppModelAdmin):
     @admin.action(description=_('Mark as done'))
     def mark_done(self, request, queryset):
         queryset.update(status=ContactStatus.DONE)
+
+    @admin.action(description=_('Mark as not accepted'))
+    def mark_rejected(self, request, queryset):
+        queryset.update(status=ContactStatus.REJECTED)
 
     @admin.action(description=_('Mark as spam'))
     def mark_spam(self, request, queryset):
