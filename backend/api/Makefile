@@ -84,8 +84,9 @@ generate_translation_values:
 	docker-compose exec web python3 manage.py generate_translation_values
 
 
+# Without personal data or secrets; from production: see dump_dev_fixtures.py
 create-fixtures:
-	docker-compose exec web python3 manage.py dumpdata --natural-foreign --natural-primary --indent 2 --output fixtures/fixtures.json
+	docker-compose exec web python3 manage.py dump_dev_fixtures --output fixtures/fixtures.json
 
 load-fixtures:
 	docker-compose exec web python3 manage.py loaddata \
