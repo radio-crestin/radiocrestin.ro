@@ -1,16 +1,15 @@
-# Turns a backend/vX.Y.Z or web/vX.Y.Z tag into a GitHub Release whose notes
-# list the commits that touched that folder since the app's previous tag.
-# Mobile releases (mobile/vX.Y.Z) are built, signed and published from a Mac
-# with `make release` in mobile/ (see mobile/docs/releasing.md), not here.
-# Only mobile releases are marked "latest": /releases/latest/download/<file>
-# serves the app's downloads.
+# One version for the whole repository: pushing a vX.Y.Z tag (`make release` at the root) creates
+# the GitHub release "Radio Crestin vX.Y.Z" as a prerelease. Its notes link the app's hand-written
+# notes and list what changed in web/ and backend/ (scripts/release/notes.sh).
+# The app's builds are made on a Mac: `make release` in mobile/ uploads them to this same release
+# and rewrites its notes with the narrated video. `make promote` then publishes it; it becomes
+# "latest" only with the app's downloads attached (scripts/release/promote.sh).
 name: Release
 
 on:
   push:
     tags:
-      - 'backend/v*'
-      - 'web/v*'
+      - 'v[0-9]*'
 
 permissions:
   contents: write
@@ -22,23 +21,32 @@ jobs:
       - uses: actions/checkout@v5
         with:
           fetch-depth: 0
+      - name: The tag matches VERSION in every app
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          scripts/release/check-version.sh
+          [ "$TAG" = "v$(cat VERSION)" ] || { echo "Tag $TAG, but VERSION is $(cat VERSION)" >&2; exit 1; }
       - name: Create the GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ github.ref_name }}
         run: |
-          app="${TAG%%/*}"
-          version="${TAG#*/}"
-          title="$(tr '[:lower:]' '[:upper:]' <<< "${app:0:1}")${app:1} $version"
-          previous="$(git tag --list "$app/v*" --sort=-v:refname | grep -vxF "$TAG" | head -1)"
-          range="${previous:+$previous..}$TAG"
-          {
-            echo "## What changed in \`$app/\`"
-            echo
-            git log --no-merges --format='- %s (%h)' "$range" -- "$app/"
-            if [ -n "$previous" ]; then
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "$TAG already has a release (the app's make publish made it first)"
+            exit 0
+          fi
+          notes="mobile/release-notes/$TAG.md"
+          if [ -f "$notes" ]; then
+            {
+              echo "## 📱 App"
               echo
-              echo "**Full diff:** https://github.com/${{ github.repository }}/compare/$previous...$TAG"
-            fi
-          } > notes.md
-          gh release create "$TAG" --verify-tag --latest=false --title "$title" --notes-file notes.md
+              echo "What's new for listeners: [$notes](https://github.com/$GITHUB_REPOSITORY/blob/$TAG/$notes)"
+              echo
+              scripts/release/notes.sh "$TAG"
+            } > notes.md
+          else
+            scripts/release/notes.sh "$TAG" --app > notes.md
+          fi
+          gh release create "$TAG" --verify-tag --prerelease --latest=false \
+            --title "Radio Crestin $TAG" --notes-file notes.md

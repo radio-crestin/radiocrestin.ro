@@ -73,8 +73,8 @@ PUBSPEC_VERSION := $(shell awk '/^version:/ {print $$2}' pubspec.yaml)
 VERSION         := $(word 1,$(subst +, ,$(PUBSPEC_VERSION)))
 BUILD_NUM       := $(word 2,$(subst +, ,$(PUBSPEC_VERSION)))
 TAG             ?= v$(VERSION)
-# The app lives in mobile/ of the monorepo, so its git tags and GitHub releases are mobile/v1.2.3.
-GIT_TAG         := mobile/$(TAG)
+# One version for the whole monorepo (../VERSION): the app's release is the repository's vX.Y.Z.
+GIT_TAG         := $(TAG)
 GH_REPO         ?= radio-crestin/radiocrestin.ro
 
 ANDROID_APK         := $(DIST)/radio-crestin-android.apk
@@ -290,6 +290,7 @@ release-notes: check-release-notes release-media-deps | $(DIST)
 	  printf -- "- macOS DMG: %s/%s\n"     "$$base" "$$(basename $(MACOS_DMG))"; \
 	  printf -- "- Windows zip: %s/%s\n"   "$$base" "$$(basename $(WINDOWS_ZIP))"; \
 	  printf -- "- Apple TV IPA: %s/%s\n"  "$$base" "$$(basename $(APPLE_TV_IPA))"; \
+	  printf "\n"; ../scripts/release/notes.sh $(GIT_TAG); \
 	} > $(RELEASE_NOTES)
 	@cat $(RELEASE_NOTES)
 
@@ -352,8 +353,7 @@ promote:
 	@command -v gh >/dev/null || { echo "ERROR: gh CLI required"; exit 1; }
 	@gh release view $(GIT_TAG) -R $(GH_REPO) >/dev/null 2>&1 || { \
 	  echo "ERROR: release $(GIT_TAG) not found — run 'make publish' first"; exit 1; }
-	gh release edit $(GIT_TAG) -R $(GH_REPO) --prerelease=false --latest
-	@echo "Promoted to latest: https://github.com/$(GH_REPO)/releases/latest"
+	GH_REPO=$(GH_REPO) ../scripts/release/promote.sh $(GIT_TAG)
 
 # ----- One-shot Mac release --------------------------------------------------
 # Each step re-runs make so PUBSPEC_VERSION re-evaluates after bump-build,
@@ -371,11 +371,11 @@ release:
 	@echo "Release done"
 
 commit-version:
-	@if git diff --quiet -- pubspec.yaml; then \
+	@if git diff --quiet -- pubspec.yaml ../VERSION; then \
 	  echo "pubspec.yaml unchanged, skipping version commit"; \
 	else \
 	  cur="$(PUBSPEC_VERSION)"; \
-	  git add pubspec.yaml && \
+	  git add pubspec.yaml ../VERSION ../web/package.json ../web/package-lock.json && \
 	  git commit -m "chore: release v$${cur%+*} ($$cur)" && \
 	  git push origin HEAD; \
 	fi
@@ -590,18 +590,6 @@ bump-build:
 	  sed -i.bak "s/^version: .*/version: $$ver+$$new/" pubspec.yaml && rm -f pubspec.yaml.bak; \
 	  grep '^version:' pubspec.yaml
 
-bump-patch:
-	@cur="$(PUBSPEC_VERSION)"; \
-	  ver=$${cur%+*}; build=$${cur#*+}; \
-	  newver=$$(echo "$$ver" | awk -F. '{print $$1 "." $$2 "." $$3+1}'); \
-	  newbuild=$$((build+1)); \
-	  sed -i.bak "s/^version: .*/version: $$newver+$$newbuild/" pubspec.yaml && rm -f pubspec.yaml.bak; \
-	  grep '^version:' pubspec.yaml
-
-bump-minor:
-	@cur="$(PUBSPEC_VERSION)"; \
-	  ver=$${cur%+*}; build=$${cur#*+}; \
-	  newver=$$(echo "$$ver" | awk -F. '{print $$1 "." $$2+1 ".0"}'); \
-	  newbuild=$$((build+1)); \
-	  sed -i.bak "s/^version: .*/version: $$newver+$$newbuild/" pubspec.yaml && rm -f pubspec.yaml.bak; \
-	  grep '^version:' pubspec.yaml
+# The version is shared by every app (../VERSION): these set it everywhere.
+bump-patch bump-minor:
+	@../scripts/release/bump.sh $(@:bump-%=%)

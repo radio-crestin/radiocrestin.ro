@@ -4,8 +4,11 @@ import { readFileSync } from "node:fs";
 const VIDEO = "radio-crestin-whats-new.mp4";
 const POSTER = "radio-crestin-whats-new.jpg";
 
-/** The app lives in mobile/ of the radio-crestin/radiocrestin.ro monorepo; its releases are tagged mobile/v1.2.3. */
-export const gitTag = (version: string) => `mobile/${version}`;
+/**
+ * The app lives in mobile/ of the radio-crestin/radiocrestin.ro monorepo, whose apps share one version:
+ * a release is tagged v1.2.3 (up to 1.6.0 the app's were tagged mobile/v1.2.3).
+ */
+export const gitTag = (version: string) => version;
 export const notesPath = "mobile/release-notes";
 
 /**

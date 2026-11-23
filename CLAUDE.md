@@ -20,8 +20,10 @@ people are in each folder's `README.md`; the overview is the root [`README.md`](
   checks only the folders a change touches; `ci-ok` is the check `main` requires.
 - **`main` is protected**: no force pushes, no deletion, and merges need `ci-ok` to pass. Work on a branch
   and open a pull request.
-- **Tags are per app**: `web/vX.Y.Z`, `backend/vX.Y.Z`, `mobile/vX.Y.Z`. Never create an unprefixed tag.
-  Only mobile releases may be marked "latest" (the app's download links use `/releases/latest`).
+- **One version for every app**: `VERSION`, mirrored in `web/package.json` and `mobile/pubspec.yaml`; change it
+  only with `make bump-patch|bump-minor|bump-major` at the root. Releases are tagged `vX.Y.Z` (never per app).
+  A release is "latest" only with the app's downloads attached (`make promote` checks): the app's download
+  links use `/releases/latest`. How to release: the root [`README.md`](README.md#-releases).
 - **API contract changes cross folders.** A change to what `backend/api` returns must keep the website
   and the app versions already in the stores working.
 - **Never commit secrets.** `.env` files are ignored; production secrets live only in `backend/deploy`.

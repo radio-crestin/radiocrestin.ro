@@ -141,9 +141,11 @@ cd backend/deploy && make unlock-git-crypt        # needs the git-crypt key
 To release, from `backend/`:
 
 1. `make create-new-release` bumps the image tag (`v1.1.187`), builds and pushes the images, generates the
-   manifests, commits them in `deploy/`, bumps the submodule and tags `backend/v1.1.187`.
-2. Push `deploy/`, then `git push origin HEAD backend/v1.1.187`. The tag publishes a
-   [GitHub release](https://github.com/radio-crestin/radiocrestin.ro/releases) with the backend's changes.
+   manifests, commits them in `deploy/` and bumps the submodule.
+2. Push `deploy/`, then open a pull request with the submodule bump.
 3. Apply the generated manifests to the cluster: the kubectl recipes are in [`CLAUDE.md`](CLAUDE.md#deployment).
+
+The image tag is the deploy's own counter. GitHub releases carry the repository's one version, for every
+app at once: [how to release](../README.md#-releases).
 
 Part of the [Radio Crestin monorepo](../README.md).

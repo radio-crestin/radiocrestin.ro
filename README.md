@@ -105,17 +105,21 @@ Full setup, tests and conventions: [`web/README.md`](web/README.md) ·
 
 ## 🚀 Releases
 
-Each app is versioned and released on its own, with tags named after its folder:
+The website, the app and the backend share **one version**, kept in [`VERSION`](VERSION) (and mirrored in
+`web/package.json` and `mobile/pubspec.yaml`; CI fails if they disagree). Each version is one tag, `v1.2.3`,
+and one release, **Radio Crestin v1.2.3**, whose notes cover all three apps.
 
-| App | Tag | How |
-|---|---|---|
-| 🌐 Website | `web/v1.2.3` | Deploys continuously from `main`. Push a tag to mark a milestone: [CI](.github/workflows/release.yml) writes the release notes from `web/` commits. |
-| 🎙️ Backend | `backend/v1.1.187` | `make create-new-release` in `backend/` builds the images and tags them; pushing the tag publishes the [release](.github/workflows/release.yml). |
-| 📱 App | `mobile/v1.6.3` | `make release` in `mobile/` builds, signs and publishes with the downloads attached ([guide](mobile/docs/releasing.md)). |
+1. **Bump**, on a branch: `make bump-patch` (or `bump-minor`, `bump-major`) at the root, then merge the PR.
+2. **Tag**, from an up-to-date `main`: `make release`. The [release workflow](.github/workflows/release.yml)
+   creates a prerelease with the app's notes and what changed in `web/` and `backend/`.
+3. **Ship the app**: `make release` in `mobile/` builds every platform and uploads the downloads and the
+   narrated video to that release ([guide](mobile/docs/releasing.md)).
+4. **Publish**: `make promote`. The release becomes **latest** only when the app's downloads are attached,
+   so `https://github.com/radio-crestin/radiocrestin.ro/releases/latest/download/radio-crestin-android.apk`
+   (and the `.dmg`, `.ipa`, Windows `.zip`) always points at the newest app build.
 
-The repository's **latest** release is always the app's, so
-`https://github.com/radio-crestin/radiocrestin.ro/releases/latest/download/radio-crestin-android.apk`
-(and the `.dmg`, `.ipa`, Windows `.zip`) always points at the newest app build.
+The website deploys on every push to `main` and the backend on its own image tags; the version marks what
+shipped together. Releases before 1.6.2 were tagged per app (`mobile/v…`, `backend/v…`).
 
 ## 🤝 Contributing
 
