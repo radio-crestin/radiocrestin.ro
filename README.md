@@ -59,19 +59,35 @@ One repository, three apps. Each folder has its own README with setup steps, scr
 | [`mobile/`](mobile/) | The **Radio Crestin app** for iPhone, Android, CarPlay, Android Auto, Apple TV, Android TV, Mac and Windows | Flutter (+ SwiftUI on Apple TV) | App Store, Google Play, [GitHub releases](https://github.com/radio-crestin/radiocrestin.ro/releases/latest) |
 | [`backend/`](backend/) | The **API and admin**: station list, song on air, listeners, reviews, announcements, and every station re-streamed as HLS | Django, GraphQL + REST, Celery, FFmpeg | Kubernetes, via [`backend/deploy`](backend/README.md#-deploying) |
 
-## ⚙️ How it fits together
+## How it fits together
 
 <p align="center">
   <img src="docs/architecture.svg" alt="Radio stations feed the backend: streaming re-serves their audio as HLS, the API reads their song titles. The website and the app play that audio and read that data, for listeners." width="100%" />
 </p>
 
-- 🎚️ **Streaming** (`backend/streaming`) pulls each station's stream once and re-serves it as HLS, so a
+- **Streaming** (`backend/streaming`) pulls each station's stream once and re-serves it as HLS, so a
   slow station server never stalls thousands of listeners.
-- 🎙️ **The API** (`backend/api`) keeps the station list, reads the song each station plays, counts
-  listeners and serves it all at `api.radiocrestin.ro`. Station owners and admins manage everything in its
+- **The API** (`backend/api`) keeps the station list, reads the song each station plays, counts
+  listeners and serves it all at [`api.radiocrestin.ro`](#-public-api). Station owners and admins manage everything in its
   admin portal.
-- 🌐 **The website** and 📱 **the app** read that API and play the streams, HLS first, then the station's
+- **The website** and **the app** read that API and play the streams, HLS first, then the station's
   own stream if HLS fails.
+
+## 📡 Public API
+
+The station data behind the website and the app is public, as JSON, no key needed:
+
+| URL | What you get |
+|---|---|
+| [api.radiocrestin.ro](https://api.radiocrestin.ro) | Redirects to the station list below |
+| [api.radiocrestin.ro/api/v1/stations](https://api.radiocrestin.ro/api/v1/stations) | Every station: the song on air, listeners, logo, stream URLs (HLS and the station's own) |
+| [api.radiocrestin.ro/api/v1/docs/](https://api.radiocrestin.ro/api/v1/docs/) | Interactive docs for every endpoint |
+| [api.radiocrestin.ro/api/v1/schema/](https://api.radiocrestin.ro/api/v1/schema/) | The OpenAPI schema |
+| [api.radiocrestin.ro/graphql](https://api.radiocrestin.ro/graphql) | The same data over GraphQL |
+
+```bash
+curl -sL https://api.radiocrestin.ro/api/v1/stations | jq '.data.stations[0].title'
+```
 
 ## 🛠️ Quick start for developers
 
