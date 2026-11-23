@@ -95,3 +95,24 @@ class TestSeparateArtistField:
     def test_azuracast_fallback_art_is_not_a_cover(self):
         assert scraper_engine.azuracast_cover(f"{ART}/eb8ec63fdf67c94c71f5a91b") is None
         assert scraper_engine.azuracast_cover(None) is None
+
+
+class TestIcyTitleUsesTheFetcherSettings:
+    def test_without_settings_it_is_artist_then_title(self, monkeypatch):
+        monkeypatch.setattr(scraper_engine, "_config", {"scrapers": []})
+        result = scraper_engine._icy_result("Ana Rogojan - De cand am aflat calea Ta")
+        assert (result["artist"], result["title"]) == ("Ana Rogojan", "De cand am aflat calea Ta")
+
+    def test_the_stream_id3_regexes_swap_title_and_artist(self, monkeypatch):
+        monkeypatch.setattr(scraper_engine, "_config", {"scrapers": [{
+            "category_slug": "stream_id3", "split_character": " - ",
+            "artist_regex": r"^.+ - (.+)$", "title_regex": r"^(.+?) - .+$"}]})
+        result = scraper_engine._icy_result("Nu judecati - Lavinia Stan")
+        assert (result["artist"], result["title"]) == ("Lavinia Stan", "Nu judecati")
+
+    def test_the_station_name_regex_strips_a_prefix(self, monkeypatch):
+        monkeypatch.setattr(scraper_engine, "_config", {"scrapers": [{
+            "category_slug": "stream_id3", "split_character": " - ",
+            "station_name_regex": r"^\d{1,2}:\d{2} - \d{4}\.\d{2}\.\d{2} - "}]})
+        result = scraper_engine._icy_result("23:00 - 2026.11.23 - Duh_&_Adevar (34:09)")
+        assert (result["artist"], result["title"]) == ("", "Duh_&_Adevar (34:09)")
