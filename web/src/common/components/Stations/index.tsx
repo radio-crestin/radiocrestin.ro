@@ -12,7 +12,7 @@ import CloseIcon from "@/icons/CloseIcon";
 import usePlayCount from "@/store/usePlayCount";
 import useFavourite from "@/store/useFavourite";
 import SparklesStar from "@/icons/SparklesStar";
-import { buildScoreSnapshot, sortByScore } from "@/utils/stationScore";
+import { buildScoreSnapshot, MOST_PLAYED_PINNED, sortByScore } from "@/utils/stationScore";
 import type { StationSnapshot } from "@/utils/stationScore";
 import { createSearchMatcher } from "@/utils/fuzzySearch";
 import { trackSearchPerformed, trackSortChanged } from "@/utils/posthog";
@@ -121,7 +121,7 @@ function sortStations(
       // Station of the day — pinned to position 1 (and badged)
       stationOfDaySlug = getStationOfTheDay(stations);
 
-      // Top 3 most-played stations by the user — pinned to positions 2-4
+      // The user's most-played stations, pinned right after the station of the day
       const placedSlugs = new Set<string>();
       if (stationOfDaySlug) placedSlugs.add(stationOfDaySlug);
 
@@ -130,15 +130,15 @@ function sortStations(
         .filter(([slug]) => !placedSlugs.has(slug) && !favouriteSet.has(slug))
         .filter(([slug]) => stations.some((s) => s.slug === slug))
         .sort((a, b) => b[1] - a[1])
-        .slice(0, 3)
+        .slice(0, MOST_PLAYED_PINNED)
         .map(([slug]) => slug);
 
-      // Backfill with top-scored non-favourite stations if fewer than 3
-      if (mostPlayed.length < 3) {
+      // Backfill with top-scored non-favourite stations if fewer
+      if (mostPlayed.length < MOST_PLAYED_PINNED) {
         const alreadyPlaced = new Set(Array.from(placedSlugs).concat(mostPlayed));
         const topByScore = sortByScore(stations.filter((s) => !alreadyPlaced.has(s.slug) && !favouriteSet.has(s.slug)), scoreSnapshot);
         for (const s of topByScore) {
-          if (mostPlayed.length >= 3) break;
+          if (mostPlayed.length >= MOST_PLAYED_PINNED) break;
           mostPlayed.push(s.slug);
         }
       }
@@ -166,7 +166,7 @@ function sortStations(
         const s = findStation(stationOfDaySlug);
         if (s) result.push(s);
       }
-      // Positions 2-4: most played by the user
+      // Next: most played by the user
       for (const slug of mostPlayed) {
         const s = findStation(slug);
         if (s) result.push(s);
