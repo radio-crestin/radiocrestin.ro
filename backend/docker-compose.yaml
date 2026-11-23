@@ -41,7 +41,7 @@ services:
         max-size: "100m"
   web:
     build:
-      context: backend
+      context: api
       dockerfile: Dockerfile
     restart: unless-stopped
     depends_on:
@@ -52,7 +52,7 @@ services:
     ports:
       - "8080:8080"
     volumes:
-      - ./backend:/app:delegated
+      - ./api:/app:delegated
       - /app/__pycache__
       - /app/**/__pycache__
     env_file:
@@ -73,7 +73,7 @@ services:
         max-size: "100m"
   priority-worker:
     build:
-      context: backend
+      context: api
       dockerfile: Dockerfile
     restart: unless-stopped
     depends_on:
@@ -82,7 +82,7 @@ services:
       redis:
         condition: service_healthy
     volumes:
-      - ./backend:/app:delegated
+      - ./api:/app:delegated
       - /app/__pycache__
       - /app/**/__pycache__
     env_file:
@@ -101,7 +101,7 @@ services:
         max-size: "100m"
   worker:
     build:
-      context: backend
+      context: api
       dockerfile: Dockerfile
     restart: unless-stopped
     depends_on:
@@ -110,7 +110,7 @@ services:
       redis:
         condition: service_healthy
     volumes:
-      - ./backend:/app:delegated
+      - ./api:/app:delegated
       - /app/__pycache__
       - /app/**/__pycache__
     env_file:
@@ -130,7 +130,7 @@ services:
   # The one Celery beat (the workers don't schedule): keep exactly one.
   beat:
     build:
-      context: backend
+      context: api
       dockerfile: Dockerfile
     restart: unless-stopped
     depends_on:
@@ -139,7 +139,7 @@ services:
       redis:
         condition: service_healthy
     volumes:
-      - ./backend:/app:delegated
+      - ./api:/app:delegated
       - /app/__pycache__
       - /app/**/__pycache__
     env_file:
@@ -154,7 +154,7 @@ services:
   # In local dev, runs as a single container for all stations
   stream-controller:
     build:
-      context: backend_streams_transcoding
+      context: streaming
       dockerfile: Dockerfile
     restart: unless-stopped
     depends_on:
@@ -174,7 +174,7 @@ services:
   # Live streaming station pod (for local dev testing with a single station)
   live-streaming:
     build:
-      context: backend_streams_transcoding/live_streaming
+      context: streaming/live_streaming
       dockerfile: Dockerfile
     restart: unless-stopped
     depends_on:

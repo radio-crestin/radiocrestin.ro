@@ -18,7 +18,7 @@ from ..services.uptime_service import UptimeService
 logger = logging.getLogger(__name__)
 
 # A streaming pod reports its stream when it changes and at least every 60 s
-# (HEARTBEAT_INTERVAL in backend_streams_transcoding health_server.py). The
+# (HEARTBEAT_INTERVAL in backend/streaming health_server.py). The
 # scheduled check leaves a station to its pod while the pod's report is
 # younger than this: overwriting it would show the check's verdict until the
 # pod's next heartbeat. A pod gone for longer is checked again.

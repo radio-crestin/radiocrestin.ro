@@ -1,4 +1,4 @@
-### 3. Configure the Backup Module (`backend/superapp/apps/backups/settings.py`)
+### 3. Configure the Backup Module (`backend/api/superapp/apps/backups/settings.py`)
 
 * Schedule it to run **once per week**.
 * Retain **a maximum of 10 backups**.
@@ -42,7 +42,7 @@
     * Monitor the NGINX logs.
     * Send listener statistics for each station to the backend via a **GraphQL endpoint**.
     * Write data to:
-      `backend/superapp/apps/radio_crestin/models/listening_events.py`
+      `backend/api/superapp/apps/radio_crestin/models/listening_events.py`
     * Send data in **batches every 10 seconds**.
     * Identify **unique users** using cookies:
 
@@ -94,7 +94,7 @@
 
     * An "active user" is defined as one who sent an event in the last **60 seconds**.
 
-#### In `backend/superapp/apps/radio_crestin/graphql/types.py`
+#### In `backend/api/superapp/apps/radio_crestin/graphql/types.py`
 
 * Update:
 

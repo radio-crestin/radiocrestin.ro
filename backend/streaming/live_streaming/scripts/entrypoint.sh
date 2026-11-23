@@ -175,7 +175,7 @@ start_ffmpeg() {
     # contains only [a-z0-9-] — safe to embed in a path.
     local SEGMENT_PREFIX="${STATION_SLUG}-$(date +%s)"
     echo "Starting FFmpeg (HLS, ${SEGMENT_DURATION}s, ${HLS_LIST_SIZE} segments, prefix=${SEGMENT_PREFIX})..."
-    # Mirrors the old backend_hls_streaming flag set:
+    # Mirrors the flag set of the retired HLS nginx service:
     #   - HE-AAC v1 64k (libfdk_aac aac_he)        same encoder/bitrate as legacy clients tuned for
     #   - hls_flags program_date_time              ffmpeg's PDT (muxer start + media time) stays in
     #                                              live.m3u8 for diagnosis only; playlist_rewriter

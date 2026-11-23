@@ -8,10 +8,10 @@ inside a task can deadlock the worker pool and raises that RuntimeError.
 
 This is a static (AST) check, so it runs with the stdlib only — no Django or
 Celery import required (the backend app can't be imported without a configured
-Django environment). It lives in backend/tests/ (outside the `superapp` package)
+Django environment). It lives in backend/api/tests/ (outside the `superapp` package)
 so pytest imports it standalone:
 
-    python3 -m pytest backend/tests/test_backup_no_sync_subtask.py
+    python3 -m pytest backend/api/tests/test_backup_no_sync_subtask.py
 """
 
 import ast

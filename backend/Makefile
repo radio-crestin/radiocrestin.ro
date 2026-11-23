@@ -6,24 +6,6 @@ export $(shell sed 's/=.*//' .env)
 PATH := $(shell sed -n 's/^PATH=//p' .env):$(PATH):/home/linuxbrew/.linuxbrew/bin:/home/linuxbrew/.linuxbrew/sbin
 endif
 
-deploy: git-pull
-	docker-compose --env-file .env  up --build -d
-
-force-deploy: git-pull
-	docker-compose --env-file .env  up -d --build --force-recreate
-
-force-deploy-no-cache: git-pull
-	docker-compose --env-file .env  build
-	docker-compose --env-file .env  up -d --force-recreate
-
-
-deploy-staging: git-pull
-	docker-compose -f docker-compose.staging.yaml --env-file .env  up --build -d
-
-force-deploy-staging: git-pull
-	docker-compose -f docker-compose.staging.yaml --env-file .env  build
-	docker-compose -f docker-compose.staging.yaml --env-file .env  up -d --force-recreate
-
 start-docker:
 	docker-compose --env-file .env  up --build --force-recreate -d
 
@@ -32,9 +14,6 @@ stop-docker:
 
 stop:
 	docker-compose --env-file .env  stop
-
-git-pull:
-	git pull origin master;
 
 logs:
 	docker-compose logs -f
@@ -45,17 +24,14 @@ web-logs:
 worker-logs:
 	docker-compose logs -f -n 100 worker
 
-hls-streaming-logs:
-	docker-compose logs -f -n 100 backend-hls-streaming
+stream-controller-logs:
+	docker-compose logs -f -n 100 stream-controller
 
-hls-streaming-bash:
-	docker-compose exec -ti backend-hls-streaming bash
-
-create-superuser:
-	docker-compose exec admin python manage.py createsuperuser
+live-streaming-logs:
+	docker-compose logs -f -n 100 live-streaming
 
 load-admin-fixtures:
-	cd backend && make load-admin-fixtures
+	cd api && make load-fixtures
 
 # Backend
 makemigrations:
@@ -85,7 +61,7 @@ STREAM_STATION ?= radio-eldad
 STREAM_URL ?= https://c40.radioboss.fm/stream/170
 
 dev-stream-build:
-	docker build --load -t live-streaming-dev backend_streams_transcoding/live_streaming/
+	docker build --load -t live-streaming-dev streaming/live_streaming/
 
 dev-stream: dev-stream-build
 	@docker stop live-stream-dev 2>/dev/null || true
@@ -125,5 +101,5 @@ dev-stream-test: dev-stream-build
 		live-streaming-dev
 	@echo "Waiting for segments to build up..."
 	@sleep 15
-	python3 -m pytest backend_streams_transcoding/tests/test_hls_stream.py -v
+	python3 -m pytest streaming/tests/test_hls_stream.py -v
 	@docker stop live-stream-dev
