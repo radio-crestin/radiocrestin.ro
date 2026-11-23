@@ -54,6 +54,7 @@ npm run dev        # http://localhost:3005, against the production API
 | `npm run build` | The production build: station thumbnails, sitemap, `llms.txt`, the site in `dist/`, then the source-map upload |
 | `npx astro build` | Just the site, offline-friendly (what CI runs) |
 | `npm run preview` | Serves `dist/` on port 3005 |
+| `npm run deploy` | Builds and deploys the Worker by hand (Workers Builds normally does this) |
 
 ### Settings
 
@@ -96,7 +97,7 @@ code runs, so every request is served from Cloudflare's asset store and edge cac
   record stays in `bringes-infrastructure`; removing the route falls back to that record's origin.
 - **Headers and redirects:** `public/_headers` (caching, security, CORS) and the generated `dist/_redirects`
   (permanent `/x` → `/x/`).
-- **Deploy by hand:** `npm run build && npx wrangler deploy`.
+- **Deploy by hand:** `npm run deploy` (builds, then `wrangler deploy`).
 - **Releases:** push a `web/vX.Y.Z` tag to mark a milestone; the
   [release workflow](../.github/workflows/release.yml) writes the notes from the commits in `web/`.
 
