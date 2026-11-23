@@ -28,7 +28,7 @@ verified, run `make promote` to flip it to public.
 
 ```bash
 make release            # bump + commit pubspec, build android+ios+macos+apple-tv,
-                        # tag v<version>, push tag, create GH prerelease, upload artifacts
+                        # tag mobile/v<version>, push tag, create GH prerelease, upload artifacts
                         # (devs can pull via tag URL; not yet at /releases/latest)
 
 make promote            # once verified, flips prerelease=false on the current
@@ -45,7 +45,7 @@ make release-android    # APK + AAB to dist/
 make release-ios        # ad-hoc IPA to dist/
 make release-macos      # unsigned DMG to dist/
 make release-apple-tv   # tvOS IPA to dist/
-make tag-release        # creates v<version> tag and pushes it
+make tag-release        # creates the mobile/v<version> tag and pushes it
 make publish            # creates GH prerelease, uploads everything in dist/
 make promote            # flips prerelease → latest
 ```
@@ -59,16 +59,18 @@ make publish            # uploads to the same release tag from earlier
 
 ## Latest-release download links (stable URLs)
 The release artifacts use stable filenames so the GitHub
-`/releases/latest/download/<file>` redirect works:
+`/releases/latest/download/<file>` redirect works. The monorepo has one "latest"
+release, and it is always the app's: backend and website releases are created
+with `--latest=false` (see [`.github/workflows/release.yml`](../../.github/workflows/release.yml)).
 
 | Platform | Download |
 |----------|----------|
-| Android APK | https://github.com/radio-crestin/radio-crestin-mobile-app/releases/latest/download/radio-crestin-android.apk |
-| Android AAB (Play upload) | https://github.com/radio-crestin/radio-crestin-mobile-app/releases/latest/download/radio-crestin-android.aab |
-| iOS IPA (ad-hoc) | https://github.com/radio-crestin/radio-crestin-mobile-app/releases/latest/download/radio-crestin-ios.ipa |
-| macOS DMG | https://github.com/radio-crestin/radio-crestin-mobile-app/releases/latest/download/radio-crestin-macos.dmg |
-| Windows zip | https://github.com/radio-crestin/radio-crestin-mobile-app/releases/latest/download/radio-crestin-windows.zip |
-| Apple TV IPA | https://github.com/radio-crestin/radio-crestin-mobile-app/releases/latest/download/radio-crestin-tvos.ipa |
+| Android APK | https://github.com/radio-crestin/radiocrestin.ro/releases/latest/download/radio-crestin-android.apk |
+| Android AAB (Play upload) | https://github.com/radio-crestin/radiocrestin.ro/releases/latest/download/radio-crestin-android.aab |
+| iOS IPA (ad-hoc) | https://github.com/radio-crestin/radiocrestin.ro/releases/latest/download/radio-crestin-ios.ipa |
+| macOS DMG | https://github.com/radio-crestin/radiocrestin.ro/releases/latest/download/radio-crestin-macos.dmg |
+| Windows zip | https://github.com/radio-crestin/radiocrestin.ro/releases/latest/download/radio-crestin-windows.zip |
+| Apple TV IPA | https://github.com/radio-crestin/radiocrestin.ro/releases/latest/download/radio-crestin-tvos.ipa |
 
 `make latest-links` reprints these on demand.
 

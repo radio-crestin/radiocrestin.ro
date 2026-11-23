@@ -73,7 +73,9 @@ PUBSPEC_VERSION := $(shell awk '/^version:/ {print $$2}' pubspec.yaml)
 VERSION         := $(word 1,$(subst +, ,$(PUBSPEC_VERSION)))
 BUILD_NUM       := $(word 2,$(subst +, ,$(PUBSPEC_VERSION)))
 TAG             ?= v$(VERSION)
-GH_REPO         ?= radio-crestin/radio-crestin-mobile-app
+# The app lives in mobile/ of the monorepo, so its git tags and GitHub releases are mobile/v1.2.3.
+GIT_TAG         := mobile/$(TAG)
+GH_REPO         ?= radio-crestin/radiocrestin.ro
 
 ANDROID_APK         := $(DIST)/radio-crestin-android.apk
 ANDROID_AAB         := $(DIST)/radio-crestin-android.aab
@@ -150,7 +152,7 @@ release-help:
 	@echo "  make clean-release         remove $(DIST)/ + flutter clean"
 
 print-version:
-	@echo "version=$(VERSION)  build=$(BUILD_NUM)  tag=$(TAG)"
+	@echo "version=$(VERSION)  build=$(BUILD_NUM)  tag=$(TAG)  git_tag=$(GIT_TAG)"
 
 $(DIST):
 	@mkdir -p $(DIST)
@@ -278,7 +280,7 @@ release-media-deps:
 release-notes: check-release-notes release-media-deps | $(DIST)
 	@{ \
 	  bun $(RELEASE_MEDIA_TOOL)/src/main.ts notes $(TAG) --repo $(GH_REPO); \
-	  base="https://github.com/$(GH_REPO)/releases/download/$(TAG)"; \
+	  base="https://github.com/$(GH_REPO)/releases/download/$(GIT_TAG)"; \
 	  printf "\n## Downloads\n\n"; \
 	  printf -- "- What's new, narrated video: %s/%s\n" "$$base" "$$(basename $(RELEASE_VIDEO))"; \
 	  printf -- "- What's new, slides (download, then open in a browser): %s/%s\n" "$$base" "$$(basename $(RELEASE_DECK))"; \
@@ -310,10 +312,10 @@ release-media: check-release-notes release-media-deps | $(DIST)
 # ----- Tag + push (idempotent) ----------------------------------------------
 .PHONY: tag-release
 tag-release:
-	@if git rev-parse --verify -q $(TAG) >/dev/null; then \
-	  echo "tag $(TAG) already exists, skipping"; \
+	@if git rev-parse --verify -q $(GIT_TAG) >/dev/null; then \
+	  echo "tag $(GIT_TAG) already exists, skipping"; \
 	else \
-	  git tag -a $(TAG) -m "Release $(TAG)" && git push origin $(TAG); \
+	  git tag -a $(GIT_TAG) -m "Release $(GIT_TAG)" && git push origin $(GIT_TAG); \
 	fi
 
 # ----- Publish: create or reuse GH release, upload anything in $(DIST) ------
@@ -323,34 +325,34 @@ tag-release:
 publish: release-notes
 	@command -v gh >/dev/null || { echo "ERROR: gh CLI required (brew install gh)"; exit 1; }
 	@gh auth status >/dev/null 2>&1 || { echo "ERROR: gh not authenticated (run: gh auth login)"; exit 1; }
-	@if ! gh release view $(TAG) -R $(GH_REPO) >/dev/null 2>&1; then \
-	  gh release create $(TAG) -R $(GH_REPO) \
+	@if ! gh release view $(GIT_TAG) -R $(GH_REPO) >/dev/null 2>&1; then \
+	  gh release create $(GIT_TAG) -R $(GH_REPO) \
 	    --title "Radio Crestin $(TAG)" \
 	    --notes-file $(RELEASE_NOTES) \
 	    --prerelease; \
 	else \
-	  echo "release $(TAG) already exists — refreshing its notes and uploading artifacts"; \
-	  gh release edit $(TAG) -R $(GH_REPO) --notes-file $(RELEASE_NOTES); \
+	  echo "release $(GIT_TAG) already exists — refreshing its notes and uploading artifacts"; \
+	  gh release edit $(GIT_TAG) -R $(GH_REPO) --notes-file $(RELEASE_NOTES); \
 	fi
 	@for f in $(RELEASE_VIDEO) $(RELEASE_POSTER) $(RELEASE_DECK) $(ANDROID_APK) $(ANDROID_AAB) $(IOS_IPA) $(MACOS_DMG) $(WINDOWS_ZIP) $(APPLE_TV_IPA); do \
 	  if [ -f "$$f" ]; then \
 	    echo "uploading $$f"; \
-	    gh release upload $(TAG) -R $(GH_REPO) "$$f" --clobber; \
+	    gh release upload $(GIT_TAG) -R $(GH_REPO) "$$f" --clobber; \
 	  else \
 	    echo "skip (missing): $$f"; \
 	  fi; \
 	done
 	@echo
-	@echo "Prerelease (devs only): https://github.com/$(GH_REPO)/releases/tag/$(TAG)"
+	@echo "Prerelease (devs only): https://github.com/$(GH_REPO)/releases/tag/$(GIT_TAG)"
 	@echo "Run 'make promote' to publish to /releases/latest."
 
 # ----- Promote: flip prerelease off so /releases/latest serves this build ---
 .PHONY: promote
 promote:
 	@command -v gh >/dev/null || { echo "ERROR: gh CLI required"; exit 1; }
-	@gh release view $(TAG) -R $(GH_REPO) >/dev/null 2>&1 || { \
-	  echo "ERROR: release $(TAG) not found — run 'make publish' first"; exit 1; }
-	gh release edit $(TAG) -R $(GH_REPO) --prerelease=false --latest
+	@gh release view $(GIT_TAG) -R $(GH_REPO) >/dev/null 2>&1 || { \
+	  echo "ERROR: release $(GIT_TAG) not found — run 'make publish' first"; exit 1; }
+	gh release edit $(GIT_TAG) -R $(GH_REPO) --prerelease=false --latest
 	@echo "Promoted to latest: https://github.com/$(GH_REPO)/releases/latest"
 
 # ----- One-shot Mac release --------------------------------------------------

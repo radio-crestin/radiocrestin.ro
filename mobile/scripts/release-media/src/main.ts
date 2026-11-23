@@ -10,7 +10,7 @@
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { renderDeck } from "./deck.ts";
-import { githubNotes } from "./github.ts";
+import { gitTag, githubNotes, notesPath } from "./github.ts";
 import { setLinkBase } from "./markdown.ts";
 import { setupSlides, versionSlides, type Slide } from "./notes.ts";
 import type { Scene } from "./video.ts";
@@ -18,7 +18,7 @@ import type { Scene } from "./video.ts";
 const ROOT = resolve(import.meta.dir, "../../..");
 const NOTES = join(ROOT, "release-notes");
 const ICON = join(ROOT, "assets/icons/ic_logo_filled.png");
-const DEFAULT_REPO = "radio-crestin/radio-crestin-mobile-app";
+const DEFAULT_REPO = "radio-crestin/radiocrestin.ro";
 
 const [command, tag, ...flags] = process.argv.slice(2);
 const flag = (name: string) => {
@@ -39,7 +39,7 @@ async function main() {
   }
   const out = resolve(flag("out") ?? join(ROOT, "dist/release-media", tag));
   mkdirSync(out, { recursive: true });
-  setLinkBase(`https://github.com/${repo}/blob/${tag}/release-notes`);
+  setLinkBase(`https://github.com/${repo}/blob/${gitTag(tag)}/${notesPath}`);
   const slides = allSlides(notes, repo);
   const deck = join(out, "presentation.html");
   writeFileSync(deck, renderDeck(slides, { version: tag.slice(1), icon: ICON }));

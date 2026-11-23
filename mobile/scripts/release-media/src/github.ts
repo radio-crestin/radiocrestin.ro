@@ -4,6 +4,10 @@ import { readFileSync } from "node:fs";
 const VIDEO = "radio-crestin-whats-new.mp4";
 const POSTER = "radio-crestin-whats-new.jpg";
 
+/** The app lives in mobile/ of the radio-crestin/radiocrestin.ro monorepo; its releases are tagged mobile/v1.2.3. */
+export const gitTag = (version: string) => `mobile/${version}`;
+export const notesPath = "mobile/release-notes";
+
 /**
  * A version's notes as a GitHub release body: the narrated video first, as its poster linking to
  * it (GitHub plays inline only videos uploaded through its web editor); then the notes, without
@@ -15,7 +19,7 @@ export function githubNotes(path: string, { repo, tag }: { repo: string; tag: st
 }
 
 function videoHeader(repo: string, tag: string): string {
-  const download = `https://github.com/${repo}/releases/download/${tag}`;
+  const download = `https://github.com/${repo}/releases/download/${gitTag(tag)}`;
   const version = tag.slice(1);
   return `<a href="${download}/${VIDEO}"><img src="${download}/${POSTER}" ` +
     `alt="What's new in Radio Crestin ${version}: narrated video" width="720"></a>\n\n` +
@@ -23,8 +27,8 @@ function videoHeader(repo: string, tag: string): string {
 }
 
 function notesBody(path: string, repo: string, tag: string): string {
-  const blob = `https://github.com/${repo}/blob/${tag}/release-notes`;
-  const raw = `https://raw.githubusercontent.com/${repo}/${tag}/release-notes`;
+  const blob = `https://github.com/${repo}/blob/${gitTag(tag)}/${notesPath}`;
+  const raw = `https://raw.githubusercontent.com/${repo}/${gitTag(tag)}/${notesPath}`;
   const local = (href: string) => !/^(https?:|mailto:|#)/.test(href);
   return readFileSync(path, "utf8")
     .replace(/[ \t]*<!--[\s\S]*?-->[ \t]*\n?/g, "")

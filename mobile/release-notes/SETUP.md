@@ -32,7 +32,7 @@ Needs Android 7.0 or later.
 
 1. Install **Radio Crestin** from [Google Play](https://play.google.com/store/apps/details?id=com.radiocrestin.radio_crestin).
    Without Google Play: download
-   [`radio-crestin-android.apk`](https://github.com/radio-crestin/radio-crestin-mobile-app/releases/latest/download/radio-crestin-android.apk),
+   [`radio-crestin-android.apk`](https://github.com/radio-crestin/radiocrestin.ro/releases/latest/download/radio-crestin-android.apk),
    open it, and allow your browser to **install unknown apps** when Android asks.
 2. Open it and tap a station. Play, pause, next and previous stay in the notification and on the lock screen.
 3. Allow notifications when asked, so playback keeps its controls while the screen is off.
@@ -68,7 +68,7 @@ Needs macOS 13 or later.
 
 1. Install **Radio Crestin** from the Mac App Store (search *Radio Crestin*).
    Or download
-   [`radio-crestin-macos.dmg`](https://github.com/radio-crestin/radio-crestin-mobile-app/releases/latest/download/radio-crestin-macos.dmg),
+   [`radio-crestin-macos.dmg`](https://github.com/radio-crestin/radiocrestin.ro/releases/latest/download/radio-crestin-macos.dmg),
    open it and drag **Radio Crestin** to **Applications**.
 2. The DMG build is not notarized: if macOS says it can't check the app, open **System Settings → Privacy &
    Security** and click **Open Anyway** next to Radio Crestin.
@@ -82,7 +82,7 @@ Needs macOS 13 or later.
 Needs 64-bit Windows 10 or 11.
 
 1. Download
-   [`radio-crestin-windows.zip`](https://github.com/radio-crestin/radio-crestin-mobile-app/releases/latest/download/radio-crestin-windows.zip)
+   [`radio-crestin-windows.zip`](https://github.com/radio-crestin/radiocrestin.ro/releases/latest/download/radio-crestin-windows.zip)
    and extract it to a folder of your choice (keep every file together).
 2. Open **radio_crestin.exe**. If SmartScreen shows "Windows protected your PC", click **More info →
    Run anyway** (the app is not code-signed yet).
