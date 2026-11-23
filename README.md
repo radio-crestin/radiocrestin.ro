@@ -26,9 +26,7 @@
 ### 🌐 Website
 
 <p align="center">
-  <img src="web/docs/screenshots/desktop-dark-playing.jpg" alt="radiocrestin.ro playing Radio Gosen, dark theme" width="620" />
-  &nbsp;
-  <img src="web/docs/screenshots/mobile-dark-playing.jpg" alt="radiocrestin.ro on a phone, playing Radio Gosen" width="150" />
+  <img src="web/docs/screenshots/desktop-dark-playing.jpg" alt="radiocrestin.ro playing Radio Gosen, dark theme" width="760" />
 </p>
 
 ### 📱 App
