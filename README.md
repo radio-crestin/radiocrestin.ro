@@ -44,9 +44,7 @@
 ### 🎙️ Backend admin
 
 <p align="center">
-  <img src="backend/docs/screenshots/admin-stations-dark.jpg" alt="Admin portal: the stations list" width="400" />
-  &nbsp;
-  <img src="backend/docs/screenshots/admin-station-edit-dark.jpg" alt="Admin portal: editing a station" width="400" />
+  <img src="backend/docs/screenshots/admin-stations-dark.jpg" alt="Admin portal: the stations list" width="760" />
 </p>
 
 ## 📦 What's in this repository
