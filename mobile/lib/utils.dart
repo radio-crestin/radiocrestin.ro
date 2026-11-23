@@ -540,8 +540,6 @@ class Utils {
             _pendingReviewThresholds(prefs, actionsMade).isNotEmpty) {
           _scheduleReviewDialog(prefs);
         }
-
-        // Share dialog disabled
       }
     } catch (e) {
       developer.log('Error incrementing actions_made: $e');
@@ -619,12 +617,6 @@ class Utils {
         await prefs.remove(_reviewDialogShownKey(threshold));
       }
       await prefs.remove(_systemReviewVersionKey);
-
-      // Share dialog intervals: 40, 150, 250, 600, 800, 1000
-      List<int> shareIntervals = [40, 150, 250, 600, 800, 1000];
-      for (int interval in shareIntervals) {
-        await prefs.remove('share_dialog_shown_at_$interval');
-      }
       
       // Reset cancellation tracking
       String? reviewStatusJson = prefs.getString('_reviewStatus');
@@ -660,14 +652,6 @@ class Utils {
           threshold: prefs.getBool(_reviewDialogShownKey(threshold)) ?? false,
       };
       status['rating_dialogs_shown'] = ratingDialogsShown;
-      
-      // Check which share dialogs have been shown
-      List<int> shareIntervals = [40, 150, 250, 600, 800, 1000];
-      Map<int, bool> shareDialogsShown = {};
-      for (int interval in shareIntervals) {
-        shareDialogsShown[interval] = prefs.getBool('share_dialog_shown_at_$interval') ?? false;
-      }
-      status['share_dialogs_shown'] = shareDialogsShown;
       
       return status;
     } catch (e) {
