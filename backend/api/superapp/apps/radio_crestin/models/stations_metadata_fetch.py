@@ -1,6 +1,22 @@
 from django.db import models
 from django.utils.translation import gettext_lazy as _
-from regex_field.fields import RegexField
+from regex_field.fields import RegexField as CompiledRegexField
+
+
+class RegexField(CompiledRegexField):
+    """A regex column whose admin form shows the pattern, not `re.compile('...')`.
+
+    Without this, saving a row in the admin stored that text as the pattern itself.
+    """
+
+    def value_from_object(self, obj):
+        value = super().value_from_object(obj)
+        return value.pattern if value is not None else None
+
+    def deconstruct(self):
+        # Same column as the library's field: migrations keep pointing at it.
+        name, _path, args, kwargs = super().deconstruct()
+        return name, 'regex_field.fields.RegexField', args, kwargs
 
 
 class StationsMetadataFetch(models.Model):
