@@ -98,7 +98,7 @@ code runs, so every request is served from Cloudflare's asset store and edge cac
 - **Headers and redirects:** `public/_headers` (caching, security, CORS) and the generated `dist/_redirects`
   (permanent `/x` → `/x/`).
 - **Deploy by hand:** `npm run deploy` (builds, then `wrangler deploy`).
-- **Releases:** push a `web/vX.Y.Z` tag to mark a milestone; the
-  [release workflow](../.github/workflows/release.yml) writes the notes from the commits in `web/`.
+- **Releases:** the website shares the repository's one version; each release lists what changed in `web/`
+  ([how to release](../README.md#-releases)).
 
 Part of the [Radio Crestin monorepo](../README.md).

@@ -130,9 +130,9 @@ Conventions and architecture: [`CLAUDE.md`](CLAUDE.md) · Releasing: [`docs/rele
 
 ## 🚀 Releasing
 
-Versions come from `pubspec.yaml`. `make release` builds every platform on this Mac, tags `mobile/vX.Y.Z`,
-and publishes a GitHub prerelease with the builds, the notes, a slide deck and a narrated video;
-`make promote` makes it the public latest. Full guide: [`docs/releasing.md`](docs/releasing.md).
+The app shares the repository's one version (`../VERSION`, mirrored in `pubspec.yaml`). `make release` builds
+every platform on this Mac, tags `vX.Y.Z` if needed and uploads the builds, the notes, a slide deck and a
+narrated video to that version's GitHub prerelease; `make promote` makes it the public latest. Full guide: [`docs/releasing.md`](docs/releasing.md).
 
 ## 🤝 Contributing
 

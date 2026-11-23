@@ -116,8 +116,15 @@ jobs:
       - name: Analyze the app (errors and warnings fail; style infos do not)
         run: flutter analyze lib --no-fatal-infos
 
+  version:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: VERSION, web/package.json and mobile/pubspec.yaml agree
+        run: scripts/release/check-version.sh
+
   ci-ok:
-    needs: [changes, backend, web, mobile]
+    needs: [changes, version, backend, web, mobile]
     if: always()
     runs-on: ubuntu-latest
     steps:

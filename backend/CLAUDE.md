@@ -163,8 +163,8 @@ The project uses Kubernetes with Skaffold for deployment. Configuration is in `d
 
 1. **Commit changes** to the main branch
 2. **Create release**: `make create-new-release` — bumps the image tag, builds images, generates manifests,
-   commits the deploy repo and the submodule bump, and tags `backend/vX.Y.Z`. Push the deploy repo, then
-   `git push origin HEAD backend/vX.Y.Z`: the tag publishes the GitHub release.
+   commits the deploy repo and the submodule bump. Push the deploy repo, then PR the submodule bump. The image
+   tag is not the release version: GitHub releases use the repository's one `vX.Y.Z` (root README).
 3. **Apply manifests**: Use kubeconfig at `deploy/environments/radio_crestin_production/secrets/kube_config.yaml`
    ```bash
    export KUBECONFIG=deploy/environments/radio_crestin_production/secrets/kube_config.yaml

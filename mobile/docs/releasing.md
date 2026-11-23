@@ -28,7 +28,7 @@ verified, run `make promote` to flip it to public.
 
 ```bash
 make release            # bump + commit pubspec, build android+ios+macos+apple-tv,
-                        # tag mobile/v<version>, push tag, create GH prerelease, upload artifacts
+                        # tag v<version>, push tag, create GH prerelease, upload artifacts
                         # (devs can pull via tag URL; not yet at /releases/latest)
 
 make promote            # once verified, flips prerelease=false on the current
@@ -39,13 +39,13 @@ make promote            # once verified, flips prerelease=false on the current
 ```bash
 make release-help       # list every release target
 
-make bump-build         # 1.5.0+77 → 1.5.0+78  (or bump-patch / bump-minor)
+make bump-build         # 1.5.0+77 → 1.5.0+78  (bump-patch / bump-minor set ../VERSION, web and app together)
 make commit-version     # commits pubspec bump and pushes
 make release-android    # APK + AAB to dist/
 make release-ios        # ad-hoc IPA to dist/
 make release-macos      # unsigned DMG to dist/
 make release-apple-tv   # tvOS IPA to dist/
-make tag-release        # creates the mobile/v<version> tag and pushes it
+make tag-release        # creates the v<version> tag and pushes it
 make publish            # creates GH prerelease, uploads everything in dist/
 make promote            # flips prerelease → latest
 ```
@@ -59,9 +59,10 @@ make publish            # uploads to the same release tag from earlier
 
 ## Latest-release download links (stable URLs)
 The release artifacts use stable filenames so the GitHub
-`/releases/latest/download/<file>` redirect works. The monorepo has one "latest"
-release, and it is always the app's: backend and website releases are created
-with `--latest=false` (see [`.github/workflows/release.yml`](../../.github/workflows/release.yml)).
+`/releases/latest/download/<file>` redirect works. Web, backend and app share one
+version and one release per version ([root README](../../README.md#-releases)); a
+release becomes "latest" only once the app's downloads are attached
+(`make promote` runs [`scripts/release/promote.sh`](../../scripts/release/promote.sh)).
 
 | Platform | Download |
 |----------|----------|
