@@ -61,3 +61,37 @@ class TestParseGraphqlResponse:
         except Exception as e:  # pragma: no cover
             pytest.fail(f"parser raised instead of degrading: {e!r}")
         assert result == {}
+
+
+ART = "https://radio.example.com/api/station/demo/art"
+
+
+def _serve(monkeypatch, body: dict):
+    monkeypatch.setattr(scraper_engine, "_http_get", lambda url, timeout=None: __import__("json").dumps(body))
+
+
+class TestSeparateArtistField:
+    def test_icecast_uses_the_artist_field_and_keeps_the_title_whole(self, monkeypatch):
+        _serve(monkeypatch, {"icestats": {"source": {
+            "artist": "Cuvântul la vremea potrivită", "title": "Chivotul - Valentin Popovici", "listeners": 6}}})
+        merged = scraper_engine._run_scrapers([{"category_slug": "icecast", "url": "u", "priority": 1}])
+        assert (merged["artist"], merged["title"]) == ("Cuvântul la vremea potrivită", "Chivotul - Valentin Popovici")
+        assert merged["listeners"] == 6
+
+    def test_icecast_without_an_artist_still_splits_the_title(self, monkeypatch):
+        _serve(monkeypatch, {"icestats": {"source": {"title": "Familia Pascal - Ce bucurie"}}})
+        merged = scraper_engine._run_scrapers([{"category_slug": "icecast", "url": "u", "priority": 1}])
+        assert (merged["artist"], merged["title"]) == ("Familia Pascal", "Ce bucurie")
+
+    def test_azuracast_gives_artist_title_cover_and_listeners(self, monkeypatch):
+        _serve(monkeypatch, {"listeners": {"current": 5}, "now_playing": {"song": {
+            "text": "Familia Pascal - Ce bucurie", "artist": "Familia Pascal", "title": "Ce bucurie",
+            "art": f"{ART}/d18e52d2edcb1926b598bd60-1794732263.jpg"}}})
+        merged = scraper_engine._run_scrapers([{"category_slug": "azuracast", "url": "u", "priority": 2}])
+        assert (merged["artist"], merged["title"]) == ("Familia Pascal", "Ce bucurie")
+        assert merged["thumbnail_url"] == f"{ART}/d18e52d2edcb1926b598bd60-1794732263.jpg"
+        assert merged["listeners"] == 5
+
+    def test_azuracast_fallback_art_is_not_a_cover(self):
+        assert scraper_engine.azuracast_cover(f"{ART}/eb8ec63fdf67c94c71f5a91b") is None
+        assert scraper_engine.azuracast_cover(None) is None

@@ -39,6 +39,7 @@ from datetime import datetime, timezone
 from http.client import HTTPConnection, HTTPSConnection
 from pathlib import Path
 import urllib.error
+import urllib.parse
 import urllib.request
 from urllib.parse import urlparse
 
@@ -402,11 +403,46 @@ def _scrape_icecast(url: str) -> dict:
         source = data.get("icestats", {}).get("source", {})
         if isinstance(source, list):
             source = source[0] if source else {}
-        return {
+        result = {
             "raw_title": source.get("title", source.get("artist", "")),
             "listeners": source.get("listeners"),
         }
+        # Servers that tag songs (AzuraCast, Liquidsoap) send the artist on its
+        # own; then `title` is only the title and must not be split.
+        if source.get("artist") and source.get("title"):
+            result.update(artist=source["artist"], title=source["title"])
+        return result
     except (json.JSONDecodeError, KeyError):
+        pass
+    return {}
+
+
+def azuracast_cover(art_url) -> str | None:
+    """The song's own cover, or None for AzuraCast's fallback: `.../art/<id>`
+    with no file name redirects to the station's default album art."""
+    if not isinstance(art_url, str) or not art_url:
+        return None
+    file_name = urllib.parse.urlsplit(art_url).path.rsplit("/", 1)[-1]
+    return art_url if "." in file_name else None
+
+
+def _scrape_azuracast(url: str) -> dict:
+    """Scrape AzuraCast's now-playing API: /api/nowplaying/<station>."""
+    body = _http_get(url)
+    if not body:
+        return {}
+    try:
+        data = json.loads(body)
+        song = (data.get("now_playing") or {}).get("song") or {}
+        result = {
+            "raw_title": song.get("text", ""),
+            "thumbnail_url": azuracast_cover(song.get("art")),
+            "listeners": (data.get("listeners") or {}).get("current"),
+        }
+        if song.get("artist") or song.get("title"):
+            result.update(artist=song.get("artist") or "", title=song.get("title") or "")
+        return result
+    except (json.JSONDecodeError, AttributeError):
         pass
     return {}
 
@@ -496,6 +532,7 @@ def _scrape_radio_filadelfia(url: str) -> dict:
 SCRAPERS = {
     "shoutcast": _scrape_shoutcast,
     "icecast": _scrape_icecast,
+    "azuracast": _scrape_azuracast,
     "radio_co": _scrape_radio_co,
     "shoutcast_xml": _scrape_shoutcast_xml,
     "sonicpanel": _scrape_sonicpanel,
@@ -535,7 +572,11 @@ def _run_scrapers(scrapers_config: list, deadline: float | None = None) -> dict:
         if not raw_title:
             continue
 
-        artist, title = _parse_title_artist(raw_title, cfg)
+        if raw_result.get("title"):
+            artist = song_titles.clean_title(raw_result.get("artist")) or ""
+            title = song_titles.clean_title(raw_result["title"]) or ""
+        else:
+            artist, title = _parse_title_artist(raw_title, cfg)
         results.append({
             "raw_title": raw_title,
             "title": title,
