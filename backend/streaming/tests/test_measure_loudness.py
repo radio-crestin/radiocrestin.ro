@@ -39,6 +39,14 @@ class MeasureLoudnessTests(unittest.TestCase):
         self.assertEqual(ml.suggested_gain(-3, -14.8, -16), -4.0)
         self.assertEqual(ml.suggested_gain(0, -16.1, -16), 0.0)
 
+    def test_boost_stops_at_the_limiter_headroom(self):
+        # -29.5 LUFS wants +13.5 dB, but its -6.1 dBFS peak allows 5.1 + 3.
+        self.assertEqual(ml.suggested_gain(0, -29.5, -16, -6.1), 8.0)
+        # A cut is never held back by the peak, and a peak with no room
+        # left holds a boost at 0 instead of turning it into a cut.
+        self.assertEqual(ml.suggested_gain(0, -10.2, -16, 2.6), -6.0)
+        self.assertEqual(ml.suggested_gain(0, -14.6, -14, 2.6), 0.0)
+
     def test_suggested_gain_is_capped(self):
         self.assertEqual(ml.suggested_gain(0, -40, -16), ml.MAX_GAIN_DB)
         self.assertEqual(ml.suggested_gain(0, 0, -16), -ml.MAX_GAIN_DB)

@@ -13,7 +13,9 @@ applies it (live_streaming/scripts/audio_gain.sh).
 
 The stream measured already carries the station's current gain, so the
 suggested gain is current + (target - measured): run it again any time and
-it corrects the gains in place instead of stacking them.
+it corrects the gains in place instead of stacking them. A boost stops where
+the loudest peak would go more than MAX_LIMITING_DB into the limiter, so a
+quiet station with loud peaks may stay below the target.
 
 Needs ffmpeg on PATH. Standard library only.
 """
@@ -35,6 +37,10 @@ STATIONS_URL = "https://api.radiocrestin.ro/api/v1/stations"
 DEFAULT_TARGET_LUFS = -16.0
 # A larger correction means a broken or silent stream, not a quiet station.
 MAX_GAIN_DB = 12.0
+# A boost may push the loudest peak this far into the pod's -1 dBFS limiter
+# (audio_gain.sh); more and the limiter audibly squashes a quiet station.
+LIMITER_PEAK = -1.0
+MAX_LIMITING_DB = 3.0
 GAIN_STEP_DB = 0.5
 
 _SUMMARY = {
@@ -72,8 +78,13 @@ def parse_summary(ffmpeg_stderr: str) -> dict[str, float | None]:
     return values
 
 
-def suggested_gain(current_gain_db: float, measured_lufs: float, target_lufs: float) -> float:
-    gain = current_gain_db + target_lufs - measured_lufs
+def suggested_gain(current_gain_db: float, measured_lufs: float, target_lufs: float,
+                   true_peak_dbfs: float | None = None) -> float:
+    change = target_lufs - measured_lufs
+    if true_peak_dbfs is not None and change > 0:
+        boost_room = max(0.0, LIMITER_PEAK - true_peak_dbfs + MAX_LIMITING_DB)
+        change = min(change, boost_room)
+    gain = current_gain_db + change
     gain = max(-MAX_GAIN_DB, min(MAX_GAIN_DB, gain))
     return round(gain / GAIN_STEP_DB) * GAIN_STEP_DB + 0.0  # + 0.0 turns -0.0 into 0.0
 
@@ -95,7 +106,8 @@ def measure(slug: str, url: str, current_gain_db: float, seconds: int, target_lu
     if result.integrated_lufs is None:
         result.error = (proc.stderr.strip().splitlines() or ["no audio"])[-1][:120]
     else:
-        result.suggested_gain_db = suggested_gain(current_gain_db, result.integrated_lufs, target_lufs)
+        result.suggested_gain_db = suggested_gain(
+            current_gain_db, result.integrated_lufs, target_lufs, result.true_peak_dbfs)
     return result
 
 
