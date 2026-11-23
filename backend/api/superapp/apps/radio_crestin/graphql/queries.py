@@ -56,6 +56,12 @@ def _size(limit, default):
     return min(max(default if limit is None else limit, 0), MAX_PAGE_SIZE)
 
 
+def _regex_text(regex):
+    """The pattern a pod applies: the field holds compiled patterns, whose
+    str() is "re.compile('...')", which matched nothing in the pods."""
+    return getattr(regex, 'pattern', regex) or None
+
+
 @strawberry.input
 class StationOrderBy:
     order: Optional[OrderDirectionEnum] = None
@@ -922,9 +928,9 @@ class Query:
                     priority=f.priority,
                     dirty_metadata=f.dirty_metadata,
                     split_character=f.split_character,
-                    station_name_regex=str(f.station_name_regex) if f.station_name_regex else None,
-                    artist_regex=str(f.artist_regex) if f.artist_regex else None,
-                    title_regex=str(f.title_regex) if f.title_regex else None,
+                    station_name_regex=_regex_text(f.station_name_regex),
+                    artist_regex=_regex_text(f.artist_regex),
+                    title_regex=_regex_text(f.title_regex),
                 )
                 for f in station.station_metadata_fetches.all()
             ]
