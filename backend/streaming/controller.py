@@ -143,11 +143,24 @@ def fleet_tunables() -> dict[str, str]:
             if os.environ.get(name)}
 
 
-def streamer_tunables(slug: str) -> dict[str, str]:
-    """The tunables station `slug`'s pod should get."""
+# Per-station settings from the station's own fields (Django admin).
+# AUDIO_GAIN_DB: the station's "Audio gain (dB)", which ffmpeg applies to
+# normalize its loudness (live_streaming/scripts/audio_gain.sh); unset at 0.
+STATION_SETTINGS = ("AUDIO_GAIN_DB",)
+
+
+def format_gain(audio_gain_db) -> str:
+    """The AUDIO_GAIN_DB value of a gain, "" for none: -5.0 -> "-5"."""
+    return f"{float(audio_gain_db or 0):g}" if audio_gain_db else ""
+
+
+def streamer_tunables(slug: str, audio_gain_db: float = 0.0) -> dict[str, str]:
+    """The tunables and station settings station `slug`'s pod should get."""
     tunables = fleet_tunables()
     if slug in RELAY_STATIONS:
         tunables["FFMPEG_INPUT_RECONNECT"] = "relay"
+    if format_gain(audio_gain_db):
+        tunables["AUDIO_GAIN_DB"] = format_gain(audio_gain_db)
     return tunables
 
 # GraphQL query to fetch stations (disabled=False is applied server-side by default)
@@ -158,6 +171,7 @@ query {
         slug
         stream_url
         transcode_enabled
+        audio_gain_db
     }
 }
 """
@@ -388,14 +402,15 @@ def resources_of(deployment: client.V1Deployment) -> str:
 
 
 def tunables_of(deployment: client.V1Deployment) -> dict[str, str]:
-    """The STREAMER_TUNABLES a Deployment's streamer container is set to."""
+    """The STREAMER_TUNABLES and STATION_SETTINGS a Deployment's streamer
+    container is set to."""
     containers = deployment.spec.template.spec.containers or []
     env = (containers[0].env or []) if containers else []
     return {e.name: e.value for e in env
-            if e.name in STREAMER_TUNABLES and e.value}
+            if e.name in STREAMER_TUNABLES + STATION_SETTINGS and e.value}
 
 
-def build_deployment_spec(slug: str, stream_url: str) -> client.V1Deployment:
+def build_deployment_spec(slug: str, stream_url: str, audio_gain_db: float = 0.0) -> client.V1Deployment:
     """Build Deployment spec for a station streamer with fast restart on failure."""
     labels = {"app": LABEL_APP, "station": slug}
 
@@ -451,7 +466,7 @@ def build_deployment_spec(slug: str, stream_url: str) -> client.V1Deployment:
                                 client.V1EnvVar(name="POSTHOG_HOST", value=POSTHOG_HOST),
                                 client.V1EnvVar(name="IMAGE_TAG", value=streamer_image(slug).rsplit(":", 1)[-1]),
                                 *(client.V1EnvVar(name=name, value=value)
-                                  for name, value in streamer_tunables(slug).items()),
+                                  for name, value in streamer_tunables(slug, audio_gain_db).items()),
                                 *_egress_proxy_env(),
                             ],
                             ports=[client.V1ContainerPort(container_port=8080)],
@@ -876,16 +891,16 @@ def ensure_pvc(core_v1: client.CoreV1Api, slug: str, existing_pvcs: set[str]):
     )
 
 
-def create_deployment(apps_v1: client.AppsV1Api, slug: str, stream_url: str):
+def create_deployment(apps_v1: client.AppsV1Api, slug: str, stream_url: str, audio_gain_db: float = 0.0):
     """Create a station streamer deployment."""
     log.info("Creating deployment for station: %s", slug)
     apps_v1.create_namespaced_deployment(
         namespace=NAMESPACE,
-        body=build_deployment_spec(slug, stream_url),
+        body=build_deployment_spec(slug, stream_url, audio_gain_db),
     )
 
 
-def update_deployment(apps_v1: client.AppsV1Api, slug: str, stream_url: str):
+def update_deployment(apps_v1: client.AppsV1Api, slug: str, stream_url: str, audio_gain_db: float = 0.0):
     """Update a station streamer deployment (e.g. stream_url changed). Replace,
     not patch: a strategic merge keeps fields the new spec dropped (an old
     sidecar's args would reach the new image)."""
@@ -893,7 +908,7 @@ def update_deployment(apps_v1: client.AppsV1Api, slug: str, stream_url: str):
     apps_v1.replace_namespaced_deployment(
         name=deployment_name(slug),
         namespace=NAMESPACE,
-        body=build_deployment_spec(slug, stream_url),
+        body=build_deployment_spec(slug, stream_url, audio_gain_db),
     )
 
 
@@ -1041,6 +1056,7 @@ def sync_once(
         log.warning("Fetch returned 0 stations — skipping sync to protect running pods")
         return
     desired_map = {s["slug"]: s["stream_url"] for s in desired_stations}
+    gain_map = {s["slug"]: s.get("audio_gain_db") or 0.0 for s in desired_stations}
     desired_slugs = set(desired_map.keys())
 
     log.info("Desired stations: %d", len(desired_slugs))
@@ -1074,7 +1090,7 @@ def sync_once(
               or egress_proxy_of(dep) != desired_egress_proxy()
               or egress_proxy_readiness_period_of(dep) != desired_egress_proxy_readiness_period()
               or resources_of(dep) != desired_resources()
-              or tunables_of(dep) != streamer_tunables(slug)
+              or tunables_of(dep) != streamer_tunables(slug, gain_map[slug])
               or read_only_root_of(dep) != READ_ONLY_ROOT):
             to_update_image.add(slug)
 
@@ -1095,14 +1111,14 @@ def sync_once(
     for i in range(0, len(update_list), IMAGE_UPDATE_BATCH):
         batch = update_list[i:i + IMAGE_UPDATE_BATCH]
         for slug in batch:
-            update_deployment(apps_v1, slug, desired_map[slug])
+            update_deployment(apps_v1, slug, desired_map[slug], gain_map[slug])
         if i + IMAGE_UPDATE_BATCH < len(update_list):
             time.sleep(5)
 
     # Create new deployments and services
     for slug in to_create:
         ensure_pvc(core_v1, slug, existing_pvcs)
-        create_deployment(apps_v1, slug, desired_map[slug])
+        create_deployment(apps_v1, slug, desired_map[slug], gain_map[slug])
         ensure_service(core_v1, slug, existing_services)
 
     # 5. Reconcile ingresses

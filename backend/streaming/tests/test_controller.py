@@ -593,7 +593,7 @@ class TestCanaryAndTunables(unittest.TestCase):
         dep.spec.template.spec.containers = [container]
         return dep
 
-    def _sync(self, deployments):
+    def _sync(self, deployments, gains=None):
         core_v1, apps_v1, networking_v1 = MagicMock(), MagicMock(), MagicMock()
         apps_v1.list_namespaced_deployment.return_value.items = deployments
         core_v1.list_namespaced_service.return_value.items = []
@@ -601,7 +601,9 @@ class TestCanaryAndTunables(unittest.TestCase):
         networking_v1.list_namespaced_ingress.return_value.items = []
         stations = [{"slug": d.metadata.labels["station"],
                      "stream_url": "https://s.example/live",
-                     "transcode_enabled": True} for d in deployments]
+                     "transcode_enabled": True,
+                     "audio_gain_db": (gains or {}).get(d.metadata.labels["station"], 0)}
+                    for d in deployments]
         with patch("controller.fetch_stations", return_value=stations), \
                 patch("controller.ensure_listing_deployment"), \
                 patch("controller.ensure_listing_ingress"):
@@ -654,6 +656,21 @@ class TestCanaryAndTunables(unittest.TestCase):
                                    [("FFMPEG_INPUT_RECONNECT", "restart")])
             self.assertEqual(self._sync([stale, fresh]),
                              ["live-stream-radio-a"])
+
+    def test_station_gain_is_forwarded_and_rolls_only_that_station(self):
+        dep = controller.build_deployment_spec("radio-a", "https://s", -5.0)
+        env = {e.name: e.value for e in dep.spec.template.spec.containers[0].env}
+        self.assertEqual(env["AUDIO_GAIN_DB"], "-5")
+        dep = controller.build_deployment_spec("radio-a", "https://s", 0.0)
+        env = {e.name: e.value for e in dep.spec.template.spec.containers[0].env}
+        self.assertNotIn("AUDIO_GAIN_DB", env)
+
+        deps = [self._labelled("radio-a", controller.STREAMER_IMAGE, [("AUDIO_GAIN_DB", "2.5")]),
+                self._labelled("radio-b", controller.STREAMER_IMAGE)]
+        gains = {"radio-a": 2.5, "radio-b": 0}
+        self.assertEqual(self._sync(deps, gains), [])
+        gains["radio-b"] = -3
+        self.assertEqual(self._sync(deps, gains), ["live-stream-radio-b"])
 
     def test_parse_station_list(self):
         self.assertEqual(

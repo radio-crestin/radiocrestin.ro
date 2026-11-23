@@ -78,6 +78,11 @@ echo "HLS:     HE-AAC v1 64k, ${SEGMENT_DURATION}s segments, ${HLS_LIST_SIZE} li
 
 # shellcheck source=supervisor.sh
 . /app/scripts/supervisor.sh
+# shellcheck source=audio_gain.sh
+. /app/scripts/audio_gain.sh
+# The station's loudness gain as ffmpeg -af args (none at 0 dB).
+mapfile -t AUDIO_GAIN_ARGS < <(audio_gain_args)
+echo "Gain:    ${AUDIO_GAIN_DB:-0} dB${AUDIO_GAIN_ARGS[1]:+ (${AUDIO_GAIN_ARGS[1]})}"
 
 # Fire a pod-startup event so PostHog timelines line up with restarts.
 report_event pod_started \
@@ -85,7 +90,8 @@ report_event pod_started \
     --prop hls_list_size="$HLS_LIST_SIZE" \
     --prop dvr_list_size="$DVR_LIST_SIZE" \
     --prop dvr_window_seconds="$DVR_WINDOW_SECONDS" \
-    --prop ffmpeg_input_reconnect="$FFMPEG_INPUT_RECONNECT"
+    --prop ffmpeg_input_reconnect="$FFMPEG_INPUT_RECONNECT" \
+    --prop audio_gain_db="${AUDIO_GAIN_DB:-0}"
 
 # Directory layout:
 #   /data/hls/aac/live.m3u8                FFmpeg-managed live playlist
@@ -195,6 +201,7 @@ start_ffmpeg() {
     #                                              which collided whenever two segments wrote
     #                                              in the same epoch second.
     #   - FFMPEG_INPUT_OPTS                        input reconnect policy (FFMPEG_INPUT_RECONNECT)
+    #   - AUDIO_GAIN_ARGS                          the station's loudness gain (audio_gain.sh)
     local mode input relay_out
     mode=$(ffmpeg_input_mode)
     FFMPEG_INPUT_MODE=$mode
@@ -207,7 +214,8 @@ start_ffmpeg() {
         -loglevel warning
         -fflags +genpts+discardcorrupt -max_delay 5000000
         "${input[@]}" -y
-        -map 0:a:0 -c:a libfdk_aac -profile:a aac_he -b:a 64k
+        -map 0:a:0 "${AUDIO_GAIN_ARGS[@]}"
+        -c:a libfdk_aac -profile:a aac_he -b:a 64k
         -flags +global_header -async 1 -ac 2 -ar 44100
         -bufsize 30000000 -sc_threshold 0
         -abort_on empty_output_stream
