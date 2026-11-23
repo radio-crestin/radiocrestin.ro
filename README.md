@@ -79,11 +79,8 @@ The station data behind the website and the app is public, as JSON, no key neede
 
 | URL | What you get |
 |---|---|
-| [api.radiocrestin.ro](https://api.radiocrestin.ro) | Redirects to the station list below |
 | [api.radiocrestin.ro/api/v1/stations](https://api.radiocrestin.ro/api/v1/stations) | Every station: the song on air, listeners, logo, stream URLs (HLS and the station's own) |
 | [api.radiocrestin.ro/api/v1/docs/](https://api.radiocrestin.ro/api/v1/docs/) | Interactive docs for every endpoint |
-| [api.radiocrestin.ro/api/v1/schema/](https://api.radiocrestin.ro/api/v1/schema/) | The OpenAPI schema |
-| [api.radiocrestin.ro/graphql](https://api.radiocrestin.ro/graphql) | The same data over GraphQL |
 
 ```bash
 curl -sL https://api.radiocrestin.ro/api/v1/stations | jq '.data.stations[0].title'
