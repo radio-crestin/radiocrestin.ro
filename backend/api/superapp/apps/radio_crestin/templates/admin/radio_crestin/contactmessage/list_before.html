@@ -1,0 +1,12 @@
+{% load i18n %}
+{# Open | All switch: the list hides Done, Not accepted and Spam unless "All" is picked. #}
+<nav class="flex flex-wrap items-center gap-2 mb-4 text-sm" aria-label="{% trans 'Which messages' %}">
+    {% for choice in status_switch %}
+        <a href="{{ choice.url }}"
+           class="px-3 py-1.5 rounded-default border font-medium
+                  {% if choice.selected %}bg-primary-600 border-primary-600 text-white{% else %}border-base-200 text-base-600 hover:bg-base-50 dark:border-base-700 dark:text-base-300 dark:hover:bg-base-800{% endif %}"
+           {% if choice.selected %}aria-current="page"{% endif %}>
+            {{ choice.label }} ({{ choice.count }})
+        </a>
+    {% endfor %}
+</nav>

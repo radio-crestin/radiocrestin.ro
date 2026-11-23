@@ -179,3 +179,13 @@ class ContactAdminTests(TestCase):
         })
         message.refresh_from_db()
         self.assertEqual(message.status, ContactStatus.REJECTED)
+
+    def test_the_open_all_switch_and_the_badge_count_open_messages(self):
+        from ..admin.contact_messages import new_messages_badge
+        for status in ContactStatus.values:
+            ContactMessage.objects.create(kind='general', email='ana@example.com', subject=status, status=status)
+        page = self.client.get(reverse('admin:radio_crestin_contactmessage_changelist') + '?kind=general').content.decode()
+        self.assertIn('Open (2)', page)
+        self.assertIn('All (5)', page)
+        self.assertIn('href="?kind=general&amp;status=all"', page)
+        self.assertEqual(new_messages_badge(None), '2')
