@@ -21,6 +21,16 @@
   <img src="docs/readme/screenshots/player-dark.jpg" alt="The full player" width="260" />
 </p>
 
+<p align="center">
+  <img src="release-notes/media/v1.6.0/search.jpg" alt="Search by song or singer" width="170" />
+  &nbsp;
+  <img src="release-notes/media/v1.6.0/cast.jpg" alt="Listen on another device: Chromecast, AirPlay, TV, car" width="170" />
+  &nbsp;
+  <img src="release-notes/media/v1.6.0/sleep.jpg" alt="Sleep timer" width="170" />
+  &nbsp;
+  <img src="release-notes/media/v1.6.0/settings.jpg" alt="Settings" width="170" />
+</p>
+
 ## ✨ Features
 
 - 📻 **60+ Christian stations**, each with the song on air and how many people are listening
@@ -43,7 +53,7 @@
 
 [App Store](https://apps.apple.com/app/6451270471) (iPhone, iPad, Mac, Apple TV) ·
 [Google Play](https://play.google.com/store/apps/details?id=com.radiocrestin.radio_crestin) (Android, Android TV) ·
-[GitHub releases](https://github.com/radio-crestin/radio-crestin-mobile-app/releases/latest) (APK, DMG, Windows ZIP)
+[GitHub releases](https://github.com/radio-crestin/radiocrestin.ro/releases/latest) (APK, DMG, Windows ZIP)
 
 Setup for every device: [`release-notes/SETUP.md`](release-notes/SETUP.md).
 
@@ -75,11 +85,11 @@ flowchart LR
     class O1,O2,O3,O4 out
 ```
 
-- 🎙️ **The backend** ([radio-crestin-backend](https://github.com/radio-crestin/radio-crestin-backend))
+- 🎙️ **The backend** ([`backend/`](../backend/))
   keeps the station list, reads the song each station plays, counts listeners and re-streams every
   station as HLS.
 - 🌐 **The API** serves that to this app and to the
-  [radiocrestin.ro](https://github.com/radio-crestin/radiocrestin.ro) website.
+  [radiocrestin.ro](../web/) website.
 - 🔁 **The app** plays a station's streams in order, HLS first, then MP3, and switches on its own when one
   fails. The lock screen, the car, the widgets and Siri all drive this same player.
 
@@ -89,21 +99,44 @@ Needs [FVM](https://fvm.app) (Flutter **3.47.7** is pinned in `.fvmrc`), plus Xc
 Apple platforms and Android Studio for Android.
 
 ```bash
-git clone https://github.com/radio-crestin/radio-crestin-mobile-app.git
-cd radio-crestin-mobile-app
+git clone https://github.com/radio-crestin/radiocrestin.ro.git
+cd radiocrestin.ro/mobile
 fvm install && fvm flutter pub get
 fvm flutter run          # simulator, emulator, device, or -d macos / windows / linux
-fvm flutter analyze
-fvm flutter test
+fvm flutter analyze lib   # what CI runs on every pull request
 ```
+
+Tests are end-to-end only, on a simulator or emulator against a fake radio server:
+[`integration_test/README.md`](integration_test/README.md).
 
 Android builds also need `android/app/google-services.json` (Firebase, for push notifications). It isn't in
 git, so ask the maintainers for it.
 
+### 🗂️ Project structure
+
+```
+mobile/
+├── lib/                  The app: main.dart, appAudioHandler.dart (player + app state), pages, widgets, services
+├── packages/             Vendored plugins we patch: CarPlay / Android Auto, AirPlay, audio_service, …
+├── ios/ android/         Native projects (Home Screen widgets, Siri, CarPlay, Android Auto)
+├── apple_tv/             The SwiftUI Apple TV app
+├── macos/ windows/ …     Desktop targets
+├── integration_test/     End-to-end tests
+├── release-notes/        Listener-facing notes per version, plus the setup guide
+└── docs/                 Releasing, incidents, plans
+```
+
 Conventions and architecture: [`CLAUDE.md`](CLAUDE.md) · Releasing: [`docs/releasing.md`](docs/releasing.md)
+
+## 🚀 Releasing
+
+Versions come from `pubspec.yaml`. `make release` builds every platform on this Mac, tags `mobile/vX.Y.Z`,
+and publishes a GitHub prerelease with the builds, the notes, a slide deck and a narrated video;
+`make promote` makes it the public latest. Full guide: [`docs/releasing.md`](docs/releasing.md).
 
 ## 🤝 Contributing
 
-Issues and pull requests are welcome. Questions: **contact@radio-crestin.com**.
+Issues and pull requests are welcome; this app is part of the
+[Radio Crestin monorepo](../README.md). Questions: **contact@radio-crestin.com**.
 
 This project may be used only by Christian organizations, for non-commercial purposes.
