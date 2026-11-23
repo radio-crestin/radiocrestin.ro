@@ -1,0 +1,7 @@
+# Each app has its own .gitignore in its folder; this one covers the repo root.
+.DS_Store
+.idea/
+*.iml
+!backend/radio-crestin-backend.iml
+.env
+.env.local

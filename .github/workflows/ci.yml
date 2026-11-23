@@ -1,0 +1,126 @@
+# Checks every pull request and every push to main.
+# Each app's job runs only when its folder changed; `ci-ok` is the single check
+# branch protection requires, so a PR that touches one app waits only for that app.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      web: ${{ steps.filter.outputs.web }}
+      mobile: ${{ steps.filter.outputs.mobile }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            backend:
+              - 'backend/**'
+              - '.github/workflows/ci.yml'
+            web:
+              - 'web/**'
+              - '.github/workflows/ci.yml'
+            mobile:
+              - 'mobile/**'
+              - '.github/workflows/ci.yml'
+
+  backend:
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      SECRET_KEY: ci-only-not-secret
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.14'
+          cache: pip
+          cache-dependency-path: |
+            backend/api/constraints.txt
+            backend/api/**/requirements.txt
+            backend/streaming/requirements.txt
+      - name: Install the API's dependencies (as its Dockerfile does)
+        run: |
+          cat api/requirements.txt > /tmp/requirements.txt
+          find api/superapp -name requirements.txt -exec sh -c 'echo; cat "$1"' _ {} \; >> /tmp/requirements.txt
+          pip install -r /tmp/requirements.txt -c api/constraints.txt pytest
+      - name: Django system check (SQLite, no services needed)
+        working-directory: backend/api
+        run: python manage.py check
+      - name: API tests
+        working-directory: backend/api
+        run: python -m pytest -q tests
+      - name: Streaming unit tests
+        working-directory: backend/streaming
+        # test_hls_stream and test_segment_serving need a running stream: make dev-stream-test
+        run: |
+          pip install -r requirements.txt
+          python -m pytest -q tests --ignore=tests/test_hls_stream.py --ignore=tests/test_segment_serving.py
+
+  web:
+    needs: changes
+    if: needs.changes.outputs.web == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+      - run: npm test
+      - name: Build the site
+        run: npx astro build
+
+  mobile:
+    needs: changes
+    if: needs.changes.outputs.mobile == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v5
+      - name: Read the Flutter version pinned in .fvmrc
+        id: fvm
+        run: echo "flutter=$(jq -r .flutter .fvmrc)" >> "$GITHUB_OUTPUT"
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ steps.fvm.outputs.flutter }}
+          cache: true
+      - run: flutter pub get
+      - name: Analyze the app (errors and warnings fail; style infos do not)
+        run: flutter analyze lib --no-fatal-infos
+
+  ci-ok:
+    needs: [changes, backend, web, mobile]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Every job that ran passed
+        run: |
+          echo '${{ toJSON(needs) }}' | jq -e 'all(.[]; .result == "success" or .result == "skipped")'

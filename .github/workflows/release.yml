@@ -1,0 +1,44 @@
+# Turns a backend/vX.Y.Z or web/vX.Y.Z tag into a GitHub Release whose notes
+# list the commits that touched that folder since the app's previous tag.
+# Mobile releases (mobile/vX.Y.Z) are built, signed and published from a Mac
+# with `make release` in mobile/ (see mobile/docs/releasing.md), not here.
+# Only mobile releases are marked "latest": /releases/latest/download/<file>
+# serves the app's downloads.
+name: Release
+
+on:
+  push:
+    tags:
+      - 'backend/v*'
+      - 'web/v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - name: Create the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          app="${TAG%%/*}"
+          version="${TAG#*/}"
+          title="$(tr '[:lower:]' '[:upper:]' <<< "${app:0:1}")${app:1} $version"
+          previous="$(git tag --list "$app/v*" --sort=-v:refname | grep -vxF "$TAG" | head -1)"
+          range="${previous:+$previous..}$TAG"
+          {
+            echo "## What changed in \`$app/\`"
+            echo
+            git log --no-merges --format='- %s (%h)' "$range" -- "$app/"
+            if [ -n "$previous" ]; then
+              echo
+              echo "**Full diff:** https://github.com/${{ github.repository }}/compare/$previous...$TAG"
+            fi
+          } > notes.md
+          gh release create "$TAG" --verify-tag --latest=false --title "$title" --notes-file notes.md
