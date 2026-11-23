@@ -1,0 +1,41 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import RadioApp from "@/components/RadioApp";
+import FavoritesPrepaint from "@/components/FavoritesPrepaint.astro";
+import PinStations from "@/components/PinStations.astro";
+import { getStations } from "@/services/getStations";
+import { cleanStationsMetadata, toIslandStations } from "@/utils";
+import { sortStationsByRecommendedScore } from "@/utils/stationScore";
+import { SEO_DEFAULT } from "@/utils/seo";
+import { SITE_URL } from "@/constants/constants";
+import type { IStation } from "@/models/Station";
+import { getRadioBuildSnapshot } from "@/services/announcementsBuild";
+
+const { stations: rawStations } = await getStations();
+rawStations.forEach((station: IStation) => { station.is_favorite = false; });
+// Pre-sort by the "Pentru tine" score before cleaning zeroes total_listeners,
+// so the static grid (and its ItemList JSON-LD) ships in recommended order.
+const stations = cleanStationsMetadata(sortStationsByRecommendedScore(rawStations));
+
+const stationListSchema = JSON.stringify({
+  "@context": "https://schema.org",
+  "@type": "ItemList",
+  name: "Radiouri Creștine Online",
+  numberOfItems: stations.length,
+  itemListElement: stations.map((station: IStation, index: number) => ({
+    "@type": "ListItem",
+    position: index + 1,
+    name: station.title,
+    url: `${SITE_URL}/${station.slug}/`,
+  })),
+});
+
+const announcements = await getRadioBuildSnapshot();
+---
+
+<BaseLayout {...SEO_DEFAULT}>
+  <script type="application/ld+json" set:html={stationListSchema} slot="head" />
+  <RadioApp client:load announcements={announcements} stations={toIslandStations(stations)} />
+  <FavoritesPrepaint stations={stations} />
+  <PinStations />
+</BaseLayout>

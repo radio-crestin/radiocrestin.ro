@@ -1,0 +1,898 @@
+@use "public/styles/mixinHelper";
+@use "public/styles/globalVariables";
+
+.radio_player_container {
+  position: fixed;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 40px);
+  max-width: 560px;
+  z-index: 10;
+  // Kill double-tap zoom (and any residual tap delay) on the whole card —
+  // rapid open/close taps must never trigger the browser's zoom gesture
+  touch-action: manipulation;
+}
+
+// Invisible click-shield while the menu/panel is open: outside taps land here
+// and dismiss without activating what's underneath. No background — page
+// scrolling chains through and dismiss-on-scroll is handled in the component.
+.player_backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 9;
+}
+
+.player_gradient_overlay {
+  position: fixed;
+  bottom: -50px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 700px;
+  height: 250px;
+  background: radial-gradient(ellipse 80% 70% at 50% 80%, rgba(var(--player-gradient-color), 0.85) 0%, rgba(var(--player-gradient-color), 0.5) 35%, transparent 65%);
+  pointer-events: none;
+  z-index: 9;
+  filter: blur(10px);
+}
+
+.radio_player {
+  position: relative;
+  padding: 10px;
+  // Closed, the whole card — padding included — opens the menu; the pointer
+  // (plus the row tooltip) is the desktop affordance for it
+  cursor: pointer;
+  background-color: var(--radio-player-container-bg);
+  // Per-theme in base.scss: heavy layered lift on dark, soft elevation on light
+  box-shadow: var(--radio-player-shadow);
+  border-radius: 16px;
+  border: 1px solid var(--radio-player-border);
+  transition: border-radius 0.26s cubic-bezier(0.33, 1, 0.68, 1);
+
+  // Desktop „Linie" pill: half the closed card height (70px) — same stadium
+  // shape as 999px, but the open transition animates 35→22px instead of
+  // sweeping through huge clamped radii that render as an egg-shaped blob
+  @media (min-width: 768px) {
+    border-radius: 35px;
+    padding: 10px 14px 10px 10px;
+  }
+}
+
+// Pill relaxes into a card while the expanded panel is open
+@media (min-width: 768px) {
+  .radio_player_open {
+    border-radius: 22px;
+  }
+}
+
+// While the menu/panel is open the padding is inert (only row/chevron
+// toggle) — don't advertise it as clickable
+.radio_player_open {
+  cursor: default;
+}
+
+.player_container {
+  display: flex;
+  align-items: center;
+  // The row always toggles, open or closed
+  cursor: pointer;
+}
+
+// Desktop: only the station text block opens the options — the mouse is
+// precise, so the rest of the pill stays neutral (behavior in onRowClick)
+@media (min-width: 768px) {
+  .radio_player,
+  .player_container {
+    cursor: default;
+  }
+
+  .station_info {
+    cursor: pointer;
+  }
+}
+
+/* ── Grab-handle chevron (mobile): signals the card opens; whole row is the
+   target. Tappable itself — rotated down, it acts as the close button. ── */
+.player_handle {
+  display: none;
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 56px;
+  height: 22px;
+  color: #8a8a8a;
+  cursor: pointer;
+  z-index: 1;
+
+  svg {
+    display: block;
+    transition: transform 0.2s ease;
+  }
+}
+
+.player_handle_open svg {
+  transform: rotate(180deg);
+}
+
+.image_container {
+  position: relative;
+
+  .station_thumbnail {
+    object-fit: cover;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    display: block;
+  }
+}
+
+.station_info {
+  margin-left: 14px;
+  flex-grow: 1;
+  min-width: 0;
+  // Standoff so the title/ticker end before the controls
+  padding-right: 10px;
+
+  &:focus-visible {
+    outline: 2px solid rgba(255, 255, 255, 0.55);
+    outline-offset: 4px;
+    border-radius: 8px;
+  }
+}
+
+.station_title {
+  font-family: globalVariables.$dm-sans, serif;
+  font-size: 1rem;
+  color: var(--text-player-title);
+  font-weight: 700;
+  margin-top: 0;
+  line-height: 1.3;
+  margin-bottom: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+
+.station_artist {
+  font-size: 0.875rem;
+  color: white;
+}
+
+.volume_slider {
+  display: none;
+  margin-left: auto;
+  margin-right: 8px;
+
+  @media (min-width: 768px) {
+    display: flex;
+    align-items: center;
+  }
+}
+
+.slider {
+  // 84px (was 100px): returns width to the title/ticker now that the
+  // prev/next pair joined the control cluster
+  width: 84px;
+  margin-top: 2px;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  border-radius: 3px;
+  outline: none;
+  cursor: pointer;
+  --fill-percent: 50%;
+  background: linear-gradient(to right, #a0a0a0 0%, #a0a0a0 var(--fill-percent), #393939 var(--fill-percent), #393939 100%);
+
+  &::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 14px;
+    height: 14px;
+    background: #ffffff;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: background 0.2s;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  }
+
+  &::-moz-range-thumb {
+    width: 14px;
+    height: 14px;
+    background: #ffffff;
+    border-radius: 50%;
+    cursor: pointer;
+    border: none;
+    transition: background 0.2s;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  }
+
+  &::-moz-range-track {
+    background: transparent;
+    border-radius: 3px;
+    height: 6px;
+  }
+}
+
+.play_button_container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  margin-right: 2px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.heart_ghost {
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 50%;
+  // Bare glyph, no resting circle: the filled red heart already carries
+  // enough weight — a ghost disc made it compete with the play FAB. The
+  // circle only surfaces on hover as press affordance.
+  background: transparent;
+  color: #c9c9c9;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+  transition: background-color 0.2s ease, transform 0.12s ease;
+
+  svg {
+    width: 20px;
+    height: 20px;
+    display: block;
+  }
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  &:active {
+    transform: scale(0.94);
+  }
+}
+
+// Prev/next station — ghost circles flanking the play FAB on all viewports
+// (the title's ellipsis/marquee absorbs the width they take on mobile)
+.skip_button {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+  color: #c9c9c9;
+  place-items: center;
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+  transition: background-color 0.2s ease, color 0.2s ease, transform 0.12s ease;
+
+  svg {
+    width: 20px;
+    height: 20px;
+    display: block;
+  }
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.12);
+    color: #ffffff;
+  }
+
+  &:active {
+    transform: scale(0.94);
+  }
+}
+
+// The player card is dark in both themes, so the white ring reads everywhere
+.heart_ghost:focus-visible,
+.skip_button:focus-visible,
+.play_button:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.55);
+  outline-offset: 3px;
+}
+
+/* ── Expanded panel (in-place, category pages) ──
+   Same grid-rows reveal as the menu: animates to the real content height,
+   so open/close move from the first frame. */
+.expanded_panel {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  overflow: hidden;
+  visibility: hidden;
+  // Not a menu trigger (data-menu-ignore) — don't inherit the card's pointer
+  cursor: default;
+  transition:
+    grid-template-rows 0.3s cubic-bezier(0.33, 1, 0.68, 1),
+    opacity 0.18s ease,
+    visibility 0s linear 0.3s;
+}
+
+.expanded_panel_open {
+  grid-template-rows: 1fr;
+  opacity: 1;
+  visibility: visible;
+  transition:
+    grid-template-rows 0.3s cubic-bezier(0.33, 1, 0.68, 1),
+    opacity 0.18s ease,
+    visibility 0s;
+}
+
+.expanded_clip {
+  min-height: 0;
+  overflow: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .expanded_panel,
+  .player_handle svg {
+    transition: none;
+  }
+}
+
+.expanded_scroll {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-height: min(50vh, 430px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 16px 14px 14px 12px;
+
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+
+  &::-webkit-scrollbar {
+    width: 5px;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 999px;
+  }
+  &::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.35);
+  }
+}
+
+.expanded_row_head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 8px;
+}
+
+.expanded_listeners {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.76rem;
+  color: #9a9a9a;
+  white-space: nowrap;
+
+  svg {
+    width: 12px;
+    height: 12px;
+    color: #9a9a9a;
+  }
+}
+
+.expanded_description {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.6;
+  color: #c7c7c7;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.expanded_label {
+  margin: 0;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: #8f8f8f;
+}
+
+.expanded_history {
+  display: flex;
+  flex-direction: column;
+}
+
+.history_row {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 9px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+
+  &:first-child {
+    border-top: none;
+  }
+}
+
+.history_time {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.7rem;
+  color: #7d7d7d;
+  font-variant-numeric: tabular-nums;
+}
+
+.history_thumb {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.history_titles {
+  min-width: 0;
+}
+
+.history_song {
+  display: block;
+  font-size: 0.84rem;
+  color: #f0f0f0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.history_artist {
+  display: block;
+  font-size: 0.74rem;
+  color: #9a9a9a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.expanded_empty {
+  margin: 4px 0;
+  font-size: 0.84rem;
+  color: #8f8f8f;
+}
+
+.expanded_page_link {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #cfcfcf;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color 0.2s ease;
+
+  &:hover {
+    color: #fff;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+}
+
+.play_button {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  border: none;
+  border-radius: 50%;
+  background-color: #fdae1c;
+  color: #231703;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+  transition: transform 0.12s ease, background-color 0.15s ease;
+
+  // Forgiving hit zone: taps in the card padding around the FAB mean
+  // "play/pause", not "open the menu" — stretch the hit box to the card's
+  // top/bottom edges. Left/right stay small on desktop so the flanking
+  // prev/next buttons keep their own targets (mobile re-widens below, where
+  // the FAB is the only control).
+  &::after {
+    content: "";
+    position: absolute;
+    place-self: stretch;
+    top: -10px;
+    right: -4px;
+    bottom: -10px;
+    left: -4px;
+  }
+
+  &:hover {
+    background-color: #f3a30f;
+  }
+
+  &:active {
+    transform: scale(0.94);
+  }
+}
+
+/* ── „Now playing" menu — unfolds inside the card (no floating layer) ──
+   Animated via grid-template-rows 0fr→1fr: the track follows the real content
+   height, so there is no max-height dead zone and open/close start moving on
+   the very first frame. */
+.player_menu {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  overflow: hidden;
+  visibility: hidden;
+  // Not a menu trigger (data-menu-ignore) — don't inherit the card's pointer
+  cursor: default;
+  transition:
+    grid-template-rows 0.26s cubic-bezier(0.33, 1, 0.68, 1),
+    opacity 0.16s ease,
+    visibility 0s linear 0.26s;
+}
+
+.player_menu_open {
+  grid-template-rows: 1fr;
+  opacity: 1;
+  visibility: visible;
+  transition:
+    grid-template-rows 0.26s cubic-bezier(0.33, 1, 0.68, 1),
+    opacity 0.16s ease,
+    visibility 0s;
+}
+
+// Bare grid item — any padding/border/margin here would leak height at 0fr
+.menu_clip {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.menu_inner {
+  padding: 2px 0 8px;
+  margin-bottom: 9px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.menu_status {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 6px 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  margin-bottom: 5px;
+}
+
+.menu_live_dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #ff4d4d;
+  flex-shrink: 0;
+  animation: liveBlink 1.6s ease-in-out infinite;
+}
+
+.menu_live_dot_off {
+  background: #8a8a8a;
+  animation: none;
+}
+
+@keyframes liveBlink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+.menu_live_label {
+  font-size: 0.64rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  color: #ff6b6b;
+}
+
+.menu_live_label_off {
+  color: #9a9a9a;
+}
+
+.menu_listeners {
+  font-size: 0.76rem;
+  font-weight: 500;
+  color: #9a9a9a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.menu_item {
+  // Anchor rows (<a>) don't get the UA's border-box like <button> does
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 8px 6px;
+  border: none;
+  border-radius: 13px;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  text-decoration: none;
+  font-family: inherit;
+  transition: background-color 0.15s ease;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.07);
+  }
+
+  &:active {
+    background: rgba(255, 255, 255, 0.1);
+  }
+}
+
+.menu_item_icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.07);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  color: #d6d6d6;
+
+  svg,
+  img {
+    width: 18px;
+    height: 18px;
+    display: block;
+  }
+}
+
+.menu_item_text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+// The global reset paints bare text black — leaf spans carry their own color
+.menu_item_label {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #ececec;
+  line-height: 1.3;
+}
+
+.menu_item_sublabel {
+  font-size: 0.72rem;
+  color: #9a9a9a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Song ticker: scrolls whenever „song · artist" overflows the line ── */
+.song_ticker {
+  display: block;
+  margin-top: 2px;
+  overflow: hidden;
+  white-space: nowrap;
+  font-size: 0.775rem;
+  color: #b5b5b5;
+  font-family: globalVariables.$dm-sans, serif;
+  // The global reset's line-height:1 leaves no room for descenders (g/j/p)
+  // or tall diacritics (Î) inside this overflow clip box. Let them paint
+  // into padding — clipping happens at the padding edge — and take the same
+  // amount back out of the flow (margin-top 3→2, margin-bottom −3) so the
+  // bar's geometry doesn't move a pixel.
+  padding: 1px 0 3px;
+  margin-bottom: -3px;
+  // iOS font-boosting opt-out on the element itself, root overrides can't reach it
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+
+  // Edge fades painted over the scroll in the card's own colour rather than a
+  // mask-image: a mask over moving content is a render pass Chrome redraws
+  // every frame (~250 MB of GPU memory resident while a long title scrolls).
+  // Over the opaque card the result is the same pixels, and the scroll stays
+  // a plain compositor translate. isolation keeps the z-index local.
+  &[data-marquee="true"] {
+    position: relative;
+    isolation: isolate;
+
+    &::before,
+    &::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      z-index: 1;
+      width: 6%;
+      pointer-events: none;
+    }
+
+    &::before {
+      left: 0;
+      background: linear-gradient(90deg, var(--radio-player-container-bg), transparent);
+    }
+
+    &::after {
+      right: 0;
+      background: linear-gradient(270deg, var(--radio-player-container-bg), transparent);
+    }
+  }
+
+  &:not([data-marquee="true"]) {
+    text-overflow: ellipsis;
+  }
+}
+
+.ticker_inner {
+  display: inline-block;
+  white-space: nowrap;
+  // The global reset paints bare <span>s black — inherit the ticker grey
+  color: inherit;
+}
+
+.song_ticker[data-marquee="true"] .ticker_inner {
+  animation: tickerScroll 16s linear infinite;
+}
+
+.ticker_sep {
+  display: inline-block;
+  padding: 0 14px;
+  color: inherit;
+}
+
+@keyframes tickerScroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+// Two-phase song handoff (same drawing as the hero's now-playing card):
+// the outgoing line slips up as it fades, the incoming one rises into place.
+.ticker_leave {
+  animation: songSwapOut 0.17s ease both;
+}
+
+// backwards, not both: the class stays on after the swap, and a filling
+// animation keeps the ticker its own compositor surface that the marquee
+// inside then redraws every frame (~250 MB of GPU memory in Chrome)
+.ticker_enter {
+  animation: songSwapIn 0.24s ease backwards;
+}
+
+@keyframes songSwapOut {
+  to {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+@keyframes songSwapIn {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+}
+
+.play_icon {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+
+  svg {
+    width: 22px;
+    height: 22px;
+    display: block;
+
+    path {
+      fill: currentColor;
+    }
+  }
+}
+
+/* ── Mobile: compact single row ── */
+@media (max-width: 767px) {
+  .radio_player_container {
+    width: calc(100% - 24px);
+    bottom: calc(34px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .radio_player {
+    // Symmetric padding keeps the artwork vertically centered; the handle
+    // chevron floats in the top padding over the (indented) text column
+    padding: 15px 11px;
+    border-radius: 20px;
+  }
+
+  .player_handle {
+    display: grid;
+    place-items: center;
+  }
+
+  .image_container {
+    .station_thumbnail {
+      width: 48px;
+      height: 48px;
+      border-radius: 10px;
+      display: block;
+    }
+
+    .heart_container {
+      display: none;
+    }
+  }
+
+  .station_info {
+    margin-left: 12px;
+    min-width: 0;
+    // Basis 0 so the long song line shrinks instead of growing the row
+    flex: 1 1 0;
+    // Standoff so the title/ticker end before the controls
+    padding-right: 8px;
+  }
+
+  .station_title {
+    font-size: 0.95rem;
+  }
+
+  .song_ticker {
+    font-size: 0.67rem;
+  }
+
+  .heart_ghost {
+    display: none;
+  }
+
+  .play_button {
+    width: 52px;
+    height: 52px;
+
+    // Skip buttons flank the FAB here too — keep the halo tall (card padding
+    // is 15px) but horizontally tight so prev/next keep their own targets
+    &::after {
+      top: -16px;
+      right: -4px;
+      bottom: -16px;
+      left: -4px;
+    }
+  }
+
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .menu_live_dot {
+    animation: none;
+  }
+
+  .player_menu {
+    transition: none;
+  }
+
+  .song_ticker[data-marquee="true"] .ticker_inner {
+    animation: none;
+  }
+
+  .ticker_leave,
+  .ticker_enter {
+    animation: none;
+  }
+}

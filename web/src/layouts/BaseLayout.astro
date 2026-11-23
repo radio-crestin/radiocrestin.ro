@@ -1,0 +1,160 @@
+---
+import "public/styles/_all.scss";
+import { SITE_URL } from "@/constants/constants";
+import { DEFAULT_SHARE_IMAGE } from "@/utils/seo";
+import { getBuildSnapshot } from "@/services/announcementsBuild";
+import { prepaintScript } from "@/utils/announcementsPrepaintScript";
+
+interface Props {
+  title: string;
+  description: string;
+  imageUrl: string;
+  fullURL: string;
+  noindex?: boolean;
+  // "summary" fits the square logos used by most pages; pages with a wide
+  // share image (screenshots) pass "summary_large_image".
+  twitterCard?: "summary" | "summary_large_image";
+  extraHead?: string;
+}
+
+const {
+  title,
+  description,
+  imageUrl,
+  fullURL,
+  noindex = false,
+  twitterCard = "summary",
+  extraHead,
+} = Astro.props;
+
+// Known share-image sizes: the default icon is 512x512 and the generated
+// station thumbnails are 256x256 with a 512x512 @2x companion; other images
+// have unknown dimensions.
+const knownImageSize = imageUrl === DEFAULT_SHARE_IMAGE
+  ? "512"
+  : imageUrl.includes("@2x.webp")
+    ? "512"
+    : imageUrl.includes("/station-thumbnails/")
+      ? "256"
+      : null;
+const announcementsPrepaint = prepaintScript(await getBuildSnapshot(Astro.params.station_slug));
+---
+
+<!doctype html>
+<html lang="ro">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="MobileOptimized" content="width" />
+    <meta name="HandheldFriendly" content="true" />
+    <meta name="theme-color" content="#2196f3" />
+
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <meta name="robots" content={noindex ? "noindex, follow" : "index, follow"} />
+
+    <meta name="twitter:card" content={twitterCard} />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={imageUrl} />
+    <meta name="twitter:url" content={fullURL} />
+
+    <meta property="og:url" content={fullURL} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content={imageUrl} />
+    {knownImageSize && <meta property="og:image:width" content={knownImageSize} />}
+    {knownImageSize && <meta property="og:image:height" content={knownImageSize} />}
+    <meta property="og:site_name" content="Radio Creștin" />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="ro_RO" />
+
+    {!noindex && <link rel="canonical" href={fullURL} />}
+
+    <link rel="icon" href="/favicon/favicon.ico" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon/favicon-16x16.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon/favicon-32x32.png" />
+    <link rel="apple-touch-icon" href="/favicon/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.json" />
+
+    <!-- Self-hosted Inter subset (latin + RO diacritics, wght 400-800) — the
+         @font-face lives in base.scss; crossorigin is required on font preloads -->
+    <link rel="preload" as="font" type="font/woff2" crossorigin href="/fonts/InterVariable-subset.ce602498.woff2" />
+
+    <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
+    <link rel="preconnect" href="https://api.radiocrestin.ro" crossorigin />
+    <!-- cdn serves plain <img> loads (song artwork) — no crossorigin, else the warmed socket lands in the wrong (CORS) pool -->
+    <link rel="preconnect" href="https://cdn.radiocrestin.ro" />
+
+    <script type="application/ld+json" set:html={JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "@id": `${SITE_URL}/#organization`,
+      name: "Radio Creștin",
+      url: `${SITE_URL}/`,
+      logo: DEFAULT_SHARE_IMAGE,
+      sameAs: [
+        "https://github.com/radio-crestin",
+        "https://play.google.com/store/apps/details?id=com.radiocrestin.radio_crestin",
+        "https://apps.apple.com/app/6451270471",
+      ],
+    })} />
+
+    <script type="application/ld+json" set:html={JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "@id": `${SITE_URL}/#website`,
+      name: "Radio Creștin",
+      url: `${SITE_URL}/`,
+      publisher: { "@id": `${SITE_URL}/#organization` },
+      potentialAction: {
+        "@type": "SearchAction",
+        target: {
+          "@type": "EntryPoint",
+          urlTemplate: `${SITE_URL}/?q={search_term_string}`,
+        },
+        "query-input": "required name=search_term_string",
+      },
+    })} />
+
+    <slot name="head" />
+
+    {extraHead && <Fragment set:html={extraHead} />}
+
+    <!-- Pre-paint theme flag (prevents FOUC) -->
+    <script is:inline>
+      (function() {
+        var theme = localStorage.getItem('theme') || 'system';
+        var resolved = theme;
+        if (theme === 'system') {
+          resolved = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+        }
+        document.documentElement.setAttribute('data-theme', resolved);
+      })();
+    </script>
+
+    <!-- Announcements: hide the ones this visitor shouldn't see before first paint (no layout shift) -->
+    {announcementsPrepaint && <script is:inline set:html={announcementsPrepaint} />}
+
+    <!-- Google Analytics — deferred until after page is interactive -->
+    <script is:inline>
+      window.addEventListener('load', function() {
+        setTimeout(function() {
+          var gs = document.createElement('script');
+          gs.src = 'https://www.googletagmanager.com/gtag/js?id=G-CKRHS296W2';
+          gs.async = true;
+          document.head.appendChild(gs);
+          window.dataLayer = window.dataLayer || [];
+          function gtag() { dataLayer.push(arguments); }
+          gtag('js', new Date());
+          gtag('config', 'G-CKRHS296W2');
+        }, 2500);
+      });
+    </script>
+  </head>
+  <body>
+    <main style="font-family: 'Inter', 'Inter Fallback', sans-serif;">
+      <slot />
+    </main>
+  </body>
+</html>

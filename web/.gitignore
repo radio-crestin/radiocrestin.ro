@@ -1,0 +1,59 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+/node_modules
+/.pnp
+.pnp.js
+
+/.idea
+.yarn/install-state.gz
+
+# testing
+/coverage
+
+# next.js (legacy)
+/.next/
+/out/
+
+# astro
+/.astro/
+/dist/
+
+# cloudflare
+/.wrangler/
+
+# generated at build time
+/public/sitemap.xml
+/public/station-thumbnails/
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# local env files
+.env
+.env.production
+.env*.local
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+.gitignore
+.aider*
+.playwright-mcp
+.idea
+.next
+
+certificates

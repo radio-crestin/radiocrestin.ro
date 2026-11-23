@@ -1,0 +1,35 @@
+export const SITE_URL = "https://www.radiocrestin.ro";
+export const SHARE_URL = "https://share.radiocrestin.ro";
+
+export const IOS_APP_ID = "6451270471";
+export const ANDROID_PACKAGE = "com.radiocrestin.radio_crestin";
+
+export const APP_RATING = "4.9";
+export const APP_REVIEW_COUNT = "2340";
+
+// The reviews API has no author field yet — used only as the Review JSON-LD
+// author so the markup stays valid for Google; the UI shows no author name.
+export const ANONYMOUS_REVIEW_AUTHOR = "Anonim";
+
+export const getIOSStoreLink = (source?: string) => {
+  const baseUrl = `https://apps.apple.com/app/${IOS_APP_ID}`;
+  return source ? `${baseUrl}?pt=126318767&ct=${source}&mt=8` : baseUrl;
+};
+
+export const getAndroidStoreLink = (source?: string) => {
+  const baseUrl = `https://play.google.com/store/apps/details?id=${ANDROID_PACKAGE}&hl=ro`;
+  return source ? `${baseUrl}&utm_source=${source}` : baseUrl;
+};
+
+export const CONSTANTS = {
+  DEFAULT_COVER: "",
+  API_ENDPOINT: "https://api.radiocrestin.ro/api/v1/stations",
+  REVIEWS_API_URL: "https://api.radiocrestin.ro/api/v1/reviews/",
+};
+
+// PUBLIC_CONTACT_API_URL points the contact forms at a local backend while testing.
+export const CONTACT_API_URL: string =
+  import.meta.env.PUBLIC_CONTACT_API_URL || "https://api.radiocrestin.ro/api/v1/contact/";
+
+// Cloudflare Turnstile is shown on the contact forms only when a site key is set at build time.
+export const TURNSTILE_SITE_KEY: string = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY || "";

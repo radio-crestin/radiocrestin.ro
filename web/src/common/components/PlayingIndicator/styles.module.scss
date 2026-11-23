@@ -1,0 +1,105 @@
+@use "public/styles/mixinHelper";
+
+.playing_indicator {
+  display: flex;
+  align-items: flex-end;
+  flex-shrink: 0;
+  gap: 2px;
+  height: 14px;
+  min-height: 14px;
+  width: 0;
+  margin-right: 0;
+  opacity: 0;
+  overflow: hidden;
+  transition: width 0.3s ease, margin-right 0.3s ease, opacity 0.3s ease;
+  will-change: width, margin-right, opacity;
+
+  @include mixinHelper.onTablet {
+    display: none;
+  }
+
+  span {
+    width: 3px;
+    height: 14px;
+    flex-shrink: 0;
+    background: var(--text-color);
+    border-radius: 2px;
+    // Resting bar ≈ the old 4px minimum, drawn by squashing the full-height
+    // bar — the animation below only ever touches transform, never layout.
+    transform: scaleY(0.29);
+    transform-origin: bottom;
+    // Stop choreography: Blink won't transition from a removed animation's
+    // value, so index.tsx freezes each bar's current height inline, drops
+    // the animation class, then releases the inline value a frame later —
+    // THAT change transitions. Soft ease-out over 0.45s with tiny per-bar
+    // delays makes the bars fall one after another instead of snapping.
+    // The delays only manifest on the way down — while animating, the
+    // animation owns transform entirely.
+    transition: transform 0.45s cubic-bezier(0.33, 1, 0.68, 1);
+
+    &:nth-child(1) {
+      transition-delay: 0s;
+    }
+    &:nth-child(2) {
+      transition-delay: 0.05s;
+    }
+    &:nth-child(3) {
+      transition-delay: 0.02s;
+    }
+    &:nth-child(4) {
+      transition-delay: 0.08s;
+    }
+  }
+}
+
+// Tempo: full-range swings read faster than the old JS version's small
+// random steps, so the sweet spot sits between the frantic 0.2s and the
+// sluggish 0.5s attempts — ~0.35s per direction.
+// Small POSITIVE delays: while a delay runs, the base transform applies,
+// which equals the `from` keyframe — so every bar rises smoothly from rest
+// when playback starts (negative delays started bars mid-cycle and made the
+// first frame jump). The differing durations drift the bars out of phase
+// after the first cycles, which keeps the random equalizer look; alternate
+// bounces each bar between rest and full height.
+.animating span {
+  animation: eq_bounce 0.35s ease-in-out infinite alternate;
+
+  &:nth-child(1) {
+    animation-duration: 0.32s;
+    animation-delay: 0s;
+  }
+  &:nth-child(2) {
+    animation-duration: 0.42s;
+    animation-delay: 0.07s;
+  }
+  &:nth-child(3) {
+    animation-duration: 0.35s;
+    animation-delay: 0.03s;
+  }
+  &:nth-child(4) {
+    animation-duration: 0.39s;
+    animation-delay: 0.1s;
+  }
+}
+
+@keyframes eq_bounce {
+  from {
+    transform: scaleY(0.29);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animating span {
+    animation: none;
+    transform: scaleY(0.7);
+  }
+}
+
+:global([data-active="true"]) .playing_indicator {
+  width: 18px;
+  margin-right: 8px;
+  opacity: 1;
+}

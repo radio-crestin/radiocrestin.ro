@@ -1,0 +1,1576 @@
+// Announcement card, station sheet, page and form dialogs. Mirrors the shared design
+// (template.html, `.site .ann--web`) on the site's own tokens from base.scss.
+// Global, with every class prefixed "ann-", so it ships in the stylesheet every page already
+// loads instead of costing an extra render-blocking request. Components name the classes
+// through src/common/components/Announcements/styles.ts.
+
+// ---------- theme ----------
+.ann-ann,
+.ann-sheet,
+.ann-pop {
+  --a-surface: var(--bg-favourite-intro);
+  --a-border: var(--radio-player-border);
+  --a-text: var(--text-color);
+  --a-muted: var(--subtext-metadata-color);
+  --a-strong: #ffffff;
+  --a-link: var(--link-color);
+  --a-ctrl: rgba(255, 255, 255, 0.08);
+  --a-dot: rgba(255, 255, 255, 0.22);
+  --sb: rgba(255, 255, 255, 0.22);
+  --sb-hover: rgba(255, 255, 255, 0.38);
+  --tint: 7%;
+  color-scheme: dark;
+}
+
+// Colours (SPEC "Color hierarchy by importance" and "Accent hue on the icon tile and tag"):
+//   --c / --btn-fg: the button (site accent unless the admin chose one).
+//   The tag and the icon tile are neutral, unless the announcement has a hue (its button colour,
+//   else its category colour): then utils/announcementColors.ts writes --icon-* / --tag-* inline
+//   from the per-theme shares below (a soft fill, and an ink blended toward white or black that
+//   reads at AA; --hue-*-d / --hue-*-l lower the ink share for hues that need it).
+.ann-slide,
+.ann-sheet {
+  --c: var(--link-color);
+  --btn-fg: #121212;
+  --c-ink: color-mix(in srgb, var(--c) 52%, white);
+  --tag-bg: var(--a-ctrl);
+  --tag-fg: var(--a-muted);
+  --icon-bg: var(--a-ctrl);
+  --hue-tile: 16%;
+  --hue-edge: 30%;
+  --hue-fill: 18%;
+  --hue-glyph: var(--hue-glyph-d, 65%);
+  --hue-tag: var(--hue-tag-d, 50%);
+  --hue-toward: #ffffff;
+}
+
+:root[data-theme="light"] {
+  .ann-ann,
+  .ann-sheet,
+  .ann-pop {
+    --a-border: var(--bg-active-station-border);
+    --a-strong: #000000;
+    --a-ctrl: rgba(0, 0, 0, 0.05);
+    --a-dot: rgba(0, 0, 0, 0.16);
+    --sb: rgba(0, 0, 0, 0.2);
+    --sb-hover: rgba(0, 0, 0, 0.35);
+    color-scheme: light;
+  }
+
+  .ann-slide,
+  .ann-sheet {
+    --btn-fg: #ffffff;
+    --c-ink: var(--c);
+    --hue-tile: 12%;
+    --hue-fill: 14%;
+    --hue-glyph: var(--hue-glyph-l, 55%);
+    --hue-tag: var(--hue-tag-l, 45%);
+    --hue-toward: #000000;
+  }
+}
+
+.ann-ann,
+.ann-sheet,
+.ann-pop,
+.ann-layer {
+  box-sizing: border-box;
+
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+}
+
+// Thin, rounded, theme-coloured scrollbars that stay inside rounded corners.
+@mixin themed-scrollbar($inset: 18px) {
+  scrollbar-width: thin;
+  scrollbar-color: var(--sb) transparent;
+
+  &::-webkit-scrollbar {
+    width: 10px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+    margin: $inset 0;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: var(--sb);
+    border-radius: 999px;
+    border: 3px solid transparent;
+    background-clip: padding-box;
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    background-color: var(--sb-hover);
+  }
+}
+
+// The site's CSS reset gives every span color:black; inside announcements a span takes its
+// parent's colour unless a class says otherwise (zero specificity, so any class wins).
+:where(.ann-ann, .ann-sheet, .ann-pop) span {
+  color: inherit;
+}
+
+// ---------- slot ----------
+.ann-slot {
+  max-width: 1230px;
+  width: calc(100% - 30px);
+  margin: 20px auto 0;
+  transition: opacity 0.28s ease, transform 0.28s ease;
+}
+
+// Above "Stații favorite:" (SPEC "Website home placement v2"): the favourites section's box
+// (Stations/styles.module.scss .favourite_section), so the card's edges match the favourite
+// cards, the heading and the station grid; 36px under the hero or the station header.
+.ann-inHome {
+  max-width: 1230px;
+  width: 100%;
+  margin: 36px auto 0;
+
+  @media screen and (max-width: 1378px) {
+    width: calc(100% - 30px);
+    padding: 0 15px;
+  }
+}
+
+.ann-inContent {
+  width: 100%;
+  max-width: none;
+  margin: 0 0 24px;
+}
+
+// hide_after_seconds on the last announcement: it disappears but keeps its space
+.ann-faded {
+  visibility: hidden;
+}
+
+// ---------- card ----------
+.ann-ann {
+  position: relative;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--a-border);
+  background: var(--a-surface);
+  color: var(--a-text);
+  font-family: inherit;
+  text-align: left;
+}
+
+// Only the current slide is displayed, so the card is exactly as tall as it. The height
+// animates only when the user changes slide (the carousel sets it from JS).
+.ann-viewport {
+  overflow: hidden;
+  touch-action: pan-y;
+  transition: height 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.ann-slide {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 48px 1fr auto;
+  align-items: center;
+  column-gap: 16px;
+  padding: 18px 20px;
+  background: linear-gradient(
+    140deg,
+    color-mix(in srgb, var(--c) var(--tint), var(--a-surface)) 0%,
+    var(--a-surface) 62%
+  );
+}
+
+// The home card is one of the page's blocks: the station cards' surface, radius and shadow,
+// no border or colour wash of its own. (Station sheet cards keep theirs, to stand out from
+// the sheet.)
+.ann-carousel {
+  border: 0;
+  border-radius: 18px;
+  background: var(--station-card-color);
+  box-shadow: 1px 1px 5px 0 rgba(0, 0, 0, 0.2);
+
+  .ann-slide {
+    background: none;
+  }
+}
+
+// Autoplay on: every slide is laid out in one grid cell, so the card is as tall as its tallest
+// slide from first paint and never changes height by itself. Only the current one is visible
+// (--h, set inline by the carousel and, before hydration, by the pre-paint style); the server's
+// first slide stays laid out even when the pre-paint style hides it (data-ann-a).
+.ann-stack {
+  display: grid;
+
+  > .ann-slide {
+    grid-area: 1 / 1;
+    visibility: var(--h, visible);
+  }
+
+  > [data-ann-a] {
+    display: grid !important;
+  }
+}
+
+.ann-slide[data-enter] {
+  animation: ann-enter 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@keyframes ann-enter {
+  from {
+    opacity: 0;
+    transform: translateX(12px);
+  }
+}
+
+.ann-tappable {
+  cursor: pointer;
+
+  &:active {
+    filter: brightness(0.97);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--c-ink);
+    outline-offset: -2px;
+  }
+}
+
+.ann-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  background: var(--icon-bg);
+  border: 1px solid var(--icon-border, var(--a-border));
+  color: var(--icon-fg, var(--a-muted));
+
+  svg {
+    width: 23px;
+    height: 23px;
+  }
+
+  img {
+    width: 100%;
+    height: 100%;
+    border-radius: 10px;
+    object-fit: cover;
+  }
+}
+
+.ann-text {
+  min-width: 0;
+  padding-right: 24px;
+}
+
+.ann-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  min-height: 22px;
+  margin-bottom: 5px;
+}
+
+.ann-tag {
+  height: 21px;
+  padding: 0 9px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  background: var(--tag-bg);
+  color: var(--tag-fg);
+  white-space: nowrap;
+  // on the narrowest phones a long category name is cut short rather than run under the arrows
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: inline-block;
+  line-height: 21px;
+  vertical-align: middle;
+}
+
+.ann-count {
+  white-space: nowrap;
+  font-size: 12px;
+  color: var(--a-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.ann-title {
+  margin: 0 0 4px;
+  font-size: 16.5px;
+  line-height: 1.3;
+  font-weight: 600;
+  color: var(--a-strong);
+  letter-spacing: -0.005em;
+}
+
+// no body: nothing to keep the title apart from (beats the layouts' own title margins)
+.ann-text > .ann-title:last-child {
+  margin-bottom: 0;
+}
+
+.ann-body {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.48;
+  color: var(--a-muted);
+  max-width: 62ch;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+
+  strong {
+    color: var(--a-strong);
+    font-weight: 600;
+  }
+
+  em {
+    color: var(--a-text);
+    font-style: italic;
+  }
+
+  a {
+    color: var(--a-link);
+    font-weight: 500;
+  }
+}
+
+// ---------- buttons ----------
+.ann-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  align-self: center;
+  margin-top: 18px;
+}
+
+.ann-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 40px;
+  padding: 5px 16px;
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+  background: var(--c);
+  color: var(--btn-fg);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.25;
+  text-align: left;
+  text-decoration: none;
+
+  svg {
+    width: 15px;
+    height: 15px;
+    opacity: 0.9;
+  }
+
+  &:hover {
+    filter: brightness(1.07);
+  }
+}
+
+// One line, always (SPEC "Buttons, UPDATE"): only a label wider than the card is cut short,
+// with an ellipsis (the button's title carries the full text).
+.ann-ctaLabel {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.ann-ctaIcon {
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+// Buttons fit their content, never stretch, and are the same height. When they don't fit side
+// by side the row wraps ("Ascunde" moves to the next line); every line stays right-aligned
+// (SPEC "Buttons, UPDATE 2"), like the heart on a station tile.
+.ann-actions {
+  justify-content: flex-end;
+}
+
+.ann-actions .ann-cta {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 100%;
+  height: 40px;
+}
+
+.ann-ctaOutline {
+  background: transparent;
+  color: var(--c-ink);
+  box-shadow: inset 0 0 0 1px var(--c-ink);
+}
+
+.ann-ctaText {
+  background: transparent;
+  color: var(--c-ink);
+  padding: 4px;
+  min-height: 32px;
+
+  &:hover {
+    text-decoration: underline;
+    filter: none;
+  }
+}
+
+// "✕ Ascunde": a quiet button, always last in the button row, right after the main one.
+.ann-dismiss {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 40px;
+  padding: 0 13px 0 11px;
+  border: 1px solid var(--a-border);
+  border-radius: 8px;
+  background: var(--a-ctrl);
+  color: var(--a-text);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 0.15s ease, transform 0.1s ease;
+
+  svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  &:hover {
+    background: var(--a-dot);
+  }
+
+  &:active {
+    transform: scale(0.97);
+  }
+}
+
+.ann-cta,
+.ann-dismiss,
+.ann-btn,
+.ann-round,
+.ann-bell {
+  &:focus-visible {
+    outline: 2px solid var(--c-ink, var(--link-color));
+    outline-offset: 2px;
+  }
+}
+
+.ann-btn {
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--a-border);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--a-muted);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+
+  &:hover {
+    background: var(--a-ctrl);
+    color: var(--a-strong);
+  }
+
+  svg {
+    width: 16px;
+    height: 16px;
+  }
+}
+
+.ann-close {
+  border-color: transparent;
+}
+
+// Stacked like the app: icon beside the tag row, then title, body and buttons full width.
+@mixin stacked($pad-top: 18px) {
+  .ann-slide {
+    grid-template-columns: 44px 1fr;
+    grid-template-rows: 44px auto auto auto;
+    align-items: start;
+    column-gap: 12px;
+    padding: $pad-top 16px 16px 14px;
+  }
+
+  .ann-icon {
+    width: 44px;
+    height: 44px;
+  }
+
+  .ann-text,
+  .ann-side {
+    display: contents;
+  }
+
+  .ann-meta {
+    align-self: center;
+    margin: 0;
+  }
+
+  .ann-title {
+    grid-column: 1 / -1;
+    margin-top: 12px;
+    font-size: 16px;
+  }
+
+  .ann-body {
+    grid-column: 1 / -1;
+    font-size: 13.5px;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+  }
+
+  .ann-actions {
+    grid-column: 1 / -1;
+    justify-content: flex-end;
+    margin-top: 12px;
+  }
+
+}
+
+// ---------- home card (SPEC "Layout v2", UPDATE 3) ----------
+// Row 1: [icon] [tag over title] ··· [pager]. The icon is a square exactly as tall as the tag +
+// title block beside it (its top on the tag's top, its bottom on the title's last line), at
+// least the announcement's icon size and at most 72px. The description (and, on phones, the
+// buttons) start at the card's left edge, under the icon. Desktop: the buttons sit
+// right-aligned under the pager, sharing its right edge.
+.ann-carousel {
+  --ann-pager: 36px;
+  // The label TEXT lines up, not its pill: the pill moves left by its padding and up by the
+  // space above the text's cap height (Inter at 11.5px on a 21px line), so the text starts on
+  // the title's left edge and its cap top sits on the icon's top. The fill reaches past both.
+  --tag-pad: 9px;
+  --tag-lift: 6px;
+
+  .ann-slide {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-rows: auto auto auto auto;
+    align-items: start;
+    column-gap: 14px;
+    row-gap: 0;
+    padding: var(--station-card-pad-y) var(--station-card-pad-x);
+  }
+
+  .ann-text,
+  .ann-side {
+    display: contents;
+  }
+
+  // Stretched over the tag and title rows; aspect-ratio makes it square at that height.
+  .ann-icon {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+    align-self: stretch;
+    aspect-ratio: 1;
+    width: auto;
+    height: auto;
+    min-height: var(--ann-icon, 52px);
+    max-height: 72px;
+    border-radius: 24%;
+    position: relative;
+
+    // out of the flow, so the glyph never sizes the tile (only the tag and title do)
+    svg {
+      position: absolute;
+      inset: 0;
+      margin: auto;
+      width: 55%;
+      height: 55%;
+      min-width: 18px;
+      min-height: 18px;
+    }
+
+    img {
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+    }
+  }
+
+  .ann-meta {
+    grid-column: 2;
+    grid-row: 1;
+    min-height: 0;
+    margin: calc(-1 * var(--tag-lift)) 0 0 calc(-1 * var(--tag-pad));
+  }
+
+  // Centred on the label line without making that row taller (negative margins take back the
+  // pager's extra height and follow the label's lift), so the title follows the label directly.
+  .ann-nav {
+    grid-column: 3;
+    grid-row: 1;
+    justify-self: end;
+    margin: calc((21px - var(--ann-pager)) / 2 - var(--tag-lift)) 0 calc((21px - var(--ann-pager)) / 2) 12px;
+  }
+
+  // At the bottom of its row, so a tile taller than the block (a large icon) leaves the space
+  // between tag and title, never under the title.
+  .ann-title {
+    grid-column: 2;
+    grid-row: 2;
+    align-self: end;
+    margin: 6px 0 0;
+  }
+
+  .ann-body {
+    grid-column: 1 / 3;
+    grid-row: 3;
+    margin-top: 12px;
+  }
+
+  .ann-actions {
+    grid-column: 3;
+    grid-row: 2 / span 3;
+    justify-self: end;
+    justify-content: flex-end;
+    gap: 8px;
+    margin: calc((var(--ann-pager) - 21px) / 2 + 8px) 0 0 24px;
+  }
+}
+
+.ann-nav {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+// At the first / last slide the previous / next button fades and is disabled (paging doesn't
+// wrap). Before hydration the pre-paint style fades "previous" on the start slide with --pf
+// (the visit's sequence begins there).
+.ann-navPrev {
+  opacity: var(--pf, 1);
+}
+
+.ann-navBtn:disabled {
+  opacity: 0.4;
+  cursor: default;
+  pointer-events: none;
+}
+
+.ann-navBtn {
+  transition: opacity 0.18s ease, background-color 0.15s ease;
+  position: relative;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--a-border);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--a-text);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+
+  &:hover {
+    background: var(--a-ctrl);
+    color: var(--a-strong);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--link-color);
+    outline-offset: 2px;
+  }
+
+  svg {
+    width: 17px;
+    height: 17px;
+  }
+
+  // 44px tap targets on touch screens, without changing the drawn size
+  @media (pointer: coarse) {
+    &::before {
+      content: "";
+      position: absolute;
+      inset: -4px;
+    }
+  }
+}
+
+.ann-nav .ann-count {
+  min-width: 56px;
+  text-align: center;
+  font-size: 13px;
+
+  // the narrowest phones keep the arrows and give the category name the room
+  @media (max-width: 374px) {
+    display: none;
+  }
+}
+
+// Phones: the title also takes the pager's column, and the buttons come last, under the
+// description, from the card's left edge.
+@media (max-width: 640px) {
+  .ann-carousel {
+    --ann-pager: 32px;
+
+    .ann-title {
+      grid-column: 2 / -1;
+      font-size: 16px;
+    }
+
+    .ann-body {
+      grid-column: 1 / -1;
+      font-size: 13.5px;
+      -webkit-line-clamp: 3;
+      line-clamp: 3;
+    }
+
+    .ann-actions {
+      grid-column: 1 / -1;
+      grid-row: 4;
+      justify-self: stretch;
+      justify-content: flex-end;
+      margin: 14px 0 0;
+    }
+  }
+
+  .ann-navBtn {
+    width: 32px;
+    height: 32px;
+
+    // 44px tap target
+    &::before {
+      content: "";
+      position: absolute;
+      inset: -6px;
+    }
+  }
+
+  .ann-nav .ann-count {
+    min-width: 46px;
+    font-size: 12.5px;
+  }
+}
+
+// ---------- station bell ----------
+// The bell's own React root lives in this wrapper; it adds no box of its own.
+.ann-bellRoot {
+  display: contents;
+}
+
+.ann-bell {
+  position: relative;
+  width: 38px;
+  height: 38px;
+  flex: none;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+
+  svg {
+    width: 19px;
+    height: 19px;
+  }
+}
+
+// Outside the bell's top-right corner, ringed in the surface colour so it reads as separate.
+.ann-badge {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 700;
+  line-height: 16px;
+  text-align: center;
+  box-shadow: 0 0 0 2px var(--ring);
+}
+
+// the count is the number of markers left visible inside the badge
+.ann-badge {
+  counter-reset: ann-bell;
+
+  > span {
+    counter-increment: ann-bell;
+  }
+
+  &::after {
+    content: counter(ann-bell);
+  }
+}
+
+.ann-badgeSeen {
+  opacity: 0.55;
+}
+
+// On the station page header: the site's own surfaces.
+.ann-bellHeader {
+  --ring: var(--bg-header-container);
+  background: var(--station-card-color);
+  border: 1px solid var(--radio-player-border);
+  color: var(--text-color);
+
+  .ann-badge {
+    background: var(--link-color);
+    color: #121212;
+  }
+}
+
+:root[data-theme="light"] .ann-bellHeader {
+  background: #ffffff;
+  border-color: var(--bg-active-station-border);
+  color: #000000;
+
+  .ann-badge {
+    color: #ffffff;
+  }
+}
+
+// In the player bar, which stays dark in both themes.
+.ann-bellPlayer {
+  --ring: var(--radio-player-container-bg);
+  border: 0;
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+
+  .ann-badge {
+    background: #d4a017;
+    color: #121212;
+  }
+}
+
+// ---------- station popover / sheet ----------
+.ann-popScrim {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+}
+
+.ann-pop {
+  position: fixed;
+  width: min(400px, calc(100vw - 32px));
+  max-height: min(70vh, 640px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border-radius: 14px;
+  padding: 12px;
+  background: var(--station-card-color);
+  border: 1px solid var(--a-border);
+  color: var(--a-text);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+  @include themed-scrollbar(14px);
+}
+
+:root[data-theme="light"] .ann-pop {
+  background: #ffffff;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+}
+
+.ann-popHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin: 2px 4px 10px;
+
+  b {
+    display: block;
+    font-size: 14.5px;
+    line-height: 1.35;
+    font-weight: 600;
+    color: var(--a-strong);
+  }
+
+  small {
+    display: block;
+    margin-top: 2px;
+    font-size: 12.5px;
+    line-height: 1.35;
+    color: var(--a-muted);
+  }
+}
+
+.ann-popList {
+  display: grid;
+  gap: 8px;
+}
+
+// Station cards are always stacked, a little tighter than the home card.
+.ann-compact {
+  @include stacked(14px);
+
+  .ann-slide {
+    padding-right: 14px;
+  }
+
+  .ann-title {
+    margin-top: 10px;
+    font-size: 15px;
+  }
+
+  .ann-actions {
+    margin-top: 10px;
+  }
+}
+
+.ann-popHandle {
+  display: none;
+  width: 36px;
+  height: 4px;
+  border-radius: 2px;
+  background: currentColor;
+  opacity: 0.25;
+  margin: 0 auto 12px;
+}
+
+// Phones: a bottom sheet over a scrim instead of a popover.
+@media (max-width: 640px) {
+  .ann-popScrim {
+    background: rgba(0, 0, 0, 0.45);
+  }
+
+  .ann-pop {
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    top: auto !important;
+    width: 100%;
+    max-height: 78vh;
+    border-radius: 20px 20px 0 0;
+    border-width: 1px 0 0;
+    padding: 8px 14px calc(18px + env(safe-area-inset-bottom));
+  }
+
+  .ann-popHandle {
+    display: block;
+  }
+}
+
+// ---------- page dialog ----------
+.ann-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 28px 16px;
+  overflow-y: auto;
+}
+
+.ann-sheet {
+  position: relative;
+  width: min(560px, 100%);
+  max-height: calc(100dvh - 56px);
+  overflow: auto;
+  border-radius: 20px;
+  background: var(--bg-favourite-intro);
+  color: var(--text-color);
+  overscroll-behavior: contain;
+  @include themed-scrollbar(18px);
+}
+
+:root[data-theme="light"] .ann-sheet {
+  background: #ffffff;
+}
+
+.ann-sheetClose {
+  position: sticky;
+  top: 0;
+  display: flex;
+  justify-content: flex-end;
+  padding: 12px 12px 0;
+  z-index: 2;
+}
+
+.ann-round {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 0;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  background: var(--a-ctrl);
+  color: inherit;
+
+  svg {
+    width: 16px;
+    height: 16px;
+  }
+}
+
+.ann-md {
+  padding: 0 28px 28px;
+  color: var(--a-text);
+
+  h1 {
+    font-size: 25px;
+    line-height: 1.18;
+    margin: 0 0 6px;
+    letter-spacing: -0.01em;
+    font-weight: 700;
+    color: var(--a-strong);
+  }
+
+  a {
+    color: var(--c-ink);
+  }
+}
+
+.ann-cover {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1200 / 630;
+  object-fit: cover;
+  border-radius: 16px;
+  margin: 4px 0 18px;
+}
+
+.ann-tagrow {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.ann-date {
+  font-size: 12.5px;
+  color: var(--a-muted);
+  margin-bottom: 16px;
+}
+
+.ann-status {
+  font-size: 15px;
+  color: var(--a-muted);
+  padding: 8px 0 12px;
+}
+
+.ann-mdBody {
+  p,
+  li,
+  blockquote {
+    color: var(--a-text);
+  }
+
+  p,
+  li {
+    font-size: 15px;
+    line-height: 1.6;
+  }
+
+  h2,
+  h3 {
+    font-size: 17px;
+    margin: 22px 0 6px;
+    font-weight: 700;
+    color: var(--a-strong);
+  }
+
+  p {
+    margin: 0 0 12px;
+  }
+
+  ul,
+  ol {
+    padding-left: 18px;
+    margin: 6px 0;
+  }
+
+  ul {
+    list-style: disc;
+  }
+
+  ol {
+    list-style: decimal;
+  }
+
+  blockquote {
+    margin: 16px 0;
+    padding: 10px 14px;
+    border-left: 3px solid var(--c);
+    border-radius: 0 10px 10px 0;
+    font-style: italic;
+    background: color-mix(in srgb, var(--c) 10%, transparent);
+
+    p {
+      margin: 0;
+    }
+  }
+
+  img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 12px;
+  }
+
+  strong {
+    color: var(--a-strong);
+    font-weight: 700;
+  }
+
+  em {
+    color: inherit;
+    font-style: italic;
+  }
+}
+
+.ann-foot {
+  position: sticky;
+  bottom: 0;
+  padding: 14px 28px 20px;
+  display: flex;
+  justify-content: flex-end;
+  background: linear-gradient(transparent, var(--bg-favourite-intro) 30%);
+
+  .ann-cta {
+    height: 42px;
+    border-radius: 11px;
+    font-size: 14px;
+    padding: 0 18px;
+  }
+}
+
+:root[data-theme="light"] .ann-foot {
+  background: linear-gradient(transparent, #ffffff 30%);
+}
+
+@media (max-width: 640px) {
+  .ann-md {
+    padding: 0 20px 24px;
+  }
+
+  .ann-foot {
+    padding: 14px 20px 18px;
+
+    .ann-cta {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ann-slot,
+  .ann-viewport,
+  .ann-navBtn {
+    transition: none;
+  }
+
+  .ann-slide[data-enter] {
+    animation: none;
+  }
+}
+
+// ---------- YouTube embeds in the page ----------
+// A thumbnail link with a play button that opens the video on YouTube. The space is reserved by
+// the placeholder itself (16:9, Shorts 9:16), so enhancing it moves nothing. A playlist without
+// a thumbnail is a neutral tile with the play button.
+.ann-mdBody figure.rc-embed {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  margin: 16px 0;
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--a-ctrl);
+
+  &[data-kind="short"] {
+    aspect-ratio: 9 / 16;
+    max-width: 320px;
+    margin-inline: auto;
+  }
+
+  > a,
+  img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+.ann-ytLink {
+  position: absolute;
+  inset: 0;
+
+  img {
+    border-radius: 0;
+    opacity: 0.92;
+    transition: opacity 0.15s ease;
+  }
+
+  &:hover img,
+  &:focus-visible img {
+    opacity: 1;
+  }
+
+  &:focus-visible {
+    outline: 3px solid var(--link-color);
+    outline-offset: -3px;
+  }
+}
+
+.ann-ytBadge {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 68px;
+  height: 48px;
+  transform: translate(-50%, -50%);
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.35));
+
+  svg {
+    width: 100%;
+    height: 100%;
+  }
+}
+
+// ---------- form dialog ----------
+.ann-formSheet {
+  display: flex;
+  flex-direction: column;
+}
+
+.ann-formFrame {
+  display: block;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color-scheme: normal;
+}
+
+// Placeholder lines in the theme's colours until the form says it is ready.
+.ann-formSkeleton {
+  display: grid;
+  gap: 14px;
+  padding: 4px 28px 28px;
+
+  span {
+    display: block;
+    height: 14px;
+    border-radius: 7px;
+    background: var(--a-ctrl);
+    animation: ann-pulse 1.2s ease-in-out infinite alternate;
+  }
+
+  span:first-child {
+    height: 22px;
+    width: 60%;
+  }
+
+  span:last-child {
+    height: 44px;
+    border-radius: 10px;
+  }
+
+}
+
+@keyframes ann-pulse {
+  to {
+    opacity: 0.45;
+  }
+}
+
+@media (max-width: 640px) {
+  .ann-formSheet {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    height: calc(100dvh - 24px);
+    max-height: none;
+    border-radius: 20px 20px 0 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ann-formSkeleton span {
+    animation: none;
+  }
+}
+
+
+// ---------- home card v3: a sibling of the station tiles (SPEC "Card v3", A-line + UPDATE 1) ----------
+// On the station tile's own tokens (base.scss --station-card-*): surface, radius, padding, logo
+// box and radius, title type (StationItem .station_name) and subtitle type (.song_name). The icon
+// tile is the soft hue tint at the logo's size with a big hue glyph. Desktop: the category sits
+// on the title's line, to its right on its baseline (in the hue, after a grey "·"), wrapping under
+// it only when it doesn't fit; the description below in the song line's grey; the pager exactly
+// in the listener count's spot (top 15px, right 15px) and the buttons in the heart's
+// (bottom-right). Phones: the category as its own line, compact arrows in the listener spot, the
+// buttons below, across the card.
+.ann-inHome .ann-carousel {
+  border-radius: var(--station-card-radius);
+
+  .ann-slide {
+    position: relative;
+    grid-template-columns: var(--station-card-media) minmax(0, 1fr) auto;
+    // the text block centred between two flexible rows, like the station details
+    grid-template-rows: minmax(0, 1fr) auto minmax(0, 1fr);
+    column-gap: var(--station-card-gap);
+    row-gap: 0;
+    align-items: center;
+    min-height: calc(var(--station-card-media) + 2 * var(--station-card-pad-y));
+    padding: var(--station-card-pad-y) var(--station-card-pad-x);
+  }
+
+  .ann-icon {
+    grid-column: 1;
+    grid-row: 1 / -1;
+    align-self: center;
+    width: var(--station-card-media);
+    height: var(--station-card-media);
+    min-height: 0;
+    max-height: none;
+    aspect-ratio: auto;
+    border-radius: var(--station-card-media-radius);
+
+    svg {
+      width: 46%;
+      height: 46%;
+    }
+  }
+
+  // title, then the category on its baseline, then the description on a line of its own
+  .ann-text {
+    grid-column: 2;
+    grid-row: 2;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    column-gap: 8px;
+    min-width: 0;
+    padding: 0;
+  }
+
+  // the station name's type (StationItem .station_name)
+  .ann-title {
+    order: 1;
+    align-self: baseline;
+    min-width: 0;
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 500;
+    line-height: 1.25;
+    letter-spacing: 0;
+    color: var(--text-color);
+  }
+
+  // the category, in the hue (--tag-fg), with no pill
+  .ann-meta {
+    order: 2;
+    align-self: baseline;
+    min-height: 0;
+    margin: 0;
+  }
+
+  // inline (not an inline-block with overflow:hidden, whose baseline would be its bottom edge),
+  // so it sits on the title's baseline
+  .ann-tag {
+    display: inline;
+    height: auto;
+    padding: 0;
+    overflow: visible;
+    background: none;
+    border-radius: 0;
+    font-size: 0.8rem;
+    font-weight: 500;
+    line-height: 1.4;
+    letter-spacing: 0;
+  }
+
+  // the song / artist line's type (StationItem .song_name)
+  // a line of its own (no max-width: it would let the line break land beside the category)
+  .ann-body {
+    order: 3;
+    flex-basis: 100%;
+    max-width: none;
+    margin: 5px 0 0;
+    font-size: 0.8rem;
+    line-height: 1.4;
+    color: var(--subtext-metadata-color);
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+  }
+
+  // the listener count's spot (StationItem .total_listeners: top 15px, right 15px). No grid
+  // placement: an absolutely positioned grid child would be placed in its grid area instead
+  // of the card's padding box.
+  .ann-nav {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    grid-area: auto;
+    margin: 0;
+  }
+
+  // the heart's spot: bottom-right, beside the text
+  .ann-actions {
+    grid-column: 3;
+    grid-row: 1 / -1;
+    align-self: end;
+    justify-self: end;
+    justify-content: flex-end;
+    margin: 0 0 0 20px;
+  }
+
+  // no pager (a single announcement): the buttons are centred on the text's line
+  .ann-slide:not(:has(.ann-nav)) .ann-actions {
+    align-self: center;
+  }
+}
+
+// Web (not phones): the pager is only its arrows, in the top-right corner, and the buttons are
+// centred on the text's line whether or not there is a pager.
+@media screen and (min-width: 769px) {
+  .ann-inHome .ann-carousel {
+    .ann-nav .ann-count {
+      display: none;
+    }
+
+    .ann-actions {
+      align-self: center;
+    }
+  }
+}
+
+// tablets: the text column is narrow enough that a two-line description needs a third line
+@media screen and (min-width: 769px) and (max-width: 1099px) {
+  .ann-inHome .ann-carousel .ann-body {
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+  }
+}
+
+// a grey "·" between the title and the category, like the station subtitle's separator
+@media screen and (min-width: 769px) {
+  .ann-inHome .ann-carousel .ann-tag::before {
+    content: "·";
+    margin-right: 8px;
+    color: var(--subtext-metadata-color);
+  }
+}
+
+@media screen and (max-width: 768px) {
+  .ann-inHome .ann-carousel {
+    .ann-slide {
+      grid-template-columns: var(--station-card-media) minmax(0, 1fr);
+      grid-template-rows: auto auto auto auto;
+      align-content: start;
+      align-items: start;
+    }
+
+    .ann-icon {
+      grid-row: 1 / 4;
+      align-self: start;
+    }
+
+    .ann-text {
+      display: contents;
+    }
+
+    // leaves room for the pager in the top-right corner
+    .ann-title {
+      grid-column: 2;
+      grid-row: 1;
+      align-self: start;
+      margin-right: 76px;
+      font-size: 1.1rem;
+    }
+
+    // no pager: the title may use the whole line
+    .ann-slide:not(:has(.ann-nav)) .ann-title {
+      margin-right: 0;
+    }
+
+    .ann-meta {
+      grid-column: 2;
+      grid-row: 2;
+      margin: 4px 0 0;
+    }
+
+    // five lines on a phone's narrow column, so a two-line description still fits whole
+    .ann-body {
+      grid-column: 2;
+      grid-row: 3;
+      margin-top: 2px;
+      -webkit-line-clamp: 5;
+      line-clamp: 5;
+    }
+
+    // compact arrows exactly in the listener count's spot (no "i din n")
+    .ann-nav {
+      top: 15px;
+      right: 15px;
+
+      .ann-count {
+        display: none;
+      }
+    }
+
+    // the buttons go below, right-aligned to the card's padding
+    .ann-actions {
+      grid-column: 1 / -1;
+      grid-row: 4;
+      justify-self: stretch;
+      justify-content: flex-end;
+      margin: 14px 0 0;
+    }
+  }
+
+}
+
+// Compact arrows in the card's top-right corner, on the buttons' right edge, so they sit apart
+// from the buttons instead of crowding them. Touch screens keep a 44px-tall tap area.
+.ann-inHome .ann-carousel {
+  --ann-arrow: 26px;
+
+  .ann-nav {
+    top: 10px;
+    right: var(--station-card-pad-x);
+    gap: 4px;
+  }
+
+  .ann-navBtn {
+    width: var(--ann-arrow);
+    height: var(--ann-arrow);
+
+    svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    @media (pointer: coarse) {
+      &::before {
+        inset: calc((var(--ann-arrow) - 44px) / 2) -2px;
+      }
+    }
+  }
+}
+
+@media screen and (max-width: 768px) {
+  .ann-inHome .ann-carousel {
+    --ann-arrow: 28px;
+
+    .ann-nav {
+      top: 12px;
+      right: 12px;
+    }
+
+    // room for the two arrows beside the title
+    .ann-title {
+      margin-right: 64px;
+    }
+  }
+}

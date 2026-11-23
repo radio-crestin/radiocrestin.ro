@@ -1,0 +1,137 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import RadioApp from "@/components/RadioApp";
+import FavoritesPrepaint from "@/components/FavoritesPrepaint.astro";
+import PinStations from "@/components/PinStations.astro";
+import { getStations, getStationReviews } from "@/services/getStations";
+import { cleanStationsMetadata, getValidImageUrl, stationThumbImgProps, toIslandStations } from "@/utils";
+import { sortStationsByRecommendedScore } from "@/utils/stationScore";
+import { seoStation } from "@/utils/seo";
+import type { IReview, IStation } from "@/models/Station";
+import { ANONYMOUS_REVIEW_AUTHOR, SITE_URL } from "@/constants/constants";
+import { getRadioBuildSnapshot } from "@/services/announcementsBuild";
+
+export async function getStaticPaths() {
+  const { stations } = await getStations();
+  // Reviews are fetched at build time so review text ships in the static HTML
+  // (crawlable without JS) — fetched once here, not per page.
+  const reviewsByStation = new Map<number, IReview[]>();
+  await Promise.all(
+    stations
+      .filter((s: IStation) => (s.reviews_stats?.number_of_reviews ?? 0) > 0)
+      .map(async (s: IStation) => {
+        reviewsByStation.set(s.id, await getStationReviews(s.id));
+      }),
+  );
+  // Same "Pentru tine" pre-sort as the homepage, applied before
+  // cleanStationsMetadata (in the page frontmatter) zeroes total_listeners.
+  const orderedStations = sortStationsByRecommendedScore(stations);
+  return orderedStations.map((station: IStation) => ({
+    params: { station_slug: station.slug },
+    props: { stations: orderedStations, initialReviews: reviewsByStation.get(station.id) ?? [] },
+  }));
+}
+
+const { station_slug } = Astro.params;
+const rawStations = Astro.props.stations as IStation[];
+const initialReviews = Astro.props.initialReviews as IReview[];
+rawStations.forEach((station: IStation) => { station.is_favorite = false; });
+const stations = cleanStationsMetadata(rawStations);
+const selectedStation = stations.find((s: IStation) => s.slug === station_slug)!;
+const seo = seoStation(selectedStation);
+
+// Desktop LCP is the np_card thumbnail (hidden ≤768px, hence the media
+// condition — mobile must not pay for this fetch). Mirrors the <img>'s
+// srcset/sizes so the preload matches the exact candidate the img selects.
+const lcpThumbSrc = getValidImageUrl(selectedStation.thumbnail_url);
+const lcpThumbSrcset = stationThumbImgProps(selectedStation.thumbnail_url, 224);
+
+// Entity reconciliation: sameAs ties this page to the station's Knowledge
+// Graph node (keyed by its official site) — without it the ~10 near-identical
+// RVE sister stations are ambiguous to Google. JSON-LD only, not a crawlable
+// link, so no authority is passed to the listed sites.
+const sameAsLinks = [
+  selectedStation.website,
+  selectedStation.facebook_page_id
+    ? `https://www.facebook.com/${selectedStation.facebook_page_id}`
+    : null,
+].filter((url): url is string => !!url && url.startsWith("http"));
+
+const radioStationSchema = JSON.stringify({
+  "@context": "https://schema.org",
+  "@type": "RadioStation",
+  "@id": `${seo.fullURL}#station`,
+  name: selectedStation.title,
+  url: seo.fullURL,
+  image: seo.imageUrl,
+  genre: "Christian",
+  description: selectedStation.description || `Ascultă ${selectedStation.title} live online pe Radio Creștin`,
+  ...(sameAsLinks.length > 0 && { sameAs: sameAsLinks }),
+  potentialAction: {
+    "@type": "ListenAction",
+    target: seo.fullURL,
+  },
+  ...(selectedStation.reviews_stats?.number_of_reviews > 0 && {
+    aggregateRating: {
+      "@type": "AggregateRating",
+      ratingValue: selectedStation.reviews_stats.average_rating,
+      reviewCount: selectedStation.reviews_stats.number_of_reviews,
+      bestRating: 5,
+      worstRating: 1,
+    },
+  }),
+  ...(initialReviews.length > 0 && {
+    review: initialReviews.map((review) => ({
+      "@type": "Review",
+      author: { "@type": "Person", name: ANONYMOUS_REVIEW_AUTHOR },
+      datePublished: review.created_at.split("T")[0],
+      reviewRating: {
+        "@type": "Rating",
+        ratingValue: review.stars,
+        bestRating: 5,
+        worstRating: 1,
+      },
+      ...(review.message && { reviewBody: review.message }),
+    })),
+  }),
+});
+
+const breadcrumbSchema = JSON.stringify({
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  itemListElement: [
+    {
+      "@type": "ListItem",
+      position: 1,
+      name: "Radio Creștin",
+      item: `${SITE_URL}/`,
+    },
+    {
+      "@type": "ListItem",
+      position: 2,
+      name: selectedStation.title,
+      item: seo.fullURL,
+    },
+  ],
+});
+
+const announcements = await getRadioBuildSnapshot(Astro.params.station_slug);
+---
+
+<BaseLayout {...seo}>
+  <link
+    rel="preload"
+    as="image"
+    href={lcpThumbSrc}
+    imagesrcset={lcpThumbSrcset.srcSet}
+    imagesizes={lcpThumbSrcset.sizes}
+    fetchpriority="high"
+    media="(min-width: 769px)"
+    slot="head"
+  />
+  <script type="application/ld+json" set:html={radioStationSchema} slot="head" />
+  <script type="application/ld+json" set:html={breadcrumbSchema} slot="head" />
+  <RadioApp client:load announcements={announcements} stations={toIslandStations(stations)} selectedStation={toIslandStations([selectedStation])[0]} showReviews={true} initialReviews={initialReviews} />
+  <FavoritesPrepaint stations={stations} selectedStation={selectedStation} />
+  <PinStations />
+</BaseLayout>

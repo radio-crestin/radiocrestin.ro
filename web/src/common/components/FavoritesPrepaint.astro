@@ -1,0 +1,79 @@
+---
+/**
+ * Pre-paint favourites. Placed immediately after the RadioApp island so it
+ * runs once the SSR'd island DOM exists, before the browser paints: the
+ * user's favourite stations appear in the first frame instead of ~0.5-1s
+ * later (island JS load + hydration + effects), with zero layout shift.
+ *
+ * The <template> holds a build-time render of the favourites section with a
+ * card for every station (FavoritesPrepaintSection). The inline script reads
+ * the favourites-store localStorage key, prunes the clone down to the stored
+ * slugs (in stored order — same order useFavouriteStations produces), inserts
+ * the section right before the search bar, and stamps the placed slugs on
+ * window.__favouriteStamp. RadioApp seeds its initial context from that stamp,
+ * so React's first client render matches the mutated DOM exactly and
+ * hydration adopts the pre-painted section — no #418 fallback re-render, no
+ * pop-in, and the popIn card animation plays at first frame instead of after
+ * hydration. No favourites / script failure → no stamp, no section: exactly
+ * the current post-hydration behavior.
+ */
+import type { IStation } from "@/models/Station";
+import FavoritesPrepaintSection from "@/components/FavoritesPrepaintSection";
+
+interface Props {
+  stations: IStation[];
+  selectedStation?: IStation | null;
+}
+
+const { stations, selectedStation = null } = Astro.props;
+---
+
+<template id="favourites-prepaint-template">
+  <FavoritesPrepaintSection stations={stations} selectedStation={selectedStation} />
+</template>
+
+<script is:inline>
+  (function () {
+    var template = document.getElementById("favourites-prepaint-template");
+    try {
+      var raw = localStorage.getItem("favourites-store");
+      var favourites = raw
+        ? (JSON.parse(raw).state || {}).favouriteItems || []
+        : [];
+      var anchor = document.querySelector('[data-info="stations-section"]');
+      var section =
+        template && template.content
+          ? template.content.querySelector('[data-info="favourite-section"]')
+          : null;
+      var container = section ? section.lastElementChild : null;
+
+      if (favourites.length && anchor && anchor.parentElement && container) {
+        var bySlug = {};
+        var cards = container.children;
+        for (var i = 0; i < cards.length; i++) {
+          var slug = (cards[i].getAttribute("href") || "").replace(/\//g, "");
+          if (slug && !bySlug[slug]) bySlug[slug] = cards[i];
+        }
+
+        // Keep only stored favourites that have a card, in stored order —
+        // mirrors useFavouriteStations (stale slugs are dropped there too)
+        var kept = [];
+        for (var f = 0; f < favourites.length; f++) {
+          if (bySlug[favourites[f]]) kept.push(favourites[f]);
+        }
+
+        if (kept.length) {
+          while (container.lastChild) container.removeChild(container.lastChild);
+          for (var k = 0; k < kept.length; k++) {
+            container.appendChild(bySlug[kept[k]]);
+          }
+          anchor.parentElement.insertBefore(section, anchor);
+          window.__favouriteStamp = kept;
+        }
+      }
+    } catch (err) {
+      /* fail open: favourites appear after hydration as before */
+    }
+    if (template) template.remove();
+  })();
+</script>

@@ -1,0 +1,158 @@
+@use "globalVariables";
+
+/* Self-hosted Inter variable subset: latin + Romanian diacritics (both
+   comma-below Șț and legacy cedilla şţ forms appear in API data), wght
+   400-800, opsz pinned — 33KB vs the 141KB Google/Cloudflare Fonts served.
+   Regenerate with a new content hash if new scripts ever appear in content
+   (filename is immutable-cached via public/_headers). */
+@font-face {
+  font-family: "Inter";
+  src: url("/fonts/InterVariable-subset.ce602498.woff2") format("woff2");
+  font-weight: 400 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Arial adjusted to Inter's metrics (same values as the church-hub page), so
+   text painted before the webfont arrives keeps its geometry when Inter swaps
+   in — no re-wrap, no layout shift, and LCP stays anchored to the first paint. */
+@font-face {
+  font-family: "Inter Fallback";
+  src: local("Arial");
+  size-adjust: 107.4%;
+  ascent-override: 90.2%;
+  descent-override: 22.48%;
+  line-gap-override: 0%;
+}
+
+body {
+  background: var(--bg-body);
+  font-family: globalVariables.$inter;
+}
+
+.apasa_aici_move {
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  animation: move_left_right 1.5s infinite;
+  position: absolute;
+  right: 45px;
+  bottom: 11px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  background: #fdae1c;
+  color: var(--bg-favourite-intro);
+  padding: 2px 8px;
+  border-radius: 20px;
+
+  svg {
+
+    width: 30px;
+  }
+}
+
+@keyframes move_left_right {
+  0% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(-15px);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+
+// Station card geometry, shared by the station list and the announcements card so the
+// card lines up with the stations (same padding, media size and height).
+:root {
+  --station-card-pad-y: 15px;
+  --station-card-pad-x: 17px;
+  --station-card-gap: 25px;
+  --station-card-media: 110px;
+  --station-card-media-radius: 21px;
+  --station-card-body: 110px;
+  --station-card-radius: 18px;
+}
+
+@media screen and (max-width: 768px) {
+  :root {
+    --station-card-gap: 15px;
+    --station-card-media: 70px;
+    --station-card-media-radius: 10px;
+    --station-card-body: 72px;
+  }
+}
+
+:root, :root[data-theme='dark'] {
+  color-scheme: dark;
+  --bg-body: #121212;
+  --bg-header-container: #1E1E1E;
+  --bg-favourite-intro: #1A1A1A;
+  --bg-search-a-radio: #121212;
+  --station-card-color: #1e1e1e;
+  --text-color: #E0E0E0;
+  --text-hover-color: #c0c0c0;
+  --subtext-metadata-color: #A8A8A8;
+  --header-subtext-color: #BEBEBE;
+  --text-player-title: #FFFFFF;
+  --bg-active-station: #2a2a2a;
+  --bg-active-station-border: #3a3a3a;
+  --radio-player-container-bg: #121212;
+  --player-gradient-color: 0, 0, 0;
+  // Layered lift: upward halo + tight contact shadow + wide ambient falloff,
+  // so the player separates from same-darkness content above and below it
+  --radio-player-shadow:
+    0 -8px 24px rgba(0, 0, 0, 0.5),
+    0 -22px 60px 8px rgba(0, 0, 0, 0.4),
+    0 4px 10px rgba(0, 0, 0, 0.65),
+    0 18px 40px rgba(0, 0, 0, 0.7),
+    0 40px 110px 18px rgba(0, 0, 0, 0.85);
+  --banner-install-app-bg: #1E1E1E;
+  --radio-player-border: #393939;
+  --star-color: #FFD700;
+  --link-color: #D4A017;
+  --link-hover-color: #E6B422;
+}
+
+
+/* Define the light theme variables */
+:root[data-theme='light'] {
+  color-scheme: light;
+  --bg-body: #ffffff;
+  --bg-header-container: #FFFBEF;
+  --bg-favourite-intro: #FFFBEF;
+  --bg-search-a-radio: #fff;
+  --bg-active-station: #f0f0f0;
+  --bg-active-station-border: #e0e0e0;
+  --station-card-color: #ffffff;
+  --text-color: #000000;
+  --text-hover-color: #444444;
+  --subtext-metadata-color: #656565;
+  --header-subtext-color: #555555;
+  --text-player-title: #fff;
+  --radio-player-container-bg: #232321;
+  --player-gradient-color: 255, 255, 255;
+  // The dark card already contrasts with the white page — just a soft elevation
+  --radio-player-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.14),
+    0 12px 32px rgba(0, 0, 0, 0.18);
+  --banner-install-app-bg: #c6eaff;
+  --radio-player-border: transparent;
+  --star-color: #E67E22;
+  --link-color: #0066CC;
+  --link-hover-color: #004C99;
+}
+
+/* Page-content blur while a fullscreen modal is open (SongHistory, Reviews).
+   The modal overlays used to carry backdrop-filter: blur() — on macOS,
+   Chromium drops a backdrop-filter surface for a frame whenever content
+   above it repaints (any cursor movement over the modal), flashing the
+   unblurred page through. A plain filter on the content behind has no such
+   invalidation path. Applied per direct child of the island container so the
+   fixed player blurs in place (self-filter keeps viewport anchoring) while
+   react-toastify stays sharp and correctly positioned. */
+html[data-modal-blur] main astro-island > div > :not(.Toastify) {
+  filter: blur(8px);
+}

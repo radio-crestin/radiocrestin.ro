@@ -1,0 +1,238 @@
+// Header actions: two round icon buttons (Contact, theme) outlined like the
+// hero's secondary CTA.
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+%outlined_control {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  border-radius: 999px;
+  border: 1.5px solid var(--bg-active-station-border, rgba(128, 128, 128, 0.35));
+  background: transparent;
+  color: var(--text-color);
+  font-family: inherit;
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    transform 0.1s ease;
+
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      background-color: var(--bg-active-station);
+      border-color: transparent;
+    }
+  }
+
+  &:active {
+    transform: scale(0.97);
+  }
+
+  // reset.scss paints every span black; labels follow the control
+  span {
+    color: inherit;
+  }
+
+  &:focus-visible {
+    outline: 2px solid #fdae1c;
+    outline-offset: 2px;
+  }
+}
+
+.theme_root {
+  position: relative;
+  display: flex;
+}
+
+.round_button {
+  @extend %outlined_control;
+  position: relative;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+
+  // Hover label under the button, in the popover's glass style
+  &::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 50%;
+    z-index: 100;
+    padding: 5px 10px;
+    border-radius: 8px;
+    background: color-mix(in srgb, var(--station-card-color) 92%, transparent);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(128, 128, 128, 0.22);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+    color: var(--text-color);
+    font-size: 12.5px;
+    font-weight: 600;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    transform: translate(-50%, -4px);
+    transition:
+      opacity 0.15s ease,
+      transform 0.15s ease;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    &:hover::after {
+      opacity: 1;
+      transform: translate(-50%, 0);
+      transition-delay: 0.25s;
+    }
+  }
+
+  &:focus-visible::after {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+
+  // The open popover takes the label's place
+  &.round_button_open::after {
+    display: none;
+  }
+
+  svg {
+    transition: transform 0.35s ease;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    svg {
+      transition: none;
+    }
+  }
+}
+
+// The page the button leads to is the one open
+.round_button_current {
+  background-color: var(--bg-active-station);
+  border-color: transparent;
+}
+
+.round_button_open {
+  background-color: var(--bg-active-station);
+  border-color: transparent;
+
+  svg {
+    transform: rotate(-15deg);
+  }
+}
+
+// Tooltip-style glass pill under the theme button, its arrow pointing at it
+.popover {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  z-index: 100;
+  display: flex;
+  gap: 2px;
+  padding: 4px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--station-card-color) 92%, transparent);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(128, 128, 128, 0.22);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.25);
+  transform-origin: top right;
+  animation: popoverIn 0.16s ease;
+
+  &::before {
+    content: "";
+    position: absolute;
+    top: -5px;
+    right: 13px;
+    width: 8px;
+    height: 8px;
+    background: var(--station-card-color);
+    border-top: 1px solid rgba(128, 128, 128, 0.22);
+    border-left: 1px solid rgba(128, 128, 128, 0.22);
+    border-top-left-radius: 2px;
+    transform: rotate(45deg);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
+.popover_closing {
+  animation: popoverOut 0.14s ease forwards;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
+.theme_option {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-color);
+  cursor: pointer;
+  opacity: 0.55;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease,
+    opacity 0.15s ease;
+
+  &:hover {
+    opacity: 1;
+    background: rgba(128, 128, 128, 0.14);
+  }
+
+  &:focus-visible {
+    outline: 2px solid #fdae1c;
+    outline-offset: 1px;
+  }
+}
+
+.theme_option_active {
+  opacity: 1;
+  color: #f5a312;
+  background: rgba(253, 174, 28, 0.15);
+
+  &:hover {
+    background: rgba(253, 174, 28, 0.2);
+  }
+}
+
+:global([data-theme="light"]) .theme_option_active {
+  color: #c47500;
+}
+
+@keyframes popoverIn {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes popoverOut {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.96);
+  }
+}
