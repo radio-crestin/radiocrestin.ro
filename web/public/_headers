@@ -4,6 +4,8 @@
 # the inherited Cache-Control (`! Cache-Control`) before setting their own.
 /*
   Cache-Control: public, max-age=0, must-revalidate
+  # Pages sent this on every asset; other origins (the cast receiver, share pages) load ours.
+  Access-Control-Allow-Origin: *
   X-Content-Type-Options: nosniff
   X-Frame-Options: DENY
   Referrer-Policy: strict-origin-when-cross-origin
@@ -32,3 +34,10 @@
 /station-thumbnails/*
   ! Cache-Control
   Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
+# Text files with Romanian diacritics: declare UTF-8 (Workers assets send bare text/plain).
+/llms.txt
+  Content-Type: text/plain; charset=utf-8
+
+/robots.txt
+  Content-Type: text/plain; charset=utf-8

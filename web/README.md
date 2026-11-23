@@ -87,12 +87,16 @@ Conventions, SEO rules and how announcements work: [`CLAUDE.md`](CLAUDE.md).
 
 ## 🚀 Deploying
 
-Cloudflare Pages builds and publishes the site on every push to `main` that changes `web/`, and builds a
-preview for every pull request.
+The site is an **assets-only Cloudflare Worker**, `radiocrestin-ro` ([`wrangler.jsonc`](wrangler.jsonc)): no Worker
+code runs, so every request is served from Cloudflare's asset store and edge cache, free and unmetered.
 
-- **Pages project settings:** root directory `web`, build command `npm run build`, output `dist`.
-- **Rebuilds without a commit:** the backend calls the project's deploy hook (`WEB_DEPLOY_HOOK_URL`) when an
-  announcement changes, so the static pages pick it up.
+- **Workers Builds** builds it on every push to `main` that changes `web/` (root `web`, `npm run build`,
+  then `npx wrangler deploy`), and uploads a preview version for every pull request.
+- **Routing:** the route `www.radiocrestin.ro/*` sends the site's traffic to the Worker. The proxied `www` DNS
+  record stays in `bringes-infrastructure`; removing the route falls back to that record's origin.
+- **Headers and redirects:** `public/_headers` (caching, security, CORS) and the generated `dist/_redirects`
+  (permanent `/x` → `/x/`).
+- **Deploy by hand:** `npm run build && npx wrangler deploy`.
 - **Releases:** push a `web/vX.Y.Z` tag to mark a milestone; the
   [release workflow](../.github/workflows/release.yml) writes the notes from the commits in `web/`.
 

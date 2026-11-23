@@ -1,6 +1,22 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
+  // An assets-only Worker: there is no `main`, so every request is served from
+  // Cloudflare's asset store and edge cache, with no Worker invocation or CPU time.
+  // Workers Builds runs `npm run build`, then `npx wrangler deploy` (root: web/).
   "name": "radiocrestin-ro",
-  "compatibility_date": "2025-05-21",
-  "pages_build_output_dir": "./dist"
+  "account_id": "c53124cf4d8c039271e3d52917a56b96",
+  "compatibility_date": "2026-11-23",
+  // www's proxied DNS record (managed in bringes-infrastructure) stays as it is; this
+  // route sends its requests here. Remove the route to fall back to that record's origin.
+  // Keep the workers.dev URL and per-version preview URLs (pull request previews).
+  "workers_dev": true,
+  "preview_urls": true,
+  "routes": [{ "pattern": "www.radiocrestin.ro/*", "zone_name": "radiocrestin.ro" }],
+  "assets": {
+    "directory": "./dist/",
+    // dist/404.html, with a 404 status, for any path without a file.
+    "not_found_handling": "404-page",
+    // /radio-gosen -> 308 -> /radio-gosen/, as the canonical URLs and sitemap expect.
+    "html_handling": "auto-trailing-slash"
+  }
 }

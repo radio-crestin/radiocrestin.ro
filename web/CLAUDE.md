@@ -6,7 +6,7 @@
 ## Stack
 - Astro 6 (static output) with React islands (`client:load`)
 - TypeScript, SCSS Modules, Zustand
-- Hosting: Cloudflare Pages (`wrangler.jsonc`, output `dist/`) — serves directory-format URLs, 308-redirects `/x` to `/x/`
+- Hosting: an assets-only Cloudflare Worker `radiocrestin-ro` (`wrangler.jsonc`, output `dist/`; no `main`, so no Worker code runs and asset requests are free). Serves directory-format URLs; `scripts/generate-trailing-slash-redirects.cjs` writes `dist/_redirects` so `/x` 308-redirects to `/x/`
 - API: https://api.radiocrestin.ro/api/v1/stations
 
 ## Project Structure
