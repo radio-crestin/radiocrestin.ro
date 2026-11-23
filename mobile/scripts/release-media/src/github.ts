@@ -1,7 +1,6 @@
 import { readFileSync } from "node:fs";
 
-/** The release's narrated video and its poster, as `make publish` attaches them. */
-const VIDEO = "radio-crestin-whats-new.mp4";
+/** The poster of the release's narrated video, as `make publish` attaches it. */
 const POSTER = "radio-crestin-whats-new.jpg";
 
 /**
@@ -21,12 +20,16 @@ export function githubNotes(path: string, { repo, tag }: { repo: string; tag: st
   return videoHeader(repo, tag) + notesBody(path, repo, tag);
 }
 
+/** The website's player for a release's video: GitHub serves release files as downloads. */
+export const videoPlayerUrl = (tag: string) => `https://www.radiocrestin.ro/video/?tag=${gitTag(tag)}`;
+
 function videoHeader(repo: string, tag: string): string {
   const download = `https://github.com/${repo}/releases/download/${gitTag(tag)}`;
+  const player = videoPlayerUrl(tag);
   const version = tag.slice(1);
-  return `<a href="${download}/${VIDEO}"><img src="${download}/${POSTER}" ` +
+  return `<a href="${player}"><img src="${download}/${POSTER}" ` +
     `alt="What's new in Radio Crestin ${version}: narrated video" width="720"></a>\n\n` +
-    `▶ [Watch what's new in ${version}](${download}/${VIDEO}) (narrated video)\n\n`;
+    `▶ [Watch what's new in ${version}](${player}) (narrated video, plays in your browser)\n\n`;
 }
 
 function notesBody(path: string, repo: string, tag: string): string {

@@ -282,7 +282,7 @@ release-notes: check-release-notes release-media-deps | $(DIST)
 	  bun $(RELEASE_MEDIA_TOOL)/src/main.ts notes $(TAG) --repo $(GH_REPO); \
 	  base="https://github.com/$(GH_REPO)/releases/download/$(GIT_TAG)"; \
 	  printf "\n## Downloads\n\n"; \
-	  printf -- "- What's new, narrated video: %s/%s\n" "$$base" "$$(basename $(RELEASE_VIDEO))"; \
+	  printf -- "- What's new, narrated video (plays in the browser): https://www.radiocrestin.ro/video/?tag=%s\n" "$(GIT_TAG)"; \
 	  printf -- "- What's new, slides (download, then open in a browser): %s/%s\n" "$$base" "$$(basename $(RELEASE_DECK))"; \
 	  printf -- "- Android APK: %s/%s\n"   "$$base" "$$(basename $(ANDROID_APK))"; \
 	  printf -- "- Android AAB: %s/%s\n"   "$$base" "$$(basename $(ANDROID_AAB))"; \
