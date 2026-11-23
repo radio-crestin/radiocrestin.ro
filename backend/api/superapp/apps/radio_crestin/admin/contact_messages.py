@@ -39,8 +39,11 @@ LINK_ANSWERS = {'website', 'listen_url', 'facebook_url', 'link'}
 
 
 def new_messages_badge(request):
-    """Sidebar badge: how many messages nobody opened yet."""
-    return ContactMessage.objects.filter(status=ContactStatus.NEW).count() or None
+    """Sidebar badge: how many messages are open, as the list shows by default.
+
+    Unfold always draws the badge, so None would read "NONE"; 0 reads 0.
+    """
+    return str(ContactMessage.objects.exclude(status__in=CLOSED_STATUSES).count())
 
 
 def _answer_rows(message):
@@ -95,6 +98,26 @@ class StatusFilter(admin.SimpleListFilter):
             }
 
 
+def _status_switch(request):
+    """The Open | All links above the list, keeping the other filters."""
+    status = request.GET.get(StatusFilter.parameter_name)
+
+    def url(value):
+        query = request.GET.copy()
+        query.pop('p', None)
+        query.pop(StatusFilter.parameter_name, None)
+        if value:
+            query[StatusFilter.parameter_name] = value
+        return '?' + query.urlencode()
+
+    return [
+        {'label': _('Open'), 'url': url(None), 'selected': status is None,
+         'count': ContactMessage.objects.exclude(status__in=CLOSED_STATUSES).count()},
+        {'label': _('All'), 'url': url(StatusFilter.ALL), 'selected': status == StatusFilter.ALL,
+         'count': ContactMessage.objects.count()},
+    ]
+
+
 @admin.register(ContactMessage, site=superapp_admin_site)
 class ContactMessageAdmin(SuperAppModelAdmin):
     list_display = ['subject', 'kind', 'status', 'name', 'email', 'source', 'created_at']
@@ -102,6 +125,7 @@ class ContactMessageAdmin(SuperAppModelAdmin):
     search_fields = ['subject', 'name', 'email', 'message']
     date_hierarchy = 'created_at'
     actions = ['mark_done', 'mark_rejected', 'mark_spam']
+    list_before_template = 'admin/radio_crestin/contactmessage/list_before.html'
     actions_detail = ['create_draft_station', 'create_draft_announcement']
     fieldsets = [
         (None, {'fields': ['status', 'admin_notes', 'drafts_display']}),
@@ -117,6 +141,9 @@ class ContactMessageAdmin(SuperAppModelAdmin):
 
     def has_add_permission(self, request):
         return False
+
+    def changelist_view(self, request, extra_context=None):
+        return super().changelist_view(request, {**(extra_context or {}), 'status_switch': _status_switch(request)})
 
     def get_queryset(self, request):
         return super().get_queryset(request).select_related('created_station', 'created_announcement')
