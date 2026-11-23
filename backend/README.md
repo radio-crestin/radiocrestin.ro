@@ -130,10 +130,11 @@ Coding conventions (services, admins, i18n, file layout): [`CLAUDE.md`](CLAUDE.m
 
 Production runs on Kubernetes. Everything about it lives in
 [`radio-crestin-deploy`](https://github.com/radio-crestin/radio-crestin-deploy), a **private** repository
-checked out as the `deploy/` submodule. Its secrets are encrypted with git-crypt.
+checked out as the `deploy/` submodule. Its secrets are encrypted with git-crypt. The submodule is marked
+`update = none`, so ordinary clones (and Cloudflare's website builds) skip it; fetch it explicitly:
 
 ```bash
-git submodule update --init backend/deploy      # needs access to the private repo
+git submodule update --init --checkout backend/deploy   # needs access to the private repo
 cd backend/deploy && make unlock-git-crypt        # needs the git-crypt key
 ```
 

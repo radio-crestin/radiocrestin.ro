@@ -1,3 +1,4 @@
 [submodule "backend/deploy"]
 	path = backend/deploy
 	url = https://github.com/radio-crestin/radio-crestin-deploy.git
+	update = none
