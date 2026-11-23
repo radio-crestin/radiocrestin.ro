@@ -1,5 +1,6 @@
 import secrets
 
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from .station_groups import StationGroups
@@ -51,6 +52,12 @@ class Stations(models.Model):
     email = models.TextField(_("Email"), blank=True, null=False, default="")
     transcode_enabled = models.BooleanField(_("Live Transcoding"), default=True)
     stream_url = models.URLField(_("Stream URL"))
+    audio_gain_db = models.FloatField(
+        _("Audio Gain (dB)"),
+        default=0.0,
+        validators=[MinValueValidator(-20), MaxValueValidator(20)],
+        help_text=_("Volume change applied to the live HLS stream so every station plays about as loud (-16 LUFS). Negative makes the station quieter, positive louder (with a peak limiter). Measure it with backend/streaming/tools/measure_loudness.py. A change restarts the station's stream pod within a minute."),
+    )
 
     # Metadata timestamp source configuration
     metadata_timestamp_source = models.CharField(

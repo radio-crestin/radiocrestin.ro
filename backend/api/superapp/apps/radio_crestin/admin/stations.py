@@ -112,7 +112,7 @@ class StationsAdmin(SuperAppModelAdmin):
         (_("Streaming"), {
             'classes': ['tab'],
             'fields': (
-                'stream_url', 'transcode_enabled',
+                'stream_url', 'transcode_enabled', 'audio_gain_db',
                 'hls_url_display', 'player_link_display',
                 'hls_data_links',
             ),
