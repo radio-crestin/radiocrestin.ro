@@ -11,6 +11,7 @@
     "build": "npm run download-thumbnails && npm run generate-sitemap && npm run generate-llms-txt && astro build && node scripts/generate-trailing-slash-redirects.cjs && npm run inject-modulepreload && npm run upload-sourcemaps",
     "upload-sourcemaps": "node scripts/upload-sourcemaps.cjs",
     "preview": "astro preview --port 3005",
+    "deploy": "npm run build && wrangler deploy",
     "start": "npx serve@latest dist",
     "lint": "eslint .",
     "test": "vitest run",
