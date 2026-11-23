@@ -158,3 +158,24 @@ class ContactAdminTests(TestCase):
         response = self.client.post(reverse('admin:radio_crestin_contactmessage_create_draft_station', args=(message.pk,)))
         self.assertNotEqual(response.status_code, 302)
         self.assertFalse(Stations.objects.exists())
+
+    def test_the_list_hides_closed_messages_until_asked(self):
+        subjects = {status: f'Message {status}' for status in ContactStatus.values}
+        for status, subject in subjects.items():
+            ContactMessage.objects.create(kind='general', email='ana@example.com', subject=subject, status=status)
+
+        def listed(query=''):
+            page = self.client.get(reverse('admin:radio_crestin_contactmessage_changelist') + query).content.decode()
+            return {status for status, subject in subjects.items() if subject in page}
+
+        self.assertEqual(listed(), {'new', 'in_progress'})
+        self.assertEqual(listed('?status=all'), set(ContactStatus.values))
+        self.assertEqual(listed('?status=rejected'), {'rejected'})
+
+    def test_mark_as_not_accepted(self):
+        message = station_message()
+        self.client.post(reverse('admin:radio_crestin_contactmessage_changelist'), {
+            'action': 'mark_rejected', '_selected_action': [message.pk],
+        })
+        message.refresh_from_db()
+        self.assertEqual(message.status, ContactStatus.REJECTED)
