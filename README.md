@@ -55,7 +55,7 @@ One repository, three apps. Each folder has its own README with setup steps, scr
 |---|---|---|---|
 | [`web/`](web/) | The **radiocrestin.ro** website: every station, live song, reviews, listening stats | Astro + React, TypeScript | Cloudflare Workers (static assets), on every push to `main` |
 | [`mobile/`](mobile/) | The **Radio Crestin app** for iPhone, Android, CarPlay, Android Auto, Apple TV, Android TV, Mac and Windows | Flutter (+ SwiftUI on Apple TV) | App Store, Google Play, [GitHub releases](https://github.com/radio-crestin/radiocrestin.ro/releases/latest) |
-| [`backend/`](backend/) | The **API and admin**: station list, song on air, listeners, reviews, announcements, and every station re-streamed as HLS | Django, GraphQL + REST, Celery, FFmpeg | Kubernetes, via [`backend/deploy`](backend/README.md#-deploying) |
+| [`backend/`](backend/) | The **API and admin**: station list, song on air, listeners, reviews, announcements, and every station re-streamed as HLS | Django, GraphQL + REST, Celery, FFmpeg | Kubernetes ([deploying](backend/README.md#-deploying)) |
 
 ## How it fits together
 

@@ -117,7 +117,6 @@ backend/
 │   ├── station_listing.py  Lists the stations the controller should run
 │   └── tests/
 ├── station-thumbnails/     Original station artwork
-├── deploy/                 Kubernetes deployment (private submodule, see below)
 ├── docs/screenshots/       The images in this README
 ├── docker-compose.yaml     The local stack
 └── Makefile                Everyday commands
@@ -128,22 +127,33 @@ Coding conventions (services, admins, i18n, file layout): [`CLAUDE.md`](CLAUDE.m
 
 ## 🚀 Deploying
 
-Production runs on Kubernetes. Everything about it lives in
-[`radio-crestin-deploy`](https://github.com/radio-crestin/radio-crestin-deploy), a **private** repository
-checked out as the `deploy/` submodule. Its secrets are encrypted with git-crypt. The submodule is marked
-`update = none`, so ordinary clones (and Cloudflare's website builds) skip it; fetch it explicitly:
+Production runs on the `prod-rke2` Kubernetes cluster. Its config lives in the **private**
+[`bringes-infrastructure`](https://github.com/bringes/bringes-infrastructure) repository, environment
+`environments/radio_crestin_production` (one Fleet HelmOp per component; its README is the full guide).
+To ship the backend from `main`, in `bringes-infrastructure`:
 
-```bash
-git submodule update --init --checkout backend/deploy   # needs access to the private repo
-cd backend/deploy && make unlock-git-crypt        # needs the git-crypt key
-```
+1. Build the image from a checkout of `main` (tag `YYYY.MM.DD-N`):
+   `docker buildx build --load --platform linux/amd64 -f backend/api/Dockerfile -t ghcr.io/radio-crestin/radio-crestin-backend:<tag> backend/api`
+   (`cli/bringes app build --env radio_crestin_production --image backend --checkout <path> --tag <tag>` prints it).
+2. Pass the CVE gate, from `environments/bringes_production`:
+   `make admit-images IMAGES="ghcr.io/radio-crestin/radio-crestin-backend:<tag>" SOURCE=local-radio-crestin-backend-<tag> ARGS=--from-docker`
+3. Set `<tag>` on `web`, `priorityWorker` and `worker` in `environments/radio_crestin_production/config/radio_crestin.yaml`,
+   then `make generate-manifests` there.
+4. Roll it out: `scripts/reconcile_fleet_applications.py --env environments/bringes_production
+   --name radio-crestin-production-radio-crestin-backend-app --apply --verify --wait` (migrations run as a Job).
+   If Fleet reports `chart version cannot be deployed: invalid characters in version`, it is ignoring the update
+   (the chart version only hashes the chart, not the values): raise the HelmOp's `spec.forceSyncGeneration` by one.
+5. Commit the tag bump and the new `registry/images/local-radio-crestin-backend-<tag>.yaml` lock.
 
-To release, from `backend/`:
+The stream controller, streamer and station-listing images follow the same steps (their `build:` entries in
+`radio_crestin.yaml`).
 
-1. `make create-new-release` bumps the image tag (`v1.1.187`), builds and pushes the images, generates the
-   manifests, commits them in `deploy/` and bumps the submodule.
-2. Push `deploy/`, then open a pull request with the submodule bump.
-3. Apply the generated manifests to the cluster: the kubectl recipes are in [`CLAUDE.md`](CLAUDE.md#deployment).
+**A new station's hosts must be allowed first.** The cluster reaches the internet only through an egress
+proxy: add the station's stream, metadata and website hosts to `radio-streams.allow` in
+`environments/bringes_production/config/egress_proxy.yaml`, then apply it
+(`terraform -chdir=environments/bringes_production apply -target='module.infrastructure.module.egress_proxy[0]'`).
+Until then its pod logs `input_relay: upstream unreachable`, the uptime check fails with
+`Tunnel connection failed: 403 Forbidden`, and the apps show the station as unavailable.
 
 The image tag is the deploy's own counter. GitHub releases carry the repository's one version, for every
 app at once: [how to release](../README.md#-releases).
