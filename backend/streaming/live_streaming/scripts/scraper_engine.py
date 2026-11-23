@@ -742,10 +742,11 @@ def _iso(epoch: float) -> str:
 
 
 def _icy_result(raw: str) -> dict:
-    """A report built from the ICY title alone (no scraper answered)."""
-    artist, title = "", raw
-    if " - " in raw:
-        artist, title = (part.strip() for part in raw.split(" - ", 1))
+    """A report built from the ICY title alone (no scraper answered), parsed
+    with the station's stream_id3 fetcher settings: its regexes and separator
+    (RVE's local stations send "Title - Artist"). Without one, "Artist - Title"."""
+    cfg = next((c for c in (_config or {}).get("scrapers", []) if c.get("category_slug") == "stream_id3"), {})
+    artist, title = _parse_title_artist(raw, cfg)
     return {"title": title, "artist": artist, "raw_title": raw, "dirty": True}
 
 
