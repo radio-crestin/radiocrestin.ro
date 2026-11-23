@@ -18,3 +18,17 @@ class CleanSongTextTests(SimpleTestCase):
                       'Cântare @ Biserica Betel'):
             with self.subTest(title=title):
                 self.assertEqual(clean_song_text(title), title)
+
+    def test_text_encoded_twice_is_repaired(self):
+        # As sent by bacau.rve.ro on 2026-11-23.
+        self.assertEqual(clean_song_text('GÃ¢ndiÈ\x9bi-vÄ\x83 la lucrurile de sus -'),
+                         'Gândiți-vă la lucrurile de sus')
+
+    def test_real_text_is_not_touched(self):
+        for text in ('Gândiți-vă la lucrurile de sus', 'Café del Mar', 'Ce bucurie', 'Ştefan Ţurcanu'):
+            with self.subTest(text=text):
+                self.assertEqual(clean_song_text(text), text)
+
+    def test_a_dangling_separator_is_dropped(self):
+        self.assertEqual(clean_song_text('Lada cu zestre -'), 'Lada cu zestre')
+        self.assertIsNone(clean_song_text(' - '))

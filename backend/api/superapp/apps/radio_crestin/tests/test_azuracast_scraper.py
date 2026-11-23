@@ -33,3 +33,22 @@ class AzuraCastScraperTests(SimpleTestCase):
 
     def test_is_registered(self):
         self.assertIsInstance(ScraperFactory.get_scraper('azuracast'), AzuraCastScraper)
+
+
+class IcecastArtistFieldTests(SimpleTestCase):
+    def test_the_artist_field_keeps_the_title_whole(self):
+        from superapp.apps.radio_crestin_scraping.scrapers.icecast import IcecastScraper
+        data = IcecastScraper().extract_data({'icestats': {'source': {
+            'artist': 'Cuvântul la vremea potrivită', 'title': 'Chivotul - Valentin Popovici', 'listeners': 6}}})
+        self.assertEqual((data.current_song.artist, data.current_song.name),
+                         ('Cuvântul la vremea potrivită', 'Chivotul - Valentin Popovici'))
+
+    def test_without_an_artist_the_title_is_split(self):
+        from superapp.apps.radio_crestin_scraping.scrapers.icecast import IcecastScraper
+        data = IcecastScraper().extract_data({'icestats': {'source': {'title': 'Familia Pascal - Ce bucurie'}}})
+        self.assertEqual((data.current_song.artist, data.current_song.name), ('Familia Pascal', 'Ce bucurie'))
+
+    def test_scraped_text_encoded_twice_is_repaired(self):
+        from superapp.apps.radio_crestin_scraping.utils.formatters import DataFormatter
+        self.assertEqual(DataFormatter.clean_song_text('GÃ¢ndiÈ\x9bi-vÄ\x83 la lucrurile de sus'),
+                         'Gândiți-vă la lucrurile de sus')

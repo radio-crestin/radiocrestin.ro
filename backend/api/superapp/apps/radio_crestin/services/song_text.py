@@ -9,6 +9,8 @@ stored as alt-fm's song on 2026-09-02. The pods now filter these too
 import re
 from typing import Optional
 
+from superapp.apps.radio_crestin_scraping.utils.text_repair import undo_double_utf8
+
 _FFMPEG_MESSAGES = (
     # "[aac @ 0x55d5c8a3e2c0]": a context and its address, which is 0x-hex
     # or 16 bare hex digits (Windows), so "[Live @ 2024] Isus" is a title.
@@ -22,6 +24,9 @@ _FFMPEG_MESSAGES = (
 _PLACEHOLDERS = {"", "-", "--", "n/a", "na", "null", "none", "undefined"}
 
 
+_EDGE_SEPARATORS = re.compile(r"^[\s\-–—]+|[\s\-–—]+$")
+
+
 def is_garbage_song_text(value: Optional[str]) -> bool:
     """True for ffmpeg log messages and empty placeholders."""
     text = " ".join(str(value or "").split())
@@ -29,7 +34,8 @@ def is_garbage_song_text(value: Optional[str]) -> bool:
 
 
 def clean_song_text(value: Optional[str]) -> Optional[str]:
-    """`value` with whitespace collapsed, or None when it is not song text."""
-    if value is None or is_garbage_song_text(value):
+    """`value` repaired, with whitespace collapsed and no dangling " -", or None when it is not song text."""
+    if value is None:
         return None
-    return " ".join(str(value).split())
+    text = _EDGE_SEPARATORS.sub("", " ".join(undo_double_utf8(str(value)).split()))
+    return None if is_garbage_song_text(text) else text
