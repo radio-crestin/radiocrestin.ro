@@ -5429,34 +5429,6 @@ class AppAudioHandler extends BaseAudioHandler {
     }
   }
 
-  /// Stops playback after an error WITHOUT calling super.stop().
-  /// This keeps MPRemoteCommandCenter alive so CarPlay/lock-screen
-  /// next/prev/play buttons still work and the user can recover.
-  Future<void> _stopDueToError() async {
-    _trace("_stopDueToError (keeping command center alive)");
-    _cancelInFlightPlay();
-    _hasBeenPlayed = false;
-    _resumeAfterInterruption = false;
-    // Otherwise the session keeps counting toward its duration after the stop.
-    AnalyticsService.instance.endListening(reason: 'error');
-    _disconnectTimer?.cancel();
-    _bufferingStallTimer?.cancel();
-    _stopLiveHlsWatchdog();
-    _stopHlsPlaylistRefresh();
-    _bufferingStartedAt = null;
-    _stopSilenceKeepAlive();
-    unawaited(_pausedStreamTask.end());
-    _lastPlayerErrorCode = null;
-    _lastPlayerErrorMessage = null;
-    _loadedStreamUrl = null;
-    _loadedStreamType = null;
-    currentStreamInfo.add(null);
-    AnalyticsService.instance.setCurrentStream(url: null, type: null, index: null, total: null);
-    await player.stop();
-    // Broadcast stopped state with controls still available (no super.stop())
-    _broadcastState(player.playbackEvent);
-  }
-
   @override
   Future<void> stop() async {
     _trace("stop (isCasting=$isCasting)");
