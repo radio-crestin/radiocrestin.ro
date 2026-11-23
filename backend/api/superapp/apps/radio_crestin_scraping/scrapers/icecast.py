@@ -34,7 +34,12 @@ class IcecastScraper(BaseScraper):
             return StationNowPlayingData(current_song=None, listeners=None)
 
         raw_title = source.get("title", "")
-        song_name, artist = DataFormatter.parse_title_artist(raw_title, config)
+        if source.get("artist") and raw_title:
+            # Servers that tag songs (AzuraCast, Liquidsoap) send the artist on
+            # its own; then `title` is only the title and must not be split.
+            song_name, artist = raw_title, source["artist"]
+        else:
+            song_name, artist = DataFormatter.parse_title_artist(raw_title, config)
 
         song_data = self._create_song_data(
             name=song_name,

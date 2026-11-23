@@ -2,6 +2,7 @@ import re
 import urllib.parse
 from typing import Optional
 from .data_types import StationNowPlayingData, SongData
+from .text_repair import undo_double_utf8
 
 
 class DataFormatter:
@@ -16,6 +17,8 @@ class DataFormatter:
         if not text or text == "undefined" or len(text) <= 2:
             return None
             
+        text = undo_double_utf8(text)
+
         # Decode Unicode special chars
         text = DataFormatter.UNICODE_DECODE_PATTERN.sub(
             lambda m: chr(int(m.group(1))), text

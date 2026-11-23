@@ -42,6 +42,11 @@ def _upsert_song(name, artist, defaults) -> Songs:
     return song
 
 
+def not_the_station_name(text, station):
+    """None when `text` is just the station's name ("RVE Oradea" while it plays nothing)."""
+    return None if text and text.casefold() == station.title.casefold() else text
+
+
 class PodMetadataService:
 
     @staticmethod
@@ -55,8 +60,8 @@ class PodMetadataService:
         # history), so those never wait for this transaction.
         station = Stations.objects.select_for_update(no_key=True).get(
             slug=input.station_slug, disabled=False)
-        song_title = clean_song_text(input.song_title)
-        song_artist = clean_song_text(input.song_artist)
+        song_title = not_the_station_name(clean_song_text(input.song_title), station)
+        song_artist = not_the_station_name(clean_song_text(input.song_artist), station)
         if input.song_title and song_title is None:
             logger.warning("Ignoring non-title %r reported for %s",
                            input.song_title, input.station_slug)
