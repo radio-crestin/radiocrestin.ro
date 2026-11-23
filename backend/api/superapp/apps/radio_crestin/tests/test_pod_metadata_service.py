@@ -47,6 +47,12 @@ class PodReportCleaningTests(TestCase):
         self.assertFalse(
             Songs.objects.filter(name__icontains='ChannelElement').exists())
 
+    def test_the_station_name_is_neither_song_nor_artist(self):
+        # make_station uses the slug as the title.
+        result = report('garbage-station', 'garbage-station', artist='GARBAGE-STATION')
+        self.assertIsNone(result['song_id'])
+        self.assertIsNone(result['song_artist'])
+
     def test_station_logo_is_not_shown_for_another_station(self):
         """A song is shared by the stations playing it: a logo stored on
         it showed Aripi Spre Cer's logo for Radio Armonia's song."""

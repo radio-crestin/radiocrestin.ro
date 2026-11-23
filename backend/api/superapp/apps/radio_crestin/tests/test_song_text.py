@@ -32,3 +32,17 @@ class CleanSongTextTests(SimpleTestCase):
     def test_a_dangling_separator_is_dropped(self):
         self.assertEqual(clean_song_text('Lada cu zestre -'), 'Lada cu zestre')
         self.assertIsNone(clean_song_text(' - '))
+
+    def test_source_noise_is_tidied(self):
+        for raw, clean in (
+            ('﻿Natalia Cotan', 'Natalia Cotan'),       # radio-filadelfia ID3
+            ('Mesia.mp3', 'Mesia'),                           # calea-spre-cer-copii
+            ('Duh_&_Adevar (34:09)', 'Duh & Adevar (34:09)'), # sos-ploiesti
+        ):
+            with self.subTest(raw=raw):
+                self.assertEqual(clean_song_text(raw), clean)
+
+    def test_placeholders_and_web_addresses_are_not_song_text(self):
+        for text in ('Unknown Artist', 'LIVE', 'My Station name', 'www.rvesv.ro', 'https://radio.example.com'):
+            with self.subTest(text=text):
+                self.assertIsNone(clean_song_text(text))
