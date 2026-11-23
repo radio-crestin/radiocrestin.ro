@@ -52,3 +52,17 @@ class IcecastArtistFieldTests(SimpleTestCase):
         from superapp.apps.radio_crestin_scraping.utils.formatters import DataFormatter
         self.assertEqual(DataFormatter.clean_song_text('GÃ¢ndiÈ\x9bi-vÄ\x83 la lucrurile de sus'),
                          'Gândiți-vă la lucrurile de sus')
+
+
+class CompiledRegexConfigTests(SimpleTestCase):
+    def test_compiled_patterns_from_the_model_are_applied(self):
+        import re
+        from types import SimpleNamespace
+        from superapp.apps.radio_crestin_scraping.utils.formatters import DataFormatter
+        config = SimpleNamespace(split_character=' - ', station_name_regex=re.compile(r'^RFR\s*-\s*'),
+                                 artist_regex=None, title_regex=None)
+        self.assertEqual(DataFormatter.parse_title_artist('RFR - Lada cu zestre', config), ('Lada cu zestre', None))
+        swap = SimpleNamespace(split_character=' - ', station_name_regex=None,
+                               artist_regex=re.compile(r'^.+ - (.+)$'), title_regex=re.compile(r'^(.+?) - .+$'))
+        self.assertEqual(DataFormatter.parse_title_artist('Isus va fi mereu cu tine - Lara & Ema Alexa', swap),
+                         ('Isus va fi mereu cu tine', 'Lara & Ema Alexa'))

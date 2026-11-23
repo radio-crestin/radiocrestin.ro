@@ -5,6 +5,12 @@ from .data_types import StationNowPlayingData, SongData
 from .text_repair import undo_double_utf8
 
 
+def _pattern(regex) -> str:
+    """The pattern text: the model's RegexField hands out compiled patterns,
+    which re.sub/re.search refuse together with `flags`."""
+    return getattr(regex, 'pattern', regex)
+
+
 class DataFormatter:
     """Utility class for formatting and cleaning scraped data"""
     
@@ -81,15 +87,15 @@ class DataFormatter:
         # Step 1: Remove station name using regex if provided
         if hasattr(config, 'station_name_regex') and config.station_name_regex:
             try:
-                cleaned_title = re.sub(config.station_name_regex, '', cleaned_title, flags=re.IGNORECASE).strip()
+                cleaned_title = re.sub(_pattern(config.station_name_regex), '', cleaned_title, flags=re.IGNORECASE).strip()
             except re.error:
                 pass  # Invalid regex, continue without station name removal
         
         # Step 2: Use custom regex patterns if provided
         if hasattr(config, 'artist_regex') and config.artist_regex and hasattr(config, 'title_regex') and config.title_regex:
             try:
-                artist_match = re.search(config.artist_regex, cleaned_title, flags=re.IGNORECASE)
-                title_match = re.search(config.title_regex, cleaned_title, flags=re.IGNORECASE)
+                artist_match = re.search(_pattern(config.artist_regex), cleaned_title, flags=re.IGNORECASE)
+                title_match = re.search(_pattern(config.title_regex), cleaned_title, flags=re.IGNORECASE)
                 
                 artist = artist_match.group(1) if artist_match and len(artist_match.groups()) > 0 else None
                 song_name = title_match.group(1) if title_match and len(title_match.groups()) > 0 else None
