@@ -31,6 +31,7 @@ This Django app implements an efficient, Celery-based radio station scraping sys
 - **shoutcast**: Shoutcast JSON API
 - **icecast**: Icecast JSON API  
 - **radio_co**: Radio.co API
+- **azuracast**: AzuraCast now-playing API (`/api/nowplaying/<station>`), with song covers
 - **shoutcast_xml**: Shoutcast XML stats
 - **stream_id3**: Direct stream ID3 metadata
 - **old_icecast_html**: Legacy Icecast HTML pages
