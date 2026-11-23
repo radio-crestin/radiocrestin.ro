@@ -1,0 +1,542 @@
+import 'dart:async';
+
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:rxdart/rxdart.dart';
+
+import '../appAudioHandler.dart';
+import '../main.dart' show getIt;
+import '../services/analytics_service.dart';
+import '../services/now_playing_sanitizer.dart';
+import '../services/station_data_service.dart';
+import '../theme.dart';
+import '../tv/desktop/settings_panel.dart';
+import '../tv/tv_platform.dart';
+import '../types/Station.dart';
+import '../utils/romanian_count.dart';
+import '../widgets/pinned_title_sliver_header.dart';
+import '../widgets/re_add_station_button.dart';
+
+/// The stations the listener hid, last hidden first, each with a button
+/// that adds it back to the lists. Without any, it tells how to hide one.
+/// Over more than five, a search field narrows them down by name.
+///
+/// On desktop it is a page of the Settings panel, under its title bar
+/// (back and close), at most [desktopMaxWidth] wide, its rows lighting up
+/// under the pointer.
+class HiddenStationsPage extends StatefulWidget {
+  const HiddenStationsPage({super.key});
+
+  /// Pushes the page onto the navigation stack.
+  static void show(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute<void>(
+        // Named so PostHog records a `$screen` for it.
+        settings: const RouteSettings(name: '/hidden-stations'),
+        builder: (_) => const HiddenStationsPage(),
+      ),
+    );
+  }
+
+  /// The widest the list gets on desktop, the Settings panel's width.
+  static const double desktopMaxWidth = DesktopSettingsPanel.maxWidth;
+
+  /// "3 stații ascunse", for the settings row that opens this page.
+  static String countText(int count) => count == 0
+      ? 'Nicio stație ascunsă'
+      : romanianCount(count, one: 'stație ascunsă', many: 'stații ascunse');
+
+  @override
+  State<HiddenStationsPage> createState() => _HiddenStationsPageState();
+}
+
+class _HiddenStationsPageState extends State<HiddenStationsPage> {
+  /// How many hidden stations the page lists before it offers a search.
+  static const _listedWithoutSearch = 5;
+
+  final StationDataService _stationDataService = getIt<StationDataService>();
+  final AppAudioHandler _audioHandler = getIt<AppAudioHandler>();
+  final TextEditingController _search = TextEditingController();
+  StreamSubscription<List<Station>>? _subscription;
+  late List<Station> _stations = _stationDataService.hiddenStations;
+
+  /// Whether the page shows its search field. Once shown, it stays while
+  /// the page is open, rather than leaving as stations are re-added.
+  late bool _searchable = _needsSearch(_stations);
+
+  static bool _needsSearch(List<Station> stations) =>
+      stations.length > _listedWithoutSearch;
+
+  @override
+  void initState() {
+    super.initState();
+    _search.addListener(_onSearchChanged);
+    _subscription = Rx.combineLatest2(
+      _stationDataService.stations.stream,
+      _stationDataService.hiddenStationSlugs.stream,
+      (_, __) => _stationDataService.hiddenStations,
+    ).listen((stations) {
+      if (!mounted) return;
+      setState(() {
+        _stations = stations;
+        _searchable |= _needsSearch(stations);
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _subscription?.cancel();
+    _search.dispose();
+    super.dispose();
+  }
+
+  void _onSearchChanged() => setState(() {});
+
+  /// The hidden stations whose name holds the search, with or without
+  /// diacritics, as the station search finds them.
+  List<Station> get _matching {
+    final query = NowPlayingSanitizer.normalize(_search.text);
+    if (query.isEmpty) return _stations;
+    return [
+      for (final station in _stations)
+        if (NowPlayingSanitizer.normalize(station.displayTitle)
+            .contains(query))
+          station,
+    ];
+  }
+
+  void _show(Station station) {
+    HapticFeedback.lightImpact();
+    AnalyticsService.instance.capture('button_clicked', {
+      'button_name': 'station_unhide',
+      'source': 'settings',
+      'station_id': station.id,
+      'station_slug': station.slug,
+    });
+    unawaited(_audioHandler.unhideStation(station));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final stations = _stations;
+    final isDesktop = TvPlatform.isDesktop;
+    final page = CustomScrollView(
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+      slivers: [
+        if (!isDesktop) const PinnedTitleSliverHeader(title: 'Stații ascunse'),
+        SliverSafeArea(
+          top: false,
+          sliver: SliverToBoxAdapter(
+            // Out, then in: the list fades away whole, its last station
+            // still on it, before the empty page fades in, both from the
+            // top, so nothing shows alone or jumps on the way.
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 300),
+              switchInCurve: const Interval(0.5, 1, curve: Curves.easeOut),
+              switchOutCurve: const Interval(0.5, 1, curve: Curves.easeIn),
+              layoutBuilder: _stackFromTop,
+              child: stations.isEmpty
+                  ? const _EmptyState()
+                  : _HiddenList(
+                      key: const ValueKey('list'),
+                      stations: _matching,
+                      // The last one leaves with the whole list instead.
+                      foldsAway: stations.length > 1,
+                      search: _searchable
+                          ? _SearchField(controller: _search)
+                          : null,
+                      onShow: _show,
+                    ),
+            ),
+          ),
+        ),
+      ],
+    );
+    if (!isDesktop) return Scaffold(body: page);
+    return Scaffold(
+      body: DesktopSettingsFrame(
+        title: 'Stații ascunse',
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(
+              maxWidth: HiddenStationsPage.desktopMaxWidth,
+            ),
+            child: page,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+Widget _stackFromTop(Widget? current, List<Widget> previous) => Stack(
+      alignment: Alignment.topCenter,
+      children: [...previous, if (current != null) current],
+    );
+
+/// The colors of the settings page's grouped cards, in the current theme.
+class _Grouped {
+  _Grouped.of(BuildContext context)
+      : dark = Theme.of(context).brightness == Brightness.dark;
+
+  final bool dark;
+
+  Color get card => dark ? AppColors.groupedCardDark : AppColors.groupedCard;
+  Color get text => dark ? AppColors.groupedTextDark : AppColors.groupedText;
+  Color get secondary => dark
+      ? AppColors.groupedTextSecondaryDark
+      : AppColors.groupedTextSecondary;
+  Color get divider =>
+      dark ? AppColors.groupedDividerDark : AppColors.groupedDivider;
+  Color get action =>
+      dark ? AppColors.groupedAction : AppColors.groupedActionOnLight;
+}
+
+/// Where a hidden station no longer shows, for the page's explanation.
+///
+/// A computer has no car to leave them out of.
+String _whereHidden(BuildContext context) {
+  if (TvPlatform.isDesktop) {
+    return 'Stațiile ascunse nu apar în lista de stații, la Favorite și '
+        'nici în căutare.';
+  }
+  final car = switch (Theme.of(context).platform) {
+    TargetPlatform.iOS || TargetPlatform.macOS => 'CarPlay',
+    _ => 'Android Auto',
+  };
+  return 'Stațiile ascunse nu apar în lista de stații, la Favorite, în '
+      'căutare și nici în $car.';
+}
+
+class _HiddenList extends StatelessWidget {
+  const _HiddenList({
+    super.key,
+    required this.stations,
+    required this.foldsAway,
+    required this.onShow,
+    this.search,
+  });
+
+  /// The stations listed: the ones the search finds.
+  final List<Station> stations;
+
+  /// Whether "Readaugă" folds a row away before showing its station.
+  final bool foldsAway;
+
+  final ValueChanged<Station> onShow;
+
+  /// The search field over the list, if it has one.
+  final Widget? search;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = _Grouped.of(context);
+    final search = this.search;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (search != null)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+            child: search,
+          ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+          child: Text(
+            _whereHidden(context),
+            style: TextStyle(fontSize: 14, height: 1.4, color: colors.secondary),
+          ),
+        ),
+        if (stations.isEmpty)
+          const _NoMatch()
+        else
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Material(
+              color: colors.card,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: Column(
+                children: [
+                  for (final (index, station) in stations.indexed)
+                    _HiddenStationRow(
+                      key: ValueKey(station.slug),
+                      station: station,
+                      showDivider: index < stations.length - 1,
+                      foldsAway: foldsAway,
+                      onShow: () => onShow(station),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        const SizedBox(height: 40),
+      ],
+    );
+  }
+}
+
+/// "Caută o stație", a field in the color of the list's card.
+class _SearchField extends StatelessWidget {
+  const _SearchField({required this.controller});
+
+  final TextEditingController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = _Grouped.of(context);
+    final border = OutlineInputBorder(
+      borderRadius: BorderRadius.circular(12),
+      borderSide: BorderSide.none,
+    );
+    return TextField(
+      controller: controller,
+      textInputAction: TextInputAction.search,
+      autocorrect: false,
+      cursorColor: colors.action,
+      style: TextStyle(fontSize: 16, color: colors.text),
+      decoration: InputDecoration(
+        filled: true,
+        fillColor: colors.card,
+        isDense: true,
+        contentPadding: const EdgeInsets.symmetric(vertical: 11),
+        hintText: 'Caută o stație',
+        hintStyle: TextStyle(fontSize: 16, color: colors.secondary),
+        prefixIcon:
+            Icon(Icons.search_rounded, size: 20, color: colors.secondary),
+        suffixIcon: controller.text.isEmpty
+            ? null
+            : IconButton(
+                onPressed: controller.clear,
+                tooltip: 'Șterge căutarea',
+                icon: Icon(
+                  Icons.cancel_rounded,
+                  size: 18,
+                  color: colors.secondary,
+                ),
+              ),
+        border: border,
+        enabledBorder: border,
+        focusedBorder: border,
+      ),
+    );
+  }
+}
+
+/// The search finds no hidden station.
+class _NoMatch extends StatelessWidget {
+  const _NoMatch();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(32, 24, 32, 0),
+      child: Text(
+        'Nicio stație găsită.',
+        textAlign: TextAlign.center,
+        style: TextStyle(fontSize: 15, color: _Grouped.of(context).secondary),
+      ),
+    );
+  }
+}
+
+/// A hidden station: its logo and name, and "Readaugă", which folds the row
+/// away before the station goes back to the lists ([foldsAway]).
+///
+/// The last one doesn't fold: the whole list fades into the empty page
+/// instead, which would otherwise follow a moment of the page's text alone.
+class _HiddenStationRow extends StatefulWidget {
+  const _HiddenStationRow({
+    super.key,
+    required this.station,
+    required this.showDivider,
+    required this.foldsAway,
+    required this.onShow,
+  });
+
+  final Station station;
+
+  /// Whether a hairline separates it from the row below.
+  final bool showDivider;
+
+  /// Whether "Readaugă" folds the row away before showing the station.
+  final bool foldsAway;
+
+  final VoidCallback onShow;
+
+  @override
+  State<_HiddenStationRow> createState() => _HiddenStationRowState();
+}
+
+class _HiddenStationRowState extends State<_HiddenStationRow>
+    with SingleTickerProviderStateMixin {
+  static const _thumbnailSize = 44.0;
+
+  late final AnimationController _leave = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 250),
+  );
+  late final Animation<double> _size = CurvedAnimation(
+    parent: ReverseAnimation(_leave),
+    curve: Curves.easeInOut,
+  );
+
+  /// Whether "Readaugă" was tapped, so a second tap does nothing.
+  bool _showing = false;
+
+  @override
+  void dispose() {
+    _leave.dispose();
+    super.dispose();
+  }
+
+  Future<void> _show() async {
+    if (_showing) return;
+    _showing = true;
+    if (widget.foldsAway) await _leave.forward();
+    if (mounted) widget.onShow();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = _Grouped.of(context);
+    return SizeTransition(
+      sizeFactor: _size,
+      alignment: Alignment.topCenter,
+      child: FadeTransition(
+        opacity: _size,
+        child: Column(
+          children: [
+            _DesktopRowHover(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+                child: Row(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: SizedBox.square(
+                        dimension: _thumbnailSize,
+                        child: widget.station.logo,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        widget.station.displayTitle,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(fontSize: 16, color: colors.text),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    ReAddStationButton(onPressed: _show),
+                  ],
+                ),
+              ),
+            ),
+            if (widget.showDivider)
+              Padding(
+                padding: const EdgeInsets.only(left: 12 + _thumbnailSize + 12),
+                child: Divider(
+                  height: 0.5,
+                  thickness: 0.5,
+                  color: colors.divider,
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// What the empty page says: how to hide a station (a long press on a
+/// phone, a right click on a computer), where hidden ones no longer show,
+/// and that they come back from here.
+String _emptyExplanation(BuildContext context) {
+  final howTo = TvPlatform.isDesktop
+      ? 'Fă clic dreapta pe o stație din listă și alege „Ascunde stația”. '
+      : 'Ține apăsat pe o stație din listă și alege „Ascunde stația”. ';
+  return '$howTo${_whereHidden(context)} Le poți readăuga oricând de aici.';
+}
+
+/// Lights a row up under the pointer on desktop; elsewhere just [child].
+class _DesktopRowHover extends StatefulWidget {
+  const _DesktopRowHover({required this.child});
+
+  final Widget child;
+
+  @override
+  State<_DesktopRowHover> createState() => _DesktopRowHoverState();
+}
+
+class _DesktopRowHoverState extends State<_DesktopRowHover> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!TvPlatform.isDesktop) return widget.child;
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        curve: Curves.easeInOut,
+        color: _hovered
+            ? Colors.white.withValues(alpha: 0.05)
+            : Colors.white.withValues(alpha: 0),
+        child: widget.child,
+      ),
+    );
+  }
+}
+
+/// No hidden station: how to hide one.
+class _EmptyState extends StatelessWidget {
+  const _EmptyState();
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = _Grouped.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(32, 96, 32, 40),
+      child: Column(
+        children: [
+          Container(
+            width: 72,
+            height: 72,
+            decoration: BoxDecoration(
+              color: colors.card,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.visibility_off_outlined,
+              size: 32,
+              color: colors.secondary,
+            ),
+          ),
+          const SizedBox(height: 20),
+          Text(
+            'Nicio stație ascunsă',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: colors.text,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            _emptyExplanation(context),
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 14, height: 1.45, color: colors.secondary),
+          ),
+        ],
+      ),
+    );
+  }
+}

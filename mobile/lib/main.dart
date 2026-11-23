@@ -1,0 +1,896 @@
+import 'dart:async';
+import 'dart:convert';
+import 'dart:developer' as developer;
+import 'dart:io' show Platform;
+
+
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
+import 'package:get_it/get_it.dart';
+import 'package:graphql_flutter/graphql_flutter.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+import 'package:posthog_flutter/posthog_flutter.dart' show PostHogWidget;
+import 'package:radio_crestin/graphql_rest_mappings.dart';
+import 'package:radio_crestin/performance_monitor.dart';
+import 'package:radio_crestin/graphql_to_rest_interceptor.dart';
+import 'package:radio_crestin/pages/HomePage.dart';
+import 'package:upgrader/upgrader.dart';
+import 'package:radio_crestin/theme.dart';
+import 'package:radio_crestin/theme_manager.dart';
+import 'package:radio_crestin/seek_mode_manager.dart';
+import 'package:just_audio_media_kit/just_audio_media_kit.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+
+import 'appAudioHandler.dart';
+import 'app_launch_options.dart';
+import 'constants.dart';
+import 'firebase_options.dart';
+import 'globals.dart' as globals;
+import 'services/car_play_service.dart';
+import 'types/Station.dart';
+import 'services/cast_service.dart';
+import 'package:flutter_chrome_cast/flutter_chrome_cast.dart'
+    show CastMediaPlayerState;
+import 'services/tv_channel_service.dart';
+import 'package:flutter_airplay/flutter_airplay.dart' as flutter_airplay;
+import 'services/analytics_service.dart';
+import 'services/announcements_service.dart';
+import 'services/anr_reporter.dart';
+import 'services/android_renderer.dart';
+import 'services/app_start_log.dart';
+import 'services/desktop_menu_service.dart';
+import 'services/default_settings.dart';
+import 'services/device_registration_service.dart';
+import 'services/error_filter.dart';
+import 'services/hls_health_watchdog_flag.dart';
+import 'services/hls_hold_proxy_flag.dart';
+import 'services/hls_start_variant.dart';
+import 'services/hls_timeline.dart';
+import 'services/home_widget_service.dart';
+import 'services/image_cache_service.dart';
+import 'services/device_id_service.dart';
+import 'services/install_reporter.dart';
+import 'services/legacy_graphql_cache.dart';
+import 'services/log_context.dart';
+import 'services/log_flush_guard.dart';
+import 'services/remote_debug_controller.dart';
+import 'services/session_replay_controller.dart';
+import 'services/quick_actions_service.dart';
+import 'services/network_service.dart';
+import 'services/play_count_service.dart';
+import 'services/playback_preferences.dart';
+import 'services/posthog_screen_observer.dart';
+import 'services/siri_media_service.dart';
+import 'services/song_like_service.dart';
+import 'services/station_data_service.dart';
+import 'services/video_playback_service.dart';
+import 'services/playlist_sync_service.dart';
+import 'services/playlist_controller.dart';
+import 'tv/desktop/desktop_title_bar_inset.dart';
+import 'tv/tv_platform.dart';
+import 'tv/tv_shell.dart';
+import 'tv/tv_theme.dart';
+import 'widgets/edge_to_edge.dart';
+
+final getIt = GetIt.instance;
+
+Future<void> initializeFirebaseMessaging() async {
+  try {
+    // FCM rotates tokens (and may deliver the first one late, after a
+    // failed getToken), so keep the backend's copy current.
+    FirebaseMessaging.instance.onTokenRefresh.listen((token) {
+      if (token == globals.fcmToken) return;
+      globals.fcmToken = token;
+      DeviceRegistrationService.instance.register();
+    }, onError: (Object _) {});
+    if (Platform.isIOS) {
+      final settings = await FirebaseMessaging.instance.requestPermission(
+        alert: true,
+        announcement: true,
+        badge: true,
+        carPlay: false,
+        criticalAlert: true,
+        provisional: true,
+        sound: true,
+      );
+      final status = settings.authorizationStatus;
+      if (status != AuthorizationStatus.authorized &&
+          status != AuthorizationStatus.provisional) {
+        return;
+      }
+      // FCM's token needs the APNs one, which iOS hands over a moment
+      // after registerForRemoteNotifications (AppDelegate).
+      if (await _waitForApnsToken() == null) {
+        developer.log("No APNs token: push is off for this launch");
+        return;
+      }
+    } else {
+      await FirebaseMessaging.instance.setAutoInitEnabled(true);
+    }
+    try {
+      final fcmToken = await FirebaseMessaging.instance.getToken();
+      if (fcmToken != null) globals.fcmToken = fcmToken;
+      developer.log("FCMToken $fcmToken");
+    } catch (e) {
+      developer.log("Failed to get FCM token: $e");
+      if (e.toString().contains('SERVICE_NOT_AVAILABLE')) {
+        developer.log("Firebase Messaging service not available - likely running on emulator without Google Play Services");
+      }
+    }
+  } catch (e, stackTrace) {
+    developer.log("Firebase Messaging initialization failed", error: e, stackTrace: stackTrace);
+    if (!e.toString().contains('SERVICE_NOT_AVAILABLE')) {
+      AnalyticsService.instance.captureException(e, stackTrace, context: 'firebase_messaging_init');
+    }
+  }
+}
+
+/// The APNs token, polled for up to 10 s, or null (a simulator without
+/// push, or no `aps-environment` entitlement).
+Future<String?> _waitForApnsToken() async {
+  for (var attempt = 0; attempt < 20; attempt++) {
+    final token = await FirebaseMessaging.instance.getAPNSToken();
+    if (token != null) return token;
+    await Future<void>.delayed(const Duration(milliseconds: 500));
+  }
+  return null;
+}
+
+// Firebase plugins (messaging, app_installations, remote_config) don't support
+// Windows/Linux desktop. Skip Firebase entirely on those platforms.
+final bool _firebaseSupported =
+    kIsWeb || Platform.isAndroid || Platform.isIOS || Platform.isMacOS;
+
+/// Whether this platform gets push notifications from Firebase Cloud
+/// Messaging, the only Firebase feature the app uses.
+///
+/// Not macOS: FCM delivers through APNs there, which needs the push
+/// entitlement (`aps-environment`) the Mac app does not have, so asking
+/// for a token only fails (`apns-token-not-set`).
+final bool _messagingSupported =
+    kIsWeb || Platform.isAndroid || Platform.isIOS;
+
+void main() => runRadioCrestin();
+
+/// Starts the app, wired to the outside world as [options] says.
+Future<void> runRadioCrestin([
+  AppLaunchOptions options = const AppLaunchOptions(),
+]) async {
+  PerformanceMonitor.markAppStart();
+  final apiBaseUrl = options.apiBaseUrl;
+  if (apiBaseUrl != null) CONSTANTS.API_BASE_URL = apiBaseUrl;
+  final liveOriginHosts = options.liveOriginHosts;
+  if (liveOriginHosts != null) HlsStartVariant.hosts = liveOriginHosts;
+
+  WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
+  FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
+
+  // Initialize sqflite FFI for desktop platforms (Windows/Linux/macOS).
+  // The default sqflite plugin only ships native libs for Android/iOS.
+  if (!kIsWeb && (Platform.isWindows || Platform.isLinux || Platform.isMacOS)) {
+    sqfliteFfiInit();
+    databaseFactory = databaseFactoryFfi;
+  }
+
+  // Register libmpv-backed just_audio implementation for Windows/Linux.
+  // Must run before any AudioPlayer is constructed (i.e. before AudioService.init).
+  if (!kIsWeb && (Platform.isWindows || Platform.isLinux)) {
+    JustAudioMediaKit.ensureInitialized(
+      windows: true,
+      linux: true,
+    );
+  }
+
+  // media_kit (the video-playback engine for TV channels + video playlist
+  // items) is initialized LAZILY on first video use — VideoPlaybackService
+  // .ensureInitialized() calls MediaKit.ensureInitialized() before it builds a
+  // Player. Deferring it keeps its native-library registration off the startup
+  // path for the common audio-only launch (measured on first video instead).
+
+  // Phase 1: Start ALL independent async operations in parallel.
+  // Firebase, SharedPreferences, image cache, network, and PackageInfo
+  // have no dependencies on each other — run them all concurrently.
+  final Future<void> firebaseInitFuture = _firebaseSupported
+      ? PerformanceMonitor.trackAsync('firebase_init', () =>
+          Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform),
+        )
+      : Future.value();
+
+  // Removed, never read: opening it is what froze launches (see the class).
+  unawaited(LegacyGraphqlCache.delete());
+
+  final prefsFuture = SharedPreferences.getInstance();
+  final packageInfoFuture = PackageInfo.fromPlatform();
+  // Neither needs Hive or GetIt; both are awaited before AudioService.init.
+  // TV detection is a device-info platform call; the likes DB open + cache
+  // load never throws (memory-only fallback), so it is safe to start early.
+  final tvPlatformFuture = TvPlatform.initialize();
+  final songLikeFuture = SongLikeService.init();
+  // Awaited before runApp, so the first frame already has the navigation
+  // bar's inset. A TV has no navigation bar to draw behind.
+  final edgeToEdgeFuture = tvPlatformFuture.then((_) async {
+    if (!TvPlatform.isTV) await EdgeToEdge.enable();
+  });
+
+  // Construct services early (sync constructors) and start their async init
+  // in parallel with prefs — they only need path_provider / connectivity.
+  final networkService = NetworkService(probes: options.internetProbes);
+  final imageCacheService = ImageCacheService();
+
+  final networkInitFuture = networkService.initialize();
+  final imageCacheInitFuture = PerformanceMonitor.trackAsync('image_cache_init',
+    () => imageCacheService.initialize());
+
+  // Phase 2: Wait for prefs. Image cache and network init run in parallel.
+  final SharedPreferences prefs = await prefsFuture;
+
+  // Also ensure image cache and network are ready (should already be done)
+  await Future.wait([imageCacheInitFuture, networkInitFuture]);
+
+  // The device's persistent ID (kept across reinstalls where the platform
+  // allows): used for ?s= tracking, reviews, share links, and the PostHog
+  // user identifier. Whether one was stored before tells an update from a
+  // fresh install.
+  final knownDevice = prefs.containsKey(DeviceIdService.prefsKey);
+  final persistentDeviceId = await DeviceIdService(prefs).resolve();
+  globals.deviceId = persistentDeviceId;
+  AnalyticsService.instance.setDeviceId(persistentDeviceId);
+
+  // Detect TV/desktop platform (Android TV, macOS, Windows, Linux)
+  await tvPlatformFuture;
+
+  if (prefs.getString('_reviewStatus') == null) {
+    var defaultReviewStatus = {
+      'review_completed': false, // is completed when the user clicks on "5 stele" to add a review.
+      'actions_made': 0,
+    };
+    prefs.setString('_reviewStatus', json.encode(defaultReviewStatus));
+  }
+
+  // GraphQL client setup (doesn't need Firebase)
+  final HttpLink httpLink = HttpLink(
+    CONSTANTS.GRAPHQL_ENDPOINT,
+  );
+
+  final AuthLink authLink = AuthLink(
+    getToken: () async => CONSTANTS.GRAPHQL_AUTH,
+  );
+
+  final queryToRestMap = createGraphQLToRestMappings();
+
+  // One client for the API's REST calls: the station list then reuses the
+  // connections the 60 s metadata tick keeps open, instead of a handshake.
+  final apiHttpClient = StationDataService.createHttpClient();
+
+  final graphqlToRestInterceptor = GraphQLToRestInterceptorLink(
+    queryToRestMap: queryToRestMap,
+    httpClient: apiHttpClient,
+  );
+
+  final Link graphqlLink = graphqlToRestInterceptor.concat(authLink.concat(httpLink));
+  // In memory only: no query reads a cached result from a previous launch
+  // (the station list's cold-start copy lives in prefs, see
+  // StationDataService), and a disk store has to be parsed on the UI
+  // isolate before the first query.
+  final graphQlCache = GraphQLCache(store: InMemoryStore());
+
+  GraphQLClient graphqlClient = GraphQLClient(
+    link: graphqlLink,
+    cache: graphQlCache,
+    // The 5 s default is too tight for the ~200 KB station catalog on slow
+    // links (it never refreshes). 8 s matches the metadata call, so a full
+    // refresh, which awaits both, does not hold the sync lock any longer.
+    queryRequestTimeout: const Duration(seconds: 8),
+    defaultPolicies: DefaultPolicies(
+      query: Policies(
+        fetch: FetchPolicy.cacheAndNetwork,
+        error: ErrorPolicy.none,
+        cacheReread: CacheRereadPolicy.mergeOptimistic,
+      ),
+      watchQuery: Policies(
+        fetch: FetchPolicy.cacheAndNetwork,
+        error: ErrorPolicy.none,
+        cacheReread: CacheRereadPolicy.mergeOptimistic,
+      ),
+      mutate: Policies(
+        fetch: FetchPolicy.cacheAndNetwork,
+        error: ErrorPolicy.none,
+        cacheReread: CacheRereadPolicy.mergeOptimistic,
+      ),
+      watchMutation: Policies(
+        fetch: FetchPolicy.cacheAndNetwork,
+        error: ErrorPolicy.none,
+        cacheReread: CacheRereadPolicy.mergeOptimistic,
+      ),
+      subscribe: Policies(
+        fetch: FetchPolicy.cacheAndNetwork,
+        error: ErrorPolicy.none,
+        cacheReread: CacheRereadPolicy.mergeOptimistic,
+      ),
+    ),
+  );
+
+  // Phase 3: Register all services with GetIt (sync, order matters).
+  // Registration must happen BEFORE AudioService.init() because the builder
+  // callback creates AppAudioHandler which accesses GetIt<StationDataService>.
+  getIt.registerSingleton<SharedPreferences>(prefs);
+  getIt.registerSingleton<NetworkService>(networkService);
+  getIt.registerSingleton<ImageCacheService>(imageCacheService);
+
+  // The seek offset sets the listening delay the station list follows, so
+  // it is known before the first sync and tracked from then on.
+  SeekModeManager.initializeFromPrefs(prefs);
+  PlaybackPreferences.initializeFromPrefs(prefs);
+  // Settings the user has not changed follow PostHog's defaults (the last
+  // ones seen until flags load).
+  DefaultSettings.instance.initialize(prefs);
+  final stationDataService = StationDataService(
+    graphqlClient: graphqlClient,
+    httpClient: apiHttpClient,
+  )..getListeningDelay = _listeningDelay;
+  SeekModeManager.offsetChanges
+      .addListener(stationDataService.onListeningDelayChanged);
+  getIt.registerSingleton<StationDataService>(stationDataService);
+
+  final playCountService = PlayCountService();
+  getIt.registerSingleton<PlayCountService>(playCountService);
+
+  // The announcement card on the phone and tablet home, and its pushes.
+  final announcementsService = AnnouncementsService(
+    prefs: prefs,
+    client: apiHttpClient,
+    pushEnabled: options.registersForPush,
+  );
+  getIt.registerSingleton<AnnouncementsService>(announcementsService);
+
+  final songLikeService = await songLikeFuture;
+  getIt.registerSingleton<SongLikeService>(songLikeService);
+
+  // Video-playback engine + playlist orchestration. Registered before
+  // AudioService.init so AppAudioHandler can resolve them lazily; the handler
+  // and controller reference each other via GetIt (no constructor cycle).
+  final videoPlaybackService = VideoPlaybackService();
+  getIt.registerSingleton<VideoPlaybackService>(videoPlaybackService);
+  final playlistSyncService = PlaylistSyncService();
+  getIt.registerSingleton<PlaylistSyncService>(playlistSyncService);
+  final playlistController = PlaylistController(
+    videoService: videoPlaybackService,
+    syncService: playlistSyncService,
+  );
+  getIt.registerSingleton<PlaylistController>(playlistController);
+
+  // Phase 4: Start AudioService.init() — the biggest remaining blocker.
+  // Network and image cache are already initialized (awaited above).
+  final audioHandlerFuture = PerformanceMonitor.trackAsync('audio_service_init', () =>
+    initAudioService(graphqlClient: graphqlClient),
+  );
+
+  // StationDataService init runs in parallel with audio (thumbnail pre-caching
+  // depends on ImageCacheService which is already initialized).
+  // The announcements load alongside the stations, so the home screen's
+  // first frame has their card; their filters need the app version.
+  globals.appVersion = (await packageInfoFuture).version;
+  await Future.wait([
+    PerformanceMonitor.trackAsync(
+        'station_data_init', () => stationDataService.initialize()),
+    PerformanceMonitor.trackAsync(
+        'announcements_init', () => announcementsService.loadAtStartup()),
+  ]);
+
+  // Now await Firebase (likely already done since audio init takes longer)
+  await firebaseInitFuture;
+
+  // Load the flag decisions cached by the previous launch, so they apply
+  // from startup. Does not block on the network.
+  await RemoteDebugController.instance.loadCache(prefs);
+  SessionReplayController.instance.loadCache(prefs);
+  await HlsHealthWatchdogFlag.instance.loadCache(prefs);
+  await HlsHoldProxyFlag.instance.loadCache(prefs);
+  await AndroidRenderer.instance.loadCache(prefs);
+
+  // Developer mode (Settings hidden gesture) ships debug-level logs.
+  AnalyticsService.instance
+      .setDeveloperVerbose(prefs.getBool('developer_mode_enabled') ?? false);
+
+  // packageInfo has been resolving since Phase 1 and is effectively instant
+  // by now; awaiting it here lets PostHog Logs stamp `service.version`.
+  final packageInfo = await packageInfoFuture;
+
+  // Initialize PostHog analytics (error tracking is handled by PostHog config).
+  // The onFeatureFlags callback lets the controllers apply the live flags once
+  // PostHog has loaded them.
+  final replay = SessionReplayController.instance;
+  final installReplay = replay.installAtSetup;
+  await AnalyticsService.instance.initialize(
+    sessionReplay: installReplay,
+    onFeatureFlagsLoaded: () {
+      unawaited(replay.onFlagsLoaded());
+      unawaited(RemoteDebugController.instance.onFlagsLoaded());
+      unawaited(HlsHealthWatchdogFlag.instance.onFlagsLoaded());
+      unawaited(HlsHoldProxyFlag.instance.onFlagsLoaded());
+      unawaited(AndroidRenderer.instance.onFlagsLoaded());
+      unawaited(_applyDefaultSettings());
+    },
+    appVersion: packageInfo.version,
+    prefs: prefs,
+    sendsData: options.reportsAnalytics,
+  );
+
+  // Before the app mounts, so PostHogWidget starts idle unless recording.
+  replay.start(installed: installReplay);
+  AnalyticsService.instance.onExceptionCaptured = replay.notifyErrorCaptured;
+
+  // Apply the cached remote-debug config (verbose logs, auto log upload).
+  RemoteDebugController.instance.start();
+
+  // Settle any flush owed from a previous offline exception (or a crash
+  // before the flush completed) and watch connectivity for new debts.
+  LogFlushGuard.instance.start(prefs);
+
+  // Suppress known-benign runtime/network/plugin errors so they neither crash
+  // the app nor drown out real issues in PostHog. Must run AFTER PostHog setup —
+  // it wraps the FlutterError/PlatformDispatcher handlers PostHog just installed.
+  ErrorFilter.install(onReportableError: replay.notifyErrorCaptured);
+
+  globals.appVersion = packageInfo.version;
+  globals.buildNumber = packageInfo.buildNumber;
+
+  // Identify user immediately after PostHog init — before any events fire.
+  // One call carries the full identity: packageInfo is already resolved.
+  await AnalyticsService.instance.identify(
+    userId: globals.deviceId,
+    appVersion: packageInfo.version,
+    buildNumber: packageInfo.buildNumber,
+    platform: Platform.isAndroid ? 'android' : Platform.isIOS ? 'ios' : Platform.isMacOS ? 'macos' : Platform.isWindows ? 'windows' : Platform.isLinux ? 'linux' : 'other',
+  );
+
+  // After identify, so the ANR (a freeze at the last launch, most likely)
+  // is attributed to this device.
+  unawaited(AnrReporter.reportRecorded());
+
+  // After identify, so the install reaches the device's person.
+  unawaited(InstallReporter.reportOnce(
+    prefs: prefs,
+    installTime: packageInfo.installTime,
+    knownDevice: knownDevice,
+    report: AnalyticsService.instance.captureInstall,
+  ));
+
+  // From here on every info+ log record carries the device's state, and
+  // the launch is marked in the log with what wrote it. After setup, so a
+  // session the previous run left open is not reported with today's state.
+  AnalyticsService.instance.setLogContextProvider(LogContext.current);
+  unawaited(AppStartLog.write(
+    prefs: prefs,
+    appVersion: packageInfo.version,
+    buildNumber: packageInfo.buildNumber,
+  ));
+
+  if (prefs.getBool('_notificationsEnabled') ?? true) {
+    AnalyticsService.instance.setUserProperty('personalized_n', 'true');
+  }
+
+  // The likes DB opened before PostHog was up, so a memory-only fallback
+  // could not be reported at the time. After identify, so the error is
+  // attributed to this device.
+  final songLikeFailure = SongLikeService.initFailure;
+  if (songLikeFailure != null) {
+    AnalyticsService.instance.captureException(
+      songLikeFailure.error,
+      songLikeFailure.stackTrace,
+      context: 'song_like_db_init',
+    );
+  }
+
+  // Kept so the first device registration can wait for the FCM token.
+  final Future<void> fcmInitFuture =
+      _messagingSupported && options.registersForPush
+      ? PerformanceMonitor.trackAsync(
+          'firebase_messaging_init', initializeFirebaseMessaging)
+      : Future<void>.value();
+
+  // Wait for audio (packageInfo already resolved above)
+  final audioHandler = await audioHandlerFuture;
+  getIt.registerSingleton<AppAudioHandler>(audioHandler);
+
+  // Before runApp: a Home Screen widget's button may be what launched the
+  // app, and waits for this to say it can take it.
+  if (Platform.isIOS) {
+    getIt.registerSingleton<HomeWidgetService>(HomeWidgetService(
+      audioHandler: audioHandler,
+      stationDataService: getIt<StationDataService>(),
+      playCountService: getIt<PlayCountService>(),
+      prefs: prefs,
+    )..start());
+    // Siri can launch the app in the background to play a station.
+    getIt.registerSingleton<SiriMediaService>(SiriMediaService(
+      audioHandler: audioHandler,
+      stationDataService: getIt<StationDataService>(),
+    )..start());
+  }
+
+  await edgeToEdgeFuture;
+
+  // Initialize theme synchronously using already-loaded prefs (no async overhead)
+  ThemeManager.initializeFromPrefs(prefs);
+
+  // The macOS menu bar and Dock menu send their commands from the start;
+  // the desktop shell acts on them. A no-op on other platforms.
+  DesktopMenuService.initialize();
+
+  // On a computer the app stays open for hours and every station's artwork
+  // changes with each song: Flutter's default 100 MiB of decoded images
+  // fills with songs long gone. 64 MiB keeps a full screen of cards and
+  // "Se redă acum" decoded; older art is decoded again if it shows again.
+  if (TvPlatform.isDesktop) {
+    PaintingBinding.instance.imageCache.maximumSizeBytes = 64 << 20;
+  }
+
+  PerformanceMonitor.markAppReady();
+  PerformanceMonitor.startFrameMonitoring();
+
+  // Print performance report after 15 seconds to capture startup + first interactions
+  if (!kReleaseMode) {
+    Future.delayed(const Duration(seconds: 15), () {
+      PerformanceMonitor.printReport();
+    });
+  }
+
+  runApp(_ReplayCapture(
+    child: RadioCrestinApp(promptsForUpdates: options.promptsForUpdates),
+  ));
+
+  // Remove native splash AFTER runApp + first frame layout to prevent
+  // "Cannot hit test a render box that has never been laid out" errors
+  // from touch events arriving before the widget tree is laid out.
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    FlutterNativeSplash.remove();
+  });
+
+  // Initialize quick actions after runApp so the Android Activity is available
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    QuickActionsService.initialize();
+  });
+
+  // Pre-warm the network path to the last-played station's stream so the first
+  // tap of the session starts faster. Fire-and-forget; never blocks startup.
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    if (getIt.isRegistered<AppAudioHandler>()) {
+      unawaited(getIt<AppAudioHandler>().prewarmLastPlayed());
+    }
+  });
+
+  // Upsert this device's details to our backend in the background. Fire-and-
+  // forget — never blocks startup; runs on every launch so the stored model,
+  // OS, app version, locale and FCM token stay current. The IP is recorded
+  // server-side. Deferred to post-frame so it never competes with first paint.
+  // On a fresh install the FCM token needs a round trip to FCM, so wait for
+  // it (bounded) or the backend would only get the token on the next launch.
+  // On iOS the token can take longer (APNs first): registered again once
+  // it arrives.
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    unawaited(fcmInitFuture
+        .timeout(const Duration(seconds: 5), onTimeout: () {})
+        .whenComplete(() async {
+      final sentToken = globals.fcmToken;
+      await DeviceRegistrationService.instance.register();
+      await fcmInitFuture;
+      if (globals.fcmToken != sentToken) {
+        await DeviceRegistrationService.instance.register();
+      }
+    }));
+  });
+
+  // Defer CarPlay/Android Auto init to after first frame (mobile only)
+  if (Platform.isIOS || Platform.isAndroid) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final carPlayService = await PerformanceMonitor.trackAsync('carplay_service_init', () async {
+        final service = CarPlayService();
+        await service.initialize();
+        return service;
+      });
+      getIt.registerSingleton<CarPlayService>(carPlayService);
+    });
+  }
+
+  // Initialize Android TV home screen channels (favorites channel)
+  if (TvPlatform.isTV && Platform.isAndroid) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final tvChannelService = TvChannelService();
+      await tvChannelService.initialize();
+      getIt.registerSingleton<TvChannelService>(tvChannelService);
+    });
+  }
+
+  // Defer Chromecast/AirPlay discovery to after first frame
+  if (!TvPlatform.isTV) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final castService = CastService(prefs: getIt<SharedPreferences>());
+      await castService.initialize();
+      getIt.registerSingleton<CastService>(castService);
+
+      // Chromecast session management — only one output at a time
+      final audioHandler = getIt<AppAudioHandler>();
+      audioHandler.watchCastSessions(castService);
+      bool hasEverCasted = false;
+
+      // ─── Cast session lifecycle ──────────────────────────────────
+      //
+      // On connect (user tap, or iOS auto-resuming a saved session at
+      // app startup — both routes emit `isCasting=true` through this
+      // same listener):
+      //   1. Stop the local player so iOS doesn't keep the audio
+      //      session active in parallel with the Cast output.
+      //   2. Inspect the receiver's current MediaStatus:
+      //      a) It's actively playing/paused/buffering one of our
+      //         stations → ADOPT. Sync local currentStation /
+      //         mediaItem, mark the session adopted so
+      //         updateCastMetadata no-ops, and if it's anything but
+      //         `playing`, send a play command — the user just picked
+      //         us, they want audio out of this device.
+      //      b) Otherwise (idle receiver, no match, or no session
+      //         media yet) → PUSH our current/last station with a
+      //         fresh loadMedia. `autoPlay` defaults to true in the
+      //         plugin, so this starts playback automatically.
+      //
+      // On disconnect:
+      //   - Explicitly stop the local player. iOS ends the Cast-side
+      //     audio-session interruption when the remote device goes
+      //     away, and without an explicit stop, just_audio can
+      //     auto-resume the previously-loaded stream as if the user
+      //     had tapped play (root cause of the "starts again after
+      //     stopping from the app" regression).
+      //   - Flip playbackState.playing=false via setCastPlaying so
+      //     the notification ends up with MediaControl.play.
+      castService.isCasting.distinct().listen((casting) async {
+        print('[CastMain] isCasting=$casting');
+        if (casting) {
+          hasEverCasted = true;
+          await audioHandler.player.stop();
+
+          final existingStatus =
+              await castService.waitForActiveMediaStatus();
+          // On startup the station list may still be loading when the
+          // iOS Cast SDK restores a saved session. Wait briefly for
+          // the first non-empty emission so matchStationFromCastMedia
+          // and getLastPlayedStation can do their jobs.
+          final stations = await _waitForStations(
+              getIt<StationDataService>());
+          final adopted = castService.matchStationFromCastMedia(
+              stations, existingStatus);
+          final receiverState = existingStatus?.playerState;
+          final receiverIsActive =
+              receiverState == CastMediaPlayerState.playing ||
+                  receiverState == CastMediaPlayerState.paused ||
+                  receiverState == CastMediaPlayerState.buffering;
+
+          if (adopted != null && receiverIsActive) {
+            print('[CastMain] Adopting session: station=${adopted.slug}, '
+                'playerState=$receiverState');
+            castService.lastCastSlug = adopted.slug;
+            castService.markSessionAdopted();
+            await audioHandler.selectStation(adopted);
+            // User just connected us: auto-play regardless of the
+            // upstream sender's pause. Sending PLAY to an existing
+            // media session doesn't reload it, so the adoption
+            // contract (don't clobber their LOAD) still holds.
+            if (receiverState != CastMediaPlayerState.playing) {
+              castService.play();
+            }
+            audioHandler.setCastPlaying(true);
+            return;
+          }
+
+          var station = audioHandler.currentStation.value;
+          if (station == null) {
+            station = await audioHandler.getLastPlayedStation();
+            if (station != null) await audioHandler.selectStation(station);
+          }
+          if (station != null) {
+            castService.lastCastSlug = station.slug;
+            castService.castStation(station);
+            audioHandler.setCastPlaying(true);
+          }
+        } else if (hasEverCasted) {
+          castService.lastCastSlug = null;
+          await audioHandler.player.stop();
+          audioHandler.setCastPlaying(false);
+          // Nothing plays after a disconnect; without this the silent
+          // session keeps counting toward its `listening_stopped` duration.
+          AnalyticsService.instance.endListening();
+        }
+      });
+
+      // Catch station changes not initiated by playStation (e.g. auto-start)
+      audioHandler.currentStation.listen((station) {
+        if (station != null && castService.isCasting.value &&
+            station.slug != castService.lastCastSlug) {
+          castService.lastCastSlug = station.slug;
+          castService.castStation(station);
+        }
+      });
+
+      // ─── Cast receiver → local notification state sync ───────────
+      //
+      // Receiver-initiated transitions (another sender toggled play,
+      // content ended, error) flow in via castPlayerState. Map every
+      // known state to the single boolean `playing`:
+      //   PLAYING                  → true
+      //   PAUSED / IDLE            → false (receiver isn't playing)
+      //   BUFFERING / LOADING /    → keep previous value — these are
+      //   UNKNOWN                    transient; the next concrete
+      //                              state will resolve.
+      castService.castPlayerState.distinct().listen((playerState) {
+        if (!castService.isCasting.value) return;
+        switch (playerState) {
+          case CastMediaPlayerState.playing:
+            audioHandler.setCastPlaying(true);
+            break;
+          case CastMediaPlayerState.paused:
+          case CastMediaPlayerState.idle:
+            audioHandler.setCastPlaying(false);
+            break;
+          case CastMediaPlayerState.buffering:
+          case CastMediaPlayerState.loading:
+          case CastMediaPlayerState.unknown:
+            // Transient — don't clobber the optimistic intent.
+            break;
+        }
+      });
+
+      // Auto-play on AirPlay connect (iOS only)
+      if (Platform.isIOS) {
+        final airplay = flutter_airplay.AirPlayRouteState.instance;
+        airplay.isActiveStream.listen((active) async {
+          if (active && audioHandler.currentStation.value == null) {
+            final station = await audioHandler.getLastPlayedStation();
+            if (station != null) audioHandler.playStation(station);
+          }
+        });
+      }
+    });
+  }
+}
+
+/// Applies PostHog's default settings once flags load. A new seek offset
+/// reaches the playing station at once, as when the user changes it.
+Future<void> _applyDefaultSettings() async {
+  final changed = await DefaultSettings.instance.onFlagsLoaded();
+  final offsetChanged = changed.contains(AppDefaultSettings.seekMode) ||
+      changed.contains(AppDefaultSettings.unstableConnection);
+  if (!offsetChanged || !getIt.isRegistered<AppAudioHandler>()) return;
+  final audioHandler = getIt<AppAudioHandler>();
+  unawaited(audioHandler.reapplySeekOffset());
+  audioHandler.refreshCurrentMetadata();
+}
+
+/// How far behind live a station tapped now is heard: local time-shifted
+/// HLS plays the seek offset plus how far its start trails the live edge
+/// (see [HlsTimeline.approximateLatency]); a Cast receiver and Android TV
+/// (live metadata) play live.
+Duration _listeningDelay() {
+  final getIt = GetIt.instance;
+  final casting =
+      getIt.isRegistered<CastService>() && getIt<CastService>().isCasting.value;
+  if (casting || TvPlatform.isAndroidTV) return Duration.zero;
+  final offset = SeekModeManager.currentOffset;
+  return HlsTimeline.approximateLatency(
+    offset,
+    darwin: Platform.isIOS || Platform.isMacOS,
+    startVariant: HlsStartVariant.isUsedAt(offset),
+  );
+}
+
+/// Returns the current list of stations, waiting up to [timeout] for the
+/// first non-empty emission. Used when the Cast-connect flow fires on
+/// startup before the station catalog has loaded from cache/network.
+Future<List<Station>> _waitForStations(
+  StationDataService service, {
+  Duration timeout = const Duration(seconds: 3),
+}) async {
+  final existing = service.stations.value;
+  if (existing.isNotEmpty) return existing;
+  try {
+    return await service.stations.stream
+        .firstWhere((s) => s.isNotEmpty)
+        .timeout(timeout);
+  } catch (_) {
+    return service.stations.value;
+  }
+}
+
+/// Re-checks the store on resume at most every 12 h.
+///
+/// Android reports `resumed` on every window-focus regain (e.g. closing the
+/// notification shade), and each check downloads and parses the Play Store
+/// page on the UI isolate. The launch check runs through `initialize()` and
+/// is unaffected.
+class _ThrottledUpgrader extends Upgrader {
+  static const _minInterval = Duration(hours: 12);
+  DateTime _lastCheck = DateTime.now();
+
+  @override
+  Future<void> didChangeAppLifecycleState(AppLifecycleState state) async {
+    if (state != AppLifecycleState.resumed) return;
+    final now = DateTime.now();
+    if (now.difference(_lastCheck) < _minInterval) return;
+    _lastCheck = now;
+    await super.didChangeAppLifecycleState(state);
+  }
+}
+
+/// One app-lifetime instance: building it inside the theme builder leaked an
+/// observer and an HTTP client on every theme change.
+final Upgrader _upgrader = _ThrottledUpgrader();
+
+/// Wraps [child] in `PostHogWidget` when session replay was installed at
+/// launch, so the screen can be captured; otherwise adds nothing.
+class _ReplayCapture extends StatelessWidget {
+  const _ReplayCapture({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) =>
+      SessionReplayController.instance.installed
+          ? PostHogWidget(child: child)
+          : child;
+}
+
+class RadioCrestinApp extends StatelessWidget {
+  const RadioCrestinApp({super.key, this.promptsForUpdates = true});
+
+  /// Whether a newer version in the store is offered over the home page.
+  final bool promptsForUpdates;
+
+  // This widget is the root of your application.
+  @override
+  Widget build(BuildContext context) {
+    // TV gets a dedicated dark theme and TV-optimized UI shell.
+    if (TvPlatform.isTV) {
+      return MaterialApp(
+        navigatorKey: globals.navigatorKey,
+        navigatorObservers: [PosthogScreenObserver()],
+        title: 'Radio Crestin',
+        debugShowCheckedModeBanner: false,
+        theme: TvPlatform.isDesktop ? desktopTheme : tvTheme,
+        darkTheme: TvPlatform.isDesktop ? desktopTheme : tvTheme,
+        themeMode: ThemeMode.dark,
+        // Dialogs and panels clear the macOS window buttons.
+        builder: TvPlatform.isDesktop
+            ? (context, child) => DesktopTitleBarInset(child: child!)
+            : null,
+        home: const TvShell(),
+      );
+    }
+
+    return ValueListenableBuilder<ThemeMode>(
+      valueListenable: ThemeManager.themeMode,
+      builder: (context, themeMode, child) {
+        return MaterialApp(
+          navigatorKey: globals.navigatorKey,
+          navigatorObservers: [PosthogScreenObserver()],
+          title: 'Radio Crestin',
+          debugShowCheckedModeBanner: false,
+          theme: lightTheme,
+          darkTheme: darkTheme,
+          themeMode: themeMode,
+          builder: (context, child) => EdgeToEdgeNavigationBar(child: child!),
+          home: promptsForUpdates
+              ? UpgradeAlert(
+                  dialogStyle: Platform.isIOS
+                      ? UpgradeDialogStyle.cupertino
+                      : UpgradeDialogStyle.material,
+                  upgrader: _upgrader,
+                  child: const HomePage(),
+                )
+              : const HomePage(),
+        );
+      },
+    );
+  }
+}

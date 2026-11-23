@@ -1,0 +1,61 @@
+import 'dart:io' show Platform;
+
+import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+/// Playback settings read synchronously by the audio handler.
+class PlaybackPreferences {
+  PlaybackPreferences._();
+
+  /// Where "use MP3 streams first" is stored.
+  static const preferDirectStreamsKey = 'prefer_direct_streams';
+
+  static final _preferDirectStreams = ValueNotifier<bool>(false);
+
+  /// The "use MP3 streams first" setting: a station loads its direct (MP3)
+  /// streams before its HLS ones.
+  ///
+  /// Read at each stream load (a station switch, a reconnect). Settings
+  /// also reloads the station on air when it changes (see
+  /// `AppAudioHandler.reapplyStreamPreference`).
+  static ValueNotifier<bool> get preferDirectStreams => _preferDirectStreams;
+
+  /// Whether stream loads try direct streams before HLS: the setting is on,
+  /// or the platform's player plays HLS unreliably.
+  static bool get directStreamsFirst =>
+      _preferDirectStreams.value || platformPrefersDirectStreams;
+
+  /// Whether this platform always loads direct streams first, whatever the
+  /// setting: Windows and Linux play through just_audio_media_kit (libmpv
+  /// ~2023-09), whose support for HLS v9 with query params is flaky.
+  static bool get platformPrefersDirectStreams =>
+      Platform.isWindows || Platform.isLinux;
+
+  /// Where "the user turned it on or off" is stored. The key the PostHog
+  /// default settings marked a user's choice with, so earlier choices count.
+  static const _userSetKey = 'setting_user_set_preferDirectStreams';
+
+  /// Reads the stored setting. Call once at startup.
+  ///
+  /// Off unless the user chose it: a developer-mode setting, so a value a
+  /// PostHog default once stored for someone who never saw the switch is
+  /// reset.
+  static void initializeFromPrefs(SharedPreferences prefs) {
+    final userSet = prefs.getBool(_userSetKey) ?? false;
+    final stored = prefs.getBool(preferDirectStreamsKey) ?? false;
+    if (!userSet && stored) prefs.setBool(preferDirectStreamsKey, false);
+    _preferDirectStreams.value = userSet && stored;
+  }
+
+  /// Stores the user's choice, [enabled], for the next launches.
+  static Future<void> savePreferDirectStreams(bool enabled) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(preferDirectStreamsKey, enabled);
+    await prefs.setBool(_userSetKey, true);
+  }
+
+  /// Applies [enabled] to the stream loads from now on.
+  static void changePreferDirectStreams(bool enabled) {
+    _preferDirectStreams.value = enabled;
+  }
+}

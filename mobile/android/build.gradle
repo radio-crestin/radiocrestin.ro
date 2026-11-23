@@ -1,0 +1,71 @@
+buildscript {
+    ext.kotlin_version = '2.3.10'
+}
+
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+// Fix: Flutter's embedded KGP 1.8.0 pins kotlin-stdlib to 1.8.22 on the compiler classpath.
+// Kotlin 2.3.x compiler needs kotlin-stdlib 2.3.x (contains SpillingKt class).
+// We must force the correct version specifically on kotlinCompilerClasspath after KGP configures it.
+subprojects {
+    afterEvaluate {
+        configurations.matching { it.name == 'kotlinCompilerClasspath' }.configureEach {
+            resolutionStrategy.force(
+                "org.jetbrains.kotlin:kotlin-stdlib:${rootProject.ext.kotlin_version}",
+                "org.jetbrains.kotlin:kotlin-stdlib-common:${rootProject.ext.kotlin_version}"
+            )
+        }
+        configurations.matching { it.name.startsWith('kotlinCompilerPluginClasspath') }.configureEach {
+            resolutionStrategy.force(
+                "org.jetbrains.kotlin:kotlin-stdlib:${rootProject.ext.kotlin_version}",
+                "org.jetbrains.kotlin:kotlin-stdlib-common:${rootProject.ext.kotlin_version}"
+            )
+        }
+    }
+}
+
+subprojects {
+    afterEvaluate { project ->
+        if (project.hasProperty('android')) {
+            project.android {
+                if (namespace == null) {
+                    namespace project.group
+                }
+                compileOptions {
+                    sourceCompatibility JavaVersion.VERSION_11
+                    targetCompatibility JavaVersion.VERSION_11
+                }
+            }
+        }
+        // Force every Kotlin compile task to JVM 11 so it matches the Java target
+        // above. Some plugins (e.g. posthog_flutter) pin jvmTarget '1.8' in their
+        // own build.gradle; once we bump Java to 11, Gradle/AGP rejects the
+        // Java-11 / Kotlin-1.8 mismatch. Configuring the tasks directly is the
+        // reliable path on Kotlin 2.x, where the android.kotlinOptions bridge set
+        // in afterEvaluate no longer reaches the compile task.
+        project.tasks.matching {
+            it.name.startsWith('compile') && it.name.endsWith('Kotlin')
+        }.configureEach {
+            kotlinOptions {
+                jvmTarget = '11'
+            }
+        }
+    }
+}
+
+rootProject.buildDir = '../build'
+subprojects {
+    project.buildDir = "${rootProject.buildDir}/${project.name}"
+}
+subprojects {
+    project.evaluationDependsOn(':app')
+}
+
+tasks.register("clean", Delete) {
+    delete rootProject.buildDir
+}

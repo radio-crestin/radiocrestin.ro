@@ -1,0 +1,202 @@
+name: radio_crestin
+description: Lista radiouri crestine
+# The following line prevents the package from being accidentally published to
+# pub.dev using `flutter pub publish`. This is preferred for private packages.
+publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+
+# The following defines the version and build number for your application.
+# A version number is three numbers separated by dots, like 1.2.43
+# followed by an optional build number separated by a +.
+# Both the version and the builder number may be overridden in flutter
+# build by specifying --build-name and --build-number, respectively.
+# In Android, build-name is used as versionName while build-number used as versionCode.
+# Read more about Android versioning at https://developer.android.com/studio/publish/versioning
+# In iOS, build-name is used as CFBundleShortVersionString while build-number is used as CFBundleVersion.
+# Read more about iOS versioning at
+# https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
+# In Windows, build-name is used as the major, minor, and patch parts
+# of the product and file versions while build-number is used as the build suffix.
+version: 1.6.2+109
+
+
+environment:
+  sdk: '>=3.1.0 <4.0.0'
+
+# Dependencies specify other packages that your package needs in order to work.
+# To automatically upgrade your package dependencies to the latest versions
+# consider running `flutter pub upgrade --major-versions`. Alternatively,
+# dependencies can be manually updated by changing the version numbers below to
+# the latest version available on pub.dev. To see which dependencies have newer
+# versions available, run `flutter pub outdated`.
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # The following adds the Cupertino Icons font to your application.
+  # Use with the CupertinoIcons class for iOS style icons.
+  cupertino_icons: ^1.0.2
+  just_audio: ^0.10.5
+  just_audio_media_kit: ^2.1.0
+  # Direct dep so we can subscribe to interruption + becoming-noisy events
+  # for diagnostics; just_audio uses this transitively for session config.
+  audio_session: ^0.2.0
+  media_kit_libs_video: ^1.0.5
+  graphql_flutter: ^5.2.0-beta.6
+  graphql: ^5.1.3
+  gql: ^1.0.0
+  audio_service:
+    path: packages/audio_service
+  get_it: ^9.2.0
+  url_launcher: ^6.2.2
+  qr_flutter: ^4.1.0
+  package_info_plus: ^9.0.0
+  # 1.5.0: AbortableRequest, so a timed-out internet probe is cancelled.
+  http: ^1.5.0
+  path_provider: ^2.1.0
+  crypto: ^3.0.0
+  shared_preferences: ^2.1.1
+  share_plus: ^12.0.1
+  device_info_plus: ^12.3.0
+  android_id: ^0.6.0
+  font_awesome_flutter: ^11.0.0
+  firebase_core: ^4.4.0
+  posthog_flutter: ^5.30.0
+  flutter_launcher_icons: ^0.14.0
+  rxdart: ^0.28.0
+  fuzzywuzzy: ^1.1.6
+  # Vendored fork of sliding_up_panel2 3.3.0+1 — patched to settle the
+  # player panel when iOS cancels a drag (home gesture from the mini player),
+  # which left it stuck half open. See packages/sliding_up_panel2/PATCH.md.
+  sliding_up_panel2:
+    path: packages/sliding_up_panel2
+  upgrader: ^12.5.0
+  fluttertoast: ^9.0.0
+  flutter_sticky_header: ^0.8.0
+  in_app_review: ^2.0.8
+  like_button: ^2.0.5
+  extended_image: ^10.0.1
+  app_links: ^7.0.0
+  firebase_messaging: ^16.1.1
+  flutter_native_splash: ^2.4.1
+  flutter_carplay:
+    path: packages/flutter_carplay
+  # Pin to 9.1.0 to fix missing dSYM for objective_c.framework on App Store Connect.
+  # Remove once Flutter stable includes the fix from flutter/flutter#181533.
+  objective_c: 9.1.0
+  quick_actions: ^1.1.0
+  connectivity_plus: ^6.1.5
+  google_fonts: ^6.2.1
+  sqflite: ^2.4.2
+  sqflite_common_ffi: ^2.3.6
+  sqlite3_flutter_libs: ^0.5.27
+  flutter_svg: ^2.0.17
+  # Vendored fork of dpad 2.0.2 — patched to guard geometric D-pad
+  # traversal against unmounted focus nodes (off-screen list cells the
+  # viewport recycled), which crashed with "Cannot get renderObject of
+  # inactive element". See packages/dpad/PATCH.md.
+  dpad:
+    path: packages/dpad
+  flutter_chrome_cast:
+    path: packages/flutter_chrome_cast
+  flutter_airplay:
+    path: packages/flutter_airplay
+  # Video playback engine for TV channels and video playlist items. media_kit
+  # (libmpv) plays HLS/MP4 video with perfect audio+video sync in the app's
+  # "video mode". media_kit_libs_video (above) already ships the native libs.
+  media_kit: ^1.2.6
+  media_kit_video: ^2.0.1
+  # YouTube playlist items are rendered by the UI layer via an inline iframe
+  # player; the playback engine only orchestrates (skip in car/cast, pause in
+  # background) and receives ended/error callbacks from the UI.
+  youtube_player_iframe: ^6.0.2
+  flutter_markdown_plus: ^1.0.12
+  android_intent_plus: ^6.1.0
+  visibility_detector: ^0.4.0+2
+  markdown: ^7.3.1
+  webview_flutter: ^4.14.1
+
+dev_dependencies:
+  dependency_validator: ^5.0.3
+  flutter_test:
+    sdk: flutter
+  # The only tests are end-to-end, in integration_test/ (see CLAUDE.md).
+  integration_test:
+    sdk: flutter
+  # The "flutter_lints" package below contains a set of recommended lints to
+  # encourage good coding practices. The lint set provided by the package is
+  # activated in the `analysis_options.yaml` file located at the root of your
+  # package. See that file for information about deactivating specific lint
+  # rules and activating additional ones.
+  flutter_lints: ^6.0.0
+  graphql_codegen: ^3.0.1
+  build_runner: ^2.4.4
+  url_launcher_platform_interface: ^2.3.2
+
+# For information on the generic Dart part of this file, see the
+# following page: https://dart.dev/tools/pub/pubspec
+
+# The following section is specific to Flutter packages.
+flutter:
+
+  # Keep iOS on CocoaPods: the SwiftPM manifest of the local
+  # flutter_chrome_cast plugin targets iOS 15, but the GoogleCast
+  # Swift package requires iOS 16.
+  config:
+    enable-swift-package-manager: false
+
+  # The following line ensures that the Material Icons font is
+  # included with your application, so that you can use the icons in
+  # the material Icons class.
+  uses-material-design: true
+
+  # To add assets to your application, add an assets section, like this:
+  # assets:
+  #   - images/a_dot_burr.jpeg
+  #   - images/a_dot_ham.jpeg
+
+  # An image asset can refer to one or more resolution-specific "variants", see
+  # https://flutter.dev/assets-and-images/#resolution-aware
+
+  # For details regarding adding assets from package dependencies, see
+  # https://flutter.dev/assets-and-images/#from-packages
+
+  assets:
+    - assets/icons/ic_logo_filled.png
+    - assets/icons/carplay_logo.svg
+    - assets/icons/android_auto_logo.svg
+    - assets/fallback-stations.json
+    - assets/silence.m4a
+    # Bundled so google_fonts never fetches the app-bar font at runtime
+    # (Nunito-ExtraBold = GoogleFonts.nunito w800; OFL licence alongside).
+    - assets/google_fonts/
+    # Pictures of the station categories in the filter sheet (Fluent Emoji
+    # Flat, MIT licence alongside), named after each group's slug.
+    - assets/icons/station_groups/
+
+flutter_launcher_icons:
+  #  image_path: "assets/images/icon-128x128.png"
+  image_path_android: "assets/icons/ic_logo_filled.png"
+  image_path_ios: "assets/icons/ic_logo_filled.png"
+  android: true # can specify file name here e.g. "ic_launcher"
+  ios: true # can specify file name here e.g. "My-Launcher-Icon"
+  adaptive_icon_background: "#FD0057" # Solid color background for Android adaptive icons
+  adaptive_icon_foreground: "assets/icons/ic_foreground.png" # only available for Android 8.0 devices and above
+  adaptive_icon_foreground_inset: 16 # Adds padding to make icon fill the circle better
+  min_sdk_android: 21 # android min sdk min:16, default 21
+  remove_alpha_ios: true
+  background_color_ios: "#FD0057"
+  web:
+    generate: true
+    image_path: "assets/icons/ic_logo_filled.png"
+    background_color: "#FD0057"
+    theme_color: "#FD0057"
+  windows:
+    generate: true
+    image_path: "assets/icons/ic_logo_filled.png"
+    icon_size: 48 # min:48, max:256, default: 48
+  # The macOS icon is drawn on the macOS grid (rounded body, transparent
+  # margins), which this tool cannot do; generating would replace it with a
+  # full-bleed square.
+  macos:
+    generate: false
+    image_path: "assets/icons/ic_logo_filled.png"

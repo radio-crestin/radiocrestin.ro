@@ -1,0 +1,348 @@
+schema {
+  query: queryRoot
+  mutation: mutationRoot
+}
+
+"""Exposes a URL that specifies the behavior of this scalar."""
+directive @specifiedBy(
+  """The URL that specifies the behavior of this scalar."""
+  url: String!
+) on SCALAR
+
+"""Cache control directive for HTTP cache headers"""
+directive @cache_control(max_age: Int = 300, stale_while_revalidate: Int = null, stale_if_error: Int = null, max_stale: Int = null, public: Boolean = null, private: Boolean = null, no_cache: Boolean = false, immutable: Boolean = null) on QUERY | MUTATION
+
+"""
+Cache directive for field-level caching and query/mutation result caching
+"""
+directive @cached(ttl: Int = 60, refresh_while_caching: Boolean = true, include_user: Boolean = false) on QUERY | MUTATION
+
+type ArtistType {
+  id: Int!
+  created_at: DateTime!
+  updated_at: DateTime!
+  name: String!
+  thumbnail: DjangoImageType
+  thumbnail_url: String
+  dirty_metadata: Boolean!
+}
+
+input CreateShareLinkInput {
+  anonymous_id: String!
+  first_name: String = null
+  last_name: String = null
+  email: String = null
+}
+
+union CreateShareLinkPayload = CreateShareLinkResponse | OperationInfo
+
+type CreateShareLinkResponse {
+  success: Boolean!
+  message: String!
+  share_link: ShareLinkData
+}
+
+"""Date with time (isoformat)"""
+scalar DateTime
+
+type DjangoImageType {
+  name: String!
+  path: String!
+  size: Int!
+  url: String!
+  width: Int!
+  height: Int!
+}
+
+type DjangoModelType {
+  pk: ID!
+}
+
+union GetShareLinkPayload = GetShareLinkResponse | OperationInfo
+
+type GetShareLinkResponse {
+  success: Boolean!
+  message: String!
+  anonymous_id: String
+  share_link: ShareLinkData
+}
+
+"""
+The `JSON` scalar type represents JSON values as specified by [ECMA-404](https://ecma-international.org/wp-content/uploads/ECMA-404_2nd_edition_december_2017.pdf).
+"""
+scalar JSON
+
+input ListeningEventInput {
+  anonymous_session_id: String!
+  station_slug: String!
+  ip_address: String!
+  user_agent: String!
+  timestamp: String!
+  event_type: String!
+  bytes_transferred: Int!
+  request_duration: Float!
+  status_code: Int!
+  request_count: Int = null
+}
+
+type mutationRoot {
+  check_health: String!
+  health_check: String!
+  submit_listening_events(events: [ListeningEventInput!]!): SubmitListeningEventsPayload!
+  trigger_metadata_fetch(station_id: Int!): TriggerMetadataFetchPayload!
+  create_share_link(input: CreateShareLinkInput!): CreateShareLinkPayload!
+  get_share_link(anonymous_id: String!): GetShareLinkPayload!
+}
+
+type OperationInfo {
+  """List of messages returned by the operation."""
+  messages: [OperationMessage!]!
+}
+
+type OperationMessage {
+  """The kind of this message."""
+  kind: OperationMessageKind!
+
+  """The error message."""
+  message: String!
+
+  """
+  The field that caused the error, or `null` if it isn't associated with any particular field.
+  """
+  field: String
+
+  """The error code, or `null` if no error code was set."""
+  code: String
+}
+
+enum OperationMessageKind {
+  INFO
+  WARNING
+  ERROR
+  PERMISSION
+  VALIDATION
+}
+
+enum OrderDirection {
+  asc
+  desc
+}
+
+input PostOrderBy {
+  published: OrderDirection = null
+}
+
+type PostType {
+  id: Int!
+  station_id: Int!
+  created_at: DateTime!
+  updated_at: DateTime!
+  title: String!
+  link: String!
+  description: String
+  published: DateTime!
+  station: DjangoModelType!
+}
+
+type queryRoot {
+  """Get the currently authenticated user, or null if anonymous"""
+  current_user: UserType
+  health: Boolean!
+  current_time: String!
+  stations(order_by: StationOrderBy = null, limit: Int = null, offset: Int = null): [StationType!]!
+  station_groups(order_by: StationOrderBy = null, limit: Int = null, offset: Int = null): [StationGroupType!]!
+  stations_by_pk(id: Int!): StationType
+  artists(limit: Int = null, offset: Int = null, search: String = null): [ArtistType!]!
+  artists_by_pk(id: Int!): ArtistType
+  songs(limit: Int = null, offset: Int = null, search: String = null): [SongType!]!
+  songs_by_pk(id: Int!): SongType
+  posts(limit: Int = null, offset: Int = null): [PostType!]!
+  posts_by_pk(id: Int!): PostType
+  autocomplete(query: String!, search_type: String = "combined", limit: Int = 10): [JSON!]!
+}
+
+type ReviewType {
+  id: Int!
+  stars: Int!
+  message: String!
+}
+
+type ShareLinkData {
+  share_id: String!
+  url: String!
+  share_message: String!
+  visit_count: Int!
+  created_at: String!
+  is_active: Boolean!
+  share_section_title: String
+  share_section_message: String
+}
+
+type SongType {
+  id: Int!
+  artist_id: Int
+  artist: ArtistType
+  created_at: DateTime!
+  updated_at: DateTime!
+  name: String!
+  thumbnail: DjangoImageType
+  thumbnail_url: String
+  dirty_metadata: Boolean!
+}
+
+type StationGroupType {
+  id: Int!
+  station_to_station_groups: [StationToStationGroupType!]!
+  created_at: DateTime!
+  updated_at: DateTime!
+  slug: String!
+  name: String!
+  station_group_order: Float!
+  order: Int!
+}
+
+type StationNowPlayingType {
+  id: Int!
+  station_id: Int!
+  song_id: Int
+  listeners: Int
+  song: SongType
+  created_at: DateTime!
+  updated_at: DateTime!
+  timestamp: DateTime!
+  station: DjangoModelType!
+  raw_data: JSON!
+  error: JSON
+}
+
+input StationOrderBy {
+  order: OrderDirection = null
+  title: OrderDirection = null
+}
+
+type StationStreamType {
+  id: Int!
+  station_id: Int!
+  created_at: DateTime!
+  updated_at: DateTime!
+  station: DjangoModelType!
+  stream_url: String!
+  order: Int!
+  station_stream_order: Float
+  type: String!
+}
+
+type StationToStationGroupType {
+  id: Int!
+  station_id: Int!
+  group_id: Int!
+  created_at: DateTime!
+  updated_at: DateTime!
+  station: DjangoModelType!
+  group: DjangoModelType!
+  order: Int!
+  station_to_station_group_order: Float
+}
+
+type StationType {
+  id: Int!
+  latest_station_uptime_id: Int
+  latest_station_now_playing_id: Int
+  station_streams: [StationStreamType!]!
+  uptime: StationUptimeType
+  now_playing: StationNowPlayingType
+  thumbnail_url: String
+  description_action_title: String
+  description_link: String
+  feature_latest_post: Boolean!
+  facebook_page_id: String
+  created_at: DateTime!
+  updated_at: DateTime!
+  disabled: Boolean!
+  order: Int!
+  station_order: Float!
+  slug: String!
+  title: String!
+  website: String!
+  email: String!
+  generate_hls_stream: Boolean!
+  stream_url: String!
+  thumbnail: DjangoImageType
+  description: String
+  rss_feed: String
+  check_uptime: Boolean!
+  latest_station_uptime: DjangoModelType
+  latest_station_now_playing: DjangoModelType
+  hls_stream_url: String
+  hls_dvr_stream_url: String
+  proxy_stream_url: String
+  radio_crestin_listeners: Int
+  posts(limit: Int = null, order_by: PostOrderBy = null): [PostType!]!
+  total_listeners: Int
+  reviews: [ReviewType!]!
+  station_type: String
+  playlist_items: [StationPlaylistItemType!]
+}
+
+type StationPlaylistItemType {
+  id: Int!
+  order: Int
+  type: String
+  url: String
+  title: String
+  thumbnail_url: String
+  duration_seconds: Int
+}
+
+type StationUptimeType {
+  id: Int!
+  station_id: Int!
+  is_up: Boolean!
+  latency_ms: Int
+  created_at: DateTime!
+  updated_at: DateTime!
+  timestamp: DateTime!
+  station: DjangoModelType!
+  raw_data: JSON!
+}
+
+union SubmitListeningEventsPayload = SubmitListeningEventsResponse | OperationInfo
+
+type SubmitListeningEventsResponse {
+  success: Boolean!
+  message: String!
+  processed_count: Int!
+}
+
+union TriggerMetadataFetchPayload = TriggerMetadataFetchResponse | OperationInfo
+
+type TriggerMetadataFetchResponse {
+  success: Boolean!
+  message: String!
+}
+
+type UserType {
+  email_verified: DateTime
+  phone_verified: DateTime
+  is_anonymous: Boolean!
+  id: ID!
+  last_login: DateTime
+  is_superuser: Boolean!
+  first_name: String!
+  last_name: String!
+  is_active: Boolean!
+  date_joined: DateTime!
+  password: String!
+  anonymous_id: String
+  anonymous_id_verified: DateTime
+  email: String
+  phone_number: String
+  phone_number_verified: DateTime
+  checkout_phone_number: String
+  photo_url: String
+  address: String
+  is_staff: Boolean!
+  created_at: DateTime!
+  modified_at: DateTime!
+}
+
