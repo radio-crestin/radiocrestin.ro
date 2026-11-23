@@ -95,7 +95,6 @@ api/superapp/apps/
 - `api/`: the Django project (`superapp/apps/*`); its Docker build context
 - `streaming/`: stream controller, live-streaming image, station listing; with unit tests in `streaming/tests`
 - `station-thumbnails/`: original station artwork
-- `deploy/`: the private radio-crestin-deploy submodule (Kubernetes, secrets)
 
 ### File Organization (paths inside `api/`)
 - **Admins**: `superapp/apps/<app_name>/admin/<model_name_slug>.py`
@@ -153,37 +152,15 @@ make run-all-scrapers
 
 ## Deployment
 
-The project uses Kubernetes with Skaffold for deployment. Configuration is in `deploy/` (a submodule) with:
-- Component-based architecture
-- Git-crypt for secrets management
-- Multiple environment support
-- Certificate management with cert-manager
+Production deploys from the private `bringes-infrastructure` repo (env `radio_crestin_production`, Fleet on
+`prod-rke2`): build, CVE gate, tag bump, reconcile. Steps, and how to allow a new station's hosts through the
+egress proxy: [README.md#-deploying](README.md#-deploying).
 
-### Production Deployment Workflow
-
-1. **Commit changes** to the main branch
-2. **Create release**: `make create-new-release` — bumps the image tag, builds images, generates manifests,
-   commits the deploy repo and the submodule bump. Push the deploy repo, then PR the submodule bump. The image
-   tag is not the release version: GitHub releases use the repository's one `vX.Y.Z` (root README).
-3. **Apply manifests**: Use kubeconfig at `deploy/environments/radio_crestin_production/secrets/kube_config.yaml`
-   ```bash
-   export KUBECONFIG=deploy/environments/radio_crestin_production/secrets/kube_config.yaml
-   kubectl apply -f deploy/environments/radio_crestin_production/generated_outputs/generated_manifests/radio-crestin-radio-crestin-backend/ --recursive
-   ```
-4. **Restart deployments** if secrets changed (sealed secrets don't trigger pod restarts):
-   ```bash
-   kubectl rollout restart deployment/<deployment-name> -n radio-crestin-production
-   ```
-5. **Streamer pods** are managed by the stream controller (not Helm). To force env var updates:
-   - Delete streamer deployments: `kubectl delete deployments -n radio-crestin-production -l app=live-stream`
-   - The stream controller recreates them within 60 seconds with current env vars
-
-### Production Config
-- **Environment config**: `deploy/environments/radio_crestin_production/secrets/config_env.yaml`
-- **Kubeconfig**: `deploy/environments/radio_crestin_production/secrets/kube_config.yaml`
 - **Namespace**: `radio-crestin-production`
-- **Django service**: `radio-crestin-radio-crestin-backend-web` (port 80)
-- **Stream controller**: manages `live-stream-*` deployments dynamically via K8s API
+- **Kubeconfig**: `bringes-infrastructure/environments/bringes_production/secrets/clusters/prod-rke2/kubeconfig.yaml`
+- **Streamer pods** are managed by the stream controller (not Helm). To force env var updates, delete them
+  (`kubectl delete deployments -n radio-crestin-production -l app=live-stream`); the controller recreates
+  them within 60 seconds.
 
 ## Mobile Responsiveness
 

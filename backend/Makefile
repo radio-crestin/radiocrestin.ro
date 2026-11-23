@@ -49,13 +49,6 @@ create_backup:
 restore_backup:
 	docker-compose run web python3 manage.py restore_backup --file backups/backup.zip --backup-type essential_data
 
-# Release
-create-new-release-locally:
-	bash deploy/scripts/create-new-release.sh local
-
-create-new-release:
-	bash deploy/scripts/create-new-release.sh remote
-
 # Live Streaming Dev
 STREAM_STATION ?= radio-eldad
 STREAM_URL ?= https://c40.radioboss.fm/stream/170

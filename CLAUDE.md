@@ -9,7 +9,6 @@ Rules for the whole Radio Crestin monorepo. Open it first; then open the `CLAUDE
 | `web/` | radiocrestin.ro website (Astro + React) | [`web/CLAUDE.md`](web/CLAUDE.md) |
 | `mobile/` | Radio Crestin app (Flutter) | [`mobile/CLAUDE.md`](mobile/CLAUDE.md) |
 | `backend/` | API, admin, streaming (Django) | [`backend/CLAUDE.md`](backend/CLAUDE.md) |
-| `backend/deploy/` | Kubernetes deploy: a **private** submodule (radio-crestin-deploy) with git-crypt secrets | its own `CLAUDE.md` |
 
 Each app runs, tests and releases on its own: run commands from inside its folder. Setup steps for
 people are in each folder's `README.md`; the overview is the root [`README.md`](README.md).
@@ -26,4 +25,4 @@ people are in each folder's `README.md`; the overview is the root [`README.md`](
   links use `/releases/latest`. How to release: the root [`README.md`](README.md#-releases).
 - **API contract changes cross folders.** A change to what `backend/api` returns must keep the website
   and the app versions already in the stores working.
-- **Never commit secrets.** `.env` files are ignored; production secrets live only in `backend/deploy`.
+- **Never commit secrets.** `.env` files are ignored; production config and secrets live in the private `bringes-infrastructure` repo ([backend/README.md#-deploying](backend/README.md#-deploying)).
