@@ -1,0 +1,91 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="700" viewBox="0 0 1200 700" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Helvetica, Arial, sans-serif">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1c1418"/><stop offset="1" stop-color="#121216"/>
+    </linearGradient>
+    <linearGradient id="be" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#a3063d"/><stop offset="1" stop-color="#7a002b"/>
+    </linearGradient>
+    <linearGradient id="cl" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f2387a"/><stop offset="1" stop-color="#d81b60"/>
+    </linearGradient>
+    <filter id="sh" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#000" flood-opacity="0.45"/>
+    </filter>
+    <marker id="aA" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="16" markerHeight="16" markerUnits="userSpaceOnUse" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#ff5c93"/></marker>
+    <marker id="aD" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="16" markerHeight="16" markerUnits="userSpaceOnUse" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#4fc3f7"/></marker>
+    <marker id="aL" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="16" markerHeight="16" markerUnits="userSpaceOnUse" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#b9b9c6"/></marker>
+  </defs>
+
+  <rect width="1200" height="700" rx="28" fill="url(#bg)"/>
+
+  <!-- backend group -->
+  <rect x="292" y="56" width="320" height="560" rx="24" fill="#8f0133" fill-opacity="0.14" stroke="#c2185b" stroke-opacity="0.7" stroke-width="2" stroke-dasharray="8 7"/>
+  <text x="316" y="90" font-size="18" font-weight="700" fill="#ff8ab3" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">backend/</text>
+
+  <!-- arrows: audio (pink), data (blue), to listeners (grey) -->
+  <g fill="none" stroke-width="4" stroke-linecap="round">
+    <path d="M238,300 C275,300 275,210 308,210" stroke="#ff5c93" marker-end="url(#aA)"/>
+    <path d="M238,360 C275,360 275,470 308,470" stroke="#4fc3f7" stroke-dasharray="9 8" marker-end="url(#aD)"/>
+    <path d="M592,200 L676,200" stroke="#ff5c93" marker-end="url(#aA)"/>
+    <path d="M592,235 C640,235 630,445 676,445" stroke="#ff5c93" marker-end="url(#aA)"/>
+    <path d="M592,445 C640,445 630,235 676,235" stroke="#4fc3f7" stroke-dasharray="9 8" marker-end="url(#aD)"/>
+    <path d="M592,480 L676,480" stroke="#4fc3f7" stroke-dasharray="9 8" marker-end="url(#aD)"/>
+    <path d="M932,215 C965,215 960,300 990,300" stroke="#b9b9c6" marker-end="url(#aL)"/>
+    <path d="M932,465 C965,465 960,360 990,360" stroke="#b9b9c6" marker-end="url(#aL)"/>
+  </g>
+  <text x="265" y="512" font-size="15" fill="#4fc3f7" font-weight="600" text-anchor="middle">song</text>
+  <text x="265" y="531" font-size="15" fill="#4fc3f7" font-weight="600" text-anchor="middle">titles</text>
+
+  <!-- stations -->
+  <g filter="url(#sh)">
+    <rect x="32" y="222" width="206" height="216" rx="22" fill="#26262e" stroke="#3d3d48" stroke-width="1.5"/>
+  </g>
+  <text x="135" y="290" font-size="48" text-anchor="middle">📻</text>
+  <text x="135" y="340" font-size="25" font-weight="700" fill="#fff" text-anchor="middle">Radio stations</text>
+  <text x="135" y="370" font-size="17" fill="#a9a9b6" text-anchor="middle">60+ live streams</text>
+  <text x="135" y="396" font-size="17" fill="#a9a9b6" text-anchor="middle">across Romania</text>
+
+  <!-- streaming -->
+  <g filter="url(#sh)"><rect x="312" y="112" width="280" height="196" rx="20" fill="url(#be)"/></g>
+  <text x="452" y="170" font-size="40" text-anchor="middle">🎚️</text>
+  <text x="452" y="214" font-size="25" font-weight="700" fill="#fff" text-anchor="middle">Streaming</text>
+  <text x="452" y="242" font-size="15" fill="#ffc1d6" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">backend/streaming</text>
+  <text x="452" y="274" font-size="17" fill="#ffe3ec" text-anchor="middle">each station re-streamed as HLS</text>
+
+  <!-- api -->
+  <g filter="url(#sh)"><rect x="312" y="356" width="280" height="226" rx="20" fill="url(#be)"/></g>
+  <text x="452" y="414" font-size="40" text-anchor="middle">🎙️</text>
+  <text x="452" y="458" font-size="25" font-weight="700" fill="#fff" text-anchor="middle">API + admin</text>
+  <text x="452" y="486" font-size="15" fill="#ffc1d6" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">backend/api</text>
+  <text x="452" y="518" font-size="17" fill="#ffe3ec" text-anchor="middle">stations · song on air</text>
+  <text x="452" y="544" font-size="17" fill="#ffe3ec" text-anchor="middle">listeners · reviews</text>
+
+  <!-- website -->
+  <g filter="url(#sh)"><rect x="680" y="112" width="252" height="196" rx="20" fill="url(#cl)"/></g>
+  <text x="806" y="170" font-size="40" text-anchor="middle">🌐</text>
+  <text x="806" y="214" font-size="25" font-weight="700" fill="#fff" text-anchor="middle">Website</text>
+  <text x="806" y="242" font-size="15" fill="#ffe0ea" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">web/</text>
+  <text x="806" y="274" font-size="17" fill="#fff" text-anchor="middle">radiocrestin.ro</text>
+
+  <!-- app -->
+  <g filter="url(#sh)"><rect x="680" y="370" width="252" height="196" rx="20" fill="url(#cl)"/></g>
+  <text x="806" y="428" font-size="40" text-anchor="middle">📱</text>
+  <text x="806" y="472" font-size="25" font-weight="700" fill="#fff" text-anchor="middle">App</text>
+  <text x="806" y="500" font-size="15" fill="#ffe0ea" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">mobile/</text>
+  <text x="806" y="532" font-size="17" fill="#fff" text-anchor="middle">phone · car · TV · desktop</text>
+
+  <!-- listeners -->
+  <g filter="url(#sh)"><rect x="994" y="232" width="176" height="196" rx="22" fill="#fce4ec"/></g>
+  <text x="1082" y="300" font-size="48" text-anchor="middle">🎧</text>
+  <text x="1082" y="350" font-size="25" font-weight="700" fill="#5a0a26" text-anchor="middle">Listeners</text>
+  <text x="1082" y="380" font-size="17" fill="#8f0133" text-anchor="middle">tap and play</text>
+
+  <!-- legend -->
+  <g font-size="17" fill="#d6d6e0">
+    <line x1="300" y1="660" x2="350" y2="660" stroke="#ff5c93" stroke-width="4" stroke-linecap="round"/>
+    <text x="362" y="666">audio, as HLS</text>
+    <line x1="530" y1="660" x2="580" y2="660" stroke="#4fc3f7" stroke-width="4" stroke-dasharray="9 8" stroke-linecap="round"/>
+    <text x="592" y="666">data, from <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" fill="#4fc3f7">api.radiocrestin.ro</tspan></text>
+  </g>
+</svg>

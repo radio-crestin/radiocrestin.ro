@@ -23,12 +23,32 @@
   <a href="https://play.google.com/store/apps/details?id=com.radiocrestin.radio_crestin"><b>🤖 Google Play</b></a>
 </p>
 
+### 🌐 Website
+
 <p align="center">
-  <img src="web/docs/screenshots/desktop-light.jpg" alt="The radiocrestin.ro website" width="560" />
+  <img src="web/docs/screenshots/desktop-dark-playing.jpg" alt="radiocrestin.ro playing Radio Gosen, dark theme" width="620" />
   &nbsp;
-  <img src="mobile/docs/readme/screenshots/home-dark.jpg" alt="The app: every station with the song playing now" width="150" />
+  <img src="web/docs/screenshots/mobile-dark-playing.jpg" alt="radiocrestin.ro on a phone, playing Radio Gosen" width="150" />
+</p>
+
+### 📱 App
+
+<p align="center">
+  <img src="mobile/docs/readme/screenshots/home-dark.jpg" alt="The app: every station with the song playing now" width="170" />
   &nbsp;
-  <img src="mobile/docs/readme/screenshots/player-dark.jpg" alt="The app's full player" width="150" />
+  <img src="mobile/docs/readme/screenshots/player-dark.jpg" alt="The app's full player" width="170" />
+  &nbsp;
+  <img src="mobile/release-notes/media/v1.6.0/search.jpg" alt="Search by song or singer" width="170" />
+  &nbsp;
+  <img src="mobile/release-notes/media/v1.6.0/cast.jpg" alt="Listen on another device: Chromecast, AirPlay, TV, car" width="170" />
+</p>
+
+### 🎙️ Backend admin
+
+<p align="center">
+  <img src="backend/docs/screenshots/admin-stations-dark.jpg" alt="Admin portal: the stations list" width="400" />
+  &nbsp;
+  <img src="backend/docs/screenshots/admin-station-edit-dark.jpg" alt="Admin portal: editing a station" width="400" />
 </p>
 
 ## 📦 What's in this repository
@@ -43,31 +63,9 @@ One repository, three apps. Each folder has its own README with setup steps, scr
 
 ## ⚙️ How it fits together
 
-```mermaid
-flowchart LR
-    S("📻 <b>Radio stations</b><br/>60+ live streams")
-    subgraph backend ["backend/"]
-      ST("🎚️ <b>streaming</b><br/>re-streams each station<br/>as HLS")
-      API("🎙️ <b>api</b><br/>stations · song on air<br/>listeners · admin")
-    end
-    WEB("🌐 <b>web/</b><br/>radiocrestin.ro")
-    APP("📱 <b>mobile/</b><br/>Radio Crestin app")
-    L("🎧 <b>Listeners</b>")
-
-    S --> ST --> API
-    S -.song titles.-> API
-    API -- api.radiocrestin.ro --> WEB & APP
-    WEB & APP --> L
-
-    classDef source fill:#2B2B2B,stroke:#555555,color:#FFFFFF
-    classDef backend fill:#8F0133,stroke:#8F0133,color:#FFFFFF
-    classDef client fill:#E91E63,stroke:#E91E63,color:#FFFFFF
-    classDef out fill:#FCE4EC,stroke:#E91E63,color:#5A0A26
-    class S source
-    class ST,API backend
-    class WEB,APP client
-    class L out
-```
+<p align="center">
+  <img src="docs/architecture.svg" alt="Radio stations feed the backend: streaming re-serves their audio as HLS, the API reads their song titles. The website and the app play that audio and read that data, for listeners." width="100%" />
+</p>
 
 - 🎚️ **Streaming** (`backend/streaming`) pulls each station's stream once and re-serves it as HLS, so a
   slow station server never stalls thousands of listeners.
@@ -124,12 +122,3 @@ Questions, ideas or a station to add: **contact@radio-crestin.com**, or
 
 This project may be used only by Christian organizations, for non-commercial purposes, in projects the
 owner has approved. See [LICENSE](LICENSE).
-
-<details>
-<summary>History</summary>
-
-Until November 2026 the three apps lived in separate repositories, now archived:
-[radio-crestin-web](https://github.com/radio-crestin/radio-crestin-web),
-[radio-crestin-mobile-app](https://github.com/radio-crestin/radio-crestin-mobile-app) and the backend,
-which was this repository. Their full history is preserved here: `git log -- web/` shows the website's.
-</details>
