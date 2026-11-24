@@ -1466,6 +1466,34 @@ void main() {
         ));
         expect(reason?.apiName, entry['hidden_by'], reason: entry['name']);
       }
+      for (final entry in cases['show_again_cases'] as List) {
+        final rules = AnnouncementHideRules.fromJson(entry['rules'] as Map);
+        final counts = _countsFromCase(entry['counts'] as Map);
+        expect(rules.comesBack(counts), entry['comes_back'],
+            reason: '${entry['name']}: comes back');
+        expect(rules.isHidden(counts), entry['hidden'],
+            reason: '${entry['name']}: hidden');
+        expect(rules.onVisit(counts).shown, !(entry['hidden'] as bool),
+            reason: '${entry['name']}: shown at the visit');
+      }
+      for (final entry in cases['timelines'] as List) {
+        final rules = AnnouncementHideRules.fromJson(entry['rules'] as Map);
+        var counts = const AnnouncementCounts();
+        final steps = (entry['steps'] as List).cast<String>();
+        for (final (i, step) in steps.indexed) {
+          if (step == 'x') {
+            counts = counts.copyWith(dismissed: true);
+            continue;
+          }
+          final visit = rules.onVisit(counts);
+          counts = visit.counts;
+          expect(visit.shown, step != '-',
+              reason: '${entry['name']}: visit ${i + 1} ("$step")');
+          if (!visit.shown) continue;
+          counts = rules.onImpression(counts);
+          if (step == 'v+c') counts = rules.onClick(counts);
+        }
+      }
       for (final entry in cases['click_cases'] as List) {
         final rules = AnnouncementHideRules.fromJson({
           'hide_after_clicks': 1,
@@ -1546,6 +1574,52 @@ void main() {
           reason: 'the one reminder after the click');
       expect(await verseShowsAtNextLaunch(app), isFalse,
           reason: 'hidden once its reminder was seen');
+    });
+
+    announcementTest(
+        'show_again_*: seen once, it comes back once after a launch hidden',
+        (app) async {
+      server.announcements.add({
+        ...AnnouncementFixtures.verse(),
+        'max_impressions': 1,
+        'show_again_times': 1,
+        'show_again_after_visits': 1,
+      });
+      await app.pullToRefresh();
+      await app.waitFor(() => app.showsText(AnnouncementFixtures.verseTitle),
+          reason: 'the card at its first launch');
+      await app.pumpFor(const Duration(seconds: 3));
+      final launches = [
+        for (var i = 0; i < 4; i++) await verseShowsAtNextLaunch(app),
+      ];
+      expect(launches, [false, true, false, false],
+          reason: 'hidden one launch, back once, then hidden for good');
+      final prefs = await SharedPreferences.getInstance();
+      expect(
+          jsonDecode(prefs.getString('announcements_returns') ?? '{}')
+              [AnnouncementFixtures.verseSlug],
+          1,
+          reason: 'the device remembers it came back once');
+    });
+
+    announcementTest('show_again_* never brings back a closed card',
+        (app) async {
+      server.announcements.add({
+        ...AnnouncementFixtures.verse(),
+        'max_impressions': 5,
+        'show_again_times': 3,
+        'show_again_after_visits': 1,
+      });
+      await app.pullToRefresh();
+      await app.waitFor(() => app.showsText(AnnouncementFixtures.verseTitle),
+          reason: 'the card before closing it');
+      await app.tapDismiss();
+      await app.waitFor(() => RadioApp.announcementCard.evaluate().isEmpty,
+          reason: 'the card to go once closed');
+      for (var i = 0; i < 3; i++) {
+        expect(await verseShowsAtNextLaunch(app), isFalse,
+            reason: 'closed: launch ${i + 1} after closing');
+      }
     });
 
     announcementTest(
@@ -1941,6 +2015,16 @@ void main() {
 
 /// Forgets every announcement the device kept or was told, as a fresh
 /// install, and starts the announcements anew.
+/// The device counts of a shared case (absent: 0, not closed).
+AnnouncementCounts _countsFromCase(Map counts) => AnnouncementCounts(
+      impressions: counts['impressions'] as int? ?? 0,
+      clicks: counts['clicks'] as int? ?? 0,
+      impressionsAfterClicks: counts['impressions_after_clicks'] as int? ?? 0,
+      dismissed: counts['dismissed'] as bool? ?? false,
+      returns: counts['returns'] as int? ?? 0,
+      visitsWhileHidden: counts['visits_while_hidden'] as int? ?? 0,
+    );
+
 Future<void> _forgetAnnouncements(RadioApp app) async {
   final prefs = await SharedPreferences.getInstance();
   for (final key in prefs.getKeys().toList()) {
