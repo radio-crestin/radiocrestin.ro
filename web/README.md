@@ -91,8 +91,10 @@ Conventions, SEO rules and how announcements work: [`CLAUDE.md`](CLAUDE.md).
 The site is an **assets-only Cloudflare Worker**, `radiocrestin-ro` ([`wrangler.jsonc`](wrangler.jsonc)): no Worker
 code runs, so every request is served from Cloudflare's asset store and edge cache, free and unmetered.
 
-- **Workers Builds** builds it on every push to `main` that changes `web/` (root `web`, `npm run build`,
-  then `npx wrangler deploy`), and uploads a preview version for every pull request.
+- **Workers Builds** builds and deploys it on every push to `main`, whatever folder it changes (root `web`,
+  `npm run build`, then `npx wrangler deploy`), and uploads a preview version for every pull request.
+- **Deploy hook:** the backend POSTs a Workers Builds deploy hook (`WEB_DEPLOY_HOOK_URL`, a secret in
+  `bringes-infrastructure`) when stations or announcements change, so the site rebuilds with the new data.
 - **Routing:** the route `www.radiocrestin.ro/*` sends the site's traffic to the Worker. The proxied `www` DNS
   record stays in `bringes-infrastructure`; removing the route falls back to that record's origin.
 - **Headers and redirects:** `public/_headers` (caching, security, CORS) and the generated `dist/_redirects`
