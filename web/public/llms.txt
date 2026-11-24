@@ -1,6 +1,6 @@
 # RadioCrestin.ro
 
-> Ascultă radio creștin online gratuit: 64 de posturi de radio creștine din România, cu muzică creștină non-stop, predici creștine și emisiuni live — direct din browser sau din aplicația mobilă, fără cont.
+> Ascultă radio creștin online gratuit: 70 de posturi de radio creștine din România, cu muzică creștină non-stop, predici creștine și emisiuni live — direct din browser sau din aplicația mobilă, fără cont.
 
 RadioCrestin.ro reunește cele mai importante radiouri creștine românești într-un singur loc, atât pentru românii din țară, cât și pentru cei din diaspora. Interfața și conținutul sunt în limba română.
 
@@ -17,6 +17,7 @@ Cum funcționează: utilizatorul accesează site-ul, alege un post de radio din 
 - [Întrebări frecvente](https://www.radiocrestin.ro/intrebari-frecvente/): răspunsuri despre ascultarea radioului creștin online
 - [Descarcă aplicația Radio Creștin](https://www.radiocrestin.ro/descarca-aplicatia-radio-crestin/): aplicația mobilă gratuită pentru Android și iOS
 - [Church Hub](https://www.radiocrestin.ro/church-hub/): program gratuit de proiecție versuri pentru biserică, alternativă la EasyWorship
+- [Contact](https://www.radiocrestin.ro/contact/): Scrie echipei Radio Creștin: trimite un mesaj, recomandă un post de radio creștin sau creează un anunț în aplicație și pe site.
 
 ## Aplicația mobilă
 
@@ -25,7 +26,7 @@ Aplicația Radio Creștin este disponibilă gratuit pe Android și iOS, cu un ra
 - [Radio Creștin pe Google Play (Android)](https://play.google.com/store/apps/details?id=com.radiocrestin.radio_crestin)
 - [Radio Creștin pe App Store (iOS)](https://apps.apple.com/ro/app/radio-crestin/id6451270471)
 
-## Posturi de radio creștine disponibile (64)
+## Posturi de radio creștine disponibile (70)
 
 ### Aripi Spre Cer
 
@@ -98,6 +99,22 @@ Radio Calea Spre Cer - Un altfel de Radio, un radio pentru sufletul tau.
 
 Suntem o echipă de oameni care doresc să transmită credința în Dumnezeu mai departe prin muzică, meditații și podcasturi creștine. Daca vrei să descoperi mai multe despre Dumnezeu, ești în locul potrivit, iar noi ne-am bucura să te cunoaștem!
 
+### RVE Bacau
+
+- [Ascultă RVE Bacau live online](https://www.radiocrestin.ro/rve-bacau/)
+- [Website oficial RVE Bacau](https://radiovoceaevangheliei.ro/)
+
+RVE Bacău – Radio Vocea Evangheliei
+Un reper de lumină și speranță în zona Bacău, RVE transmite mesaje biblice, muzică creștină și programe care aduc încurajare și adevăr. O prezență caldă și constantă, aproape de inimile celor care caută pace și direcție.
+
+### RVE Barlad
+
+- [Ascultă RVE Barlad live online](https://www.radiocrestin.ro/rve-barlad/)
+- [Website oficial RVE Barlad](https://radiovoceaevangheliei.ro/)
+
+RVE Bârlad – Radio Vocea Evangheliei
+Un reper de lumină și speranță în zona Bârlad, RVE transmite mesaje biblice, muzică creștină și programe care aduc încurajare și adevăr. O prezență caldă și constantă, aproape de inimile celor care caută pace și direcție.
+
 ### RVE Brasov
 
 - [Ascultă RVE Brasov live online](https://www.radiocrestin.ro/rve-brasov/)
@@ -137,6 +154,14 @@ Radio Vocea Evangheliei Constanța este un post de radio creștin contemporan, r
 Radio Vocea Evangheliei Hunedoara este un post de radio creștin contemporan, relevant care îsi propune să aducă Evanghelia cât mai multor oameni. 
 Frecventa FM: 104.4 MHz
 
+### RVE Ludus
+
+- [Ascultă RVE Ludus live online](https://www.radiocrestin.ro/rve-ludus/)
+- [Website oficial RVE Ludus](https://radiovoceaevangheliei.ro/)
+
+RVE Luduș – Radio Vocea Evangheliei
+Un reper de lumină și speranță în zona Luduș, RVE transmite mesaje biblice, muzică creștină și programe care aduc încurajare și adevăr. O prezență caldă și constantă, aproape de inimile celor care caută pace și direcție.
+
 ### RVE Oradea
 
 - [Ascultă RVE Oradea live online](https://www.radiocrestin.ro/rve-oradea/)
@@ -167,6 +192,14 @@ Obiectivul nostru este să fim Vocea Evangheliei, să prezentăm Vestea Bună î
 - Să atenționeze în legătură cu anumite pericole sau să atragă atenția asupra unor nereguli care se produc în societate sau în viața oamenilor;
 - Să motiveze ascultătorii la dragoste și fapte bune, la o viață curată trăită în conformitate cu, Cuvântul Sfânt;
 - Să aducem bucurie în fiecare casă unde se ascultă Radio Vocea Evangheliei
+
+### RVE Piatra Neamt
+
+- [Ascultă RVE Piatra Neamt live online](https://www.radiocrestin.ro/rve-piatra-neamt/)
+- [Website oficial RVE Piatra Neamt](https://radiovoceaevangheliei.ro/)
+
+RVE Piatra-Neamț – Radio Vocea Evangheliei
+Un reper de lumină și speranță în zona Piatra-Neamț, RVE transmite mesaje biblice, muzică creștină și programe care aduc încurajare și adevăr. O prezență caldă și constantă, aproape de inimile celor care caută pace și direcție.
 
 ### RVE Predici
 
@@ -397,6 +430,13 @@ s.a.
 
 Radio Ekklesia , un radio pentru Sufletul tau! www.RadioEkklesia.com ... un nou program de ascultare, va asteptam!
 
+### Radio El Roi
+
+- [Ascultă Radio El Roi live online](https://www.radiocrestin.ro/radio-el-roi/)
+- [Website oficial Radio El Roi](https://web.radioelroi.com)
+
+Radio El Roi aduce împreună muzică aleasă cu grijă, lecturi din Scriptură, devoționale și emisiuni cu tematică biblică și spirituală. Fiecare program este gândit să ofere un moment de reflecție, încurajare și zidire sufletească. Printr-o selecție atentă de conținut, ne dorim ca Radio El Roi să fie o prezență care aduce speranță, lumină și apropiere de Dumnezeu în viața celor care ne ascultă.
+
 ### Radio Eldad
 
 - [Ascultă Radio Eldad live online](https://www.radiocrestin.ro/radio-eldad/)
@@ -455,6 +495,13 @@ Radio Filadelfia s-a născut pe 1 decembrie 2008. Este unda celor ce au urechi s
 
 Radio Filadelfia s-a născut pe 1 decembrie 2008. Este unda celor ce au urechi să asculte! Muzica şi mesajul care te duc la Cruce!
 „Ți-am pus înainte o ușă deschisă, pe care nimeni n-o poate închide!” (Apocalipsa 3:8)
+
+### Radio Flacăra Rusaliilor
+
+- [Ascultă Radio Flacăra Rusaliilor live online](https://www.radiocrestin.ro/radio-flacara-rusaliilor/)
+- [Website oficial Radio Flacăra Rusaliilor](https://radio-flacararusaliilor.ro/)
+
+Scopul acestui post de radio este să ajute la răspândirea Evangheliei Domnului nostru Isus Hristos începând din Sebiș și mergând până la marginile pământului. Apoi, se dorește ca prin emisiunile difuzate orice ascultător să se edifice spiritual și să aducă glorie Dumnezeului veșnic.
 
 ### Radio Gosen
 
