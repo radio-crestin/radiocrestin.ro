@@ -115,6 +115,12 @@ export interface IAnnouncement {
   impressions_after_click?: number | null;
   /** Which clicks count: "main" (default) the button or the card, "any" also links in the description. */
   hide_click_target?: HideClickTarget | null;
+  /**
+   * Show it again (only together): after max_impressions or the click rules hid it, it comes back
+   * this many times, each after show_again_after_visits visits hidden. Never after closing.
+   */
+  show_again_times?: number | null;
+  show_again_after_visits?: number | null;
   filters?: IAnnouncementFilters | null;
 }
 

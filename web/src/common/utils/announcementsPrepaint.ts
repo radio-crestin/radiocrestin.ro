@@ -22,6 +22,9 @@ export interface PrepaintItem {
   c?: number;
   /** impressions_after_click (only with c) */
   y?: number;
+  /** show_again_times and show_again_after_visits (only together, and with m or c) */
+  t?: number;
+  u?: number;
   /** 1 when it can't be closed (dismissible: false): an old close no longer hides it */
   n?: 1;
   /** 1 when closing the old, hard-coded banner (LEGACY_DISMISSED_KEY) dismissed this one */
@@ -50,6 +53,10 @@ export interface PrepaintLocal {
   clicks?: Record<string, number>;
   /** impressions since the click that reached hide_after_clicks (set from that click on) */
   afterClicks?: Record<string, number>;
+  /** times it already came back (show_again_times) */
+  returns?: Record<string, number>;
+  /** visits since the current round's rules hid it (show_again_after_visits) */
+  hiddenVisits?: Record<string, number>;
   rotationCursor?: number;
   country?: string | null;
   /** the LEGACY_DISMISSED_KEY value; set means the old banner was closed */
@@ -101,12 +108,18 @@ export function annEligibility(
       const f = it.f || {};
       const c = local.country;
       // this slug's entry in one of the local maps
-      const g = (k: "dismissed" | "impressions" | "clicks" | "afterClicks"): any => (local[k] || {})[s];
+      const g = (k: "dismissed" | "impressions" | "clicks" | "afterClicks" | "returns" | "hiddenVisits"): any =>
+        (local[k] || {})[s];
       if ((g("dismissed") || (it.l && local.w)) && !it.n) return false;
       // comparisons with an absent field are false, so absent means "no limit"
-      if ((g("impressions") || 0) >= it.m! || it.a! > now || it.e! <= now) return false;
-      // hide_after_clicks reached: hidden at once, or (y) after y more impressions
-      if (g("clicks") >= it.c! && !((g("afterClicks") || 0) < it.y!)) return false;
+      if (it.a! > now || it.e! <= now) return false;
+      // max_impressions, or hide_after_clicks reached (hidden at once, or (y) after y more
+      // impressions), hide it, unless it comes back at this visit (t times, after u hidden visits)
+      if (
+        ((g("impressions") || 0) >= it.m! || (g("clicks") >= it.c! && !((g("afterClicks") || 0) < it.y!))) &&
+        !((g("returns") || 0) < it.t! && (g("hiddenVisits") || 0) >= it.u!)
+      )
+        return false;
       if (feed && feed.t > d.b && !feed.s.includes(s)) return false;
       if (f.p != null && !f.p.includes(vp)) return false;
       if (f.lo && !f.lo.some((l) => l === lang || l === lang.split("-")[0])) return false;
@@ -205,6 +218,10 @@ export const toPrepaintData = (snapshot: IAnnouncementsSnapshot): PrepaintData =
       if (a.hide_after_clicks) {
         item.c = a.hide_after_clicks;
         if (a.impressions_after_click) item.y = a.impressions_after_click;
+      }
+      if (a.show_again_times && a.show_again_after_visits && (item.m != null || item.c)) {
+        item.t = a.show_again_times;
+        item.u = a.show_again_after_visits;
       }
       if (a.dismissible === false) item.n = 1;
       const platforms = nonEmpty(f.platforms);

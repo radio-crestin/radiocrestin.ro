@@ -36,6 +36,8 @@ const emptyState = (extra: Partial<AnnouncementsLocalState> = {}): Announcements
   impressions: {},
   clicks: {},
   afterClicks: {},
+  returns: {},
+  hiddenVisits: {},
   rotationCursor: 0,
   seen: {},
   ...extra,

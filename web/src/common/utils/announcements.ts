@@ -18,6 +18,10 @@ export interface AnnouncementsLocalState {
   clicks: Record<string, number>;
   /** Impressions since the click that reached hide_after_clicks, for impressions_after_click. */
   afterClicks: Record<string, number>;
+  /** Times it already came back (show_again_times). */
+  returns: Record<string, number>;
+  /** Page loads since the current round's rules hid it (show_again_after_visits). */
+  hiddenVisits: Record<string, number>;
   rotationCursor: number;
   seen: Record<string, string>;
   /** From Cloudflare via the events API: undefined = never asked, null = unknown. */
@@ -65,6 +69,60 @@ export const withClick = (
 /** Whether `a` must leave the current view at this click: hide_after_clicks reached, no reminders. */
 export const hiddenAtClick = (a: IAnnouncement, clicks: Record<string, number>): boolean =>
   !!a.hide_after_clicks && !a.impressions_after_click && (clicks[a.slug] || 0) >= a.hide_after_clicks;
+
+type RoundCounts = Pick<
+  AnnouncementsLocalState,
+  "dismissed" | "impressions" | "clicks" | "afterClicks" | "returns" | "hiddenVisits"
+>;
+
+/** Whether max_impressions or the click rules (not closing) hide `a` in the current round. */
+const hiddenByRules = (a: IAnnouncement, s: RoundCounts): boolean => {
+  const impressions = s.impressions[a.slug] || 0;
+  if (a.max_impressions != null && impressions >= a.max_impressions) return true;
+  if (!a.hide_after_clicks || (s.clicks[a.slug] || 0) < a.hide_after_clicks) return false;
+  return !a.impressions_after_click || (s.afterClicks[a.slug] || 0) >= a.impressions_after_click;
+};
+
+const without = (map: Record<string, number>, slug: string) => {
+  if (!(slug in map)) return map;
+  const { [slug]: _, ...rest } = map;
+  return rest;
+};
+
+/**
+ * A visit (a page load where the announcements load), the spec's on_visit for "show it again".
+ * `shown` is what this visit shows (annEligibility, which already lets a returning one through):
+ * one the rules hide but that shows has come back, so a new round starts (its counts back to 0,
+ * returns + 1); one they hide that doesn't show counts one more visit hidden. Closed: never back.
+ */
+export const withVisit = (
+  state: RoundCounts,
+  announcements: IAnnouncement[],
+  shown: string[],
+): Pick<RoundCounts, "impressions" | "clicks" | "afterClicks" | "returns" | "hiddenVisits"> | null => {
+  let next = null as ReturnType<typeof withVisit>;
+  for (const a of announcements) {
+    if (!a.show_again_times || !a.show_again_after_visits) continue;
+    const s = next ? { ...state, ...next } : state;
+    if ((a.dismissible !== false && s.dismissed[a.slug]) || !hiddenByRules(a, s)) continue;
+    next = shown.includes(a.slug)
+      ? {
+          impressions: without(s.impressions, a.slug),
+          clicks: without(s.clicks, a.slug),
+          afterClicks: without(s.afterClicks, a.slug),
+          returns: { ...s.returns, [a.slug]: (s.returns[a.slug] || 0) + 1 },
+          hiddenVisits: without(s.hiddenVisits, a.slug),
+        }
+      : {
+          impressions: s.impressions,
+          clicks: s.clicks,
+          afterClicks: s.afterClicks,
+          returns: s.returns,
+          hiddenVisits: { ...s.hiddenVisits, [a.slug]: (s.hiddenVisits[a.slug] || 0) + 1 },
+        };
+  }
+  return next;
+};
 
 export const placementOf = (a: IAnnouncement): Placement => a.placement ?? "home";
 
