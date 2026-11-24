@@ -14,6 +14,7 @@ import '../constants.dart';
 import '../globals.dart' as globals;
 import 'analytics_service.dart';
 import 'announcement.dart';
+import 'announcement_hide_rules.dart';
 import 'announcement_store.dart';
 import 'image_cache_service.dart';
 
@@ -35,8 +36,9 @@ enum AnnouncementEvent {
       };
 }
 
-/// What was tapped for a `clicked` event: the whole card or its button.
-enum ClickTarget { card, button }
+/// What was tapped for a `clicked` event: the whole card, its button, or a
+/// link in its description.
+enum ClickTarget { card, button, link }
 
 /// The announcements the home card shows, in the order it shows them.
 class AnnouncementList {
@@ -124,6 +126,10 @@ class AnnouncementsService with WidgetsBindingObserver {
 
   /// Slugs whose impression this launch already reported.
   final Set<String> _seenThisLaunch = {};
+
+  /// Slugs whose `hide_after_clicks` was reached this launch: the
+  /// impression on screen then is not one of the reminders after it.
+  final Set<String> _clicksReachedThisLaunch = {};
 
   /// Slugs taken off the screen for this launch only (hide_after_seconds).
   final Set<String> _hiddenThisLaunch = {};
@@ -338,23 +344,29 @@ class AnnouncementsService with WidgetsBindingObserver {
           .where((item) => item.stationSlugs.contains(slug))
           .toList();
 
-  bool _isShowable(Announcement item, DateTime now) {
-    final max = item.maxImpressions;
-    return item.isLiveAt(now) &&
-        item.filters.matches(
-          platform: platform,
-          locale: _locale,
-          appVersion: globals.appVersion,
-          country: _store.country,
-        ) &&
-        !_hiddenThisLaunch.contains(item.slug) &&
-        (alwaysShow ||
-            (!_store.dismissed.contains(item.slug) &&
-                // Seen this launch: its last allowed impression stays.
-                (max == null ||
-                    max <= 0 ||
-                    _seenThisLaunch.contains(item.slug) ||
-                    _store.impressions(item.slug) < max)));
+  bool _isShowable(Announcement item, DateTime now) =>
+      item.isLiveAt(now) &&
+      item.filters.matches(
+        platform: platform,
+        locale: _locale,
+        appVersion: globals.appVersion,
+        country: _store.country,
+      ) &&
+      !_hiddenThisLaunch.contains(item.slug) &&
+      (alwaysShow || !_isHiddenOnDevice(item));
+
+  /// Whether this device's history hides [item], per its hide rules
+  /// (`backend/docs/announcement-hide-rules.md`).
+  bool _isHiddenOnDevice(Announcement item) {
+    final reason = item.hideRules.hideReason(_store.counts(item.slug));
+    return switch (reason) {
+      null => false,
+      // Seen this launch: its last allowed impression stays on screen.
+      HideReason.maxImpressions ||
+      HideReason.impressionsAfterClick =>
+        !_seenThisLaunch.contains(item.slug),
+      HideReason.dismissed || HideReason.clicks => true,
+    };
   }
 
   /// The server's order (never re-sorted). Rotate and random turn it to
@@ -382,6 +394,10 @@ class AnnouncementsService with WidgetsBindingObserver {
   void recordImpression(Announcement item, int position, {String? station}) {
     if (!_seenThisLaunch.add(item.slug)) return;
     unawaited(_store.countImpression(item.slug));
+    if (item.hideRules.clicksReached(_store.clicks(item.slug)) &&
+        !_clicksReachedThisLaunch.contains(item.slug)) {
+      unawaited(_store.countImpressionAfterClicks(item.slug));
+    }
     report(AnnouncementEvent.impression, item, position, station: station);
   }
 
@@ -399,6 +415,23 @@ class AnnouncementsService with WidgetsBindingObserver {
   void hideForThisLaunch(Announcement item) {
     _hiddenThisLaunch.add(item.slug);
     _removeFromScreen(item.slug);
+  }
+
+  /// Counts a click toward [item]'s `hide_after_clicks`, when its rules
+  /// count a click on [target]; the click that reaches it takes the card
+  /// off the screen, unless reminders follow.
+  void _countClick(Announcement item, ClickTarget? target) {
+    final rules = item.hideRules;
+    final limit = rules.hideAfterClicks;
+    final counts = rules.countsClick(
+        AnnouncementEvent.clicked.apiName, target?.name);
+    if (limit == null || !counts) return;
+    final clicks = _store.clicks(item.slug) + 1;
+    unawaited(_store.countClick(item.slug));
+    if (clicks == limit) _clicksReachedThisLaunch.add(item.slug);
+    if (rules.hidesAtClick && rules.clicksReached(clicks)) {
+      hideForThisLaunch(item);
+    }
   }
 
   /// Marks the station announcements [items] as opened.
@@ -457,6 +490,7 @@ class AnnouncementsService with WidgetsBindingObserver {
       ...details,
       'at': DateTime.now().toUtc().toIso8601String(),
     });
+    if (event == AnnouncementEvent.clicked) _countClick(item, target);
     final urgent = event == AnnouncementEvent.clicked ||
         event == AnnouncementEvent.pushOpened;
     if (urgent) {

@@ -13,6 +13,7 @@ import 'package:radio_crestin/appAudioHandler.dart';
 import 'package:get_it/get_it.dart';
 import 'package:radio_crestin/components/StationsList.dart';
 import 'package:radio_crestin/services/announcement.dart';
+import 'package:radio_crestin/services/announcement_hide_rules.dart';
 import 'package:radio_crestin/services/announcements_service.dart';
 import 'package:radio_crestin/theme.dart';
 import 'package:radio_crestin/widgets/announcement_banner.dart';
@@ -26,6 +27,7 @@ import 'package:webview_flutter/webview_flutter.dart';
 import 'package:youtube_player_iframe/youtube_player_iframe.dart';
 
 import 'harness/announcement_fixtures.dart';
+import 'harness/announcement_hide_rule_cases.dart';
 import 'harness/fake_radio_server.dart';
 import 'harness/network_conditions.dart';
 import 'harness/recording_launcher.dart';
@@ -1448,6 +1450,114 @@ void main() {
               2,
           reason: 'both dismissals to reach the backend',
           timeout: const Duration(seconds: 15));
+    });
+
+    test("the hide rules agree with the backend's shared cases", (_) async {
+      final cases = jsonDecode(announcementHideRuleCases) as Map;
+      for (final entry in cases['hide_cases'] as List) {
+        final rules = AnnouncementHideRules.fromJson(entry['rules'] as Map);
+        final counts = entry['counts'] as Map;
+        final reason = rules.hideReason(AnnouncementCounts(
+          impressions: counts['impressions'] as int? ?? 0,
+          clicks: counts['clicks'] as int? ?? 0,
+          impressionsAfterClicks:
+              counts['impressions_after_clicks'] as int? ?? 0,
+          dismissed: counts['dismissed'] as bool? ?? false,
+        ));
+        expect(reason?.apiName, entry['hidden_by'], reason: entry['name']);
+      }
+      for (final entry in cases['click_cases'] as List) {
+        final rules = AnnouncementHideRules.fromJson({
+          'hide_after_clicks': 1,
+          'hide_click_target': entry['hide_click_target']
+        });
+        final event = entry['event'] as Map;
+        expect(
+            rules.countsClick(
+                event['type'] as String, event['target'] as String?),
+            entry['counts'],
+            reason: entry['name']);
+      }
+    });
+
+    /// Taps the verse's button, which would open WhatsApp, with the
+    /// system's link opener stood in for, so the app stays on screen.
+    Future<void> clickVerseButton(RadioApp app) async {
+      final launcher = RecordingLauncher();
+      final systemLauncher = UrlLauncherPlatform.instance;
+      UrlLauncherPlatform.instance = launcher;
+      try {
+        await app.tapText('Join the group');
+        await app.waitFor(() => launcher.launches.isNotEmpty,
+            reason: 'the button to open its link');
+      } finally {
+        UrlLauncherPlatform.instance = systemLauncher;
+      }
+    }
+
+    /// Starts the announcements anew, as the next launch, and gives the
+    /// card on screen the time to count as seen.
+    Future<bool> verseShowsAtNextLaunch(RadioApp app) async {
+      await app.coldStartAnnouncements();
+      await app.pumpFor(const Duration(seconds: 3));
+      return app.showsText(AnnouncementFixtures.verseTitle);
+    }
+
+    announcementTest(
+        'hide_after_clicks: 1 takes the card away at the click, for good',
+        (app) async {
+      server.announcements.add({
+        ...AnnouncementFixtures.verse(),
+        'hide_after_clicks': 1,
+        'hide_click_target': 'main',
+      });
+      await app.pullToRefresh();
+      await app.waitFor(() => app.showsText(AnnouncementFixtures.verseTitle),
+          reason: 'the card before the click');
+      await clickVerseButton(app);
+      await app.waitFor(() => RadioApp.announcementCard.evaluate().isEmpty,
+          reason: 'the card to go at the click; ${app.describeCard()}');
+      await app.waitFor(
+          () => server.announcementEvents.any((e) =>
+              e['slug'] == AnnouncementFixtures.verseSlug &&
+              e['type'] == 'clicked' &&
+              e['target'] == 'button'),
+          reason: 'the click to reach the backend');
+      expect(await verseShowsAtNextLaunch(app), isFalse,
+          reason: 'a clicked announcement does not come back');
+    });
+
+    announcementTest(
+        'hide_after_clicks: 1 with impressions_after_click: 1 shows it once '
+        'more after the click, then hides it', (app) async {
+      server.announcements.add({
+        ...AnnouncementFixtures.verse(),
+        'hide_after_clicks': 1,
+        'impressions_after_click': 1,
+      });
+      await app.pullToRefresh();
+      await app.waitFor(() => app.showsText(AnnouncementFixtures.verseTitle),
+          reason: 'the card before the click');
+      await clickVerseButton(app);
+      await app.pumpFor(const Duration(seconds: 2));
+      expect(app.showsText(AnnouncementFixtures.verseTitle), isTrue,
+          reason: 'the card stays after the click: a reminder follows');
+      expect(await verseShowsAtNextLaunch(app), isTrue,
+          reason: 'the one reminder after the click');
+      expect(await verseShowsAtNextLaunch(app), isFalse,
+          reason: 'hidden once its reminder was seen');
+    });
+
+    announcementTest(
+        'a list without the click rules shows a clicked card as before',
+        (app) async {
+      server.announcements.add(AnnouncementFixtures.verse());
+      await app.pullToRefresh();
+      await app.waitFor(() => app.showsText(AnnouncementFixtures.verseTitle),
+          reason: 'the card before the click');
+      await clickVerseButton(app);
+      expect(await verseShowsAtNextLaunch(app), isTrue,
+          reason: 'no rules: clicks never hide it');
     });
 
     announcementTest("an admin's own SVG icon shows on the card", (app) async {
