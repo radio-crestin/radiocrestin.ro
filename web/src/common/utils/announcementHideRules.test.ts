@@ -9,6 +9,8 @@ import { annEligibility, toPrepaintData, type PrepaintLocal } from "@/utils/anno
 
 const NOW = Date.parse("2026-11-24T10:00:00Z");
 
+const emptyStore = { dismissed: {}, impressions: {}, clicks: {}, afterClicks: {}, returns: {}, hiddenVisits: {} };
+
 const snapshotOf = (a: Partial<IAnnouncement>): IAnnouncementsSnapshot => ({
   built_at: NOW - 1000,
   settings: { rotation_mode: "fixed" },
@@ -27,6 +29,8 @@ interface Counts {
   clicks?: number;
   impressions_after_clicks?: number;
   dismissed?: boolean;
+  returns?: number;
+  visits_while_hidden?: number;
 }
 
 /** What the store keeps for a device with these counts. */
@@ -35,6 +39,8 @@ const localOf = (c: Counts): PrepaintLocal => ({
   clicks: { a: c.clicks ?? 0 },
   ...(c.impressions_after_clicks !== undefined && { afterClicks: { a: c.impressions_after_clicks } }),
   ...(c.dismissed && { dismissed: { a: "2026-11-01T00:00:00Z" } }),
+  returns: { a: c.returns ?? 0 },
+  hiddenVisits: { a: c.visits_while_hidden ?? 0 },
 });
 
 describe("hide rules: the backend's shared cases", () => {
@@ -45,6 +51,58 @@ describe("hide rules: the backend's shared cases", () => {
   it.each(cases.click_cases)("click: $name", ({ hide_click_target, event, counts }) => {
     const e = event as { type: "clicked" | "dismissed" | "page_viewed" | "secondary_clicked"; target?: "card" | "button" | "link" };
     expect(countsAsHideClick(hide_click_target as "main" | "any" | null, e.type, e.target)).toBe(counts);
+  });
+});
+
+describe("show it again: the backend's shared cases", () => {
+  beforeEach(() => useAnnouncementsStore.setState(emptyStore));
+
+  it.each(cases.show_again_cases)("$name", ({ rules, counts, hidden, comes_back }) => {
+    const a = { slug: "a", title: "A", ...(rules as Partial<IAnnouncement>) };
+    const local = localOf(counts);
+    const shown = shows(a, local);
+    expect(shown).toBe(!hidden);
+    // the visit: one that comes back starts a new round
+    useAnnouncementsStore.setState({ dismissed: {}, ...local } as never);
+    useAnnouncementsStore.getState().countVisit([a], shown ? ["a"] : []);
+    const after = useAnnouncementsStore.getState();
+    expect(after.returns.a).toBe((counts.returns ?? 0) + (comes_back ? 1 : 0));
+    if (comes_back) {
+      expect([after.impressions.a, after.clicks.a, after.afterClicks.a, after.hiddenVisits.a]).toEqual([
+        undefined, undefined, undefined, undefined,
+      ]);
+    }
+  });
+
+  // Replays like the backend's test: each step is a page load decided by the pre-paint code, then
+  // counted by the store (visit, impression, click or close) as the website does.
+  it.each(cases.timelines)("timeline: $name", ({ rules, steps }) => {
+    const a = { slug: "a", title: "A", ...(rules as Partial<IAnnouncement>) };
+    const store = () => useAnnouncementsStore.getState();
+    const seen = steps.map((step) => {
+      const shown = shows(a, store());
+      store().countVisit([a], shown ? ["a"] : []);
+      if (!shown) return "-";
+      store().countImpression("a");
+      if (step === "v+c") store().countClick(a, "button");
+      else if (step === "x") store().dismiss("a");
+      return step;
+    });
+    expect(seen).toEqual(steps);
+  });
+
+  it("is left out of the pre-paint data without max impressions or click rules, or alone", () => {
+    expect(toPrepaintData(snapshotOf({ show_again_times: 2, show_again_after_visits: 3 })).i).toEqual([{ s: "a" }]);
+    expect(toPrepaintData(snapshotOf({ max_impressions: 2, show_again_times: 2 })).i).toEqual([{ s: "a", m: 2 }]);
+    expect(toPrepaintData(snapshotOf({ hide_after_clicks: 1, show_again_times: 2, show_again_after_visits: 3 })).i)
+      .toEqual([{ s: "a", c: 1, t: 2, u: 3 }]);
+  });
+
+  it("counts no visits without the rule", () => {
+    const a = { slug: "a", title: "A", max_impressions: 1 };
+    useAnnouncementsStore.setState({ ...emptyStore, impressions: { a: 1 } });
+    useAnnouncementsStore.getState().countVisit([a], []);
+    expect(useAnnouncementsStore.getState().hiddenVisits).toEqual({});
   });
 });
 
@@ -64,9 +122,7 @@ describe("hide rules: missing fields keep today's behaviour", () => {
 });
 
 describe("hide rules: counting on a device", () => {
-  beforeEach(() =>
-    useAnnouncementsStore.setState({ dismissed: {}, impressions: {}, clicks: {}, afterClicks: {} }),
-  );
+  beforeEach(() => useAnnouncementsStore.setState(emptyStore));
   const store = () => useAnnouncementsStore.getState();
   const showsNow = (a: Partial<IAnnouncement>) => shows(a, store());
 
