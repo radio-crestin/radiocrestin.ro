@@ -123,8 +123,8 @@ shipped together. Releases before 1.6.2 were tagged per app (`mobile/v…`, `bac
 
 ## 🤝 Contributing
 
-1. Branch from `main` and open a pull request. `main` is protected: a PR merges once **CI** passes, and CI
-   checks only the apps your change touches.
+1. Branch from `main` and open a pull request. `main` is protected: a PR merges once **CI** passes (CI
+   checks only the apps your change touches), and a member of the `maintainers` team merges it.
 2. Keep commits small, each with a message that says what changed and why.
 3. Each app's `CLAUDE.md` holds its conventions (for people and for AI assistants alike).
 
