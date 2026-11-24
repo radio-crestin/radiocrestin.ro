@@ -17,7 +17,7 @@ from django.db.models import Q
 from django.utils import timezone
 
 from ..models import (
-    ActionType, Announcement, AnnouncementSettings, AnnouncementStatus, Placement,
+    ActionType, Announcement, AnnouncementSettings, AnnouncementStatus, CountOn, Placement,
 )
 from ..models.announcement_categories import text_color_on
 from ..models.announcement_validators import PUBLIC_SLUG_PATTERN
@@ -61,7 +61,8 @@ def _image_url(file_field, absolute_url: AbsoluteUrl) -> Optional[str]:
     return url if url.lower().startswith(('https://', 'http://')) else None
 
 
-def _action_payload(action_type, url, web_target, intent_uri, fallback_url, station, form=None) -> dict:
+def _action_payload(action_type, url, web_target, intent_uri, fallback_url, station, form=None,
+                    share_text='') -> dict:
     return _compact({
         'type': action_type,
         'url': url or None,
@@ -70,6 +71,7 @@ def _action_payload(action_type, url, web_target, intent_uri, fallback_url, stat
         'fallback_url': fallback_url or None,
         'station_slug': _station_slug(station),
         'form_slug': form.slug if form and is_public_slug(form.slug) else None,
+        'share_text': share_text or None if action_type == ActionType.SHARE else None,
     })
 
 
@@ -88,6 +90,7 @@ def _button_payload(announcement: Announcement) -> Optional[dict]:
         'action': _action_payload(
             announcement.action_type, announcement.action_url, announcement.web_link_target,
             announcement.android_intent_uri, announcement.fallback_url, announcement.station, announcement.form,
+            announcement.share_text,
         ),
     })
 
@@ -155,6 +158,31 @@ def _icon_payload(announcement: Announcement, absolute_url: AbsoluteUrl) -> dict
     return {**icon, 'size': announcement.icon_size} if icon else {}
 
 
+def _hide_rules_payload(announcement: Announcement) -> dict:
+    """The click rules and the waits (backend/docs/announcement-hide-rules.md), only when set: older clients
+    ignore them."""
+    payload = {}
+    if announcement.hide_after_clicks is not None:
+        payload.update(_compact({
+            'hide_after_clicks': announcement.hide_after_clicks,
+            'impressions_after_click': announcement.impressions_after_click,
+            'hide_click_target': announcement.hide_click_target,
+        }))
+    waits = _compact({
+        'show_after': announcement.show_after,
+        **({'show_again_times': announcement.show_again_times, 'show_again_after': announcement.show_again_after}
+           if announcement.show_again_times is not None and announcement.show_again_after is not None else {}),
+    })
+    if waits:
+        payload['count_on'] = announcement.count_on
+        if announcement.count_on == CountOn.PLAYBACKS:
+            slugs = [slug for slug in map(_station_slug, announcement.count_stations.all()) if slug]
+            if slugs:
+                payload['count_station_slugs'] = sorted(slugs)
+        payload.update(waits)
+    return payload
+
+
 def serialize(announcement: Announcement, absolute_url: AbsoluteUrl = lambda url: url, *,
               with_page_body: bool = False) -> dict:
     """One announcement as the API sends it; the single endpoint also sends the page body."""
@@ -175,6 +203,7 @@ def serialize(announcement: Announcement, absolute_url: AbsoluteUrl = lambda url
         'ends_at': iso(announcement.ends_at),
         'hide_after_seconds': announcement.hide_after_seconds,
         'max_impressions': announcement.max_impressions,
+        **_hide_rules_payload(announcement),
         'filters': filters_payload(announcement),
     })
 
@@ -208,7 +237,7 @@ def _listed(statuses, now: datetime):
         .filter(status__in=statuses, starts_at__lte=now + UPCOMING_WINDOW)
         .filter(Q(ends_at__isnull=True) | Q(ends_at__gt=now))
         .select_related('category', 'station', 'form')
-        .prefetch_related('stations')
+        .prefetch_related('stations', 'count_stations')
         .order_by('position', 'id')
     )
 
@@ -220,7 +249,7 @@ def _live(statuses, slug: str, now: datetime) -> Optional[Announcement]:
         .filter(slug=slug, status__in=statuses, starts_at__lte=now)
         .filter(Q(ends_at__isnull=True) | Q(ends_at__gt=now))
         .select_related('category', 'station', 'form')
-        .prefetch_related('stations')
+        .prefetch_related('stations', 'count_stations')
         .first()
     )
 

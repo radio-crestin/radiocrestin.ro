@@ -13,8 +13,10 @@ import '../pages/AnnouncementPage.dart';
 import '../types/Station.dart';
 import '../widgets/announcement_form_sheet.dart';
 import '../widgets/bottom_toast.dart';
+import '../widgets/share_handler.dart';
 import 'announcement.dart';
 import 'announcement_copy.dart';
+import 'share_service.dart';
 import 'station_data_service.dart';
 
 /// Runs what an announcement's button does, as the announcements spec's
@@ -37,6 +39,7 @@ class AnnouncementActions {
       AnnouncementActionType.page => _openPage(item),
       AnnouncementActionType.station => _playStation(action.stationSlug),
       AnnouncementActionType.form => _openForm(item, action.formSlug),
+      AnnouncementActionType.share => _share(action),
       AnnouncementActionType.none => Future.value(true),
     };
     if (!await done) _showFailure();
@@ -122,6 +125,51 @@ class AnnouncementActions {
     await GetIt.instance<AppAudioHandler>()
         .playStation(station, fromFavorites: false);
     return true;
+  }
+
+  /// The app's page in the stores, shared when the listener's own link
+  /// can't be had.
+  static const _appPageUrl =
+      'https://www.radiocrestin.ro/descarca-aplicatia-radio-crestin';
+
+  /// The text shared with the link when the announcement sets none.
+  static const _defaultShareText = 'Instalează și tu aplicația Radio Creștin '
+      'și ascultă peste 60 de stații de radio creștin:';
+
+  /// Opens the system share sheet with the announcement's link and text;
+  /// either absent, the listener's own invitation link (which counts the
+  /// friends who open it) and the app's text.
+  static Future<bool> _share(AnnouncementAction action) async {
+    final link = safeLink(action.url)?.toString() ?? await _ownShareUrl();
+    await ShareHandler.shareViaSystem(
+      shareUrl: link,
+      shareMessage: action.shareText ?? _defaultShareText,
+      sharePositionOrigin: _screenCenter(),
+    );
+    return true;
+  }
+
+  /// The listener's invitation link: the one kept, else asked for (a
+  /// few seconds at most), else the app's page.
+  static Future<String> _ownShareUrl() async {
+    final kept = ShareLinkCache.read();
+    if (kept != null) return kept.generateShareUrl();
+    final getIt = GetIt.instance;
+    if (!getIt.isRegistered<AppAudioHandler>()) return _appPageUrl;
+    final fetched = await ShareService(getIt<AppAudioHandler>().graphqlClient)
+        .getPersonalShareLink()
+        .timeout(const Duration(seconds: 3), onTimeout: () => null);
+    return fetched?.generateShareUrl() ?? _appPageUrl;
+  }
+
+  /// Where the iPad's share popover points: the middle of the screen, as
+  /// the button that asked may already be gone (a push, a closed card).
+  static Rect? _screenCenter() {
+    final context = globals.navigatorKey.currentContext;
+    if (context == null) return null;
+    final size = MediaQuery.sizeOf(context);
+    return Rect.fromCenter(
+        center: size.center(Offset.zero), width: 1, height: 1);
   }
 
   /// [slug]'s station, waiting a little for the list on a cold start.

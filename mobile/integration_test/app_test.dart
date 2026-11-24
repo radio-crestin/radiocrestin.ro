@@ -4,6 +4,7 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -13,6 +14,7 @@ import 'package:radio_crestin/appAudioHandler.dart';
 import 'package:get_it/get_it.dart';
 import 'package:radio_crestin/components/StationsList.dart';
 import 'package:radio_crestin/services/announcement.dart';
+import 'package:radio_crestin/services/announcement_hide_rules.dart';
 import 'package:radio_crestin/services/announcements_service.dart';
 import 'package:radio_crestin/theme.dart';
 import 'package:radio_crestin/widgets/announcement_banner.dart';
@@ -26,6 +28,7 @@ import 'package:webview_flutter/webview_flutter.dart';
 import 'package:youtube_player_iframe/youtube_player_iframe.dart';
 
 import 'harness/announcement_fixtures.dart';
+import 'harness/announcement_hide_rule_cases.dart';
 import 'harness/fake_radio_server.dart';
 import 'harness/network_conditions.dart';
 import 'harness/recording_launcher.dart';
@@ -1516,6 +1519,271 @@ void main() {
           timeout: const Duration(seconds: 15));
     });
 
+    test("the hide rules agree with the backend's shared cases", (_) async {
+      final cases = jsonDecode(announcementHideRuleCases) as Map;
+      for (final entry in cases['hide_cases'] as List) {
+        final rules = AnnouncementHideRules.fromJson(entry['rules'] as Map);
+        final reason =
+            rules.hideReason(_countsFromCase(entry['counts'] as Map));
+        expect(reason?.apiName, entry['hidden_by'], reason: entry['name']);
+      }
+      for (final entry in cases['show_again_cases'] as List) {
+        final rules = AnnouncementHideRules.fromJson(entry['rules'] as Map);
+        final counts = _countsFromCase(entry['counts'] as Map);
+        expect(rules.comesBack(counts), entry['comes_back'],
+            reason: '${entry['name']}: comes back');
+        expect(rules.isHidden(counts), entry['hidden'],
+            reason: '${entry['name']}: hidden');
+        expect(rules.onVisit(counts).shown, !(entry['hidden'] as bool),
+            reason: '${entry['name']}: shown at the visit');
+      }
+      // Visit steps: 'v' shows (one impression), '-' hidden, 'v+c' shows
+      // and its button is clicked, 'x' shows and is closed. Event steps:
+      // 'o' another announcement seen, 'p' a playback of any station,
+      // 'p:<slug>' of that station.
+      for (final entry in cases['timelines'] as List) {
+        final rules = AnnouncementHideRules.fromJson(entry['rules'] as Map);
+        var counts = const AnnouncementCounts();
+        final steps = (entry['steps'] as List).cast<String>();
+        for (final (i, step) in steps.indexed) {
+          if (step == 'o') {
+            counts = rules.onOtherImpression(counts);
+            continue;
+          }
+          if (step == 'p' || step.startsWith('p:')) {
+            final station = step == 'p' ? 'any-station' : step.substring(2);
+            counts = rules.onPlayback(counts, station);
+            continue;
+          }
+          final visit = rules.onVisit(counts);
+          counts = visit.counts;
+          expect(visit.shown, step != '-',
+              reason: '${entry['name']}: step ${i + 1} ("$step")');
+          if (!visit.shown) continue;
+          counts = rules.onImpression(counts);
+          if (step == 'v+c') counts = rules.onClick(counts);
+          if (step == 'x') counts = counts.copyWith(dismissed: true);
+        }
+      }
+      for (final entry in cases['click_cases'] as List) {
+        final rules = AnnouncementHideRules.fromJson({
+          'hide_after_clicks': 1,
+          'hide_click_target': entry['hide_click_target']
+        });
+        final event = entry['event'] as Map;
+        expect(
+            rules.countsClick(
+                event['type'] as String, event['target'] as String?),
+            entry['counts'],
+            reason: entry['name']);
+      }
+    });
+
+    /// Taps the verse's button, which would open WhatsApp, with the
+    /// system's link opener stood in for, so the app stays on screen.
+    Future<void> clickVerseButton(RadioApp app) async {
+      final launcher = RecordingLauncher();
+      final systemLauncher = UrlLauncherPlatform.instance;
+      UrlLauncherPlatform.instance = launcher;
+      try {
+        await app.tapText('Join the group');
+        await app.waitFor(() => launcher.launches.isNotEmpty,
+            reason: 'the button to open its link');
+      } finally {
+        UrlLauncherPlatform.instance = systemLauncher;
+      }
+    }
+
+    /// Starts the announcements anew, as the next launch, and gives the
+    /// card on screen the time to count as seen.
+    Future<bool> verseShowsAtNextLaunch(RadioApp app) async {
+      await app.coldStartAnnouncements();
+      await app.pumpFor(const Duration(seconds: 3));
+      return app.showsText(AnnouncementFixtures.verseTitle);
+    }
+
+    announcementTest(
+        'hide_after_clicks: 1 takes the card away at the click, for good',
+        (app) async {
+      server.announcements.add({
+        ...AnnouncementFixtures.verse(),
+        'hide_after_clicks': 1,
+        'hide_click_target': 'main',
+      });
+      await app.pullToRefresh();
+      await app.waitFor(() => app.showsText(AnnouncementFixtures.verseTitle),
+          reason: 'the card before the click');
+      await clickVerseButton(app);
+      await app.waitFor(() => RadioApp.announcementCard.evaluate().isEmpty,
+          reason: 'the card to go at the click; ${app.describeCard()}');
+      await app.waitFor(
+          () => server.announcementEvents.any((e) =>
+              e['slug'] == AnnouncementFixtures.verseSlug &&
+              e['type'] == 'clicked' &&
+              e['target'] == 'button'),
+          reason: 'the click to reach the backend');
+      expect(await verseShowsAtNextLaunch(app), isFalse,
+          reason: 'a clicked announcement does not come back');
+    });
+
+    announcementTest(
+        'hide_after_clicks: 1 with impressions_after_click: 1 shows it once '
+        'more after the click, then hides it', (app) async {
+      server.announcements.add({
+        ...AnnouncementFixtures.verse(),
+        'hide_after_clicks': 1,
+        'impressions_after_click': 1,
+      });
+      await app.pullToRefresh();
+      await app.waitFor(() => app.showsText(AnnouncementFixtures.verseTitle),
+          reason: 'the card before the click');
+      await clickVerseButton(app);
+      await app.pumpFor(const Duration(seconds: 2));
+      expect(app.showsText(AnnouncementFixtures.verseTitle), isTrue,
+          reason: 'the card stays after the click: a reminder follows');
+      expect(await verseShowsAtNextLaunch(app), isTrue,
+          reason: 'the one reminder after the click');
+      expect(await verseShowsAtNextLaunch(app), isFalse,
+          reason: 'hidden once its reminder was seen');
+    });
+
+    announcementTest(
+        'show_again_*: seen once, it comes back once after a launch hidden',
+        (app) async {
+      server.announcements.add({
+        ...AnnouncementFixtures.verse(),
+        'max_impressions': 1,
+        'count_on': 'visits',
+        'show_again_times': 1,
+        'show_again_after': 1,
+      });
+      await app.pullToRefresh();
+      await app.waitFor(() => app.showsText(AnnouncementFixtures.verseTitle),
+          reason: 'the card at its first launch');
+      await app.pumpFor(const Duration(seconds: 3));
+      final launches = [
+        for (var i = 0; i < 4; i++) await verseShowsAtNextLaunch(app),
+      ];
+      expect(launches, [false, true, false, false],
+          reason: 'hidden one launch, back once, then hidden for good');
+      final prefs = await SharedPreferences.getInstance();
+      expect(
+          jsonDecode(prefs.getString('announcements_returns') ?? '{}')
+              [AnnouncementFixtures.verseSlug],
+          1,
+          reason: 'the device remembers it came back once');
+    });
+
+    announcementTest('show_again_* never brings back a closed card',
+        (app) async {
+      server.announcements.add({
+        ...AnnouncementFixtures.verse(),
+        'max_impressions': 5,
+        'count_on': 'visits',
+        'show_again_times': 3,
+        'show_again_after': 1,
+      });
+      await app.pullToRefresh();
+      await app.waitFor(() => app.showsText(AnnouncementFixtures.verseTitle),
+          reason: 'the card before closing it');
+      await app.tapDismiss();
+      await app.waitFor(() => RadioApp.announcementCard.evaluate().isEmpty,
+          reason: 'the card to go once closed');
+      for (var i = 0; i < 3; i++) {
+        expect(await verseShowsAtNextLaunch(app), isFalse,
+            reason: 'closed: launch ${i + 1} after closing');
+      }
+    });
+
+    announcementTest(
+        'show_after counted in playbacks: it waits for a station heard',
+        (app) async {
+      server.announcements.add({
+        ...AnnouncementFixtures.verse(),
+        'count_on': 'playbacks',
+        'count_station_slugs': [Stations.alpha.slug],
+        'show_after': 1,
+      });
+      await app.pullToRefresh();
+      await app.pumpFor(const Duration(seconds: 3));
+      expect(app.showsText(AnnouncementFixtures.verseTitle), isFalse,
+          reason: 'no playback yet: it waits');
+      expect(await verseShowsAtNextLaunch(app), isFalse,
+          reason: 'a launch is no playback');
+
+      await app.expectPlaying(Stations.alpha,
+          since: await app.tapStation(Stations.alpha));
+      // A playback counts once heard as long as for "Most played" (30 s).
+      await app.pumpFor(const Duration(seconds: 32));
+      expect(app.showsText(AnnouncementFixtures.verseTitle), isFalse,
+          reason: 'a wait that ends during a launch shows it at the next');
+      final prefs = await SharedPreferences.getInstance();
+      expect(
+          jsonDecode(prefs.getString('announcements_waited') ?? '{}')
+              [AnnouncementFixtures.verseSlug],
+          1,
+          reason: 'the playback of alpha counted');
+
+      expect(await verseShowsAtNextLaunch(app), isTrue,
+          reason: 'it waited one playback: it shows');
+      await app.pumpFor(const Duration(seconds: 3));
+      expect(
+          prefs.getStringList('announcements_started'),
+          contains(AnnouncementFixtures.verseSlug),
+          reason: 'seen once, show_after is over');
+    });
+
+    announcementTest('a share button opens the system share sheet',
+        (app) async {
+      const link = 'https://www.radiocrestin.ro/descarca';
+      const text = 'Ascultă și tu Radio Creștin';
+      server.announcements.add({
+        ...AnnouncementFixtures.verse(),
+        'button': {
+          ...AnnouncementFixtures.verse()['button']! as Map,
+          'action': {'type': 'share', 'url': link, 'share_text': text},
+        },
+      });
+      final messenger = app.tester.binding.defaultBinaryMessenger;
+      const channel = MethodChannel('dev.fluttercommunity.plus/share');
+      final shared = <Map<Object?, Object?>>[];
+      messenger.setMockMethodCallHandler(channel, (call) async {
+        if (call.method == 'share') shared.add(call.arguments as Map);
+        return 'dev.fluttercommunity.plus/share/unavailable';
+      });
+      try {
+        await app.pullToRefresh();
+        await app.waitFor(
+            () => app.showsText(AnnouncementFixtures.verseTitle),
+            reason: 'the share announcement');
+        await app.tapText('Join the group');
+        await app.waitFor(() => shared.isNotEmpty,
+            reason: 'the system share sheet to open');
+        expect(shared.single['text'], '$text\n$link',
+            reason: "the announcement's text, then its link");
+        await app.waitFor(
+            () => server.announcementEvents.any((e) =>
+                e['type'] == 'clicked' &&
+                e['slug'] == AnnouncementFixtures.verseSlug),
+            reason: 'the click to reach the backend',
+            timeout: const Duration(seconds: 15));
+      } finally {
+        messenger.setMockMethodCallHandler(channel, null);
+      }
+    });
+
+    announcementTest(
+        'a list without the click rules shows a clicked card as before',
+        (app) async {
+      server.announcements.add(AnnouncementFixtures.verse());
+      await app.pullToRefresh();
+      await app.waitFor(() => app.showsText(AnnouncementFixtures.verseTitle),
+          reason: 'the card before the click');
+      await clickVerseButton(app);
+      expect(await verseShowsAtNextLaunch(app), isTrue,
+          reason: 'no rules: clicks never hide it');
+    });
+
     announcementTest("an admin's own SVG icon shows on the card", (app) async {
       server.announcements.add(AnnouncementFixtures.svgIcon(server.baseUrl));
       await app.pullToRefresh();
@@ -1894,6 +2162,17 @@ void main() {
     });
   });
 }
+
+/// The device counts of a shared case (absent: 0, not closed).
+AnnouncementCounts _countsFromCase(Map counts) => AnnouncementCounts(
+      impressions: counts['impressions'] as int? ?? 0,
+      clicks: counts['clicks'] as int? ?? 0,
+      impressionsAfterClicks: counts['impressions_after_clicks'] as int? ?? 0,
+      dismissed: counts['dismissed'] as bool? ?? false,
+      started: counts['started'] as bool? ?? false,
+      returns: counts['returns'] as int? ?? 0,
+      waited: counts['waited'] as int? ?? 0,
+    );
 
 /// Forgets every announcement the device kept or was told, as a fresh
 /// install, and starts the announcements anew.

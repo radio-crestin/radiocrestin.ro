@@ -58,20 +58,26 @@ class HomePromoSlot {
   /// wants seen now. Otherwise a share card already on keeps the slot:
   /// users who had both cards keep the share card, which most of them got
   /// first, and see the other one after closing it.
+  ///
+  /// With [shareFromApi] (the API has a share announcement for this
+  /// device) the built-in share card never shows: the announcement asks
+  /// instead, with its own text and timing.
   Future<HomePromo?> current({
     AnnouncementList announcements = AnnouncementList.empty,
+    bool shareFromApi = false,
   }) async {
     if (announcements.items.isNotEmpty) {
       return AnnouncementPromo(announcements);
     }
-    if (_prefs.getBool(_shareOnKey) ?? false) return const SharePromo();
+    final shareOn = _prefs.getBool(_shareOnKey) ?? false;
+    if (shareOn && !shareFromApi) return const SharePromo();
     final actions = _notifications.actionsMade;
     final closedAt = _prefs.getInt(_closedAtKey);
     if (closedAt != null && actions < closedAt + gapActions) return null;
     final notification = _notifications.getNextNotification();
     if (notification != null) return NotificationPromo(notification);
     final shareShown = _prefs.getBool(_shareAutoEnabledKey) ?? false;
-    if (shareShown || actions < shareMinActions) return null;
+    if (shareFromApi || shareShown || actions < shareMinActions) return null;
     await _prefs.setBool(_shareOnKey, true);
     await _prefs.setBool(_shareAutoEnabledKey, true);
     return const SharePromo();
