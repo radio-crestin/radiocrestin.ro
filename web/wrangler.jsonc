@@ -2,7 +2,8 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   // An assets-only Worker: there is no `main`, so every request is served from
   // Cloudflare's asset store and edge cache, with no Worker invocation or CPU time.
-  // Workers Builds runs `npm run build`, then `npx wrangler deploy` (root: web/).
+  // Workers Builds runs `npm run build`, then `npx wrangler deploy` (root: web/); for a
+  // pull request's branch it runs `npx wrangler preview` instead (see `previews`).
   "name": "radiocrestin-ro",
   "account_id": "c53124cf4d8c039271e3d52917a56b96",
   "compatibility_date": "2026-11-23",
@@ -18,5 +19,7 @@
     "not_found_handling": "404-page",
     // /radio-gosen -> 308 -> /radio-gosen/, as the canonical URLs and sitemap expect.
     "html_handling": "auto-trailing-slash"
-  }
+  },
+  // Each branch's Preview (Workers Builds, `wrangler preview`) uses the settings above.
+  "previews": {}
 }
