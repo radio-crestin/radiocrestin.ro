@@ -1,11 +1,11 @@
 // A copy of backend/docs/announcement-hide-rules.cases.json, the cases the
-// backend, the website and the app check their hide rules against. Copy it
+// backend, the website and the app check their show and hide rules against. Copy it
 // again when that file changes.
 
 /// The shared hide rule cases, as JSON.
 const announcementHideRuleCases = r'''
 {
-  "about": "Shared test cases for the announcement hide rules (announcement-hide-rules.md). The backend tests them against services/announcement_hide_rules.py; the website and the app copy them as their own tests. rules: the API's keys (absent = not set). counts: what the device remembers for the slug. hidden_by: the first rule that hides it, or null when it still shows. show_again_cases: hidden is what the card does at this visit (comes_back: it starts a new round instead of hiding). timelines: replay the steps with on_visit / on_impression / on_click; 'v' = a visit where the card shows (and gets one impression), '-' = a visit where it is hidden, 'v+c' = shown and its main button clicked, 'x' = closed.",
+  "about": "Shared test cases for the announcement show and hide rules (announcement-hide-rules.md). The backend tests them against services/announcement_hide_rules.py; the website and the app copy them as their own tests. rules: the API's keys (absent = not set). counts: what the device remembers for the slug (absent = 0 / false). hide_cases: hidden_by is the first rule that hides it, or null when it shows. click_cases: whether a click event counts. show_again_cases: hidden is what the card does at this visit (comes_back: it starts a new round instead of hiding). timelines: replay the steps in order with on_visit, on_impression, on_click and on_event; a visit step is 'v' (the card shows and gets one impression), '-' (hidden), 'v+c' (shows, main button clicked), 'x' (shows, then closed); an event step is 'o' (another announcement seen: on_other_impression), 'p' (a playback of station 'any-station') or 'p:<slug>' (a playback of that station).",
   "hide_cases": [
     {
       "name": "no rules: always shows",
@@ -317,7 +317,8 @@ const announcementHideRuleCases = r'''
       },
       "counts": {
         "impressions": 3,
-        "visits_while_hidden": 50
+        "waited": 50,
+        "started": true
       },
       "hidden": true,
       "comes_back": false
@@ -327,11 +328,13 @@ const announcementHideRuleCases = r'''
       "rules": {
         "max_impressions": 3,
         "show_again_times": 2,
-        "show_again_after_visits": 5
+        "show_again_after": 5,
+        "count_on": "visits"
       },
       "counts": {
         "impressions": 3,
-        "visits_while_hidden": 4
+        "waited": 4,
+        "started": true
       },
       "hidden": true,
       "comes_back": false
@@ -341,11 +344,13 @@ const announcementHideRuleCases = r'''
       "rules": {
         "max_impressions": 3,
         "show_again_times": 2,
-        "show_again_after_visits": 5
+        "show_again_after": 5,
+        "count_on": "visits"
       },
       "counts": {
         "impressions": 3,
-        "visits_while_hidden": 5
+        "waited": 5,
+        "started": true
       },
       "hidden": false,
       "comes_back": true
@@ -355,12 +360,14 @@ const announcementHideRuleCases = r'''
       "rules": {
         "max_impressions": 3,
         "show_again_times": 2,
-        "show_again_after_visits": 5
+        "show_again_after": 5,
+        "count_on": "visits"
       },
       "counts": {
         "impressions": 3,
         "returns": 2,
-        "visits_while_hidden": 9
+        "waited": 9,
+        "started": true
       },
       "hidden": true,
       "comes_back": false
@@ -370,12 +377,14 @@ const announcementHideRuleCases = r'''
       "rules": {
         "hide_after_clicks": 1,
         "show_again_times": 1,
-        "show_again_after_visits": 2
+        "show_again_after": 2,
+        "count_on": "visits"
       },
       "counts": {
         "impressions": 1,
         "clicks": 1,
-        "visits_while_hidden": 2
+        "waited": 2,
+        "started": true
       },
       "hidden": false,
       "comes_back": true
@@ -386,12 +395,14 @@ const announcementHideRuleCases = r'''
         "hide_after_clicks": 1,
         "impressions_after_click": 2,
         "show_again_times": 1,
-        "show_again_after_visits": 1
+        "show_again_after": 1,
+        "count_on": "visits"
       },
       "counts": {
         "clicks": 1,
         "impressions_after_clicks": 1,
-        "visits_while_hidden": 0
+        "waited": 0,
+        "started": true
       },
       "hidden": false,
       "comes_back": false
@@ -402,12 +413,99 @@ const announcementHideRuleCases = r'''
         "dismissible": true,
         "max_impressions": 3,
         "show_again_times": 5,
-        "show_again_after_visits": 1
+        "show_again_after": 1,
+        "count_on": "visits"
       },
       "counts": {
         "impressions": 3,
         "dismissed": true,
-        "visits_while_hidden": 9
+        "waited": 9,
+        "started": true
+      },
+      "hidden": true,
+      "comes_back": false
+    },
+    {
+      "name": "impressions pause: 2 of 3 other announcements seen",
+      "rules": {
+        "max_impressions": 2,
+        "show_again_times": 1,
+        "show_again_after": 3,
+        "count_on": "impressions"
+      },
+      "counts": {
+        "started": true,
+        "impressions": 2,
+        "waited": 2
+      },
+      "hidden": true,
+      "comes_back": false
+    },
+    {
+      "name": "impressions pause: 3 other announcements seen, comes back",
+      "rules": {
+        "max_impressions": 2,
+        "show_again_times": 1,
+        "show_again_after": 3,
+        "count_on": "impressions"
+      },
+      "counts": {
+        "impressions": 2,
+        "waited": 3,
+        "started": true
+      },
+      "hidden": false,
+      "comes_back": true
+    },
+    {
+      "name": "show after 3 visits: waited 2",
+      "rules": {
+        "count_on": "visits",
+        "show_after": 3
+      },
+      "counts": {
+        "waited": 2
+      },
+      "hidden": true,
+      "comes_back": false
+    },
+    {
+      "name": "show after 3 visits: waited 3, shows",
+      "rules": {
+        "count_on": "visits",
+        "show_after": 3
+      },
+      "counts": {
+        "waited": 3
+      },
+      "hidden": false,
+      "comes_back": false
+    },
+    {
+      "name": "show after: once started it never waits again",
+      "rules": {
+        "count_on": "playbacks",
+        "show_after": 40
+      },
+      "counts": {
+        "started": true,
+        "waited": 0
+      },
+      "hidden": false,
+      "comes_back": false
+    },
+    {
+      "name": "playbacks pause: 149 of 150",
+      "rules": {
+        "count_on": "playbacks",
+        "max_impressions": 1,
+        "show_again_times": 3,
+        "show_again_after": 150
+      },
+      "counts": {
+        "started": true,
+        "impressions": 1,
+        "waited": 149
       },
       "hidden": true,
       "comes_back": false
@@ -419,7 +517,8 @@ const announcementHideRuleCases = r'''
       "rules": {
         "max_impressions": 2,
         "show_again_times": 1,
-        "show_again_after_visits": 2
+        "show_again_after": 2,
+        "count_on": "visits"
       },
       "steps": [
         "v",
@@ -439,7 +538,8 @@ const announcementHideRuleCases = r'''
       "rules": {
         "max_impressions": 3,
         "show_again_times": 2,
-        "show_again_after_visits": 3
+        "show_again_after": 3,
+        "count_on": "visits"
       },
       "steps": [
         "v",
@@ -468,7 +568,8 @@ const announcementHideRuleCases = r'''
       "rules": {
         "hide_after_clicks": 1,
         "show_again_times": 2,
-        "show_again_after_visits": 2
+        "show_again_after": 2,
+        "count_on": "visits"
       },
       "steps": [
         "v",
@@ -492,7 +593,8 @@ const announcementHideRuleCases = r'''
         "hide_after_clicks": 1,
         "impressions_after_click": 1,
         "show_again_times": 1,
-        "show_again_after_visits": 1
+        "show_again_after": 1,
+        "count_on": "visits"
       },
       "steps": [
         "v+c",
@@ -510,7 +612,8 @@ const announcementHideRuleCases = r'''
       "rules": {
         "max_impressions": 1,
         "show_again_times": 3,
-        "show_again_after_visits": 1
+        "show_again_after": 1,
+        "count_on": "visits"
       },
       "steps": [
         "v",
@@ -518,6 +621,156 @@ const announcementHideRuleCases = r'''
         "x",
         "-",
         "-",
+        "-"
+      ]
+    },
+    {
+      "name": "seen 2 times, back after 3 other announcements, once",
+      "rules": {
+        "max_impressions": 2,
+        "show_again_times": 1,
+        "show_again_after": 3,
+        "count_on": "impressions"
+      },
+      "steps": [
+        "v",
+        "v",
+        "-",
+        "o",
+        "o",
+        "-",
+        "o",
+        "v",
+        "v",
+        "-",
+        "o",
+        "o",
+        "o",
+        "-"
+      ]
+    },
+    {
+      "name": "other announcements before it was hidden don't count",
+      "rules": {
+        "hide_after_clicks": 1,
+        "show_again_times": 1,
+        "show_again_after": 1,
+        "count_on": "impressions"
+      },
+      "steps": [
+        "o",
+        "v",
+        "o",
+        "v+c",
+        "-",
+        "o",
+        "v",
+        "v+c",
+        "o",
+        "-"
+      ]
+    },
+    {
+      "name": "show after 2 visits, then max 2",
+      "rules": {
+        "count_on": "visits",
+        "show_after": 2,
+        "max_impressions": 2
+      },
+      "steps": [
+        "-",
+        "-",
+        "v",
+        "v",
+        "-",
+        "-"
+      ]
+    },
+    {
+      "name": "share: after 3 playbacks, back 2 times every 2 playbacks",
+      "rules": {
+        "count_on": "playbacks",
+        "show_after": 3,
+        "max_impressions": 1,
+        "show_again_times": 2,
+        "show_again_after": 2
+      },
+      "steps": [
+        "-",
+        "p",
+        "p",
+        "-",
+        "p",
+        "v",
+        "-",
+        "p",
+        "-",
+        "p",
+        "v",
+        "p",
+        "p",
+        "v",
+        "p",
+        "p",
+        "p",
+        "-"
+      ]
+    },
+    {
+      "name": "only playbacks of radio-x count",
+      "rules": {
+        "count_on": "playbacks",
+        "count_station_slugs": [
+          "radio-x"
+        ],
+        "show_after": 2
+      },
+      "steps": [
+        "p",
+        "p:radio-y",
+        "p:radio-x",
+        "-",
+        "p:radio-y",
+        "-",
+        "p:radio-x",
+        "v",
+        "v"
+      ]
+    },
+    {
+      "name": "visits don't count when it counts playbacks",
+      "rules": {
+        "count_on": "playbacks",
+        "show_after": 1
+      },
+      "steps": [
+        "-",
+        "-",
+        "o",
+        "-",
+        "p",
+        "v"
+      ]
+    },
+    {
+      "name": "playbacks while it shows don't shorten the next pause",
+      "rules": {
+        "count_on": "playbacks",
+        "max_impressions": 2,
+        "show_again_times": 1,
+        "show_again_after": 2
+      },
+      "steps": [
+        "v",
+        "p",
+        "p",
+        "v",
+        "-",
+        "p",
+        "-",
+        "p",
+        "v",
+        "v",
         "-"
       ]
     }

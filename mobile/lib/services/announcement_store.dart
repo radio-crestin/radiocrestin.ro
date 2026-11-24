@@ -18,7 +18,8 @@ class AnnouncementStore {
   static const impressionsAfterClicksKey =
       'announcements_impressions_after_clicks';
   static const returnsKey = 'announcements_returns';
-  static const visitsWhileHiddenKey = 'announcements_visits_while_hidden';
+  static const startedKey = 'announcements_started';
+  static const waitedKey = 'announcements_waited';
   static const rotationCursorKey = 'announcements_rotation_cursor';
   static const seenKey = 'announcements_seen';
   static const countryKey = 'announcements_country';
@@ -28,8 +29,12 @@ class AnnouncementStore {
 
   final SharedPreferences _prefs;
 
-  /// Keys of features that are gone: the "later" button's snoozes.
-  static const _retiredKeys = ['announcements_snoozed'];
+  /// Keys of features that are gone: the "later" button's snoozes, and
+  /// the visits counted before waits counted any `count_on` events.
+  static const _retiredKeys = [
+    'announcements_snoozed',
+    'announcements_visits_while_hidden',
+  ];
 
   /// Drops what removed features left on the device.
   Future<void> forgetRetired() async {
@@ -103,29 +108,48 @@ class AnnouncementStore {
   Future<void> countImpressionAfterClicks(String slug) =>
       _increment(impressionsAfterClicksKey, slug);
 
-  /// Everything this device counted for [slug], for its hide rules.
-  AnnouncementCounts counts(String slug) => AnnouncementCounts(
-        impressions: impressions(slug),
-        clicks: clicks(slug),
-        impressionsAfterClicks: impressionsAfterClicks(slug),
-        dismissed: dismissed.contains(slug),
-        returns: _count(returnsKey, slug),
-        visitsWhileHidden: _count(visitsWhileHiddenKey, slug),
-      );
+  /// The slugs shown at least once on this device (`show_after` is over).
+  Set<String> get started =>
+      (_prefs.getStringList(startedKey) ?? const []).toSet();
 
-  /// Saves [counts] as [slug]'s (a visit's: a hidden visit counted, or a
-  /// new round as it comes back). Closing is saved by [dismiss] alone.
-  /// Every count changes before the first await, so a read never sees half
-  /// a round.
+  /// Marks [slug] shown for the first time: its `show_after` wait is over
+  /// and what it waited is spent.
+  Future<void> markStarted(String slug) => Future.wait([
+        _prefs.setStringList(startedKey, [...started, slug]),
+        _set(waitedKey, slug, 0),
+      ]);
+
+  /// Everything this device counted for [slug], for its rules. One seen
+  /// before `started` was kept (an older version) has started too.
+  AnnouncementCounts counts(String slug) {
+    final impressions = this.impressions(slug);
+    final returns = _count(returnsKey, slug);
+    return AnnouncementCounts(
+      impressions: impressions,
+      clicks: clicks(slug),
+      impressionsAfterClicks: impressionsAfterClicks(slug),
+      dismissed: dismissed.contains(slug),
+      started: impressions > 0 || returns > 0 || started.contains(slug),
+      returns: returns,
+      waited: _count(waitedKey, slug),
+    );
+  }
+
+  /// Saves [counts] as [slug]'s (a visit's or an event's: a wait counted,
+  /// a first showing, or a new round as it comes back). Closing is saved
+  /// by [dismiss] alone. Every count changes before the first await, so a
+  /// read never sees half a round.
   Future<void> saveCounts(String slug, AnnouncementCounts counts) {
     final values = {
       impressionsKey: counts.impressions,
       clicksKey: counts.clicks,
       impressionsAfterClicksKey: counts.impressionsAfterClicks,
       returnsKey: counts.returns,
-      visitsWhileHiddenKey: counts.visitsWhileHidden,
+      waitedKey: counts.waited,
     };
     return Future.wait([
+      if (counts.started && !started.contains(slug))
+        _prefs.setStringList(startedKey, [...started, slug]),
       for (final MapEntry(:key, :value) in values.entries)
         if (_count(key, slug) != value) _set(key, slug, value),
     ]);

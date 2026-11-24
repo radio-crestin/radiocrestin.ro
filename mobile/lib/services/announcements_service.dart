@@ -131,9 +131,14 @@ class AnnouncementsService with WidgetsBindingObserver {
   /// impression on screen then is not one of the reminders after it.
   final Set<String> _clicksReachedThisLaunch = {};
 
-  /// Slugs this launch already counted as a visit (`show_again_*`): a
-  /// launch is one visit, as it is one impression.
+  /// Slugs this launch already counted as a visit (`count_on: visits`):
+  /// a launch is one visit, as it is one impression.
   final Set<String> _visitedThisLaunch = {};
+
+  /// Slugs still waiting for their first showing at this launch's visit
+  /// (`show_after`): a wait that ends during the launch shows them at the
+  /// next one, so a card never pops in under the listener.
+  final Set<String> _waitingThisLaunch = {};
 
   /// Slugs taken off the screen for this launch only (hide_after_seconds).
   final Set<String> _hiddenThisLaunch = {};
@@ -359,20 +364,27 @@ class AnnouncementsService with WidgetsBindingObserver {
       !_hiddenThisLaunch.contains(item.slug) &&
       (alwaysShow || !_isHiddenOnDevice(item));
 
-  /// Whether this device's history hides [item], per its hide rules
-  /// (`backend/docs/announcement-hide-rules.md`).
+  /// Whether this device's history hides [item], per its show and hide
+  /// rules (`backend/docs/announcement-hide-rules.md`).
   bool _isHiddenOnDevice(Announcement item) {
     final rules = item.hideRules;
     var counts = _store.counts(item.slug);
-    // This launch is a visit: a card the rules hid counts it, and comes
-    // back with a new round once enough visits passed (show_again_*).
-    if (_visitedThisLaunch.add(item.slug) && rules.showsAgain) {
+    // This launch is a visit: a card that waits counts it (count_on:
+    // visits), and comes back with a new round once it waited enough
+    // (show_again_*). Its first showing is saved at its impression, as
+    // the card may never reach the screen (max per load, a later page).
+    if (_visitedThisLaunch.add(item.slug) && rules.waits) {
       final visit = rules.onVisit(counts);
-      if (!identical(visit.counts, counts)) {
+      final firstShowing = visit.shown && !counts.started;
+      if (!firstShowing && !identical(visit.counts, counts)) {
         counts = visit.counts;
         unawaited(_store.saveCounts(item.slug, counts));
       }
+      if (rules.hideReason(counts) == HideReason.showAfter) {
+        _waitingThisLaunch.add(item.slug);
+      }
     }
+    if (_waitingThisLaunch.contains(item.slug)) return true;
     final reason = rules.hideReason(counts);
     return switch (reason) {
       null => false,
@@ -380,9 +392,53 @@ class AnnouncementsService with WidgetsBindingObserver {
       HideReason.maxImpressions ||
       HideReason.impressionsAfterClick =>
         !_seenThisLaunch.contains(item.slug),
-      HideReason.dismissed || HideReason.clicks => true,
+      HideReason.dismissed || HideReason.showAfter || HideReason.clicks =>
+        true,
     };
   }
+
+  /// Whether the API offers a share announcement for this device (live,
+  /// its filters matching), which takes the built-in share card's place
+  /// even while it waits or after it was closed.
+  bool get offersShare {
+    final now = DateTime.now();
+    return _feed.items.any((item) =>
+        item.sharesApp &&
+        item.isLiveAt(now) &&
+        item.filters.matches(
+          platform: platform,
+          locale: _locale,
+          appVersion: globals.appVersion,
+          country: _store.country,
+        ));
+  }
+
+  /// Counts [step] (a device event) for every announcement whose waits
+  /// count [kind], but [except] (the one seen).
+  void _countEvent(
+    CountOn kind,
+    AnnouncementCounts Function(
+            AnnouncementHideRules rules, AnnouncementCounts counts)
+        step, {
+    String? except,
+  }) {
+    for (final item in _feed.items) {
+      final rules = item.hideRules;
+      if (item.slug == except || rules.countOn != kind || !rules.waits) {
+        continue;
+      }
+      final counts = _store.counts(item.slug);
+      final next = step(rules, counts);
+      if (!identical(next, counts)) {
+        unawaited(_store.saveCounts(item.slug, next));
+      }
+    }
+  }
+
+  /// The station [slug] was played (heard long enough to count, as for
+  /// "Most played"): announcements that count playbacks count it.
+  void onPlayback(String slug) => _countEvent(CountOn.playbacks,
+      (rules, counts) => rules.onPlayback(counts, slug));
 
   /// The server's order (never re-sorted). Rotate and random turn it to
   /// start with this launch's first announcement: k…n-1, then 0…k-1. That
@@ -408,7 +464,13 @@ class AnnouncementsService with WidgetsBindingObserver {
   /// Counts the card as seen, once per slug per launch.
   void recordImpression(Announcement item, int position, {String? station}) {
     if (!_seenThisLaunch.add(item.slug)) return;
+    // Its first showing ends show_after; what it waited is spent.
+    if (!_store.counts(item.slug).started) {
+      unawaited(_store.markStarted(item.slug));
+    }
     unawaited(_store.countImpression(item.slug));
+    _countEvent(CountOn.impressions, (rules, counts) =>
+        rules.onOtherImpression(counts), except: item.slug);
     if (item.hideRules.clicksReached(_store.clicks(item.slug)) &&
         !_clicksReachedThisLaunch.contains(item.slug)) {
       unawaited(_store.countImpressionAfterClicks(item.slug));
