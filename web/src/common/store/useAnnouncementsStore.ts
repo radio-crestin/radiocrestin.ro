@@ -1,10 +1,13 @@
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
-import type { AnnouncementsLocalState } from "@/utils/announcements";
+import type { ClickTarget, IAnnouncement } from "@/models/Announcement";
+import { hiddenAtClick, withClick, type AnnouncementsLocalState } from "@/utils/announcements";
 
 interface AnnouncementsStore extends AnnouncementsLocalState {
   dismiss: (slug: string) => void;
   countImpression: (slug: string) => void;
+  /** Counts a click for the hide rules; true when the announcement must leave the view now. */
+  countClick: (announcement: IAnnouncement, target: ClickTarget | null | undefined) => boolean;
   advanceRotation: () => void;
   markSeen: (slugs: string[]) => void;
   setCountry: (country: string | null) => void;
@@ -12,9 +15,11 @@ interface AnnouncementsStore extends AnnouncementsLocalState {
 
 const useAnnouncementsStore = create<AnnouncementsStore>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       dismissed: {},
       impressions: {},
+      clicks: {},
+      afterClicks: {},
       rotationCursor: 0,
       seen: {},
       country: undefined,
@@ -27,7 +32,16 @@ const useAnnouncementsStore = create<AnnouncementsStore>()(
       countImpression: (slug) =>
         set((state) => ({
           impressions: { ...state.impressions, [slug]: (state.impressions[slug] || 0) + 1 },
+          ...(state.afterClicks[slug] !== undefined && {
+            afterClicks: { ...state.afterClicks, [slug]: state.afterClicks[slug] + 1 },
+          }),
         })),
+
+      countClick: (announcement, target) => {
+        const counts = withClick(get(), announcement, target);
+        if (counts.clicks !== get().clicks) set(counts);
+        return hiddenAtClick(announcement, counts.clicks);
+      },
 
       setCountry: (country) => set({ country }),
 
@@ -44,9 +58,11 @@ const useAnnouncementsStore = create<AnnouncementsStore>()(
     {
       name: "announcements-store",
       storage: createJSONStorage(() => localStorage),
-      partialize: ({ dismissed, impressions, rotationCursor, seen, country }) => ({
+      partialize: ({ dismissed, impressions, clicks, afterClicks, rotationCursor, seen, country }) => ({
         dismissed,
         impressions,
+        clicks,
+        afterClicks,
         rotationCursor,
         seen,
         country,

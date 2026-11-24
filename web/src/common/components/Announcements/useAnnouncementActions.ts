@@ -38,21 +38,49 @@ export default function useAnnouncementActions({ stationSlug = null, positionOf,
     [positionOf, stationSlug],
   );
 
+  const onImpression = useCallback(
+    (a: IAnnouncement) => {
+      if (impressions.current.has(a.slug)) return;
+      impressions.current.add(a.slug);
+      useAnnouncementsStore.getState().countImpression(a.slug);
+      record(a, "impression");
+    },
+    [record],
+  );
+
+  /**
+   * Counts a click for the hide rules and takes the announcement out of view when they say so.
+   * Call it before recording the click. With click rules, a click before the impression's
+   * one-second delay counts that impression first: else it would land after the click and count
+   * as one of the reminders (impressions_after_click), which this view's impression never is.
+   */
+  const onClicked = useCallback(
+    (a: IAnnouncement, target: ClickTarget) => {
+      if (a.hide_after_clicks) onImpression(a);
+      if (useAnnouncementsStore.getState().countClick(a, target)) remove(a.slug);
+    },
+    [onImpression, remove],
+  );
+
   /** A button link navigates by itself; a card tap (or the page button) is followed here. */
   const onPrimary = useCallback(
     (a: IAnnouncement, target: ClickTarget) => {
       if (!hasPrimaryAction(a)) return;
+      onClicked(a, target);
       record(a, "clicked", { target });
       // Links navigate by themselves; the page and the form open here.
       const opensHere = resolveWebAction(a.button?.action)?.kind !== "link";
       if (target === "card" || opensHere) followAction(a, a.button?.action);
     },
-    [record],
+    [record, onClicked],
   );
 
   const onLink = useCallback(
-    (a: IAnnouncement, href: string) => record(a, "clicked", { target: "link", linkUrl: href }),
-    [record],
+    (a: IAnnouncement, href: string) => {
+      onClicked(a, "link");
+      record(a, "clicked", { target: "link", linkUrl: href });
+    },
+    [record, onClicked],
   );
 
   const onDismiss = useCallback(
@@ -64,15 +92,5 @@ export default function useAnnouncementActions({ stationSlug = null, positionOf,
     [record, remove],
   );
 
-  const onImpression = useCallback(
-    (a: IAnnouncement) => {
-      if (impressions.current.has(a.slug)) return;
-      impressions.current.add(a.slug);
-      useAnnouncementsStore.getState().countImpression(a.slug);
-      record(a, "impression");
-    },
-    [record],
-  );
-
-  return { onPrimary, onDismiss, onLink, onImpression };
+  return { onPrimary, onDismiss, onLink, onImpression, onClicked };
 }

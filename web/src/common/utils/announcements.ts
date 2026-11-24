@@ -2,6 +2,9 @@
 // button does on the web. Which announcements show is decided in announcementsPrepaint.ts.
 import { SAFE_SLUG } from "@/utils/announcementsPrepaint";
 import type {
+  AnnouncementEventType,
+  ClickTarget,
+  HideClickTarget,
   IAnnouncement,
   IAnnouncementAction,
   IAnnouncementsSnapshot,
@@ -11,12 +14,57 @@ import type {
 export interface AnnouncementsLocalState {
   dismissed: Record<string, string>;
   impressions: Record<string, number>;
+  /** Clicks that count toward hide_after_clicks (only for announcements with that rule). */
+  clicks: Record<string, number>;
+  /** Impressions since the click that reached hide_after_clicks, for impressions_after_click. */
+  afterClicks: Record<string, number>;
   rotationCursor: number;
   seen: Record<string, string>;
   /** From Cloudflare via the events API: undefined = never asked, null = unknown. */
   country?: string | null;
 }
 
+// Hide rules after clicks (backend/docs/announcement-hide-rules.md). Whether a slug shows is
+// decided in announcementsPrepaint.ts (annEligibility); these keep the counts it reads.
+
+/**
+ * Whether an event counts toward hide_after_clicks: "main" counts the button and the card (and a
+ * click with no target), "any" every click, also links in the description.
+ */
+export const countsAsHideClick = (
+  hideClickTarget: HideClickTarget | null | undefined,
+  type: AnnouncementEventType | "secondary_clicked",
+  target?: ClickTarget | null,
+): boolean => {
+  if (type === "secondary_clicked") return hideClickTarget === "any";
+  return type === "clicked" && (hideClickTarget === "any" || target !== "link");
+};
+
+type ClickCounts = Pick<AnnouncementsLocalState, "clicks" | "afterClicks">;
+
+/**
+ * The counts after a click on `a`; unchanged when it doesn't count. The click that reaches
+ * hide_after_clicks starts the reminder count (impressions_after_click) at 0: the impression on
+ * screen during it isn't one, and later clicks don't restart it.
+ */
+export const withClick = (
+  state: ClickCounts,
+  a: Pick<IAnnouncement, "slug" | "hide_after_clicks" | "impressions_after_click" | "hide_click_target">,
+  target: ClickTarget | null | undefined,
+): ClickCounts => {
+  if (!a.hide_after_clicks || !countsAsHideClick(a.hide_click_target, "clicked", target)) return state;
+  const clicks = (state.clicks[a.slug] || 0) + 1;
+  const startReminders =
+    !!a.impressions_after_click && clicks >= a.hide_after_clicks && state.afterClicks[a.slug] === undefined;
+  return {
+    clicks: { ...state.clicks, [a.slug]: clicks },
+    afterClicks: startReminders ? { ...state.afterClicks, [a.slug]: 0 } : state.afterClicks,
+  };
+};
+
+/** Whether `a` must leave the current view at this click: hide_after_clicks reached, no reminders. */
+export const hiddenAtClick = (a: IAnnouncement, clicks: Record<string, number>): boolean =>
+  !!a.hide_after_clicks && !a.impressions_after_click && (clicks[a.slug] || 0) >= a.hide_after_clicks;
 
 export const placementOf = (a: IAnnouncement): Placement => a.placement ?? "home";
 

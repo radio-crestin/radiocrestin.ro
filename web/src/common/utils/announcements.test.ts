@@ -34,6 +34,8 @@ const announcement = (slug: string, extra: Partial<IAnnouncement> = {}): IAnnoun
 const emptyState = (extra: Partial<AnnouncementsLocalState> = {}): AnnouncementsLocalState => ({
   dismissed: {},
   impressions: {},
+  clicks: {},
+  afterClicks: {},
   rotationCursor: 0,
   seen: {},
   ...extra,

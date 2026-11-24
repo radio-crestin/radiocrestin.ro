@@ -18,6 +18,12 @@ export interface PrepaintItem {
   e?: number;
   /** max_impressions */
   m?: number;
+  /** hide_after_clicks */
+  c?: number;
+  /** impressions_after_click (only with c) */
+  y?: number;
+  /** 1 when it can't be closed (dismissible: false): an old close no longer hides it */
+  n?: 1;
   /** 1 when closing the old, hard-coded banner (LEGACY_DISMISSED_KEY) dismissed this one */
   l?: 1;
   /**
@@ -40,6 +46,10 @@ export interface PrepaintData {
 export interface PrepaintLocal {
   dismissed?: Record<string, string>;
   impressions?: Record<string, number>;
+  /** clicks that count toward hide_after_clicks */
+  clicks?: Record<string, number>;
+  /** impressions since the click that reached hide_after_clicks (set from that click on) */
+  afterClicks?: Record<string, number>;
   rotationCursor?: number;
   country?: string | null;
   /** the LEGACY_DISMISSED_KEY value; set means the old banner was closed */
@@ -90,9 +100,13 @@ export function annEligibility(
       const s = it.s;
       const f = it.f || {};
       const c = local.country;
-      if ((local.dismissed || {})[s] || (it.l && local.w)) return false;
+      // this slug's entry in one of the local maps
+      const g = (k: "dismissed" | "impressions" | "clicks" | "afterClicks"): any => (local[k] || {})[s];
+      if ((g("dismissed") || (it.l && local.w)) && !it.n) return false;
       // comparisons with an absent field are false, so absent means "no limit"
-      if (((local.impressions || {})[s] || 0) >= it.m! || it.a! > now || it.e! <= now) return false;
+      if ((g("impressions") || 0) >= it.m! || it.a! > now || it.e! <= now) return false;
+      // hide_after_clicks reached: hidden at once, or (y) after y more impressions
+      if (g("clicks") >= it.c! && !((g("afterClicks") || 0) < it.y!)) return false;
       if (feed && feed.t > d.b && !feed.s.includes(s)) return false;
       if (f.p != null && !f.p.includes(vp)) return false;
       if (f.lo && !f.lo.some((l) => l === lang || l === lang.split("-")[0])) return false;
@@ -188,6 +202,11 @@ export const toPrepaintData = (snapshot: IAnnouncementsSnapshot): PrepaintData =
       if (time(a.starts_at)) item.a = time(a.starts_at);
       if (time(a.ends_at)) item.e = time(a.ends_at);
       if (a.max_impressions != null) item.m = a.max_impressions;
+      if (a.hide_after_clicks) {
+        item.c = a.hide_after_clicks;
+        if (a.impressions_after_click) item.y = a.impressions_after_click;
+      }
+      if (a.dismissible === false) item.n = 1;
       const platforms = nonEmpty(f.platforms);
       const filters = {
         p: platforms && (platforms.includes("web_mobile") ? "m" : "") + (platforms.includes("web_desktop") ? "d" : ""),
