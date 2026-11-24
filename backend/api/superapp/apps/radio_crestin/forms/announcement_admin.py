@@ -9,7 +9,7 @@ from unfold.widgets import (
     UnfoldAdminCheckboxSelectMultipleWidget, UnfoldAdminRadioSelectWidget, UnfoldAdminTextareaWidget,
 )
 
-from ..models import ActionType, Announcement, ButtonStyle, HideClickTarget, Placement, TargetPlatform
+from ..models import ActionType, Announcement, ButtonStyle, CountOn, HideClickTarget, Placement, TargetPlatform
 from ..services.announcement_icons import ImageRejected, clean_icon
 
 ICON_REJECTIONS = {
@@ -20,6 +20,8 @@ ICON_REJECTIONS = {
     'invalid_svg': _('This SVG could not be read. Export it again as a plain SVG (UTF-8).'),
     'unsafe_svg': _('This SVG declares entities, which are not allowed. Export it again as a plain SVG.'),
 }
+# Choices with a default the form fills when they come empty.
+OPTIONAL_CHOICES = {'hide_click_target': HideClickTarget.MAIN, 'count_on': CountOn.VISITS}
 RESERVED_SLUGS = {'events'}  # /api/v1/announcements/events/ is the events endpoint
 LOCALE_PATTERN = re.compile(r'^[a-z]{2,3}([-_][a-z0-9]{2,8})*$', re.IGNORECASE)
 
@@ -140,8 +142,9 @@ class AnnouncementAdminForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        if 'hide_click_target' in self.fields:  # hidden with the "Never" preset: then the default applies
-            self.fields['hide_click_target'].required = False
+        for name in OPTIONAL_CHOICES:  # hidden when unused (and absent from older forms): the default applies
+            if name in self.fields:
+                self.fields[name].required = False
         if 'hide_preset' not in self.initial:
             self.initial['hide_preset'] = HidePreset.of(
                 self.instance.hide_after_clicks, self.instance.impressions_after_click)
@@ -174,8 +177,9 @@ class AnnouncementAdminForm(forms.ModelForm):
 
     def _apply_hide_preset(self, data):
         """The preset decides which of the click fields apply; the ones it hides are cleared, not kept."""
-        if 'hide_click_target' in self.fields and not data.get('hide_click_target'):
-            data['hide_click_target'] = HideClickTarget.MAIN
+        for name, default in OPTIONAL_CHOICES.items():
+            if name in self.fields and not data.get(name):
+                data[name] = default
         preset = data.get('hide_preset')
         if preset == HidePreset.NEVER:
             data['hide_after_clicks'] = data['impressions_after_click'] = None

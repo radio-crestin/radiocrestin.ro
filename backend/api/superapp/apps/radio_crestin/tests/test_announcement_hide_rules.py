@@ -1,4 +1,5 @@
 import json
+from dataclasses import replace
 from datetime import timedelta
 from pathlib import Path
 
@@ -11,11 +12,11 @@ from django.utils import timezone
 
 from ..forms.announcement_admin import AnnouncementAdminForm, HidePreset
 from ..models import Announcement
-from dataclasses import replace
-
 from ..services.announcement_hide_rules import (
-    DeviceCounts, HideRules, comes_back, counts_click, hide_reason, is_hidden, on_click, on_impression, on_visit,
+    DeviceCounts, HideRules, comes_back, counts_click, hide_reason, is_hidden, on_click, on_impression,
+    on_other_impression, on_playback, on_visit,
 )
+from .helpers import make_station
 from .test_announcement_admin import form_data
 
 CASES = json.loads(
@@ -43,11 +44,16 @@ class SharedCasesTests(SimpleTestCase):
                 self.assertEqual(comes_back(rules, counts), case['comes_back'])
 
     def test_timelines(self):
-        """Replays each timeline: v shown, - hidden, v+c shown and clicked, x shown and closed."""
+        """Replays each timeline (the steps are explained in the cases file's "about")."""
         for timeline in CASES['timelines']:
             with self.subTest(timeline['name']):
                 rules, counts, seen = HideRules.from_payload(timeline['rules']), DeviceCounts(), []
                 for step in timeline['steps']:
+                    if step == 'o' or step.startswith('p'):
+                        counts = (on_other_impression(rules, counts) if step == 'o'
+                                  else on_playback(rules, counts, step[2:] or 'any-station'))
+                        seen.append(step)
+                        continue
                     shown, counts = on_visit(rules, counts)
                     if shown:
                         counts = on_impression(rules, counts)
@@ -94,12 +100,24 @@ class ModelValidationTests(TestCase):
         self.assertIn('impressions_after_click', self.errors(impressions_after_click=2, **BUTTON))
 
     def test_show_again_needs_both_numbers_and_a_rule_that_hides(self):
-        self.assertEqual(self.errors(max_impressions=3, show_again_times=2, show_again_after_visits=5), {})
-        self.assertEqual(self.errors(hide_after_clicks=1, show_again_times=1, show_again_after_visits=1, **BUTTON), {})
-        self.assertIn('show_again_after_visits', self.errors(max_impressions=3, show_again_times=2))
-        self.assertIn('show_again_times', self.errors(max_impressions=3, show_again_after_visits=2))
-        self.assertIn('show_again_times', self.errors(show_again_times=2, show_again_after_visits=2))
-        self.assertIn('show_again_times', self.errors(max_impressions=3, show_again_times=0, show_again_after_visits=2))
+        self.assertEqual(self.errors(max_impressions=3, show_again_times=2, show_again_after=5), {})
+        self.assertEqual(self.errors(hide_after_clicks=1, show_again_times=1, show_again_after=1, **BUTTON), {})
+        self.assertIn('show_again_after', self.errors(max_impressions=3, show_again_times=2))
+        self.assertIn('show_again_times', self.errors(max_impressions=3, show_again_after=2))
+        self.assertIn('show_again_times', self.errors(show_again_times=2, show_again_after=2))
+        self.assertIn('show_again_times', self.errors(max_impressions=3, show_again_times=0, show_again_after=2))
+        self.assertIn('show_again_after', self.errors(max_impressions=3, show_again_times=2, show_again_after=0))
+
+    def test_waits_count_one_of_the_known_events(self):
+        for count_on in ('impressions', 'visits', 'playbacks'):
+            self.assertEqual(self.errors(count_on=count_on, show_after=40), {}, count_on)
+        self.assertIn('count_on', self.errors(count_on='downloads', show_after=40))
+        self.assertIn('show_after', self.errors(show_after=0))
+
+    def test_share_needs_an_app_version_that_can_share(self):
+        share = {'action_type': 'share', 'action_label': 'Share'}
+        self.assertIn('min_app_version', self.errors(**share))
+        self.assertEqual(self.errors(min_app_version='1.8.0', **share), {})
 
     def test_main_button_clicks_need_a_button(self):
         self.assertIn('hide_click_target', self.errors(hide_after_clicks=1))
@@ -155,10 +173,12 @@ class AdminPageTests(TestCase):
 
     def test_hide_it_tab_and_saving_a_preset(self):
         page = self.client.get(reverse('admin:radio_crestin_announcement_add'))
-        self.assertContains(page, 'Hide it')
+        self.assertContains(page, 'Show &amp; hide')
         self.assertContains(page, 'After clicks, then a few more impressions')
         self.assertContains(page, 'hide_preset ==')  # the click fields show only with their preset
-        self.assertContains(page, 'name="show_again_after_visits"')
+        for name in ('count_on', 'show_after', 'show_again_times', 'show_again_after', 'share_text'):
+            self.assertContains(page, f'name="{name}"')
+        self.assertContains(page, 'count_on ==')  # the stations list shows only for playbacks
 
         data = form_data(slug='reminders', hide_preset='clicks_then_impressions', hide_after_clicks='2',
                          impressions_after_click='3', hide_click_target='any', **BUTTON, **{
@@ -196,7 +216,7 @@ class ApiTests(TestCase):
         items = self.by_slug()
 
         for key in ('hide_after_clicks', 'impressions_after_click', 'hide_click_target',
-                    'show_again_times', 'show_again_after_visits'):
+                    'count_on', 'count_station_slugs', 'show_after', 'show_again_times', 'show_again_after'):
             self.assertNotIn(key, items['plain'])  # older clients see the same payload as before
         self.assertEqual(items['plain']['max_impressions'], 3)
         self.assertEqual(items['one-click']['hide_after_clicks'], 1)
@@ -207,16 +227,33 @@ class ApiTests(TestCase):
             {'hide_after_clicks': 2, 'impressions_after_click': 5, 'hide_click_target': 'any'},
         )
 
-    def test_show_again_is_sent_only_when_set(self):
-        self.make('rounds', max_impressions=3, show_again_times=2, show_again_after_visits=5)
+    def test_waits_are_sent_only_when_set(self):
+        self.make('rounds', max_impressions=3, show_again_times=2, show_again_after=5)
+        share = self.make('share', count_on='playbacks', show_after=40, max_impressions=1, show_again_times=3,
+                          show_again_after=150, action_type='share', action_label='Share', min_app_version='1.8.0')
+        share.count_stations.set([make_station('radio-x'), make_station('radio-y')])
+        self.make('incomplete', max_impressions=3, show_again_times=2)  # a draft the admin would refuse
         items = self.by_slug()
-        self.assertEqual({key: items['rounds'].get(key) for key in ('max_impressions', 'show_again_times',
-                                                                    'show_again_after_visits', 'hide_after_clicks')},
-                         {'max_impressions': 3, 'show_again_times': 2, 'show_again_after_visits': 5,
-                          'hide_after_clicks': None})
-        Announcement.objects.update(show_again_times=None, show_again_after_visits=None)
-        cache.clear()
-        self.assertNotIn('show_again_times', self.by_slug()['rounds'])
+
+        keys = ('count_on', 'count_station_slugs', 'show_after', 'show_again_times', 'show_again_after')
+        self.assertEqual({key: items['rounds'].get(key) for key in keys},
+                         {'count_on': 'visits', 'count_station_slugs': None, 'show_after': None,
+                          'show_again_times': 2, 'show_again_after': 5})
+        self.assertEqual({key: items['share'].get(key) for key in keys},
+                         {'count_on': 'playbacks', 'count_station_slugs': ['radio-x', 'radio-y'], 'show_after': 40,
+                          'show_again_times': 3, 'show_again_after': 150})
+        for key in keys:
+            self.assertNotIn(key, items['incomplete'])
+
+    def test_share_action(self):
+        self.make('share', action_type='share', action_label='Spune și altora', min_app_version='1.8.0',
+                  share_text='Ascultă radio creștin', action_url='https://www.radiocrestin.ro')
+        self.make('share-default', action_type='share', action_label='Share', min_app_version='1.8.0')
+        items = self.by_slug()
+        self.assertEqual(items['share']['button']['action'], {
+            'type': 'share', 'url': 'https://www.radiocrestin.ro', 'share_text': 'Ascultă radio creștin'})
+        self.assertEqual(items['share-default']['button']['action'], {'type': 'share'})
+        self.assertEqual(items['share']['filters']['min_app_version'], '1.8.0')
 
     def test_detail_sends_the_rules_too(self):
         self.make('one-click', hide_after_clicks=1, **BUTTON)
@@ -229,3 +266,8 @@ class ApiTests(TestCase):
         rules = HideRules.from_payload(self.by_slug()['reminders'])
         self.assertEqual(rules, HideRules(dismissible=True, max_impressions=9, hide_after_clicks=2,
                                           impressions_after_click=5, hide_click_target='main'))
+        self.make('share', count_on='playbacks', show_after=40, max_impressions=1, show_again_times=3,
+                  show_again_after=150, action_type='share', action_label='Share', min_app_version='1.8.0')
+        rules = HideRules.from_payload(self.by_slug()['share'])
+        self.assertEqual((rules.count_on, rules.show_after, rules.show_again_times, rules.show_again_after),
+                         ('playbacks', 40, 3, 150))

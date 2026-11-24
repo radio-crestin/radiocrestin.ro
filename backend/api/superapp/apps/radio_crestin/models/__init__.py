@@ -20,8 +20,8 @@ from .session_recording import SessionRecordingConfig, SessionRecordingOverride
 from .announcement_categories import AnnouncementCategory
 from .announcement_settings import AnnouncementSettings, RotationMode
 from .announcements import (
-    Announcement, AnnouncementImage, AnnouncementStatus, ActionType, ButtonStyle, HideClickTarget, IconSize, Placement,
-    PushSchedule, TargetPlatform, WebLinkTarget,
+    Announcement, AnnouncementImage, AnnouncementStatus, ActionType, ButtonStyle, CountOn, HideClickTarget,
+    IconSize, Placement, PushSchedule, TargetPlatform, WebLinkTarget,
 )
 from .announcement_events import AnnouncementEvent, AnnouncementEventTarget, AnnouncementEventType
 from .announcement_stat_buckets import AnnouncementStatBucket, StatGranularity

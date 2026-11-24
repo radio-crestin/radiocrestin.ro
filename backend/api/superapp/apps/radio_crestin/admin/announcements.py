@@ -65,7 +65,7 @@ class AnnouncementAdmin(SuperAppModelAdmin):
     list_filter = ['status', 'placement', 'category', 'push_enabled']
     search_fields = ['title', 'slug']
     autocomplete_fields = [
-        'category', 'station', 'stations', 'test_devices', 'form',
+        'category', 'station', 'stations', 'test_devices', 'form', 'count_stations',
     ]
     readonly_fields = [
         'stats_display', 'events_display', 'history_display', 'push_status_display', 'preview_links_display',
@@ -78,7 +78,9 @@ class AnnouncementAdmin(SuperAppModelAdmin):
     conditional_fields = {
         'stations': "placement == 'station'",
         'action_label': "action_type != 'none'",
-        'action_url': HTTP_ACTIONS,
+        'action_url': f"{HTTP_ACTIONS} || action_type == 'share'",
+        'share_text': "action_type == 'share'",
+        'count_stations': "count_on == 'playbacks'",
         'web_link_target': HTTP_ACTIONS,
         'android_intent_uri': "action_type == 'android_intent'",
         'fallback_url': "action_type == 'android_intent'",
@@ -105,19 +107,20 @@ class AnnouncementAdmin(SuperAppModelAdmin):
             (_('Where it shows'), {'classes': ['tab'], 'fields': ['placement', 'stations']}),
             (_('Button & page'), {'classes': ['tab'], 'fields': [
                 'action_type', 'action_label', 'action_url', 'web_link_target',
-                'android_intent_uri', 'fallback_url', 'station', 'form',
+                'android_intent_uri', 'fallback_url', 'station', 'form', 'share_text',
                 ('button_style', 'button_icon'), ('button_color', 'button_text_color'),
                 'page_title', 'page_cover_image', 'page_markdown',
             ]}),
             (_('Schedule & display'), {'classes': ['tab'], 'fields': [
                 ('starts_at', 'ends_at'), 'hide_after_seconds',
             ]}),
-            (_('Hide it'), {'classes': ['tab'], 'description': _(
-                "When it stops showing on a device. Each device counts on its own; every rule that is set can "
-                "hide it, whichever comes first. Changing the slug shows it again to everyone."), 'fields': [
+            (_('Show & hide'), {'classes': ['tab'], 'description': _(
+                "When it shows and stops showing on a device. Each device counts on its own; every hide rule "
+                "that is set can hide it, whichever comes first. \"Show it after\" and \"Hidden for\" count "
+                "what \"Waits count\" says. Changing the slug starts every count again."), 'fields': [
                 'dismissible', 'max_impressions',
                 'hide_preset', 'hide_after_clicks', 'impressions_after_click', 'hide_click_target',
-                ('show_again_times', 'show_again_after_visits'),
+                'count_on', 'count_stations', 'show_after', ('show_again_times', 'show_again_after'),
             ]}),
             (_('Who sees it'), {'classes': ['tab'], 'description': _(
                 "Everything active is in the public list; filters only decide where it is shown, they don't "
