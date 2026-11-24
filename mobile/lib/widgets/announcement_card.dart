@@ -500,7 +500,7 @@ class _Slide extends StatelessWidget {
 
   void _onLink(String href) {
     service.report(AnnouncementEvent.clicked, item, position,
-        target: ClickTarget.card, station: station);
+        target: ClickTarget.link, station: station);
     unawaited(
         AnnouncementActions.openLink(href, LaunchMode.externalApplication));
   }

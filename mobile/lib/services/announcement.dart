@@ -1,5 +1,7 @@
 import 'dart:ui' show Color;
 
+import 'announcement_hide_rules.dart';
+
 /// What tapping an announcement's button does (`action.type` in the API).
 enum AnnouncementActionType {
   external,
@@ -337,6 +339,9 @@ class Announcement {
     this.endsAt,
     this.hideAfterSeconds,
     this.maxImpressions,
+    this.hideAfterClicks,
+    this.impressionsAfterClick,
+    this.hideClickTarget = HideClickTarget.main,
   });
 
   final String slug;
@@ -359,6 +364,26 @@ class Announcement {
   final int? hideAfterSeconds;
   final int? maxImpressions;
 
+  /// Hide it after this many clicks on the device (`hide_after_clicks`).
+  final int? hideAfterClicks;
+
+  /// After those clicks, show it this many more times
+  /// (`impressions_after_click`).
+  final int? impressionsAfterClick;
+
+  /// Which clicks count toward [hideAfterClicks].
+  final HideClickTarget hideClickTarget;
+
+  /// When it stops showing on this device.
+  AnnouncementHideRules get hideRules => AnnouncementHideRules(
+        dismissible: dismissible,
+        // 0 was "no limit" before the rules were written down.
+        maxImpressions: (maxImpressions ?? 0) > 0 ? maxImpressions : null,
+        hideAfterClicks: hideAfterClicks,
+        impressionsAfterClick: impressionsAfterClick,
+        clickTarget: hideClickTarget,
+      );
+
   /// The type of the primary button's action, for analytics.
   String get actionType =>
       (button?.action.type ?? AnnouncementActionType.none).apiName;
@@ -376,6 +401,7 @@ class Announcement {
     if (slug == null || title == null) return null;
     final category = AnnouncementCategory.fromJson(json['category']);
     final icon = json['icon'] is Map ? json['icon'] as Map : const {};
+    final rules = AnnouncementHideRules.fromJson(json);
     return Announcement(
       slug: slug,
       category: category,
@@ -401,6 +427,9 @@ class Announcement {
       endsAt: DateTime.tryParse(_string(json['ends_at']) ?? ''),
       hideAfterSeconds: (json['hide_after_seconds'] as num?)?.toInt(),
       maxImpressions: (json['max_impressions'] as num?)?.toInt(),
+      hideAfterClicks: rules.hideAfterClicks,
+      impressionsAfterClick: rules.impressionsAfterClick,
+      hideClickTarget: rules.clickTarget,
     );
   }
 }

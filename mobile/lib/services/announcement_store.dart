@@ -2,9 +2,11 @@ import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'announcement_hide_rules.dart';
+
 /// What this device remembers about announcements, in the
 /// SharedPreferences keys the announcements spec names: which were closed,
-/// how often each was seen, where rotation is,
+/// how often each was seen and clicked, where rotation is,
 /// which station announcements were opened, the device's country, a
 /// preview token, and the last list with its ETag.
 class AnnouncementStore {
@@ -12,6 +14,9 @@ class AnnouncementStore {
 
   static const dismissedKey = 'announcements_dismissed';
   static const impressionsKey = 'announcements_impressions';
+  static const clicksKey = 'announcements_clicks';
+  static const impressionsAfterClicksKey =
+      'announcements_impressions_after_clicks';
   static const rotationCursorKey = 'announcements_rotation_cursor';
   static const seenKey = 'announcements_seen';
   static const countryKey = 'announcements_country';
@@ -79,19 +84,43 @@ class AnnouncementStore {
   }
 
   /// How many times [slug] was seen on this device.
-  int impressions(String slug) => (_impressions[slug] as num?)?.toInt() ?? 0;
+  int impressions(String slug) => _count(impressionsKey, slug);
 
-  Future<void> countImpression(String slug) async {
-    final counts = _impressions..[slug] = impressions(slug) + 1;
-    await _prefs.setString(impressionsKey, jsonEncode(counts));
+  Future<void> countImpression(String slug) => _increment(impressionsKey, slug);
+
+  /// The clicks on [slug] that counted toward its `hide_after_clicks`.
+  int clicks(String slug) => _count(clicksKey, slug);
+
+  Future<void> countClick(String slug) => _increment(clicksKey, slug);
+
+  /// Impressions of [slug] after the click that reached its
+  /// `hide_after_clicks`.
+  int impressionsAfterClicks(String slug) =>
+      _count(impressionsAfterClicksKey, slug);
+
+  Future<void> countImpressionAfterClicks(String slug) =>
+      _increment(impressionsAfterClicksKey, slug);
+
+  /// Everything this device counted for [slug], for its hide rules.
+  AnnouncementCounts counts(String slug) => AnnouncementCounts(
+        impressions: impressions(slug),
+        clicks: clicks(slug),
+        impressionsAfterClicks: impressionsAfterClicks(slug),
+        dismissed: dismissed.contains(slug),
+      );
+
+  int _count(String key, String slug) =>
+      (_readMap(key)[slug] as num?)?.toInt() ?? 0;
+
+  Future<void> _increment(String key, String slug) async {
+    final counts = _readMap(key)..[slug] = _count(key, slug) + 1;
+    await _prefs.setString(key, jsonEncode(counts));
   }
 
   int get rotationCursor => _prefs.getInt(rotationCursorKey) ?? 0;
 
   Future<void> advanceRotationCursor() =>
       _prefs.setInt(rotationCursorKey, rotationCursor + 1);
-
-  Map<String, Object?> get _impressions => _readMap(impressionsKey);
 
   Map<String, Object?> _readMap(String key) {
     try {
