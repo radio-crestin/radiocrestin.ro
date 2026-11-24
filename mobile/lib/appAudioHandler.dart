@@ -49,6 +49,8 @@ import 'package:radio_crestin/services/playlist_controller.dart';
 import 'package:radio_crestin/types/playlist_item.dart';
 import 'package:radio_crestin/seek_mode_manager.dart';
 import 'package:radio_crestin/utils.dart';
+import 'package:loudness_boost/loudness_boost.dart';
+import 'package:radio_crestin/services/station_gain.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -844,8 +846,17 @@ class AppAudioHandler extends BaseAudioHandler {
 
   // Track loaded stream to avoid unnecessary reconnection on pause/resume
   String? _loadedStreamUrl;
-  String? _loadedStreamType;
+  String? _loadedStreamTypeValue;
   String? get loadedStreamType => _loadedStreamType;
+
+  /// The `type` of the stream loaded ('HLS', a direct stream's type), or
+  /// null with nothing loaded. Every change re-evaluates the station's
+  /// gain ([streamGain]): HLS has it baked in, a direct stream gets it here.
+  String? get _loadedStreamType => _loadedStreamTypeValue;
+  set _loadedStreamType(String? type) {
+    _loadedStreamTypeValue = type;
+    _syncStreamGain();
+  }
   // True while play() is loading a new source — keeps broadcast in loading state
   // to prevent spinner flash between setAudioSource() and player.play().
   bool _isConnecting = false;
@@ -1306,6 +1317,68 @@ class AppAudioHandler extends BaseAudioHandler {
     }
   }
 
+  // ── Station gain on direct streams ────────────────────────────────────
+
+  /// The station's loudness correction the radio player applies now: the
+  /// station's `audio_gain_db` on a direct stream, none on HLS (the backend
+  /// already applied it) or with nothing loaded. See [StationGain].
+  StationGain get streamGain => _streamGain;
+  StationGain _streamGain = StationGain.none;
+
+  /// The part of [streamGain] above 0 dB, on Android's LoudnessEnhancer.
+  final LoudnessBoost _loudnessBoost = const LoudnessBoost();
+
+  /// The audio session and boost last handed to [_loudnessBoost].
+  (int?, double)? _appliedBoost;
+
+  StreamSubscription<Station?>? _streamGainStationSub;
+  StreamSubscription<int?>? _audioSessionSub;
+
+  /// Follows the playing station's gain, which the 5 s poll may change,
+  /// and Android's audio session, which the boost is attached to.
+  void _initStreamGain() {
+    _streamGainStationSub =
+        currentStation.stream.listen((_) => _syncStreamGain());
+    if (_loudnessBoost.isSupported) {
+      _audioSessionSub = player.androidAudioSessionIdStream
+          .distinct()
+          .listen((_) => unawaited(_applyGainBoost()));
+    }
+  }
+
+  /// Re-evaluates [streamGain] for the stream loaded and the station
+  /// playing, and applies it when it changed.
+  void _syncStreamGain() {
+    final gain = StationGain.forStream(
+      stationGainDb: currentStation.valueOrNull?.audioGainDb,
+      streamType: _loadedStreamTypeValue,
+    );
+    if (gain == _streamGain) return;
+    _streamGain = gain;
+    _log('stream gain: ${gain.db} dB '
+        '(${_loadedStreamTypeValue ?? 'nothing'} loaded)');
+    unawaited(_applyOutputVolume());
+  }
+
+  /// Hands the boost of [streamGain] to Android's LoudnessEnhancer, once
+  /// per audio session and gain.
+  ///
+  /// Where it can't be applied (iOS, macOS, desktop, or an Android device
+  /// without the effect), the station plays at full volume: the gain is
+  /// clamped at 0 dB.
+  Future<void> _applyGainBoost() async {
+    if (!_loudnessBoost.isSupported) return;
+    final session = player.androidAudioSessionId;
+    final boostDb = _streamGain.boostDb;
+    if (_appliedBoost == (session, boostDb)) return;
+    _appliedBoost = (session, boostDb);
+    final applied =
+        await _loudnessBoost.apply(sessionId: session, gainDb: boostDb);
+    if (!applied && boostDb > 0) {
+      _log('stream gain: +$boostDb dB boost unavailable (session $session)');
+    }
+  }
+
   /// The sleep timer's fade, applied on top of the listener's volume.
   Future<void> _setOutputVolume(double fade) async {
     _sleepFade = fade;
@@ -1315,9 +1388,15 @@ class AppAudioHandler extends BaseAudioHandler {
   /// Applies the listener's volume, faded by the sleep timer, to every local
   /// engine that can be audible: the just_audio radio player and media_kit
   /// (TV, video and playlist items).
+  ///
+  /// The radio player's volume also carries the station's gain on a direct
+  /// stream ([streamGain]): a cut scales it, a boost goes to the
+  /// LoudnessEnhancer. The listener's volume, the system volume and the
+  /// slider stay as they are.
   Future<void> _applyOutputVolume() async {
     final volume = _sleepFade * listenerVolume.value;
-    await player.setVolume(volume);
+    await _applyGainBoost();
+    await player.setVolume(volume * _streamGain.volumeFactor);
     if (GetIt.instance.isRegistered<VideoPlaybackService>()) {
       await videoService.setVolume(volume);
     }
@@ -2011,6 +2090,7 @@ class AppAudioHandler extends BaseAudioHandler {
     _initPlayer();
     _initUpdateCurrentStationMetadata();
     _initPlayCounting();
+    _initStreamGain();
     // A volume the listener turned down last time.
     if (listenerVolume.value != 1.0) unawaited(_applyOutputVolume());
   }
@@ -5819,6 +5899,8 @@ class AppAudioHandler extends BaseAudioHandler {
     await _castRouteSub?.cancel();
     await _castSessionSub?.cancel();
     await _playCountSub?.cancel();
+    await _streamGainStationSub?.cancel();
+    await _audioSessionSub?.cancel();
     _playCountTracker.dispose();
     await _exitVideoMode(stopVideo: true);
     _loadedStreamUrl = null;

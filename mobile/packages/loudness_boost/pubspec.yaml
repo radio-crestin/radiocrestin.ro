@@ -1,0 +1,19 @@
+name: loudness_boost
+description: Raises the loudness of an Android audio session above full volume with the platform's LoudnessEnhancer (a gain with a limiter), for a station's positive audio gain.
+version: 1.0.0
+publish_to: none
+
+environment:
+  sdk: ">=3.1.0 <4.0.0"
+  flutter: ">=3.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+flutter:
+  plugin:
+    platforms:
+      android:
+        package: com.radiocrestin.loudness_boost
+        pluginClass: LoudnessBoostPlugin

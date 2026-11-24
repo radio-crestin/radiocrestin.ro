@@ -20,6 +20,7 @@ query GetStations {
     }
     station_type
     hls_dvr_stream_url
+    audio_gain_db
     playlist_items {
       id
       order

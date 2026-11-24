@@ -100,6 +100,10 @@ dependencies:
     path: packages/flutter_chrome_cast
   flutter_airplay:
     path: packages/flutter_airplay
+  # A station's positive audio gain on a direct stream, on Android: a
+  # LoudnessEnhancer created only while it is needed (lib/services/station_gain.dart).
+  loudness_boost:
+    path: packages/loudness_boost
   # Video playback engine for TV channels and video playlist items. media_kit
   # (libmpv) plays HLS/MP4 video with perfect audio+video sync in the app's
   # "video mode". media_kit_libs_video (above) already ships the native libs.

@@ -7,6 +7,7 @@ class FakeStation {
     this.hasHls = true,
     this.hasMp3 = true,
     this.youtubePlaylistId,
+    this.audioGainDb = 0,
   });
 
   final int id;
@@ -22,6 +23,10 @@ class FakeStation {
   /// Set for a playlist station: its one item, a whole YouTube playlist.
   final String? youtubePlaylistId;
 
+  /// Its loudness correction (`audio_gain_db`): baked into its HLS stream
+  /// by the backend, applied by the app on its MP3 stream.
+  final double audioGainDb;
+
   bool get isPlaylist => youtubePlaylistId != null;
 
   String get songTitle => 'Song of $title';
@@ -34,11 +39,16 @@ class FakeStation {
 /// The tests play the first four. The rest fill the list to the size the
 /// app trusts: it rejects a catalog of fewer than 10 stations as broken.
 abstract final class Stations {
-  static const alpha = FakeStation(id: 9001, slug: 'e2e-alpha', title: 'E2E Alpha');
+  /// A loud station, turned down 6 dB.
+  static const alpha = FakeStation(
+      id: 9001, slug: 'e2e-alpha', title: 'E2E Alpha', audioGainDb: -6);
   static const beta = FakeStation(id: 9002, slug: 'e2e-beta', title: 'E2E Beta');
   static const gamma = FakeStation(
       id: 9003, slug: 'e2e-gamma', title: 'E2E Gamma', hasHls: false);
-  static const delta = FakeStation(id: 9004, slug: 'e2e-delta', title: 'E2E Delta');
+
+  /// A quiet station, turned up 4 dB.
+  static const delta = FakeStation(
+      id: 9004, slug: 'e2e-delta', title: 'E2E Delta', audioGainDb: 4);
 
   /// A playlist station whose only item is a real, public YouTube playlist:
   /// the YouTube player itself can't be faked.
@@ -186,6 +196,7 @@ class StationCatalog {
         'proxy_stream_url': null,
         'hls_stream_url': station.hasHls ? hlsUrl(station) : null,
         'hls_dvr_stream_url': null,
+        'audio_gain_db': station.audioGainDb,
         'thumbnail_url': imageUrl(station.slug),
         'total_listeners': 12,
         'radio_crestin_listeners': 0,

@@ -395,6 +395,13 @@ const documentNodeQueryGetStations = DocumentNode(
                   selectionSet: null,
                 ),
                 FieldNode(
+                  name: NameNode(value: 'audio_gain_db'),
+                  alias: null,
+                  arguments: [],
+                  directives: [],
+                  selectionSet: null,
+                ),
+                FieldNode(
                   name: NameNode(value: 'playlist_items'),
                   alias: null,
                   arguments: [],
@@ -963,6 +970,7 @@ class Query$GetStations$stations {
     required this.station_streams,
     this.station_type,
     this.hls_dvr_stream_url,
+    this.audio_gain_db,
     this.playlist_items,
     required this.posts,
     this.uptime,
@@ -988,6 +996,7 @@ class Query$GetStations$stations {
     final l$station_streams = json['station_streams'];
     final l$station_type = json['station_type'];
     final l$hls_dvr_stream_url = json['hls_dvr_stream_url'];
+    final l$audio_gain_db = json['audio_gain_db'];
     final l$playlist_items = json['playlist_items'];
     final l$posts = json['posts'];
     final l$uptime = json['uptime'];
@@ -1017,6 +1026,7 @@ class Query$GetStations$stations {
           .toList(),
       station_type: (l$station_type as String?),
       hls_dvr_stream_url: (l$hls_dvr_stream_url as String?),
+      audio_gain_db: (l$audio_gain_db as num?)?.toDouble(),
       playlist_items: (l$playlist_items as List<dynamic>?)
           ?.map(
             (e) => Query$GetStations$stations$playlist_items.fromJson(
@@ -1084,6 +1094,8 @@ class Query$GetStations$stations {
 
   final String? hls_dvr_stream_url;
 
+  final double? audio_gain_db;
+
   final List<Query$GetStations$stations$playlist_items>? playlist_items;
 
   final List<Query$GetStations$stations$posts> posts;
@@ -1132,6 +1144,8 @@ class Query$GetStations$stations {
     _resultData['station_type'] = l$station_type;
     final l$hls_dvr_stream_url = hls_dvr_stream_url;
     _resultData['hls_dvr_stream_url'] = l$hls_dvr_stream_url;
+    final l$audio_gain_db = audio_gain_db;
+    _resultData['audio_gain_db'] = l$audio_gain_db;
     final l$playlist_items = playlist_items;
     _resultData['playlist_items'] = l$playlist_items
         ?.map((e) => e.toJson())
@@ -1167,6 +1181,7 @@ class Query$GetStations$stations {
     final l$station_streams = station_streams;
     final l$station_type = station_type;
     final l$hls_dvr_stream_url = hls_dvr_stream_url;
+    final l$audio_gain_db = audio_gain_db;
     final l$playlist_items = playlist_items;
     final l$posts = posts;
     final l$uptime = uptime;
@@ -1190,6 +1205,7 @@ class Query$GetStations$stations {
       Object.hashAll(l$station_streams.map((v) => v)),
       l$station_type,
       l$hls_dvr_stream_url,
+      l$audio_gain_db,
       l$playlist_items == null
           ? null
           : Object.hashAll(l$playlist_items.map((v) => v)),
@@ -1297,6 +1313,11 @@ class Query$GetStations$stations {
     if (l$hls_dvr_stream_url != lOther$hls_dvr_stream_url) {
       return false;
     }
+    final l$audio_gain_db = audio_gain_db;
+    final lOther$audio_gain_db = other.audio_gain_db;
+    if (l$audio_gain_db != lOther$audio_gain_db) {
+      return false;
+    }
     final l$playlist_items = playlist_items;
     final lOther$playlist_items = other.playlist_items;
     if (l$playlist_items != null && lOther$playlist_items != null) {
@@ -1388,6 +1409,7 @@ abstract class CopyWith$Query$GetStations$stations<TRes> {
     List<Query$GetStations$stations$station_streams>? station_streams,
     String? station_type,
     String? hls_dvr_stream_url,
+    double? audio_gain_db,
     List<Query$GetStations$stations$playlist_items>? playlist_items,
     List<Query$GetStations$stations$posts>? posts,
     Query$GetStations$stations$uptime? uptime,
@@ -1466,6 +1488,7 @@ class _CopyWithImpl$Query$GetStations$stations<TRes>
     Object? station_streams = _undefined,
     Object? station_type = _undefined,
     Object? hls_dvr_stream_url = _undefined,
+    Object? audio_gain_db = _undefined,
     Object? playlist_items = _undefined,
     Object? posts = _undefined,
     Object? uptime = _undefined,
@@ -1522,6 +1545,9 @@ class _CopyWithImpl$Query$GetStations$stations<TRes>
       hls_dvr_stream_url: hls_dvr_stream_url == _undefined
           ? _instance.hls_dvr_stream_url
           : (hls_dvr_stream_url as String?),
+      audio_gain_db: audio_gain_db == _undefined
+          ? _instance.audio_gain_db
+          : (audio_gain_db as double?),
       playlist_items: playlist_items == _undefined
           ? _instance.playlist_items
           : (playlist_items
@@ -1656,6 +1682,7 @@ class _CopyWithStubImpl$Query$GetStations$stations<TRes>
     List<Query$GetStations$stations$station_streams>? station_streams,
     String? station_type,
     String? hls_dvr_stream_url,
+    double? audio_gain_db,
     List<Query$GetStations$stations$playlist_items>? playlist_items,
     List<Query$GetStations$stations$posts>? posts,
     Query$GetStations$stations$uptime? uptime,

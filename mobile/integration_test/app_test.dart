@@ -147,6 +147,72 @@ void main() {
     });
   });
 
+  group('Station gain', () {
+    // The backend bakes each station's gain into its HLS stream; on the
+    // direct (MP3) stream the app applies it, so both sound the same.
+    double volumeFor(double db) => pow(10, db / 20).toDouble();
+
+    Future<void> expectVolume(RadioApp app, double volume,
+            {required String reason}) =>
+        app.waitFor(
+          () => (app.audio.player.volume - volume).abs() < 0.001,
+          reason: '$reason (volume ${app.audio.player.volume}, '
+              '${app.audio.streamGain})',
+          timeout: const Duration(seconds: 5),
+        );
+
+    test('a station sounds the same on HLS and on its MP3 stream',
+        (app) async {
+      await app.expectPlaying(Stations.alpha,
+          since: await app.tapStation(Stations.alpha));
+      await expectVolume(app, 1.0, reason: 'HLS to play as it is');
+
+      await app.openSettings();
+      await app.toggleSetting('Mod dezvoltator');
+      final mp3At = await app.toggleSetting('Folosește MP3 cu prioritate');
+      await app.expectPlayingFrom(Stations.alpha, Origin.mp3, since: mp3At);
+      await expectVolume(app, volumeFor(Stations.alpha.audioGainDb),
+          reason: 'the MP3 stream to play 6 dB down');
+
+      final hlsAt = await app.toggleSetting('Folosește MP3 cu prioritate');
+      await app.expectPlayingFrom(Stations.alpha, Origin.hls, since: hlsAt);
+      await expectVolume(app, 1.0, reason: 'HLS to play as it is again');
+    });
+
+    test('falling back to the MP3 stream applies the gain', (app) async {
+      server.conditions.set(
+        const Link(outage: Outage.serverError),
+        origins: [Origin.hls],
+      );
+      await app.expectPlayingFrom(Stations.alpha, Origin.mp3,
+          since: await app.tapStation(Stations.alpha));
+      await expectVolume(app, volumeFor(Stations.alpha.audioGainDb),
+          reason: 'the fallback to play 6 dB down');
+    });
+
+    test('a quiet station is boosted on its MP3 stream, never clipped',
+        (app) async {
+      server.conditions.set(
+        const Link(outage: Outage.serverError),
+        origins: [Origin.hls],
+      );
+      await app.expectPlayingFrom(Stations.delta, Origin.mp3,
+          since: await app.tapStation(Stations.delta));
+      // The volume stays at full; the 4 dB above it go to Android's
+      // LoudnessEnhancer (a limiter), and are left out elsewhere.
+      await expectVolume(app, 1.0, reason: 'the volume to stay at full');
+      expect(app.audio.streamGain.boostDb, Stations.delta.audioGainDb,
+          reason: 'the 4 dB boost is asked for');
+
+      final switchedAt = await app.tapStation(Stations.alpha);
+      await app.expectPlayingFrom(Stations.alpha, Origin.mp3,
+          since: switchedAt);
+      await expectVolume(app, volumeFor(Stations.alpha.audioGainDb),
+          reason: "the next station's own gain");
+      expect(app.audio.streamGain.boostDb, 0, reason: 'no boost left');
+    });
+  });
+
   group('Bad network', () {
     test('starts and keeps playing on a slow mobile network', (app) async {
       server.conditions.set(
