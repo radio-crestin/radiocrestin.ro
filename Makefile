@@ -3,7 +3,7 @@
 VERSION := $(shell cat VERSION)
 TAG     := v$(VERSION)
 
-.PHONY: version bump-patch bump-minor bump-major check-version release promote
+.PHONY: version bump-patch bump-minor bump-major check-version release release-video promote
 
 version:
 	@echo $(VERSION)
@@ -20,9 +20,13 @@ release: check-version
 	@git diff --quiet HEAD || { echo "Commit your changes first" >&2; exit 1; }
 	@git fetch -q origin main && [ "$$(git rev-parse HEAD)" = "$$(git rev-parse origin/main)" ] || \
 	  { echo "Pull or push first: HEAD differs from origin/main" >&2; exit 1; }
-	git tag -a $(TAG) -m "Radio Crestin $(TAG)"
+	git tag -a $(TAG) -m "$(TAG)"
 	git push origin $(TAG)
 	@echo "Prerelease: https://github.com/radio-crestin/radiocrestin.ro/releases/tag/$(TAG)"
+
+# The release's narrated video, attached and leading its notes (needed before promote).
+release-video:
+	@scripts/release/video.sh $(TAG)
 
 promote:
 	@scripts/release/promote.sh $(TAG)

@@ -107,14 +107,19 @@ Full setup, tests and conventions: [`web/README.md`](web/README.md) ·
 
 The website, the app and the backend share **one version**, kept in [`VERSION`](VERSION) (and mirrored in
 `web/package.json` and `mobile/pubspec.yaml`; CI fails if they disagree). Each version is one tag, `v1.2.3`,
-and one release, **Radio Crestin v1.2.3**, whose notes cover all three apps.
+and one release, titled **v1.2.3**, whose notes have a section for each app.
 
 1. **Bump**, on a branch: `make bump-patch` (or `bump-minor`, `bump-major`) at the root, then merge the PR.
 2. **Tag**, from an up-to-date `main`: `make release`. The [release workflow](.github/workflows/release.yml)
-   creates a prerelease with the app's notes and what changed in `web/` and `backend/`.
-3. **Ship the app**: `make release` in `mobile/` builds every platform and uploads the downloads and the
-   narrated video to that release ([guide](mobile/docs/releasing.md)).
-4. **Publish**: `make promote`. The release becomes **latest** only when the app's downloads are attached,
+   creates the prerelease: a section each for `mobile/`, `web/` and `backend/` listing what changed there
+   since that app's previous release (`scripts/release/notes.sh`).
+3. **Video**, for every release: `make release-video` narrates `mobile/release-notes/v1.2.3.md`
+   ([how](mobile/release-notes/README.md)), attaches the video, its poster and the slides, and opens the
+   notes with it.
+4. **Ship the app**, when `mobile/` changed: `make release` in `mobile/` builds every platform and uploads
+   the downloads to that release ([guide](mobile/docs/releasing.md)).
+5. **Publish**: `make promote`. It refuses a release without its video. The release becomes **latest** only
+   when the app's downloads are attached,
    so `https://github.com/radio-crestin/radiocrestin.ro/releases/latest/download/radio-crestin-android.apk`
    (and the `.dmg`, `.ipa`, Windows `.zip`) always points at the newest app build.
 

@@ -328,7 +328,7 @@ publish: release-notes
 	@gh auth status >/dev/null 2>&1 || { echo "ERROR: gh not authenticated (run: gh auth login)"; exit 1; }
 	@if ! gh release view $(GIT_TAG) -R $(GH_REPO) >/dev/null 2>&1; then \
 	  gh release create $(GIT_TAG) -R $(GH_REPO) \
-	    --title "Radio Crestin $(TAG)" \
+	    --title "$(TAG)" \
 	    --notes-file $(RELEASE_NOTES) \
 	    --prerelease; \
 	else \

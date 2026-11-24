@@ -1,9 +1,10 @@
 # One version for the whole repository: pushing a vX.Y.Z tag (`make release` at the root) creates
-# the GitHub release "Radio Crestin vX.Y.Z" as a prerelease. Its notes link the app's hand-written
-# notes and list what changed in web/ and backend/ (scripts/release/notes.sh).
-# The app's builds are made on a Mac: `make release` in mobile/ uploads them to this same release
-# and rewrites its notes with the narrated video. `make promote` then publishes it; it becomes
-# "latest" only with the app's downloads attached (scripts/release/promote.sh).
+# the GitHub release "vX.Y.Z" as a prerelease. Its notes have one section per app
+# (mobile/, web/, backend/): what changed in that folder since its previous release, and for the app
+# a link to the hand-written listeners' notes (scripts/release/notes.sh).
+# On a Mac, `make release-video` attaches the narrated video and opens the notes with it, and when
+# mobile/ changed `make release` in mobile/ uploads the app's builds. `make promote` then publishes
+# it (not without the video); it becomes "latest" only with the app's downloads attached.
 name: Release
 
 on:
@@ -36,17 +37,6 @@ jobs:
             echo "$TAG already has a release (the app's make publish made it first)"
             exit 0
           fi
-          notes="mobile/release-notes/$TAG.md"
-          if [ -f "$notes" ]; then
-            {
-              echo "## 📱 App"
-              echo
-              echo "What's new for listeners: [$notes](https://github.com/$GITHUB_REPOSITORY/blob/$TAG/$notes)"
-              echo
-              scripts/release/notes.sh "$TAG"
-            } > notes.md
-          else
-            scripts/release/notes.sh "$TAG" --app > notes.md
-          fi
+          scripts/release/notes.sh "$TAG" > notes.md
           gh release create "$TAG" --verify-tag --prerelease --latest=false \
-            --title "Radio Crestin $TAG" --notes-file notes.md
+            --title "$TAG" --notes-file notes.md
