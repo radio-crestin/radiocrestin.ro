@@ -10,6 +10,9 @@ enum AnnouncementActionType {
   page,
   station,
   form,
+
+  /// Opens the system share sheet with a link to the app (`share`).
+  share,
   none;
 
   /// The API's name for this type, also sent to PostHog as `action_type`.
@@ -32,6 +35,7 @@ class AnnouncementAction {
     this.fallbackUrl,
     this.stationSlug,
     this.formSlug,
+    this.shareText,
   });
 
   final AnnouncementActionType type;
@@ -40,6 +44,10 @@ class AnnouncementAction {
   final String? fallbackUrl;
   final String? stationSlug;
   final String? formSlug;
+
+  /// For [AnnouncementActionType.share]: the text shared with [url]; null
+  /// for the app's own invitation.
+  final String? shareText;
 
   static AnnouncementAction? fromJson(Object? json) {
     if (json is! Map) return null;
@@ -50,6 +58,7 @@ class AnnouncementAction {
       fallbackUrl: _string(json['fallback_url']),
       stationSlug: _string(json['station_slug']),
       formSlug: _string(json['form_slug']),
+      shareText: _string(json['share_text']),
     );
   }
 }
@@ -342,8 +351,11 @@ class Announcement {
     this.hideAfterClicks,
     this.impressionsAfterClick,
     this.hideClickTarget = HideClickTarget.main,
+    this.countOn = CountOn.visits,
+    this.countStationSlugs = const [],
+    this.showAfter,
     this.showAgainTimes,
-    this.showAgainAfterVisits,
+    this.showAgainAfter,
   });
 
   final String slug;
@@ -376,13 +388,23 @@ class Announcement {
   /// Which clicks count toward [hideAfterClicks].
   final HideClickTarget hideClickTarget;
 
+  /// What [showAfter] and [showAgainAfter] count (`count_on`).
+  final CountOn countOn;
+
+  /// With [CountOn.playbacks], the stations whose playbacks count
+  /// (`count_station_slugs`); empty: any station.
+  final List<String> countStationSlugs;
+
+  /// [countOn] events before its first showing (`show_after`).
+  final int? showAfter;
+
   /// After max impressions or the clicks hid it, it comes back this many
-  /// times (`show_again_times`), each after [showAgainAfterVisits] visits.
+  /// times (`show_again_times`), each after [showAgainAfter] events.
   final int? showAgainTimes;
 
-  /// Visits it stays hidden before it comes back
-  /// (`show_again_after_visits`).
-  final int? showAgainAfterVisits;
+  /// [countOn] events it stays hidden before each return
+  /// (`show_again_after`).
+  final int? showAgainAfter;
 
   /// When it stops showing on this device.
   AnnouncementHideRules get hideRules => AnnouncementHideRules(
@@ -392,9 +414,15 @@ class Announcement {
         hideAfterClicks: hideAfterClicks,
         impressionsAfterClick: impressionsAfterClick,
         clickTarget: hideClickTarget,
+        countOn: countOn,
+        countStationSlugs: countStationSlugs,
+        showAfter: showAfter,
         showAgainTimes: showAgainTimes,
-        showAgainAfterVisits: showAgainAfterVisits,
+        showAgainAfter: showAgainAfter,
       );
+
+  /// Whether its button shares the app.
+  bool get sharesApp => button?.action.type == AnnouncementActionType.share;
 
   /// The type of the primary button's action, for analytics.
   String get actionType =>
@@ -442,8 +470,11 @@ class Announcement {
       hideAfterClicks: rules.hideAfterClicks,
       impressionsAfterClick: rules.impressionsAfterClick,
       hideClickTarget: rules.clickTarget,
+      countOn: rules.countOn,
+      countStationSlugs: rules.countStationSlugs,
+      showAfter: rules.showAfter,
       showAgainTimes: rules.showAgainTimes,
-      showAgainAfterVisits: rules.showAgainAfterVisits,
+      showAgainAfter: rules.showAgainAfter,
     );
   }
 }
