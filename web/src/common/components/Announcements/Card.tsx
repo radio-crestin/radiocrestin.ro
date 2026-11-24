@@ -144,8 +144,8 @@ export default function Card({ onSlot }: { onSlot: (state: SlotState) => void })
       if (tap.kind === "dismiss") actions.onDismiss(a);
       else if (tap.kind === "bodyLink") actions.onLink(a, tap.href ?? "");
       else if (tap.kind === "link") {
-        recordAnnouncementEvent(a, "clicked", { position: positionOf(a), target: "button" });
         actions.onClicked(a, "button");
+        recordAnnouncementEvent(a, "clicked", { position: positionOf(a), target: "button" });
       }
       // a card tap on a link can't be replayed (it would be a pop-up); the rest open here
       else if (tap.kind === "primary" || resolveWebAction(a.button?.action)?.kind !== "link") actions.onPrimary(a, tap.kind === "card" ? "card" : "button");
