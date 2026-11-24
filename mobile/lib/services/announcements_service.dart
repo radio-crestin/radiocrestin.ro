@@ -423,7 +423,9 @@ class AnnouncementsService with WidgetsBindingObserver {
   void _countClick(Announcement item, ClickTarget? target) {
     final rules = item.hideRules;
     final limit = rules.hideAfterClicks;
-    if (limit == null || !rules.countsClick(target?.name)) return;
+    final counts = rules.countsClick(
+        AnnouncementEvent.clicked.apiName, target?.name);
+    if (limit == null || !counts) return;
     final clicks = _store.clicks(item.slug) + 1;
     unawaited(_store.countClick(item.slug));
     if (clicks == limit) _clicksReachedThisLaunch.add(item.slug);

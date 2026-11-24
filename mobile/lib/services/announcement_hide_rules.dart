@@ -62,13 +62,17 @@ class AnnouncementHideRules {
         clickTarget: HideClickTarget.parse(json['hide_click_target']),
       );
 
-  /// Whether a `clicked` event with [target] (`button`, `card`, `link`,
-  /// or null from older clients) counts toward [hideAfterClicks].
-  bool countsClick(String? target) =>
-      clickTarget == HideClickTarget.any ||
-      target == null ||
-      target == 'button' ||
-      target == 'card';
+  /// Whether an event of [type] (`clicked`, `secondary_clicked`, ...)
+  /// on [target] (`button`, `card`, `link`, or null from older clients)
+  /// counts toward [hideAfterClicks].
+  bool countsClick(String type, String? target) => switch (type) {
+        'secondary_clicked' => clickTarget == HideClickTarget.any,
+        'clicked' => clickTarget == HideClickTarget.any ||
+            target == null ||
+            target == 'button' ||
+            target == 'card',
+        _ => false,
+      };
 
   /// Whether the device's counted clicks reached [hideAfterClicks].
   bool clicksReached(int clicks) {
