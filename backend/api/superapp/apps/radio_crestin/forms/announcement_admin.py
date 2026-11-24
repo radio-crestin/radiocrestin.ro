@@ -5,9 +5,11 @@ from django import forms
 from django.core.files.uploadedfile import UploadedFile
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
-from unfold.widgets import UnfoldAdminCheckboxSelectMultipleWidget, UnfoldAdminTextareaWidget
+from unfold.widgets import (
+    UnfoldAdminCheckboxSelectMultipleWidget, UnfoldAdminRadioSelectWidget, UnfoldAdminTextareaWidget,
+)
 
-from ..models import ActionType, Announcement, ButtonStyle, Placement, TargetPlatform
+from ..models import ActionType, Announcement, ButtonStyle, HideClickTarget, Placement, TargetPlatform
 from ..services.announcement_icons import ImageRejected, clean_icon
 
 ICON_REJECTIONS = {
@@ -67,7 +69,36 @@ class ListTextField(forms.CharField):
             raise forms.ValidationError(_('Not valid: %(items)s'), params={'items': ', '.join(invalid)})
 
 
+class HidePreset:
+    """The "Hide it" presets: each sets hide_after_clicks and impressions_after_click (docs/announcement-hide-rules.md)."""
+    NEVER = 'never'
+    ONE_CLICK = 'one_click'
+    CLICKS = 'clicks'
+    CLICKS_THEN_IMPRESSIONS = 'clicks_then_impressions'
+    CHOICES = [
+        (NEVER, _('Never: clicks don\'t hide it')),
+        (ONE_CLICK, _('After one click')),
+        (CLICKS, _('After a number of clicks')),
+        (CLICKS_THEN_IMPRESSIONS, _('After clicks, then a few more impressions')),
+    ]
+
+    @classmethod
+    def of(cls, hide_after_clicks, impressions_after_click):
+        if hide_after_clicks is None:
+            return cls.NEVER
+        if impressions_after_click:
+            return cls.CLICKS_THEN_IMPRESSIONS
+        return cls.ONE_CLICK if hide_after_clicks == 1 else cls.CLICKS
+
+
 class AnnouncementAdminForm(forms.ModelForm):
+    hide_preset = forms.ChoiceField(
+        label=_('Hide it after clicks'), choices=HidePreset.CHOICES, required=False,
+        widget=UnfoldAdminRadioSelectWidget,
+        help_text=_('Counted on each device. "Then a few more impressions" keeps reminding people who clicked, '
+                    'then hides it. Closing it and the max impressions above still hide it too, whichever '
+                    'comes first.'),
+    )
     platforms = forms.MultipleChoiceField(
         label=_('Platforms'), choices=TargetPlatform.choices, required=False,
         widget=UnfoldAdminCheckboxSelectMultipleWidget, help_text=_('None ticked means everywhere.'),
@@ -107,6 +138,14 @@ class AnnouncementAdminForm(forms.ModelForm):
             'push_body': _('Plain text. Empty uses the description without markdown.'),
         }
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if 'hide_click_target' in self.fields:  # hidden with the "Never" preset: then the default applies
+            self.fields['hide_click_target'].required = False
+        if 'hide_preset' not in self.initial:
+            self.initial['hide_preset'] = HidePreset.of(
+                self.instance.hide_after_clicks, self.instance.impressions_after_click)
+
     def clean_slug(self):
         slug = self.cleaned_data['slug']
         if slug in RESERVED_SLUGS:
@@ -130,7 +169,24 @@ class AnnouncementAdminForm(forms.ModelForm):
         self._check_placement(data)
         self._check_button(data)
         self._require_body_or_button(data)
+        self._apply_hide_preset(data)
         return data
+
+    def _apply_hide_preset(self, data):
+        """The preset decides which of the click fields apply; the ones it hides are cleared, not kept."""
+        if 'hide_click_target' in self.fields and not data.get('hide_click_target'):
+            data['hide_click_target'] = HideClickTarget.MAIN
+        preset = data.get('hide_preset')
+        if preset == HidePreset.NEVER:
+            data['hide_after_clicks'] = data['impressions_after_click'] = None
+        elif preset == HidePreset.ONE_CLICK:
+            data['hide_after_clicks'], data['impressions_after_click'] = 1, None
+        elif preset == HidePreset.CLICKS:
+            data['impressions_after_click'] = None
+            self._require(data, 'hide_after_clicks', _('How many clicks hide it?'))
+        elif preset == HidePreset.CLICKS_THEN_IMPRESSIONS:
+            self._require(data, 'hide_after_clicks', _('How many clicks hide it?'))
+            self._require(data, 'impressions_after_click', _('How many more times should it show after that?'))
 
     def _require(self, data, field, message):
         if not data.get(field):

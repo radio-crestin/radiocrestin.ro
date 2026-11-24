@@ -155,6 +155,17 @@ def _icon_payload(announcement: Announcement, absolute_url: AbsoluteUrl) -> dict
     return {**icon, 'size': announcement.icon_size} if icon else {}
 
 
+def _hide_rules_payload(announcement: Announcement) -> dict:
+    """The click hide rules (backend/docs/announcement-hide-rules.md), only when set: older clients ignore them."""
+    if announcement.hide_after_clicks is None:
+        return {}
+    return _compact({
+        'hide_after_clicks': announcement.hide_after_clicks,
+        'impressions_after_click': announcement.impressions_after_click,
+        'hide_click_target': announcement.hide_click_target,
+    })
+
+
 def serialize(announcement: Announcement, absolute_url: AbsoluteUrl = lambda url: url, *,
               with_page_body: bool = False) -> dict:
     """One announcement as the API sends it; the single endpoint also sends the page body."""
@@ -175,6 +186,7 @@ def serialize(announcement: Announcement, absolute_url: AbsoluteUrl = lambda url
         'ends_at': iso(announcement.ends_at),
         'hide_after_seconds': announcement.hide_after_seconds,
         'max_impressions': announcement.max_impressions,
+        **_hide_rules_payload(announcement),
         'filters': filters_payload(announcement),
     })
 

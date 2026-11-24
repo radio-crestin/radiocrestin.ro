@@ -11,7 +11,7 @@ from django.utils.translation import gettext_lazy as _
 
 from superapp.apps.admin_portal.admin import SuperAppModelAdmin, SuperAppTabularInline
 from superapp.apps.admin_portal.sites import superapp_admin_site
-from ..forms.announcement_admin import AnnouncementAdminForm
+from ..forms.announcement_admin import AnnouncementAdminForm, HidePreset
 from ..models import Announcement, AnnouncementImage, AnnouncementSettings, PushSchedule
 from ..services import announcement_order, announcement_push, announcement_stats
 from . import announcement_history
@@ -92,6 +92,9 @@ class AnnouncementAdmin(SuperAppModelAdmin):
         'push_title': 'push_enabled == true',
         'push_body': 'push_enabled == true',
         'push_image': 'push_enabled == true',
+        'hide_after_clicks': f"hide_preset == '{HidePreset.CLICKS}' || hide_preset == '{HidePreset.CLICKS_THEN_IMPRESSIONS}'",
+        'impressions_after_click': f"hide_preset == '{HidePreset.CLICKS_THEN_IMPRESSIONS}'",
+        'hide_click_target': f"hide_preset && hide_preset != '{HidePreset.NEVER}'",
     }
 
     def get_fieldsets(self, request, obj=None):
@@ -107,7 +110,13 @@ class AnnouncementAdmin(SuperAppModelAdmin):
                 'page_title', 'page_cover_image', 'page_markdown',
             ]}),
             (_('Schedule & display'), {'classes': ['tab'], 'fields': [
-                ('starts_at', 'ends_at'), 'dismissible', 'hide_after_seconds', 'max_impressions',
+                ('starts_at', 'ends_at'), 'hide_after_seconds',
+            ]}),
+            (_('Hide it'), {'classes': ['tab'], 'description': _(
+                "When it stops showing on a device. Each device counts on its own; every rule that is set can "
+                "hide it, whichever comes first. Changing the slug shows it again to everyone."), 'fields': [
+                'dismissible', 'max_impressions',
+                'hide_preset', 'hide_after_clicks', 'impressions_after_click', 'hide_click_target',
             ]}),
             (_('Who sees it'), {'classes': ['tab'], 'description': _(
                 "Everything active is in the public list; filters only decide where it is shown, they don't "

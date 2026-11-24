@@ -1,3 +1,4 @@
+from django.core.exceptions import ValidationError
 from django.core.validators import FileExtensionValidator, MinValueValidator
 from django.db import models
 from django.utils import timezone
@@ -59,6 +60,12 @@ class TargetPlatform(models.TextChoices):
     WEB_DESKTOP = 'web_desktop', _('Website on desktop')
     ANDROID = 'android', _('Android app')
     IOS = 'ios', _('iOS app')
+
+
+class HideClickTarget(models.TextChoices):
+    """Which clicks count toward `hide_after_clicks` (docs/announcement-hide-rules.md)."""
+    MAIN = 'main', _('The main button (or the card, when the whole card is the button)')
+    ANY = 'any', _('Any click on the card: the main button, a second button or a link in the description')
 
 
 class AnnouncementStatus(models.TextChoices):
@@ -178,6 +185,22 @@ class Announcement(models.Model):
     )
     max_impressions = models.PositiveIntegerField(
         _("Max impressions per device"), null=True, blank=True,
+        help_text=_("Hide it on a device after it was shown this many times there. Empty: no limit."),
+    )
+
+    # Hide rules after clicks, counted per device by the clients; every rule that is set can hide it,
+    # whichever matches first. The semantics and shared test cases: backend/docs/announcement-hide-rules.md.
+    hide_after_clicks = models.PositiveIntegerField(
+        _("Number of clicks"), null=True, blank=True, validators=[MinValueValidator(1)],
+        help_text=_("Hide it on a device after this many clicks there; 1 is the first click. "
+                    "Empty: clicks never hide it."),
+    )
+    impressions_after_click = models.PositiveIntegerField(
+        _("Then show it this many more times"), null=True, blank=True, validators=[MinValueValidator(1)],
+        help_text=_("After those clicks, show it this many more times as a reminder, then hide it."),
+    )
+    hide_click_target = models.CharField(
+        _("Clicks that count"), max_length=8, choices=HideClickTarget.choices, default=HideClickTarget.MAIN,
     )
 
     # Filters: every rule that is set must match; empty means everyone. Clients evaluate
@@ -234,6 +257,19 @@ class Announcement(models.Model):
 
     def __str__(self):
         return self.title
+
+    def clean(self):
+        super().clean()
+        errors = {}
+        if self.impressions_after_click is not None and self.hide_after_clicks is None:
+            errors['impressions_after_click'] = _(
+                'Set the number of clicks first: these impressions are counted after those clicks.')
+        if (self.hide_after_clicks is not None and self.hide_click_target == HideClickTarget.MAIN
+                and self.action_type == ActionType.NONE):
+            errors['hide_click_target'] = _(
+                'This announcement has no button to click: count any click, or add a button.')
+        if errors:
+            raise ValidationError(errors)
 
     def save(self, *args, **kwargs):
         if self.position is None:  # a new announcement goes last
