@@ -56,7 +56,7 @@ class Stations(models.Model):
         _("Audio Gain (dB)"),
         default=0.0,
         validators=[MinValueValidator(-20), MaxValueValidator(20)],
-        help_text=_("Volume change applied to the live HLS stream so every station plays about as loud (-16 LUFS). Negative makes the station quieter, positive louder (with a peak limiter). Measure it with backend/streaming/tools/measure_loudness.py. A change restarts the station's stream pod within a minute."),
+        help_text=_("Volume change so every station plays about as loud (-16 LUFS): applied to the live HLS stream, and also by the website and app when they play the direct stream (they read it from the API). Negative makes the station quieter, positive louder (with a peak limiter). Measure it with backend/streaming/tools/measure_loudness.py. A change restarts the station's stream pod within a minute."),
     )
 
     # Metadata timestamp source configuration

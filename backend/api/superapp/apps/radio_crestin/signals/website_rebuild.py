@@ -17,7 +17,7 @@ WEBSITE_FIELDS = {
         'title', 'slug', 'description', 'description_action_title', 'description_link',
         'thumbnail', 'thumbnail_url', 'stream_url', 'transcode_enabled', 'station_type',
         'order', 'station_order', 'disabled', 'is_public',
-        'website', 'email', 'facebook_page_id', 'rss_feed', 'feature_latest_post',
+        'website', 'email', 'facebook_page_id', 'rss_feed', 'feature_latest_post', 'audio_gain_db',
     ),
     StationStreams: ('station', 'stream_url', 'type', 'enabled', 'order', 'station_stream_order'),
     StationGroups: ('slug', 'name', 'station_group_order', 'order'),
