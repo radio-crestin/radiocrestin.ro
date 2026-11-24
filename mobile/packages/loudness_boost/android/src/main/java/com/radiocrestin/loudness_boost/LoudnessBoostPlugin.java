@@ -11,12 +11,8 @@ import io.flutter.plugin.common.MethodChannel;
 
 /**
  * Raises an audio session's loudness with a {@link LoudnessEnhancer}: a gain
- * above full volume, with the platform's limiter so peaks don't clip.
- *
- * <p>The effect exists only while a gain above 0 dB is asked for, and only
- * one at a time. Some devices can't create it ("Cannot initialize effect
- * engine"): {@code apply} then answers false and playback goes on without
- * the boost, never failing because of it.
+ * above full volume, with the platform's limiter so peaks don't clip. The
+ * effect's lifetime is {@link LoudnessBoost}'s.
  *
  * <p>A plugin, not a channel in MainActivity, so it is there in every
  * engine, including the one audio_service starts for Android Auto without
@@ -26,8 +22,9 @@ public class LoudnessBoostPlugin implements FlutterPlugin, MethodChannel.MethodC
     private static final String TAG = "LoudnessBoost";
 
     private MethodChannel channel;
-    private LoudnessEnhancer enhancer;
-    private int enhancerSessionId;
+    private final LoudnessBoost boost = new LoudnessBoost(
+            LoudnessBoostPlugin::createEnhancer,
+            (message, error) -> Log.w(TAG, message, error));
 
     @Override
     public void onAttachedToEngine(@NonNull FlutterPluginBinding binding) {
@@ -39,7 +36,7 @@ public class LoudnessBoostPlugin implements FlutterPlugin, MethodChannel.MethodC
     public void onDetachedFromEngine(@NonNull FlutterPluginBinding binding) {
         channel.setMethodCallHandler(null);
         channel = null;
-        release();
+        boost.release();
     }
 
     @Override
@@ -51,39 +48,26 @@ public class LoudnessBoostPlugin implements FlutterPlugin, MethodChannel.MethodC
         Integer sessionId = call.argument("sessionId");
         Number gainDb = call.argument("gainDb");
         int gainMb = gainDb == null ? 0 : (int) Math.round(gainDb.doubleValue() * 100);
-        result.success(apply(sessionId == null ? 0 : sessionId, gainMb));
+        result.success(boost.apply(sessionId == null ? 0 : sessionId, gainMb));
     }
 
-    /** Boosts session {@code sessionId} by {@code gainMb} millibels; 0 removes it. */
-    private boolean apply(int sessionId, int gainMb) {
-        if (sessionId <= 0 || gainMb <= 0) {
-            release();
-            return gainMb <= 0;
-        }
-        try {
-            if (enhancer == null || enhancerSessionId != sessionId) {
-                release();
-                enhancer = new LoudnessEnhancer(sessionId);
-                enhancerSessionId = sessionId;
+    private static LoudnessBoost.Effect createEnhancer(int sessionId) {
+        final LoudnessEnhancer enhancer = new LoudnessEnhancer(sessionId);
+        return new LoudnessBoost.Effect() {
+            @Override
+            public void setTargetGain(int gainMb) {
+                enhancer.setTargetGain(gainMb);
             }
-            enhancer.setTargetGain(gainMb);
-            enhancer.setEnabled(true);
-            return true;
-        } catch (Throwable e) {
-            Log.w(TAG, "LoudnessEnhancer unavailable; the gain is not applied", e);
-            release();
-            return false;
-        }
-    }
 
-    private void release() {
-        if (enhancer == null) return;
-        try {
-            enhancer.release();
-        } catch (Throwable e) {
-            Log.w(TAG, "LoudnessEnhancer release failed", e);
-        }
-        enhancer = null;
-        enhancerSessionId = 0;
+            @Override
+            public void setEnabled(boolean enabled) {
+                enhancer.setEnabled(enabled);
+            }
+
+            @Override
+            public void release() {
+                enhancer.release();
+            }
+        };
     }
 }
