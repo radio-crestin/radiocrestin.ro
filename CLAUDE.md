@@ -15,8 +15,11 @@ people are in each folder's `README.md`; the overview is the root [`README.md`](
 
 ## Rules that apply everywhere
 
-- **One change, one app, where possible.** CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml))
+- **A change that needs one app stays in that app.** CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml))
   checks only the folders a change touches; `ci-ok` is the check `main` requires.
+- **A feature that spans apps ships in one PR.** When a feature needs changes in `backend/`, `web/` and/or
+  `mobile/`, make them all on **one branch, in one pull request**, so the API and its clients merge and release
+  together. CI still checks every folder the PR touches.
 - **`main` is protected**: no force pushes, no deletion, and merges need `ci-ok` to pass. Work on a branch
   and open a pull request.
 - **One version for every app**: `VERSION`, mirrored in `web/package.json` and `mobile/pubspec.yaml`; change it
