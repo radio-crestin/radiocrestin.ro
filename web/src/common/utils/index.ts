@@ -156,8 +156,8 @@ export function stationThumb2x(url: string | null | undefined): string | null {
   if (!url?.startsWith("/station-thumbnails/") || !url.endsWith(".webp")) {
     return null;
   }
-  if (url.endsWith("@2x.webp")) return url;
-  return `${url.slice(0, -".webp".length)}@2x.webp`;
+  if (url.endsWith(".2x.webp")) return url;
+  return `${url.slice(0, -".webp".length)}.2x.webp`;
 }
 
 // srcSet/sizes pair for <img>s whose station-thumbnail slot is large enough
@@ -181,7 +181,7 @@ export function stationThumbImgProps(
 export function stationThumbSmall(url: string | null | undefined): string | null {
   const twoX = stationThumb2x(url);
   if (!url || !twoX || twoX === url) return null;
-  return `${url.slice(0, -".webp".length)}@sm.webp`;
+  return `${url.slice(0, -".webp".length)}.sm.webp`;
 }
 
 // srcSet/sizes pair for small station-logo slots: the browser picks the 128px
