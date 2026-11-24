@@ -67,6 +67,10 @@
     "primary": "#e0474c",
     "secondary": "#e0a947"
   },
+  "radio-el-roi": {
+    "primary": "#1351ae",
+    "secondary": "#98793c"
+  },
   "radio-elim": {
     "primary": "#7519a9",
     "secondary": "#a9197d"
@@ -94,6 +98,10 @@
   "radio-filadelfia-special": {
     "primary": "#b0c510",
     "secondary": "#32b30f"
+  },
+  "radio-flacara-rusaliilor": {
+    "primary": "#a6561c",
+    "secondary": "#9aa61c"
   },
   "radio-gosen": {
     "primary": "#c5885d",
@@ -155,6 +163,14 @@
     "primary": "#628dc6",
     "secondary": "#6043bb"
   },
+  "rve-bacau": {
+    "primary": "#d74147",
+    "secondary": "#5656ae"
+  },
+  "rve-barlad": {
+    "primary": "#d74248",
+    "secondary": "#5556ad"
+  },
   "rve-brasov": {
     "primary": "#ef393f",
     "secondary": "#5754ad"
@@ -175,6 +191,10 @@
     "primary": "#ef393e",
     "secondary": "#5754ad"
   },
+  "rve-ludus": {
+    "primary": "#d74248",
+    "secondary": "#5656ae"
+  },
   "rve-oradea": {
     "primary": "#b9a56e",
     "secondary": "#7e9f4d"
@@ -186,6 +206,10 @@
   "rve-oradea-muzica": {
     "primary": "#b9a46e",
     "secondary": "#ef3978"
+  },
+  "rve-piatra-neamt": {
+    "primary": "#d74046",
+    "secondary": "#5555ad"
   },
   "rve-predici": {
     "primary": "#b9a46e",
