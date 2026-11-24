@@ -77,6 +77,7 @@ export function toIslandStations(stations: IStation[]): IStation[] {
       facebook_page_id: s.facebook_page_id,
       stream_url: s.stream_url,
       hls_stream_url: s.hls_stream_url,
+      ...(s.audio_gain_db ? { audio_gain_db: s.audio_gain_db } : {}),
       thumbnail_url: s.thumbnail_url,
       total_listeners: s.total_listeners,
       description: s.description,
