@@ -7,7 +7,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('radio_crestin', '0079_metadata_fetch_split_with_spaces'),
+        ('radio_crestin', '0080_station_audio_gain_db_help_text'),
     ]
 
     operations = [
