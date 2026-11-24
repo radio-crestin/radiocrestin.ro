@@ -20,8 +20,8 @@ people are in each folder's `README.md`; the overview is the root [`README.md`](
 - **A feature that spans apps ships in one PR.** When a feature needs changes in `backend/`, `web/` and/or
   `mobile/`, make them all on **one branch, in one pull request**, so the API and its clients merge and release
   together. CI still checks every folder the PR touches.
-- **`main` is protected**: no force pushes, no deletion, and merges need `ci-ok` to pass. Work on a branch
-  and open a pull request.
+- **`main` is protected** (two rulesets): no force pushes, no deletion, merges need `ci-ok` to pass, and only
+  the org's `maintainers` team can merge a pull request into it. Work on a branch and open a pull request.
 - **One version for every app**: `VERSION`, mirrored in `web/package.json` and `mobile/pubspec.yaml`; change it
   only with `make bump-patch|bump-minor|bump-major` at the root. Releases are tagged `vX.Y.Z` (never per app).
   A release is "latest" only with the app's downloads attached (`make promote` checks): the app's download
