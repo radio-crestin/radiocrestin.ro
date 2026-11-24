@@ -1,12 +1,13 @@
 import React, { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { IAnnouncement } from "@/models/Announcement";
 import { getAnnouncement, recordAnnouncementEvent } from "@/services/announcements";
+import useAnnouncementsStore from "@/store/useAnnouncementsStore";
 import useAnnouncementsUi, { closeForm, openForm } from "@/store/useAnnouncementsUi";
 import { autoplaySeconds, resolveWebAction, rotateFrom, slugFromHash } from "@/utils/announcements";
 import { withRenderedMarkup } from "./content";
 import { homeItems } from "./context";
 import { markLive, takePendingTaps } from "./gate";
-import { useAnnouncements } from "./view";
+import { removeAnnouncement, useAnnouncements } from "./view";
 import Carousel from "./Carousel";
 import { StationAnnouncementsSheet } from "./StationAnnouncements";
 import useAnnouncementActions from "./useAnnouncementActions";
@@ -66,6 +67,7 @@ const AnnouncementPage = () => {
 
   const onPrimary = useCallback((a: IAnnouncement) => {
     recordAnnouncementEvent(a, "clicked", { position: 0, target: "button" });
+    if (useAnnouncementsStore.getState().countClick(a, "button")) removeAnnouncement(a.slug);
     const action = resolveWebAction(a.button?.action);
     if (action?.kind === "form") openForm({ slug: action.slug, announcementSlug: a.slug });
   }, []);
@@ -141,7 +143,10 @@ export default function Card({ onSlot }: { onSlot: (state: SlotState) => void })
       if (!a) continue;
       if (tap.kind === "dismiss") actions.onDismiss(a);
       else if (tap.kind === "bodyLink") actions.onLink(a, tap.href ?? "");
-      else if (tap.kind === "link") recordAnnouncementEvent(a, "clicked", { position: positionOf(a), target: "button" });
+      else if (tap.kind === "link") {
+        recordAnnouncementEvent(a, "clicked", { position: positionOf(a), target: "button" });
+        actions.onClicked(a, "button");
+      }
       // a card tap on a link can't be replayed (it would be a pop-up); the rest open here
       else if (tap.kind === "primary" || resolveWebAction(a.button?.action)?.kind !== "link") actions.onPrimary(a, tap.kind === "card" ? "card" : "button");
     }

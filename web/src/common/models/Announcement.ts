@@ -18,6 +18,9 @@ export type Placement = "home" | "station";
 /** What was tapped for a `clicked` event: the whole card, its button or a link in its description. */
 export type ClickTarget = "card" | "button" | "link";
 
+/** Which clicks count toward hide_after_clicks. */
+export type HideClickTarget = "main" | "any";
+
 export type AnnouncementEventType =
   | "impression"
   | "clicked"
@@ -103,6 +106,15 @@ export interface IAnnouncement {
   ends_at?: string | null;
   hide_after_seconds?: number | null;
   max_impressions?: number | null;
+  /**
+   * Hide rules per device (backend/docs/announcement-hide-rules.md); absent = not set.
+   * Hide it once clicked this many times (clicks counted per hide_click_target)…
+   */
+  hide_after_clicks?: number | null;
+  /** …then show it this many more times before hiding it (absent: hide right at the click). */
+  impressions_after_click?: number | null;
+  /** Which clicks count: "main" (default) the button or the card, "any" also links in the description. */
+  hide_click_target?: HideClickTarget | null;
   filters?: IAnnouncementFilters | null;
 }
 

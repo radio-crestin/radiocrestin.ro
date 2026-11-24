@@ -38,21 +38,33 @@ export default function useAnnouncementActions({ stationSlug = null, positionOf,
     [positionOf, stationSlug],
   );
 
+  /** Counts a click for the hide rules and takes the announcement out of view when they say so. */
+  const onClicked = useCallback(
+    (a: IAnnouncement, target: ClickTarget) => {
+      if (useAnnouncementsStore.getState().countClick(a, target)) remove(a.slug);
+    },
+    [remove],
+  );
+
   /** A button link navigates by itself; a card tap (or the page button) is followed here. */
   const onPrimary = useCallback(
     (a: IAnnouncement, target: ClickTarget) => {
       if (!hasPrimaryAction(a)) return;
       record(a, "clicked", { target });
+      onClicked(a, target);
       // Links navigate by themselves; the page and the form open here.
       const opensHere = resolveWebAction(a.button?.action)?.kind !== "link";
       if (target === "card" || opensHere) followAction(a, a.button?.action);
     },
-    [record],
+    [record, onClicked],
   );
 
   const onLink = useCallback(
-    (a: IAnnouncement, href: string) => record(a, "clicked", { target: "link", linkUrl: href }),
-    [record],
+    (a: IAnnouncement, href: string) => {
+      record(a, "clicked", { target: "link", linkUrl: href });
+      onClicked(a, "link");
+    },
+    [record, onClicked],
   );
 
   const onDismiss = useCallback(
@@ -74,5 +86,5 @@ export default function useAnnouncementActions({ stationSlug = null, positionOf,
     [record],
   );
 
-  return { onPrimary, onDismiss, onLink, onImpression };
+  return { onPrimary, onDismiss, onLink, onImpression, onClicked };
 }
