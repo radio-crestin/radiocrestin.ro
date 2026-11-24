@@ -26,19 +26,29 @@ FAKE_NGINX = """
 import os, signal, sys, time
 log, pid_file, lines = sys.argv[1], sys.argv[2], int(sys.argv[3])
 out = open(log, "a", buffering=1)
-def reopen(*_):
-    global out
-    out.close()
-    out = open(log, "a", buffering=1)
-signal.signal(signal.SIGUSR1, reopen)
+reopen_asked = False
+def ask_reopen(*_):
+    # Like nginx's master: the signal only sets a flag and the loop reopens the log. Reopening inside the
+    # handler could interrupt out.write ("reentrant call inside BufferedWriter") and lose the rest.
+    global reopen_asked
+    reopen_asked = True
+def reopen_if_asked():
+    global out, reopen_asked
+    if reopen_asked:
+        reopen_asked = False
+        out.close()
+        out = open(log, "a", buffering=1)
+signal.signal(signal.SIGUSR1, ask_reopen)
 with open(pid_file + ".tmp", "w") as handle:
     handle.write(str(os.getpid()))
 os.replace(pid_file + ".tmp", pid_file)
 for i in range(lines):
+    reopen_if_asked()
     out.write('1.2.3.4 - - [30/Oct/2026:14:46:00 +0000] "GET /aac/%d.ts?s=s%d HTTP/1.1" 200 1 "-" "ua" '
               'session_id="s%d" ref="-" real_ip="-" cf_ip="-"\\n' % (i, i, i))
     time.sleep(0.0005)
 while True:  # like nginx: keeps running (and reopening on USR1)
+    reopen_if_asked()
     time.sleep(0.1)
 """
 
