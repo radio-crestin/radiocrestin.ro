@@ -131,6 +131,10 @@ class AnnouncementsService with WidgetsBindingObserver {
   /// impression on screen then is not one of the reminders after it.
   final Set<String> _clicksReachedThisLaunch = {};
 
+  /// Slugs this launch already counted as a visit (`show_again_*`): a
+  /// launch is one visit, as it is one impression.
+  final Set<String> _visitedThisLaunch = {};
+
   /// Slugs taken off the screen for this launch only (hide_after_seconds).
   final Set<String> _hiddenThisLaunch = {};
 
@@ -358,7 +362,18 @@ class AnnouncementsService with WidgetsBindingObserver {
   /// Whether this device's history hides [item], per its hide rules
   /// (`backend/docs/announcement-hide-rules.md`).
   bool _isHiddenOnDevice(Announcement item) {
-    final reason = item.hideRules.hideReason(_store.counts(item.slug));
+    final rules = item.hideRules;
+    var counts = _store.counts(item.slug);
+    // This launch is a visit: a card the rules hid counts it, and comes
+    // back with a new round once enough visits passed (show_again_*).
+    if (_visitedThisLaunch.add(item.slug) && rules.showsAgain) {
+      final visit = rules.onVisit(counts);
+      if (!identical(visit.counts, counts)) {
+        counts = visit.counts;
+        unawaited(_store.saveCounts(item.slug, counts));
+      }
+    }
+    final reason = rules.hideReason(counts);
     return switch (reason) {
       null => false,
       // Seen this launch: its last allowed impression stays on screen.

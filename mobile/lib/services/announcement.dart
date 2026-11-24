@@ -342,6 +342,8 @@ class Announcement {
     this.hideAfterClicks,
     this.impressionsAfterClick,
     this.hideClickTarget = HideClickTarget.main,
+    this.showAgainTimes,
+    this.showAgainAfterVisits,
   });
 
   final String slug;
@@ -374,6 +376,14 @@ class Announcement {
   /// Which clicks count toward [hideAfterClicks].
   final HideClickTarget hideClickTarget;
 
+  /// After max impressions or the clicks hid it, it comes back this many
+  /// times (`show_again_times`), each after [showAgainAfterVisits] visits.
+  final int? showAgainTimes;
+
+  /// Visits it stays hidden before it comes back
+  /// (`show_again_after_visits`).
+  final int? showAgainAfterVisits;
+
   /// When it stops showing on this device.
   AnnouncementHideRules get hideRules => AnnouncementHideRules(
         dismissible: dismissible,
@@ -382,6 +392,8 @@ class Announcement {
         hideAfterClicks: hideAfterClicks,
         impressionsAfterClick: impressionsAfterClick,
         clickTarget: hideClickTarget,
+        showAgainTimes: showAgainTimes,
+        showAgainAfterVisits: showAgainAfterVisits,
       );
 
   /// The type of the primary button's action, for analytics.
@@ -430,6 +442,8 @@ class Announcement {
       hideAfterClicks: rules.hideAfterClicks,
       impressionsAfterClick: rules.impressionsAfterClick,
       hideClickTarget: rules.clickTarget,
+      showAgainTimes: rules.showAgainTimes,
+      showAgainAfterVisits: rules.showAgainAfterVisits,
     );
   }
 }

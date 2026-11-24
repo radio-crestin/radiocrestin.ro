@@ -17,6 +17,8 @@ class AnnouncementStore {
   static const clicksKey = 'announcements_clicks';
   static const impressionsAfterClicksKey =
       'announcements_impressions_after_clicks';
+  static const returnsKey = 'announcements_returns';
+  static const visitsWhileHiddenKey = 'announcements_visits_while_hidden';
   static const rotationCursorKey = 'announcements_rotation_cursor';
   static const seenKey = 'announcements_seen';
   static const countryKey = 'announcements_country';
@@ -107,14 +109,43 @@ class AnnouncementStore {
         clicks: clicks(slug),
         impressionsAfterClicks: impressionsAfterClicks(slug),
         dismissed: dismissed.contains(slug),
+        returns: _count(returnsKey, slug),
+        visitsWhileHidden: _count(visitsWhileHiddenKey, slug),
       );
+
+  /// Saves [counts] as [slug]'s (a visit's: a hidden visit counted, or a
+  /// new round as it comes back). Closing is saved by [dismiss] alone.
+  /// Every count changes before the first await, so a read never sees half
+  /// a round.
+  Future<void> saveCounts(String slug, AnnouncementCounts counts) {
+    final values = {
+      impressionsKey: counts.impressions,
+      clicksKey: counts.clicks,
+      impressionsAfterClicksKey: counts.impressionsAfterClicks,
+      returnsKey: counts.returns,
+      visitsWhileHiddenKey: counts.visitsWhileHidden,
+    };
+    return Future.wait([
+      for (final MapEntry(:key, :value) in values.entries)
+        if (_count(key, slug) != value) _set(key, slug, value),
+    ]);
+  }
 
   int _count(String key, String slug) =>
       (_readMap(key)[slug] as num?)?.toInt() ?? 0;
 
-  Future<void> _increment(String key, String slug) async {
-    final counts = _readMap(key)..[slug] = _count(key, slug) + 1;
-    await _prefs.setString(key, jsonEncode(counts));
+  Future<void> _increment(String key, String slug) =>
+      _set(key, slug, _count(key, slug) + 1);
+
+  /// Sets [slug]'s count under [key]; 0 drops it.
+  Future<void> _set(String key, String slug, int value) {
+    final counts = _readMap(key);
+    if (value == 0) {
+      counts.remove(slug);
+    } else {
+      counts[slug] = value;
+    }
+    return _prefs.setString(key, jsonEncode(counts));
   }
 
   int get rotationCursor => _prefs.getInt(rotationCursorKey) ?? 0;

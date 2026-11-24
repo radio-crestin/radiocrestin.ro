@@ -41,6 +41,8 @@ class AnnouncementHideRules {
     this.hideAfterClicks,
     this.impressionsAfterClick,
     this.clickTarget = HideClickTarget.main,
+    this.showAgainTimes,
+    this.showAgainAfterVisits,
   });
 
   final bool dismissible;
@@ -53,6 +55,14 @@ class AnnouncementHideRules {
   final int? impressionsAfterClick;
   final HideClickTarget clickTarget;
 
+  /// After max impressions or the click rules hid it, it comes back this
+  /// many times (`show_again_times`); never after closing.
+  final int? showAgainTimes;
+
+  /// How many visits it stays hidden before it comes back
+  /// (`show_again_after_visits`).
+  final int? showAgainAfterVisits;
+
   static AnnouncementHideRules fromJson(Map<Object?, Object?> json) =>
       AnnouncementHideRules(
         dismissible: json['dismissible'] != false,
@@ -60,6 +70,8 @@ class AnnouncementHideRules {
         hideAfterClicks: _positive(json['hide_after_clicks']),
         impressionsAfterClick: _positive(json['impressions_after_click']),
         clickTarget: HideClickTarget.parse(json['hide_click_target']),
+        showAgainTimes: _positive(json['show_again_times']),
+        showAgainAfterVisits: _positive(json['show_again_after_visits']),
       );
 
   /// Whether an event of [type] (`clicked`, `secondary_clicked`, ...)
@@ -99,6 +111,61 @@ class AnnouncementHideRules {
         : null;
   }
 
+  /// Whether it can come back after a round's rules hid it.
+  bool get showsAgain => showAgainTimes != null && showAgainAfterVisits != null;
+
+  /// Whether, at this visit, it comes back: max impressions or the click
+  /// rules (not closing) hide it, it came back fewer than [showAgainTimes]
+  /// and it stayed hidden [showAgainAfterVisits] visits. The device then
+  /// starts a new round ([AnnouncementCounts.nextRound]) and shows it.
+  bool comesBack(AnnouncementCounts counts) {
+    final times = showAgainTimes;
+    final visits = showAgainAfterVisits;
+    if (times == null || visits == null) return false;
+    final reason = hideReason(counts);
+    return reason != null &&
+        reason != HideReason.dismissed &&
+        counts.returns < times &&
+        counts.visitsWhileHidden >= visits;
+  }
+
+  /// Whether it is hidden at this visit with [counts].
+  bool isHidden(AnnouncementCounts counts) =>
+      hideReason(counts) != null && !comesBack(counts);
+
+  // ── What the device does, step by step (the backend's on_visit,
+  // on_impression and on_click) ──────────────────────────────────────────
+
+  /// A visit (an app launch) where it could show: whether it shows, and
+  /// the counts after it. A card that can come back counts the visits it
+  /// stays hidden; once enough passed, it starts a new round and shows.
+  ({bool shown, AnnouncementCounts counts}) onVisit(AnnouncementCounts counts) {
+    if (comesBack(counts)) return (shown: true, counts: counts.nextRound());
+    final reason = hideReason(counts);
+    if (reason == null) return (shown: true, counts: counts);
+    if (reason != HideReason.dismissed && showAgainTimes != null) {
+      counts = counts.copyWith(visitsWhileHidden: counts.visitsWhileHidden + 1);
+    }
+    return (shown: false, counts: counts);
+  }
+
+  /// It was shown: one more impression, and one more after the clicks once
+  /// they reached [hideAfterClicks].
+  AnnouncementCounts onImpression(AnnouncementCounts counts) =>
+      counts.copyWith(
+        impressions: counts.impressions + 1,
+        impressionsAfterClicks: counts.impressionsAfterClicks +
+            (clicksReached(counts.clicks) ? 1 : 0),
+      );
+
+  /// A click that counts per [clickTarget]. The impression on screen
+  /// during it is not one of the impressions after the click.
+  AnnouncementCounts onClick(AnnouncementCounts counts,
+          {String type = 'clicked', String? target = 'button'}) =>
+      countsClick(type, target)
+          ? counts.copyWith(clicks: counts.clicks + 1)
+          : counts;
+
   /// Only counts of 1 or more are rules; 0 and junk are "not set".
   static int? _positive(Object? value) {
     final number = value is num ? value.toInt() : null;
@@ -113,6 +180,8 @@ class AnnouncementCounts {
     this.clicks = 0,
     this.impressionsAfterClicks = 0,
     this.dismissed = false,
+    this.returns = 0,
+    this.visitsWhileHidden = 0,
   });
 
   final int impressions;
@@ -123,4 +192,35 @@ class AnnouncementCounts {
   /// Impressions after the click that reached `hide_after_clicks`.
   final int impressionsAfterClicks;
   final bool dismissed;
+
+  /// Times it already came back (`show_again_times`).
+  final int returns;
+
+  /// Visits since the current round's rules hid it; counted only when it
+  /// can come back.
+  final int visitsWhileHidden;
+
+  /// The counts as it comes back: [impressions], [clicks] and
+  /// [impressionsAfterClicks] start again from 0, so the same rules hide it
+  /// again; one more return.
+  AnnouncementCounts nextRound() =>
+      AnnouncementCounts(dismissed: dismissed, returns: returns + 1);
+
+  AnnouncementCounts copyWith({
+    int? impressions,
+    int? clicks,
+    int? impressionsAfterClicks,
+    bool? dismissed,
+    int? returns,
+    int? visitsWhileHidden,
+  }) =>
+      AnnouncementCounts(
+        impressions: impressions ?? this.impressions,
+        clicks: clicks ?? this.clicks,
+        impressionsAfterClicks:
+            impressionsAfterClicks ?? this.impressionsAfterClicks,
+        dismissed: dismissed ?? this.dismissed,
+        returns: returns ?? this.returns,
+        visitsWhileHidden: visitsWhileHidden ?? this.visitsWhileHidden,
+      );
 }
