@@ -1,15 +1,27 @@
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import type { ClickTarget, IAnnouncement } from "@/models/Announcement";
-import { hiddenAtClick, withClick, withVisit, type AnnouncementsLocalState } from "@/utils/announcements";
+import {
+  hiddenAtClick,
+  withClick,
+  withEvent,
+  withVisit,
+  type AnnouncementsLocalState,
+} from "@/utils/announcements";
 
 interface AnnouncementsStore extends AnnouncementsLocalState {
   dismiss: (slug: string) => void;
-  countImpression: (slug: string) => void;
+  /**
+   * One more impression of `slug`; with `announcements`, also another announcement seen for
+   * those whose waits count impressions.
+   */
+  countImpression: (slug: string, announcements?: IAnnouncement[]) => void;
   /** Counts a click for the hide rules; true when the announcement must leave the view now. */
   countClick: (announcement: IAnnouncement, target: ClickTarget | null | undefined) => boolean;
-  /** A page load where announcements load, for "show it again"; `shown`: the slugs it shows. */
+  /** A page load where announcements load, for the waits; `shown`: the slugs it shows. */
   countVisit: (announcements: IAnnouncement[], shown: string[]) => void;
+  /** A station started playing, for the waits that count playbacks. */
+  countPlayback: (announcements: IAnnouncement[], stationSlug: string) => void;
   advanceRotation: () => void;
   markSeen: (slugs: string[]) => void;
   setCountry: (country: string | null) => void;
@@ -23,7 +35,8 @@ const useAnnouncementsStore = create<AnnouncementsStore>()(
       clicks: {},
       afterClicks: {},
       returns: {},
-      hiddenVisits: {},
+      started: {},
+      waited: {},
       rotationCursor: 0,
       seen: {},
       country: undefined,
@@ -33,13 +46,16 @@ const useAnnouncementsStore = create<AnnouncementsStore>()(
           dismissed: { ...state.dismissed, [slug]: new Date().toISOString() },
         })),
 
-      countImpression: (slug) =>
+      countImpression: (slug, announcements) => {
+        const others = announcements && withEvent(get(), announcements, { kind: "impressions", of: slug });
+        if (others) set(others);
         set((state) => ({
           impressions: { ...state.impressions, [slug]: (state.impressions[slug] || 0) + 1 },
           ...(state.afterClicks[slug] !== undefined && {
             afterClicks: { ...state.afterClicks, [slug]: state.afterClicks[slug] + 1 },
           }),
-        })),
+        }));
+      },
 
       countClick: (announcement, target) => {
         const counts = withClick(get(), announcement, target);
@@ -49,6 +65,11 @@ const useAnnouncementsStore = create<AnnouncementsStore>()(
 
       countVisit: (announcements, shown) => {
         const next = withVisit(get(), announcements, shown);
+        if (next) set(next);
+      },
+
+      countPlayback: (announcements, stationSlug) => {
+        const next = withEvent(get(), announcements, { kind: "playbacks", station: stationSlug });
         if (next) set(next);
       },
 
@@ -67,13 +88,14 @@ const useAnnouncementsStore = create<AnnouncementsStore>()(
     {
       name: "announcements-store",
       storage: createJSONStorage(() => localStorage),
-      partialize: ({ dismissed, impressions, clicks, afterClicks, returns, hiddenVisits, rotationCursor, seen, country }) => ({
+      partialize: ({ dismissed, impressions, clicks, afterClicks, started, returns, waited, rotationCursor, seen, country }) => ({
         dismissed,
         impressions,
         clicks,
         afterClicks,
+        started,
         returns,
-        hiddenVisits,
+        waited,
         rotationCursor,
         seen,
         country,

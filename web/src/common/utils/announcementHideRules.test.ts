@@ -1,4 +1,4 @@
-// The hide rules after clicks (backend/docs/announcement-hide-rules.md), checked against the
+// The show and hide rules (backend/docs/announcement-hide-rules.md), checked against the
 // backend's shared cases, so the website, the app and the reference evaluator can't drift apart.
 import { beforeEach, describe, expect, it } from "vitest";
 import cases from "../../../../backend/docs/announcement-hide-rules.cases.json";
@@ -9,7 +9,7 @@ import { annEligibility, toPrepaintData, type PrepaintLocal } from "@/utils/anno
 
 const NOW = Date.parse("2026-11-24T10:00:00Z");
 
-const emptyStore = { dismissed: {}, impressions: {}, clicks: {}, afterClicks: {}, returns: {}, hiddenVisits: {} };
+const emptyStore = { dismissed: {}, impressions: {}, clicks: {}, afterClicks: {}, started: {}, returns: {}, waited: {} };
 
 const snapshotOf = (a: Partial<IAnnouncement>): IAnnouncementsSnapshot => ({
   built_at: NOW - 1000,
@@ -29,8 +29,9 @@ interface Counts {
   clicks?: number;
   impressions_after_clicks?: number;
   dismissed?: boolean;
+  started?: boolean;
   returns?: number;
-  visits_while_hidden?: number;
+  waited?: number;
 }
 
 /** What the store keeps for a device with these counts. */
@@ -39,8 +40,9 @@ const localOf = (c: Counts): PrepaintLocal => ({
   clicks: { a: c.clicks ?? 0 },
   ...(c.impressions_after_clicks !== undefined && { afterClicks: { a: c.impressions_after_clicks } }),
   ...(c.dismissed && { dismissed: { a: "2026-11-01T00:00:00Z" } }),
+  started: c.started ? { a: true } : {},
   returns: { a: c.returns ?? 0 },
-  hiddenVisits: { a: c.visits_while_hidden ?? 0 },
+  waited: { a: c.waited ?? 0 },
 });
 
 describe("hide rules: the backend's shared cases", () => {
@@ -54,7 +56,7 @@ describe("hide rules: the backend's shared cases", () => {
   });
 });
 
-describe("show it again: the backend's shared cases", () => {
+describe("waits (show_after, show it again): the backend's shared cases", () => {
   beforeEach(() => useAnnouncementsStore.setState(emptyStore));
 
   it.each(cases.show_again_cases)("$name", ({ rules, counts, hidden, comes_back }) => {
@@ -68,22 +70,34 @@ describe("show it again: the backend's shared cases", () => {
     const after = useAnnouncementsStore.getState();
     expect(after.returns.a).toBe((counts.returns ?? 0) + (comes_back ? 1 : 0));
     if (comes_back) {
-      expect([after.impressions.a, after.clicks.a, after.afterClicks.a, after.hiddenVisits.a]).toEqual([
+      expect([after.impressions.a, after.clicks.a, after.afterClicks.a, after.waited.a]).toEqual([
         undefined, undefined, undefined, undefined,
       ]);
     }
+    // shown: its show_after wait is over for good
+    if (shown) expect(after.started.a).toBe(true);
   });
 
-  // Replays like the backend's test: each step is a page load decided by the pre-paint code, then
-  // counted by the store (visit, impression, click or close) as the website does.
+  // Replays like the backend's test: a visit step is a page load decided by the pre-paint code,
+  // then counted by the store (visit, impression, click or close) as the website does; an event
+  // step is another announcement's impression ('o') or a station playback ('p', 'p:<slug>').
   it.each(cases.timelines)("timeline: $name", ({ rules, steps }) => {
     const a = { slug: "a", title: "A", ...(rules as Partial<IAnnouncement>) };
+    const other = { slug: "other", title: "Other" };
     const store = () => useAnnouncementsStore.getState();
     const seen = steps.map((step) => {
+      if (step === "o") {
+        store().countImpression("other", [a, other]);
+        return step;
+      }
+      if (step.startsWith("p")) {
+        store().countPlayback([a, other], step.slice(2) || "any-station");
+        return step;
+      }
       const shown = shows(a, store());
       store().countVisit([a], shown ? ["a"] : []);
       if (!shown) return "-";
-      store().countImpression("a");
+      store().countImpression("a", [a, other]);
       if (step === "v+c") store().countClick(a, "button");
       else if (step === "x") store().dismiss("a");
       return step;
@@ -91,18 +105,39 @@ describe("show it again: the backend's shared cases", () => {
     expect(seen).toEqual(steps);
   });
 
-  it("is left out of the pre-paint data without max impressions or click rules, or alone", () => {
-    expect(toPrepaintData(snapshotOf({ show_again_times: 2, show_again_after_visits: 3 })).i).toEqual([{ s: "a" }]);
+  it("show it again is left out of the pre-paint data without max impressions or click rules, or alone", () => {
+    expect(toPrepaintData(snapshotOf({ show_again_times: 2, show_again_after: 3 })).i).toEqual([{ s: "a" }]);
     expect(toPrepaintData(snapshotOf({ max_impressions: 2, show_again_times: 2 })).i).toEqual([{ s: "a", m: 2 }]);
-    expect(toPrepaintData(snapshotOf({ hide_after_clicks: 1, show_again_times: 2, show_again_after_visits: 3 })).i)
+    expect(toPrepaintData(snapshotOf({ hide_after_clicks: 1, show_again_times: 2, show_again_after: 3 })).i)
       .toEqual([{ s: "a", c: 1, t: 2, u: 3 }]);
   });
 
-  it("counts no visits without the rule", () => {
+  it("show_after goes into the pre-paint data on its own; count_on stays out (only counting needs it)", () => {
+    expect(toPrepaintData(snapshotOf({ show_after: 40, count_on: "playbacks", count_station_slugs: ["radio-x"] })).i)
+      .toEqual([{ s: "a", w: 40 }]);
+  });
+
+  it("counts nothing without a wait", () => {
     const a = { slug: "a", title: "A", max_impressions: 1 };
     useAnnouncementsStore.setState({ ...emptyStore, impressions: { a: 1 } });
-    useAnnouncementsStore.getState().countVisit([a], []);
-    expect(useAnnouncementsStore.getState().hiddenVisits).toEqual({});
+    const store = useAnnouncementsStore.getState();
+    store.countVisit([a], []);
+    store.countPlayback([a], "radio-x");
+    store.countImpression("b", [a]);
+    expect(useAnnouncementsStore.getState().waited).toEqual({});
+    expect(useAnnouncementsStore.getState().started).toEqual({});
+  });
+
+  it("a station change decided again counts as a visit, the playback in between too", () => {
+    const a = { slug: "a", title: "A", count_on: "playbacks" as const, show_after: 2 };
+    const store = () => useAnnouncementsStore.getState();
+    store().countVisit([a], []);
+    store().countPlayback([a], "radio-x");
+    expect(shows(a, store())).toBe(false);
+    store().countPlayback([a], "radio-y");
+    expect(shows(a, store())).toBe(true);
+    store().countVisit([a], ["a"]);
+    expect([store().started.a, store().waited.a]).toEqual([true, undefined]);
   });
 });
 
