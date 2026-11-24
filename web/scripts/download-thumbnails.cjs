@@ -114,8 +114,8 @@ async function downloadThumbnails(stations) {
       batch.map(async (station) => {
         const slug = station.slug;
         const outputPath = path.join(OUTPUT_DIR, `${slug}.webp`);
-        const outputPath2x = path.join(OUTPUT_DIR, `${slug}@2x.webp`);
-        const outputPathSmall = path.join(OUTPUT_DIR, `${slug}@sm.webp`);
+        const outputPath2x = path.join(OUTPUT_DIR, `${slug}.2x.webp`);
+        const outputPathSmall = path.join(OUTPUT_DIR, `${slug}.sm.webp`);
 
         if (isFresh(outputPath) && isFresh(outputPath2x) && isFresh(outputPathSmall)) {
           skipped++;
@@ -378,7 +378,7 @@ async function extractStationColors(stations) {
   const fileSlugs = fs.existsSync(OUTPUT_DIR)
     ? fs
         .readdirSync(OUTPUT_DIR)
-        .filter((f) => f.endsWith(".webp") && !f.includes("@"))
+        .filter((f) => f.endsWith(".webp") && f.split(".").length === 2)
         .map((f) => f.slice(0, -".webp".length))
     : [];
 
