@@ -11,7 +11,11 @@ from django.utils import timezone
 
 from ..forms.announcement_admin import AnnouncementAdminForm, HidePreset
 from ..models import Announcement
-from ..services.announcement_hide_rules import DeviceCounts, HideRules, counts_click, hide_reason
+from dataclasses import replace
+
+from ..services.announcement_hide_rules import (
+    DeviceCounts, HideRules, comes_back, counts_click, hide_reason, is_hidden, on_click, on_impression, on_visit,
+)
 from .test_announcement_admin import form_data
 
 CASES = json.loads(
@@ -30,6 +34,29 @@ class SharedCasesTests(SimpleTestCase):
             with self.subTest(case['name']):
                 rules = HideRules.from_payload(case['rules'])
                 self.assertEqual(hide_reason(rules, DeviceCounts(**case['counts'])), case['hidden_by'])
+
+    def test_show_again_cases(self):
+        for case in CASES['show_again_cases']:
+            with self.subTest(case['name']):
+                rules, counts = HideRules.from_payload(case['rules']), DeviceCounts(**case['counts'])
+                self.assertEqual(is_hidden(rules, counts), case['hidden'])
+                self.assertEqual(comes_back(rules, counts), case['comes_back'])
+
+    def test_timelines(self):
+        """Replays each timeline: v shown, - hidden, v+c shown and clicked, x shown and closed."""
+        for timeline in CASES['timelines']:
+            with self.subTest(timeline['name']):
+                rules, counts, seen = HideRules.from_payload(timeline['rules']), DeviceCounts(), []
+                for step in timeline['steps']:
+                    shown, counts = on_visit(rules, counts)
+                    if shown:
+                        counts = on_impression(rules, counts)
+                        if step == 'v+c':
+                            counts = on_click(rules, counts)
+                        elif step == 'x':
+                            counts = replace(counts, dismissed=True)
+                    seen.append(step if shown else '-')
+                self.assertEqual(seen, timeline['steps'])
 
     def test_click_cases(self):
         for case in CASES['click_cases']:
@@ -65,6 +92,14 @@ class ModelValidationTests(TestCase):
 
     def test_impressions_after_click_needs_clicks(self):
         self.assertIn('impressions_after_click', self.errors(impressions_after_click=2, **BUTTON))
+
+    def test_show_again_needs_both_numbers_and_a_rule_that_hides(self):
+        self.assertEqual(self.errors(max_impressions=3, show_again_times=2, show_again_after_visits=5), {})
+        self.assertEqual(self.errors(hide_after_clicks=1, show_again_times=1, show_again_after_visits=1, **BUTTON), {})
+        self.assertIn('show_again_after_visits', self.errors(max_impressions=3, show_again_times=2))
+        self.assertIn('show_again_times', self.errors(max_impressions=3, show_again_after_visits=2))
+        self.assertIn('show_again_times', self.errors(show_again_times=2, show_again_after_visits=2))
+        self.assertIn('show_again_times', self.errors(max_impressions=3, show_again_times=0, show_again_after_visits=2))
 
     def test_main_button_clicks_need_a_button(self):
         self.assertIn('hide_click_target', self.errors(hide_after_clicks=1))
@@ -123,6 +158,7 @@ class AdminPageTests(TestCase):
         self.assertContains(page, 'Hide it')
         self.assertContains(page, 'After clicks, then a few more impressions')
         self.assertContains(page, 'hide_preset ==')  # the click fields show only with their preset
+        self.assertContains(page, 'name="show_again_after_visits"')
 
         data = form_data(slug='reminders', hide_preset='clicks_then_impressions', hide_after_clicks='2',
                          impressions_after_click='3', hide_click_target='any', **BUTTON, **{
@@ -159,7 +195,8 @@ class ApiTests(TestCase):
         self.make('reminders', hide_after_clicks=2, impressions_after_click=5, hide_click_target='any')
         items = self.by_slug()
 
-        for key in ('hide_after_clicks', 'impressions_after_click', 'hide_click_target'):
+        for key in ('hide_after_clicks', 'impressions_after_click', 'hide_click_target',
+                    'show_again_times', 'show_again_after_visits'):
             self.assertNotIn(key, items['plain'])  # older clients see the same payload as before
         self.assertEqual(items['plain']['max_impressions'], 3)
         self.assertEqual(items['one-click']['hide_after_clicks'], 1)
@@ -169,6 +206,17 @@ class ApiTests(TestCase):
             {key: items['reminders'][key] for key in ('hide_after_clicks', 'impressions_after_click', 'hide_click_target')},
             {'hide_after_clicks': 2, 'impressions_after_click': 5, 'hide_click_target': 'any'},
         )
+
+    def test_show_again_is_sent_only_when_set(self):
+        self.make('rounds', max_impressions=3, show_again_times=2, show_again_after_visits=5)
+        items = self.by_slug()
+        self.assertEqual({key: items['rounds'].get(key) for key in ('max_impressions', 'show_again_times',
+                                                                    'show_again_after_visits', 'hide_after_clicks')},
+                         {'max_impressions': 3, 'show_again_times': 2, 'show_again_after_visits': 5,
+                          'hide_after_clicks': None})
+        Announcement.objects.update(show_again_times=None, show_again_after_visits=None)
+        cache.clear()
+        self.assertNotIn('show_again_times', self.by_slug()['rounds'])
 
     def test_detail_sends_the_rules_too(self):
         self.make('one-click', hide_after_clicks=1, **BUTTON)

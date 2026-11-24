@@ -156,14 +156,19 @@ def _icon_payload(announcement: Announcement, absolute_url: AbsoluteUrl) -> dict
 
 
 def _hide_rules_payload(announcement: Announcement) -> dict:
-    """The click hide rules (backend/docs/announcement-hide-rules.md), only when set: older clients ignore them."""
-    if announcement.hide_after_clicks is None:
-        return {}
-    return _compact({
-        'hide_after_clicks': announcement.hide_after_clicks,
-        'impressions_after_click': announcement.impressions_after_click,
-        'hide_click_target': announcement.hide_click_target,
-    })
+    """The click and show-again rules (backend/docs/announcement-hide-rules.md), only when set: older clients
+    ignore them."""
+    payload = {}
+    if announcement.hide_after_clicks is not None:
+        payload.update(_compact({
+            'hide_after_clicks': announcement.hide_after_clicks,
+            'impressions_after_click': announcement.impressions_after_click,
+            'hide_click_target': announcement.hide_click_target,
+        }))
+    if announcement.show_again_times is not None and announcement.show_again_after_visits is not None:
+        payload['show_again_times'] = announcement.show_again_times
+        payload['show_again_after_visits'] = announcement.show_again_after_visits
+    return payload
 
 
 def serialize(announcement: Announcement, absolute_url: AbsoluteUrl = lambda url: url, *,

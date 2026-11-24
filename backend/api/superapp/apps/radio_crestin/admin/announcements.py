@@ -117,6 +117,7 @@ class AnnouncementAdmin(SuperAppModelAdmin):
                 "hide it, whichever comes first. Changing the slug shows it again to everyone."), 'fields': [
                 'dismissible', 'max_impressions',
                 'hide_preset', 'hide_after_clicks', 'impressions_after_click', 'hide_click_target',
+                ('show_again_times', 'show_again_after_visits'),
             ]}),
             (_('Who sees it'), {'classes': ['tab'], 'description': _(
                 "Everything active is in the public list; filters only decide where it is shown, they don't "

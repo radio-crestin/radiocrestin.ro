@@ -202,6 +202,16 @@ class Announcement(models.Model):
     hide_click_target = models.CharField(
         _("Clicks that count"), max_length=8, choices=HideClickTarget.choices, default=HideClickTarget.MAIN,
     )
+    # Show it again: after max impressions or the click rules hid it (never after closing), it comes back.
+    show_again_times = models.PositiveIntegerField(
+        _("Show it again, times"), null=True, blank=True, validators=[MinValueValidator(1)],
+        help_text=_("After max impressions or the clicks hid it, it comes back this many times; each time the "
+                    "rules above start counting again. Empty: once hidden, it stays hidden."),
+    )
+    show_again_after_visits = models.PositiveIntegerField(
+        _("Hidden for, visits"), null=True, blank=True, validators=[MinValueValidator(1)],
+        help_text=_("How many app opens or website visits it stays hidden before it comes back."),
+    )
 
     # Filters: every rule that is set must match; empty means everyone. Clients evaluate
     # them for the card (the list is the same for everyone); push sending applies them server-side.
@@ -268,8 +278,22 @@ class Announcement(models.Model):
                 and self.action_type == ActionType.NONE):
             errors['hide_click_target'] = _(
                 'This announcement has no button to click: count any click, or add a button.')
+        errors.update(self._show_again_errors())
         if errors:
             raise ValidationError(errors)
+
+    def _show_again_errors(self) -> dict:
+        times, visits = self.show_again_times, self.show_again_after_visits
+        if times is None and visits is None:
+            return {}
+        if times is None:
+            return {'show_again_times': _('How many times should it come back?')}
+        if visits is None:
+            return {'show_again_after_visits': _('How many visits should it stay hidden before it comes back?')}
+        if self.max_impressions is None and self.hide_after_clicks is None:
+            return {'show_again_times': _(
+                'Only max impressions or the clicks can bring it back: set one of them, or leave this empty.')}
+        return {}
 
     def save(self, *args, **kwargs):
         if self.position is None:  # a new announcement goes last
