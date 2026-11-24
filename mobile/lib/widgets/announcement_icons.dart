@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
@@ -22,7 +23,8 @@ final Map<String, IconData> announcementIcons = {
 
 /// The icon a button shows after its label: the one chosen, or with
 /// `auto` the one that says what the tap does (↗ leaves the app, › opens a
-/// page, a window opens the in-app browser, ▶ plays a station).
+/// page, a window opens the in-app browser, ▶ plays a station, the share
+/// glyph shares the app).
 IconData? announcementButtonIcon(AnnouncementButton button) =>
     switch (button.icon) {
       'none' => null,
@@ -39,6 +41,10 @@ IconData? actionIcon(AnnouncementActionType type) => switch (type) {
         Icons.chevron_right_rounded,
       AnnouncementActionType.inAppBrowser => Icons.web_asset_rounded,
       AnnouncementActionType.station => Icons.play_arrow_rounded,
+      AnnouncementActionType.share => switch (defaultTargetPlatform) {
+          TargetPlatform.iOS || TargetPlatform.macOS => Icons.ios_share_rounded,
+          _ => Icons.share_rounded,
+        },
       AnnouncementActionType.none => null,
     };
 
