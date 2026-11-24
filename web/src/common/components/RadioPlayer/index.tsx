@@ -1722,6 +1722,10 @@ export default function RadioPlayer() {
               // doesn't allow CORS. Play it again without the boost on a fresh
               // element; a stream that is really down then fails there and
               // takes the normal retry path.
+              // Like a stream switch: the play() rejection and the pause
+              // that follow this error must not count as a failure or a stop.
+              isDestroyingRef.current = true;
+              setTimeout(() => { isDestroyingRef.current = false; }, 0);
               boostedUrlRef.current = null;
               markNoCors(boostedUrl);
               releaseElement(e.currentTarget);
