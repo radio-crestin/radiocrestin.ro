@@ -9,6 +9,7 @@ export type ActionType =
   | "page"
   | "station"
   | "form"
+  | "share"
   | "none";
 
 export type ButtonStyle = "filled" | "outline" | "text" | "hidden";
@@ -17,6 +18,9 @@ export type Placement = "home" | "station";
 
 /** What was tapped for a `clicked` event: the whole card, its button or a link in its description. */
 export type ClickTarget = "card" | "button" | "link";
+
+/** What the waits (show_after, show_again_after) count. */
+export type CountOn = "visits" | "impressions" | "playbacks";
 
 /** Which clicks count toward hide_after_clicks. */
 export type HideClickTarget = "main" | "any";
@@ -39,6 +43,8 @@ export interface IAnnouncementAction {
   station_slug?: string | null;
   /** For `form`: the form to open in the form dialog. */
   form_slug?: string | null;
+  /** For `share`: the text shared with `url` (absent: the website's own). */
+  share_text?: string | null;
 }
 
 export interface IAnnouncementButton {
@@ -116,11 +122,20 @@ export interface IAnnouncement {
   /** Which clicks count: "main" (default) the button or the card, "any" also links in the description. */
   hide_click_target?: HideClickTarget | null;
   /**
+   * What the waits (show_after, show_again_after) count on the device: "visits" (default) page
+   * loads where announcements load, "impressions" other announcements seen, "playbacks" station
+   * playbacks (only of count_station_slugs when set).
+   */
+  count_on?: CountOn | null;
+  count_station_slugs?: string[] | null;
+  /** Wait this many count_on events before its first showing. */
+  show_after?: number | null;
+  /**
    * Show it again (only together): after max_impressions or the click rules hid it, it comes back
-   * this many times, each after show_again_after_visits visits hidden. Never after closing.
+   * this many times, each after show_again_after count_on events hidden. Never after closing.
    */
   show_again_times?: number | null;
-  show_again_after_visits?: number | null;
+  show_again_after?: number | null;
   filters?: IAnnouncementFilters | null;
 }
 

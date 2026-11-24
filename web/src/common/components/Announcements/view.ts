@@ -20,6 +20,7 @@ import {
   type PrepaintResult,
 } from "@/utils/announcementsPrepaint";
 import { useSnapshot } from "./context";
+import { countPlaybacksWith } from "./playbacks";
 
 const FEED_KEY = "announcements-feed";
 const PREVIEW_PARAM = "anunturi-preview";
@@ -80,14 +81,18 @@ const advanceRotationIfShown = (snapshot: IAnnouncementsSnapshot, result: Prepai
 };
 
 /**
- * The spec's visit for "show it again": counted once per decision, after it, so the decision stays
- * the pre-paint script's. A returning announcement starts its new round here.
+ * The spec's visit, for the waits (show_after, show it again): counted once per decision, after
+ * it, so the decision stays the pre-paint script's. A returning announcement starts its new round
+ * here, and one shown for the first time ends its show_after wait.
  */
 const countVisit = (snapshot: IAnnouncementsSnapshot, result: PrepaintResult) =>
   useAnnouncementsStore.getState().countVisit(snapshot.announcements, result[useView.getState().mobile ? "m" : "d"].v);
 
 /** The snapshot `result` was decided for; null until the first component takes over. */
 let decidedFor: IAnnouncementsSnapshot | null = null;
+
+/** The announcements this page view decides on (the preview's, with ?anunturi-preview). */
+export const decidedAnnouncements = () => (useView.getState().preview ?? decidedFor)?.announcements ?? [];
 
 /** Once per page view, when the first announcements component takes over. */
 const start = (snapshot: IAnnouncementsSnapshot) => {
@@ -99,6 +104,8 @@ const start = (snapshot: IAnnouncementsSnapshot) => {
   query.addEventListener("change", () => useView.setState({ mobile: query.matches }));
   advanceRotationIfShown(snapshot, result);
   countVisit(snapshot, result);
+  // after the visit: the playbacks waiting were started on this page or after an earlier one
+  countPlaybacksWith((station) => useAnnouncementsStore.getState().countPlayback(decidedAnnouncements(), station));
 
   startFlushingAnnouncementEvents();
   const token = new URLSearchParams(location.search).get(PREVIEW_PARAM);

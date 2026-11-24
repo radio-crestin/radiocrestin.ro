@@ -4,6 +4,8 @@ import { recordAnnouncementEvent } from "@/services/announcements";
 import useAnnouncementsStore from "@/store/useAnnouncementsStore";
 import { openAnnouncementPage, openForm } from "@/store/useAnnouncementsUi";
 import { resolveWebAction } from "@/utils/announcements";
+import { shareLink } from "./share";
+import { decidedAnnouncements } from "./view";
 
 /** Runs an action that wasn't triggered by its own link (a whole-card tap). */
 const followAction = (announcement: IAnnouncement, action: IAnnouncementAction | null | undefined) => {
@@ -11,6 +13,7 @@ const followAction = (announcement: IAnnouncement, action: IAnnouncementAction |
   if (!resolved) return;
   if (resolved.kind === "page") openAnnouncementPage(announcement.slug);
   else if (resolved.kind === "form") openForm({ slug: resolved.slug, announcementSlug: announcement.slug });
+  else if (resolved.kind === "share") shareLink(resolved.url, resolved.text);
   else if (resolved.newTab) window.open(resolved.href, "_blank", "noopener,noreferrer");
   else window.location.assign(resolved.href);
 };
@@ -42,7 +45,8 @@ export default function useAnnouncementActions({ stationSlug = null, positionOf,
     (a: IAnnouncement) => {
       if (impressions.current.has(a.slug)) return;
       impressions.current.add(a.slug);
-      useAnnouncementsStore.getState().countImpression(a.slug);
+      // also another announcement seen, for those whose waits count impressions
+      useAnnouncementsStore.getState().countImpression(a.slug, decidedAnnouncements());
       record(a, "impression");
     },
     [record],

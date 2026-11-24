@@ -37,7 +37,8 @@ const emptyState = (extra: Partial<AnnouncementsLocalState> = {}): Announcements
   clicks: {},
   afterClicks: {},
   returns: {},
-  hiddenVisits: {},
+  started: {},
+  waited: {},
   rotationCursor: 0,
   seen: {},
   ...extra,
@@ -93,6 +94,16 @@ describe("resolveWebAction", () => {
       href: "/radio-elim",
       newTab: false,
     });
+  });
+
+  it("share: the link (made absolute) and text when set, else null for the website's own", () => {
+    expect(resolveWebAction(action({ type: "share", url: "https://www.radiocrestin.ro/app", share_text: "Ascultă" })))
+      .toEqual({ kind: "share", url: "https://www.radiocrestin.ro/app", text: "Ascultă" });
+    expect(resolveWebAction({ type: "share" })).toEqual({ kind: "share", url: null, text: null });
+    expect(resolveWebAction(action({ type: "share", url: "/radio-elim" }))).toMatchObject({
+      url: "https://www.radiocrestin.ro/radio-elim",
+    });
+    expect(resolveWebAction(action({ type: "share", url: "javascript:alert(1)" }))).toMatchObject({ url: null });
   });
 
   it("rejects URLs that would run code", () => {
