@@ -2624,7 +2624,8 @@ void main() {
 
     storyTest('the viewer works sideways, on a phone held landscape',
         (app) async {
-      server.stories.add(StoryFixtures.verse(base()));
+      // Its tallest bottom: the CTA bar, the caption and the message field.
+      server.stories.add(StoryFixtures.verse(base(), messages: true));
       await app.coldStartStories();
       await app.tapStoryBubble(StoryFixtures.verseSlug);
       final view = app.tester.view;
@@ -2635,6 +2636,11 @@ void main() {
         await app.pumpFor(const Duration(seconds: 1));
         expect(app.findsKey('story-close'), isTrue);
         expect(app.findsKey('story-like-${StoryFixtures.verseSlug}'), isTrue);
+        app.storyViewer!.controller.next();
+        await app.waitForStory(StoryFixtures.verseSlug);
+        await app.pumpFor(StoryCtaBar.fillAfter);
+        expect(app.findsKey('story-message-field'), isTrue);
+        expect(app.showsText(StoryFixtures.stationCta), isTrue);
         expect(app.tester.takeException(), isNull, reason: 'no overflow');
       } finally {
         view.physicalSize = upright;
