@@ -131,11 +131,13 @@ install_android_sdk() {
   link "$ANDROID_SDK/platform-tools/adb"
   link "$ANDROID_SDK/emulator/emulator"
   # An emulator to run the app on (`emulator -avd radiocrestin_api34 -no-window`, or `flutter emulators --launch`).
-  local avdmanager="$ANDROID_SDK/cmdline-tools/latest/bin/avdmanager"
-  if ! ANDROID_HOME="$ANDROID_SDK" "$avdmanager" list avd -c 2>/dev/null | grep -qx "$AVD_NAME"; then
+  # In ~/.android/avd, where the emulator looks; avdmanager alone may pick $XDG_CONFIG_HOME/.android.
+  local avdmanager="$ANDROID_SDK/cmdline-tools/latest/bin/avdmanager" avd_home="$HOME/.android/avd"
+  if [ ! -f "$avd_home/$AVD_NAME.ini" ]; then
     echo "setup: creating the Android emulator $AVD_NAME"
-    echo no | ANDROID_HOME="$ANDROID_SDK" "$avdmanager" create avd -n "$AVD_NAME" -d pixel_6 \
-      -k "system-images;android-34;google_apis;x86_64" >/dev/null
+    mkdir -p "$avd_home"
+    echo no | ANDROID_HOME="$ANDROID_SDK" ANDROID_AVD_HOME="$avd_home" "$avdmanager" create avd -n "$AVD_NAME" \
+      -d pixel_6 -k "system-images;android-34;google_apis;x86_64" -p "$avd_home/$AVD_NAME.avd" >/dev/null
   fi
 }
 
