@@ -259,6 +259,9 @@ class _StoryVideoState extends State<_StoryVideo>
   bool _ended = false;
   Timer? _timeout;
 
+  /// False while the app is left (another app, the Home screen).
+  bool _inForeground = true;
+
   @override
   void initState() {
     super.initState();
@@ -328,8 +331,11 @@ class _StoryVideoState extends State<_StoryVideo>
   /// the video would play on to its end unseen.
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Inactive is not left: a system sheet over the app, a call coming.
+    if (state == AppLifecycleState.inactive) return;
+    _inForeground = state == AppLifecycleState.resumed;
     if (!_ready) return;
-    if (state == AppLifecycleState.resumed) {
+    if (_inForeground) {
       _applyPlaying();
     } else {
       widget.events.onSound(false);
@@ -350,8 +356,7 @@ class _StoryVideoState extends State<_StoryVideo>
 
   void _applyPlaying() {
     if (!_ready) return;
-    final play = !widget.paused &&
-        WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed;
+    final play = !widget.paused && _inForeground;
     widget.events.onSound(play && widget.sound && !widget.muted);
     unawaited(play ? _video.play() : _video.pause());
   }
