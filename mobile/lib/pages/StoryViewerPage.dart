@@ -219,21 +219,36 @@ class StoryViewerPageState extends State<StoryViewerPage>
         : controller.resume(StoryPause.message));
 
   /// Sends [text] to the team from the slide on screen, and says how it
-  /// went.
+  /// went; true when it was sent.
   Future<bool> _sendMessage(String text) async {
-    final sent = await _service.sendMessage(
+    final result = await _service.sendMessage(
         controller.story, controller.slide, text);
-    if (!mounted) return sent;
+    if (!mounted) return result == StoryMessageResult.sent;
+    final (title, message, icon) = switch (result) {
+      StoryMessageResult.sent => (
+          'Mesaj trimis',
+          'Mulțumim! Echipa Radio Creștin îl va citi.',
+          Icons.check_circle_rounded,
+        ),
+      StoryMessageResult.tooMany => (
+          'Ai trimis multe mesaje',
+          'Încearcă din nou peste un minut.',
+          Icons.hourglass_bottom_rounded,
+        ),
+      StoryMessageResult.failed => (
+          'Mesajul nu a fost trimis',
+          'Verifică internetul și încearcă din nou.',
+          Icons.wifi_off_rounded,
+        ),
+    };
     showBottomToast(
       context,
-      title: sent ? 'Mesaj trimis' : 'Mesajul nu a fost trimis',
-      message: sent
-          ? 'Mulțumim! Echipa Radio Creștin îl va citi.'
-          : 'Verifică internetul și încearcă din nou.',
-      icon: sent ? Icons.check_circle_rounded : Icons.wifi_off_rounded,
-      isError: !sent,
+      title: title,
+      message: message,
+      icon: icon,
+      isError: result != StoryMessageResult.sent,
     );
-    return sent;
+    return result == StoryMessageResult.sent;
   }
 
   // ── Sound ──────────────────────────────────────────────────────────────

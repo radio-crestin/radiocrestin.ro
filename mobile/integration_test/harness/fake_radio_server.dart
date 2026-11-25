@@ -97,6 +97,9 @@ class FakeRadioServer {
   /// The messages listeners sent from stories (`POST /stories/messages/`).
   final List<Map<String, Object?>> storyMessages = [];
 
+  /// Answers `POST /stories/messages/` with 429 (its rate limit) when set.
+  bool storyMessagesLimited = false;
+
   /// The stories this device likes, as the API keeps them.
   final Set<String> storyLikes = {};
 
@@ -142,6 +145,7 @@ class FakeRadioServer {
     files.clear();
     storyEvents.clear();
     storyMessages.clear();
+    storyMessagesLimited = false;
     storyLikes.clear();
     storySettings = const {'auto_open_gap_actions': 0};
     for (final stream in _hls.values) {
@@ -254,6 +258,10 @@ class FakeRadioServer {
     final path = uri.path;
     if (path == '/api/v1/announcements/') return _announcementList(connection);
     if (path == '/api/v1/stories/') return _storyList(connection);
+    if (path == '/api/v1/stories/messages/' && storyMessagesLimited) {
+      storyMessages.add({'refused': true});
+      return connection.status(HttpStatus.tooManyRequests);
+    }
     if (path.startsWith('/api/v1/forms/') && path.endsWith('/page/')) {
       return connection.send(
           utf8.encode(_formPage(uri.pathSegments[3],
@@ -591,6 +599,7 @@ class _Connection {
     200: 'OK',
     204: 'No Content',
     206: 'Partial Content',
+    429: 'Too Many Requests',
     304: 'Not Modified',
     404: 'Not Found',
     503: 'Service Unavailable',

@@ -36,6 +36,15 @@ enum StoryEvent {
       };
 }
 
+/// How sending a message from a story went.
+enum StoryMessageResult {
+  sent,
+
+  /// Too many messages from this phone lately (`429`): later.
+  tooMany,
+  failed,
+}
+
 /// One bubble of the stories bar.
 class StoryBubble {
   const StoryBubble(this.story, {required this.highlighted});
@@ -311,15 +320,17 @@ class StoriesService with WidgetsBindingObserver {
   /// The longest message a listener can send from a story.
   static const maxMessageLength = 1000;
 
-  /// Sends [text] to the team from [slide] of [story]; false when it
-  /// didn't reach the API (the listener can try again).
-  Future<bool> sendMessage(
+  /// Sends [text] to the team from [slide] of [story], once: a refused
+  /// message (429) counts toward the limit, so it is never retried.
+  Future<StoryMessageResult> sendMessage(
     Story story,
     StorySlide slide,
     String text,
   ) async {
     final message = text.trim();
-    if (message.isEmpty || !story.messages.enabled) return false;
+    if (message.isEmpty || !story.messages.enabled) {
+      return StoryMessageResult.failed;
+    }
     AnalyticsService.instance.capture('story_message_sent', {
       'story_slug': story.slug,
       'slide_id': slide.id,
@@ -344,10 +355,14 @@ class StoriesService with WidgetsBindingObserver {
             }),
           )
           .timeout(_timeout);
-      return response.statusCode >= 200 && response.statusCode < 300;
+      return switch (response.statusCode) {
+        >= 200 && < 300 => StoryMessageResult.sent,
+        429 => StoryMessageResult.tooMany,
+        _ => StoryMessageResult.failed,
+      };
     } catch (e) {
       developer.log('Stories: message not sent: $e');
-      return false;
+      return StoryMessageResult.failed;
     }
   }
 

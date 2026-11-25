@@ -2355,6 +2355,28 @@ void main() {
           reason: 'the story to go on once sent');
     });
 
+    storyTest(
+        'over the messages limit (429) the listener is told to try later, '
+        'once, and keeps the text', (app) async {
+      server
+        ..stories.add(StoryFixtures.verse(base(), messages: true))
+        ..storyMessagesLimited = true;
+      await app.coldStartStories();
+      await app.tapStoryBubble(StoryFixtures.verseSlug);
+      await app.waitForStory(StoryFixtures.verseSlug);
+      final field = find.byKey(const ValueKey('story-message-field'));
+      await app.tester.tap(field.hitTestable());
+      await app.tester.enterText(field, 'Încă un mesaj');
+      await app.pumpFor(const Duration(milliseconds: 500));
+      await app.tapKey('story-message-send');
+      await app.waitFor(() => app.showsText('Ai trimis multe mesaje'),
+          reason: 'the listener told to try again later');
+      await app.pumpFor(const Duration(seconds: 2));
+      expect(server.storyMessages, hasLength(1), reason: 'never retried');
+      expect(find.text('Încă un mesaj'), findsOneWidget,
+          reason: 'the text stays to send later');
+    });
+
     storyTest('a story that takes no messages has no message field',
         (app) async {
       server.stories.add(StoryFixtures.verse(base()));
