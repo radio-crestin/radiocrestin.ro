@@ -114,9 +114,16 @@ def extend_superapp_settings(main_settings):
         'DJANGO_CELERY_BEAT_TZ_AWARE': False,
     })
 
+    # Redis when REDIS_BROKER_URL is set (Docker, production). Without it (tests, a quick local run) a
+    # process-local cache, so nothing needs Redis: a RedisCache with LOCATION None fails on first use.
     main_settings['CACHES'] = {
         'default': {
             "BACKEND": "django.core.cache.backends.redis.RedisCache",
             "LOCATION": os.environ.get('REDIS_BROKER_URL'),
+        }
+    } if os.environ.get('REDIS_BROKER_URL') else {
+        'default': {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+            "TIMEOUT": 3600,
         }
     }

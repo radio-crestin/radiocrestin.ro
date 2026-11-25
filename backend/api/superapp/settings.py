@@ -148,8 +148,8 @@ CACHES = {
     }
 } if os.environ.get('REDIS_BROKER_URL', '') != '' else {
     'default': {
-        'BACKEND': 'django.core.cache.backends.db.DatabaseCache',
-        'LOCATION': 'cache_table',
+        # Without Redis (tests, a quick local run): process-local, nothing to create first.
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
         'TIMEOUT': 3600,
     }
 }
