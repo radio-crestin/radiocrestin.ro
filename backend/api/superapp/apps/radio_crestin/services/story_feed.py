@@ -40,7 +40,8 @@ def _file_url(file_field, absolute_url: AbsoluteUrl) -> Optional[str]:
     if not file_field:
         return None
     url = absolute_url(file_field.url)
-    return url if url.lower().startswith(('https://', 'http://')) else None
+    # The API makes local paths absolute; the admin preview shows them as they are.
+    return url if url.lower().startswith(('https://', 'http://', '/')) else None
 
 
 def _station_slug(station) -> Optional[str]:

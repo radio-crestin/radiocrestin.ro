@@ -23,13 +23,14 @@
     'cta_android_intent_uri', 'cta_fallback_url', 'cta_route', 'cta_station', 'cta_song', 'cta_announcement',
     'cta_form', 'cta_share_text', 'cta_story'];
 
-  function field(form, name) {
-    return form.querySelector('[name$="-' + name + '"]');
+  // A slide's form is its fields' name prefix ("slides-0-"): Unfold's inline forms have no id of their own.
+  function field(prefix, name) {
+    return document.querySelector('[name="' + prefix + name + '"]');
   }
 
-  function row(form, name) {
-    var input = field(form, name);
-    return input && (input.closest('.field-' + name) || input.closest('.form-row'));
+  function row(prefix, name) {
+    var input = field(prefix, name);
+    return input && (input.closest('.field-row') || input.closest('.form-row'));
   }
 
   function value(form, name) {
@@ -57,11 +58,12 @@
   }
 
   function formOf(element) {
-    return element.closest('.inline-related') || element.closest('[id^="slides-"]');
+    var match = /^(slides-\d+-)/.exec(element.name || '');
+    return match && match[1];
   }
 
   function init() {
-    document.querySelectorAll('select[name$="-type"]').forEach(function (select) {
+    document.querySelectorAll('select[name^="slides-"][name$="-type"]').forEach(function (select) {
       var form = formOf(select);
       if (form) update(form);
     });
@@ -74,5 +76,9 @@
     if (form) update(form);
   });
   document.addEventListener('formset:added', init);
-  document.addEventListener('DOMContentLoaded', init);
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
 })();

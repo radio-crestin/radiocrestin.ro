@@ -274,7 +274,7 @@ class StorySlide(models.Model):
         verbose_name_plural = _("Story Slides")
 
     def __str__(self):
-        return f'{self.story_id} · {self.position} · {self.type}'
+        return f'{self.position + 1}. {self.get_type_display()}'
 
     @property
     def shown_seconds(self) -> float:
