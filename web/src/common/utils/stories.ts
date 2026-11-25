@@ -1,0 +1,206 @@
+// The story share page (/poveste/<slug>/): what the API's story becomes on the website.
+// Pure functions, shared by the build (static pages, Open Graph) and the browser (fresh copy).
+// Unknown slide types and slides without what their type needs are skipped, per the contract
+// (backend/docs/stories-api.md, "Unknown values"); every link is checked before it's rendered.
+import type { IStory, IStoryCta, IStorySlide } from "@/models/Story";
+import { ANDROID_PACKAGE, SITE_URL, getAndroidStoreLink, getIOSStoreLink } from "@/constants/constants";
+
+export const STORY_SLUG = /^[a-z0-9-]{1,100}$/;
+export const STORY_PATH = /^\/poveste\/([a-z0-9-]{1,100})\/?$/;
+const YOUTUBE_ID = /^[A-Za-z0-9_-]{11}$/;
+
+export type StoryMedia =
+  | { kind: "image"; src: string }
+  | { kind: "video"; src: string; poster?: string }
+  | { kind: "youtube"; videoId: string; url: string; thumbnail: string; title?: string }
+  | { kind: "instagram"; url: string; embedUrl: string; thumbnail?: string; author?: string; caption?: string };
+
+export interface StoryLink {
+  label: string;
+  href: string;
+  /** Leaves the site: opens in a new tab. */
+  external: boolean;
+}
+
+export interface StorySlideView {
+  id: number;
+  media: StoryMedia;
+  landscape: boolean;
+  cta: StoryLink | null;
+}
+
+export interface StoryView {
+  slug: string;
+  title: string;
+  cover: string | null;
+  shareUrl: string;
+  slides: StorySlideView[];
+}
+
+/** An http(s) URL without credentials, or null. */
+export const safeHttpUrl = (raw: unknown): string | null => {
+  if (typeof raw !== "string" || !raw) return null;
+  try {
+    const url = new URL(raw);
+    return (url.protocol === "https:" || url.protocol === "http:") && !url.username && !url.password ? url.href : null;
+  } catch {
+    return null;
+  }
+};
+
+const link = (label: string, href: string | null): StoryLink | null => {
+  if (!href) return null;
+  return { label, href, external: !href.startsWith("/") };
+};
+
+/** Where a CTA goes on the website; null hides it (an unknown target without a fallback). */
+export const ctaLink = (cta: IStoryCta | null | undefined): StoryLink | null => {
+  const label = typeof cta?.label === "string" ? cta.label.trim() : "";
+  const target = cta?.target;
+  if (!label || !target || typeof target !== "object") return null;
+  const fallback = safeHttpUrl(target.fallback_url);
+  switch (target.type) {
+    case "url":
+      return link(label, safeHttpUrl(target.url));
+    case "app_link":
+      // A universal/app link (https) opens the app when it's installed, else its page;
+      // a custom scheme only works with the app, so the browser gets the fallback.
+      return link(label, safeHttpUrl(target.app_url) ?? fallback);
+    case "story":
+      return link(label, STORY_SLUG.test(target.story_slug ?? "") ? `/poveste/${target.story_slug}/` : null);
+    case "in_app": {
+      const slug = target.slug ?? "";
+      if (target.route === "station" && STORY_SLUG.test(slug)) return link(label, `/${slug}/`);
+      if (target.route === "announcement" && STORY_SLUG.test(slug)) return link(label, `/#anunt/${slug}`);
+      return link(label, fallback);
+    }
+    default:
+      return link(label, fallback);
+  }
+};
+
+const youtubeMedia = (slide: IStorySlide): StoryMedia | null => {
+  const url = safeHttpUrl(slide.youtube_url);
+  let videoId = slide.youtube?.video_id ?? "";
+  if (!YOUTUBE_ID.test(videoId) && url) {
+    const parsed = new URL(url);
+    videoId = parsed.searchParams.get("v")
+      ?? parsed.pathname.match(/^\/(?:shorts\/|embed\/|live\/)?([A-Za-z0-9_-]{11})/)?.[1]
+      ?? "";
+  }
+  if (!YOUTUBE_ID.test(videoId)) return null;
+  return {
+    kind: "youtube",
+    videoId,
+    url: url ?? `https://www.youtube.com/watch?v=${videoId}`,
+    thumbnail: safeHttpUrl(slide.poster_url) ?? `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,
+    title: slide.youtube?.title || undefined,
+  };
+};
+
+const instagramMedia = (slide: IStorySlide): StoryMedia | null => {
+  const ig = slide.instagram;
+  const url = safeHttpUrl(ig?.url);
+  if (!ig || !url) return null;
+  // Best first: Instagram's direct media, else its thumbnail with the caption, else the embed page.
+  const direct = safeHttpUrl(ig.media_url);
+  if (direct && ig.media_type === "image") return { kind: "image", src: direct };
+  if (direct && ig.media_type === "video") return { kind: "video", src: direct, poster: safeHttpUrl(ig.thumbnail_url) ?? undefined };
+  const embed = safeHttpUrl(ig.embed_url) ?? `${url.endsWith("/") ? url : `${url}/`}embed/`;
+  return {
+    kind: "instagram",
+    url,
+    embedUrl: embed,
+    thumbnail: safeHttpUrl(ig.thumbnail_url) ?? undefined,
+    author: ig.author_name || undefined,
+    caption: ig.caption || undefined,
+  };
+};
+
+const slideMedia = (slide: IStorySlide): StoryMedia | null => {
+  switch (slide.type) {
+    case "image": {
+      const src = safeHttpUrl(slide.media_url);
+      return src ? { kind: "image", src } : null;
+    }
+    case "video": {
+      const src = safeHttpUrl(slide.media_url);
+      return src ? { kind: "video", src, poster: safeHttpUrl(slide.poster_url) ?? undefined } : null;
+    }
+    case "youtube":
+      return youtubeMedia(slide);
+    case "instagram":
+      return instagramMedia(slide);
+    default:
+      return null;
+  }
+};
+
+/** The cover: cover_url, else the first slide's picture or poster. */
+const coverOf = (story: IStory): string | null => {
+  const cover = safeHttpUrl(story.cover_url);
+  if (cover) return cover;
+  for (const slide of story.slides ?? []) {
+    const still = (slide.type === "image" && safeHttpUrl(slide.media_url)) || safeHttpUrl(slide.poster_url);
+    if (still) return still;
+  }
+  return null;
+};
+
+/** The page's view of an API story, or null when there is nothing to show. */
+export const toStoryView = (data: unknown): StoryView | null => {
+  const story = data as IStory | null;
+  if (!story || typeof story !== "object" || !STORY_SLUG.test(story.slug ?? "") || !Array.isArray(story.slides)) return null;
+  const slides = story.slides.flatMap((slide): StorySlideView[] => {
+    const media = slide && typeof slide === "object" ? slideMedia(slide) : null;
+    return media
+      ? [{ id: Number(slide.id) || 0, media, landscape: slide.orientation === "landscape", cta: ctaLink(slide.cta) }]
+      : [];
+  });
+  if (!slides.length) return null;
+  return {
+    slug: story.slug,
+    title: (typeof story.title === "string" && story.title.trim()) || "Poveste",
+    cover: coverOf(story),
+    shareUrl: storyUrl(story.slug),
+    slides,
+  };
+};
+
+/** In its time window: starts_at <= now < ends_at (null: no limit on that side). */
+export const isStoryLive = (story: Pick<IStory, "starts_at" | "ends_at">, now = Date.now()): boolean => {
+  const starts = story.starts_at ? Date.parse(story.starts_at) : NaN;
+  const ends = story.ends_at ? Date.parse(story.ends_at) : NaN;
+  return !(starts > now) && !(ends <= now);
+};
+
+export const storyUrl = (slug: string) => `${SITE_URL}/poveste/${slug}/`;
+
+/**
+ * "Open in the app". Android: an intent for this very page in our package (Chrome doesn't hand a
+ * same-site link to the app), falling back to the Play Store. iOS: the app's custom scheme;
+ * the page sends the visitor to the App Store when the app didn't open.
+ */
+export const appLinks = (slug: string) => {
+  const source = `story-${slug}`;
+  const android = getAndroidStoreLink(source);
+  return {
+    android: `intent://www.radiocrestin.ro/poveste/${slug}/#Intent;scheme=https;package=${ANDROID_PACKAGE};S.browser_fallback_url=${encodeURIComponent(android)};end`,
+    ios: `radiocrestin://poveste/${slug}`,
+    androidStore: android,
+    iosStore: getIOSStoreLink(source),
+  };
+};
+
+export const STORY_SHARE_TEXT = "Ascultă radiouri creștine și vezi poveștile în aplicația Radio Creștin.";
+
+/** Open Graph / Twitter meta for a story's page. */
+export const seoStory = (story: StoryView, defaultImage: string) => ({
+  title: `${story.title} | Radio Creștin`,
+  description: `${story.title}: o poveste de la Radio Creștin. Vezi-o aici sau în aplicația Radio Creștin.`,
+  imageUrl: story.cover ?? defaultImage,
+  fullURL: story.shareUrl,
+  twitterCard: story.cover ? ("summary_large_image" as const) : ("summary" as const),
+  // Stories expire: share previews read the meta, search engines needn't list them.
+  noindex: true,
+});

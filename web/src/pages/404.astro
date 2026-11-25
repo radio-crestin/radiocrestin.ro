@@ -16,6 +16,13 @@ const announcements = await getBuildSnapshot();
 ---
 
 <BaseLayout {...SEO_404}>
+  <!-- A story's share link without a built page (added after the deploy): its fallback page reads it from the API. -->
+  <script is:inline slot="head">
+    (function () {
+      var m = location.pathname.match(/^\/poveste\/([a-z0-9-]{1,100})\/?$/);
+      if (m) location.replace("/poveste/?s=" + m[1] + location.hash);
+    })();
+  </script>
   <RadioApp client:load announcements={announcements} stations={toIslandStations(stations)} />
   <PinStations />
 </BaseLayout>
