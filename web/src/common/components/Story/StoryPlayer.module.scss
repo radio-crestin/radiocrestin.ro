@@ -225,8 +225,8 @@
   position: absolute;
   left: 0;
   right: 0;
-  bottom: 70px;
-  padding: 0 16px;
+  bottom: 84px;
+  padding: 0 76px 0 16px;
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -270,76 +270,167 @@
   bottom: 0;
   z-index: 3;
   display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 36px 12px max(14px, env(safe-area-inset-bottom));
-  background: linear-gradient(transparent, rgba(0, 0, 0, 0.6));
+  justify-content: center;
+  padding: 60px 72px max(22px, env(safe-area-inset-bottom));
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.55));
+  pointer-events: none;
 }
 
+// The link sticker: comes in after 4 s, with a spring and a sheen.
 .cta {
-  flex: 1;
-  min-width: 0;
-  padding: 11px 18px;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 100%;
+  padding: 7px 14px 7px 7px;
   border-radius: 999px;
-  background: #fff;
+  background: rgba(255, 255, 255, 0.96);
   color: #121212;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 700;
-  text-align: center;
   text-decoration: none;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.4);
+  overflow: hidden;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(28px) scale(0.85);
+  pointer-events: auto;
+
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(105deg, transparent 35%, rgba(255, 255, 255, 0.85) 50%, transparent 65%);
+    transform: translateX(-120%);
+  }
+
+  &:hover {
+    background: #fff;
+  }
+
+  &:active {
+    transform: scale(0.96);
+  }
+}
+
+.ctaIn {
+  visibility: visible;
+  animation: cta-in 0.55s cubic-bezier(0.2, 1.5, 0.45, 1) forwards;
+
+  &::after {
+    animation: cta-sheen 0.9s ease-out 0.5s;
+  }
+}
+
+@keyframes cta-in {
+  0% {
+    opacity: 0;
+    transform: translateY(28px) scale(0.85);
+  }
+  60% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes cta-sheen {
+  to {
+    transform: translateX(120%);
+  }
+}
+
+.ctaIcon {
+  width: 32px;
+  height: 32px;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  // The brand's yellow into Instagram's warm gradient.
+  background: linear-gradient(135deg, #fdae1c 0%, #f77737 50%, #e1306c 100%);
+  color: #fff;
+}
+
+.ctaLabel {
+  min-width: 0;
+  color: #121212;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-
-  &:hover {
-    background: #fdae1c;
-  }
 }
 
-.spacer {
-  flex: 1;
-}
-
-.action {
+.ctaArrow {
   display: flex;
-  align-items: center;
-  gap: 5px;
-  height: 42px;
-  padding: 0 10px;
-  border: 0;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.14);
-  color: #fff;
-  cursor: pointer;
-  backdrop-filter: blur(6px);
-
-  &:hover {
-    background: rgba(255, 255, 255, 0.24);
-  }
+  color: #8e8e8e;
 
   svg {
+    width: 18px;
+    height: 18px;
+  }
+}
+
+// Like and share, down the right side.
+.rail {
+  position: absolute;
+  right: 8px;
+  bottom: 96px;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+}
+
+.railButton {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  min-width: 52px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #fff;
+  cursor: pointer;
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.55));
+
+  svg {
+    width: 30px;
+    height: 30px;
     transition: transform 0.15s ease;
   }
+
+  &:hover svg {
+    transform: scale(1.08);
+  }
+
+  &:active svg {
+    transform: scale(0.9);
+  }
+}
+
+.railLabel {
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .liked {
-  color: #ff3b5c;
-
   svg {
-    animation: pop 0.3s ease;
+    color: #ff3040;
+    animation: pop 0.35s ease;
   }
 }
 
 @keyframes pop {
-  50% {
-    transform: scale(1.3);
+  40% {
+    transform: scale(1.35);
   }
-}
-
-.count {
-  color: #fff;
-  font-size: 13px;
-  font-weight: 700;
 }
 
 .side {

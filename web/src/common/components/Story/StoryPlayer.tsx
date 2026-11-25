@@ -11,6 +11,9 @@ import styles from "./StoryPlayer.module.scss";
 
 export const HOLD_MS = 220;
 export const FAST_RATE = 2;
+/** The CTA comes in after this much of the slide has played (sooner on a short slide, so it shows at least CTA_MIN_SHOWN_MS). */
+export const CTA_DELAY_MS = 4000;
+const CTA_MIN_SHOWN_MS = 1500;
 const SWIPE_PX = 50;
 const LOAD_TIMEOUT_MS = 10_000;
 const LIKES_KEY = "stories-liked";
@@ -63,6 +66,8 @@ export default function StoryPlayer({ story }: { story: StoryView }) {
   const [ended, setEnded] = useState(false);
   const [embedOpen, setEmbedOpen] = useState(false);
   const [hidden, setHidden] = useState(false);
+  const [ctaShown, setCtaShown] = useState(false);
+  const ctaShownRef = useRef(false);
   const { liked, count: likes, toggle: toggleLike } = useStoryLike(story);
 
   const barRef = useRef<HTMLSpanElement>(null);
@@ -84,6 +89,8 @@ export default function StoryPlayer({ story }: { story: StoryView }) {
       if (to < 0) {
         // Back on the first slide: play it again.
         elapsed.current = 0;
+        ctaShownRef.current = false;
+        setCtaShown(false);
         setBar(0);
         if (videoRef.current) videoRef.current.currentTime = 0;
         return;
@@ -112,6 +119,8 @@ export default function StoryPlayer({ story }: { story: StoryView }) {
   useEffect(() => {
     elapsed.current = 0;
     setBar(0);
+    ctaShownRef.current = false;
+    setCtaShown(false);
     void report([{ type: "slide_view", story: story.slug, slide: slide.id }]);
     const timer = window.setTimeout(() => markLoaded(index), LOAD_TIMEOUT_MS);
     return () => window.clearTimeout(timer);
@@ -143,10 +152,20 @@ export default function StoryPlayer({ story }: { story: StoryView }) {
     if (!running) return;
     let last = performance.now();
     let frame = 0;
+    const showCtaAfter = (playedMs: number, totalMs: number) => {
+      if (!ctaShownRef.current && slide.cta && playedMs >= Math.max(0, Math.min(CTA_DELAY_MS, totalMs - CTA_MIN_SHOWN_MS))) {
+        ctaShownRef.current = true;
+        setCtaShown(true);
+      }
+    };
     const tick = (now: number) => {
       if (video) {
-        if (video.duration > 0) setBar(video.currentTime / video.duration);
+        if (video.duration > 0) {
+          setBar(video.currentTime / video.duration);
+          showCtaAfter(video.currentTime * 1000, video.duration * 1000);
+        }
       } else {
+        showCtaAfter(elapsed.current, slide.duration * 1000);
         elapsed.current += (now - last) * (fast ? FAST_RATE : 1);
         const fraction = elapsed.current / (slide.duration * 1000);
         setBar(fraction);
@@ -324,33 +343,45 @@ export default function StoryPlayer({ story }: { story: StoryView }) {
           </div>
         )}
 
-        <div className={styles.bottom}>
-          {slide.cta ? (
-            <a
-              className={styles.cta}
-              href={slide.cta.href}
-              onClick={() => void report([{ type: "cta_click", story: story.slug, slide: slide.id, target: "button" }])}
-              {...(slide.cta.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
-            >
-              {slide.cta.label}
-            </a>
-          ) : (
-            <span className={styles.spacer} />
-          )}
+        <div className={styles.rail}>
           <button
             type="button"
-            className={liked ? `${styles.action} ${styles.liked}` : styles.action}
+            className={liked ? `${styles.railButton} ${styles.liked}` : styles.railButton}
             aria-label={liked ? "Nu-mi mai place" : "Îmi place"}
             aria-pressed={liked}
             onClick={() => void toggleLike()}
             data-testid="story-like"
           >
             <HeartIcon filled={liked} />
-            <span className={styles.count}>{formatCount(likes)}</span>
+            <span className={styles.railLabel}>{formatCount(likes)}</span>
           </button>
-          <button type="button" className={styles.action} aria-label="Distribuie" onClick={share} data-testid="story-share">
+          <button type="button" className={styles.railButton} aria-label="Distribuie" onClick={share} data-testid="story-share">
             <ShareIcon />
+            <span className={styles.railLabel}>Distribuie</span>
           </button>
+        </div>
+
+        <div className={styles.bottom}>
+          {slide.cta && (
+            <a
+              key={`${slide.id}-${index}`}
+              className={ctaShown ? `${styles.cta} ${styles.ctaIn}` : styles.cta}
+              href={slide.cta.href}
+              aria-hidden={!ctaShown}
+              tabIndex={ctaShown ? undefined : -1}
+              data-testid="story-cta"
+              onClick={() => void report([{ type: "cta_click", story: story.slug, slide: slide.id, target: "button" }])}
+              {...(slide.cta.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+            >
+              <span className={styles.ctaIcon} aria-hidden="true">
+                <LinkIcon />
+              </span>
+              <span className={styles.ctaLabel}>{slide.cta.label}</span>
+              <span className={styles.ctaArrow} aria-hidden="true">
+                <Chevron />
+              </span>
+            </a>
+          )}
         </div>
       </div>
       {index < count - 1 && (
@@ -524,6 +555,12 @@ const MutedIcon = () => (
   <Svg>
     <path d="M11 5 6 9H3v6h3l5 4z" />
     <path d="m16 9 6 6M22 9l-6 6" />
+  </Svg>
+);
+const LinkIcon = () => (
+  <Svg width="18" height="18" strokeWidth="2.4">
+    <path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7" />
+    <path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7" />
   </Svg>
 );
 const CloseIcon = () => (

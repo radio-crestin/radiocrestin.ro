@@ -19,6 +19,8 @@ describe("StoryPage", () => {
     expect(html).toContain('aria-label="Îmi place"');
     expect(html).toContain(">152<");
     expect(html).toContain('aria-label="Distribuie"');
+    // The CTA waits (CTA_DELAY_MS of playback) before it comes in.
+    expect(html).toMatch(/<a [^>]*aria-hidden="true"[^>]*tabindex="-1"[^>]*data-testid="story-cta"|<a [^>]*data-testid="story-cta"[^>]*aria-hidden="true"/);
     expect(html).toContain("apps.apple.com");
     expect(html).toContain("play.google.com");
     expect(html).toContain('href="/"');
