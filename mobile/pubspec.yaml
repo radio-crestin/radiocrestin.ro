@@ -114,6 +114,9 @@ dependencies:
   visibility_detector: ^0.4.0+2
   markdown: ^7.3.1
   webview_flutter: ^4.14.1
+  # Story videos (short uploaded MP4 teasers): AVPlayer on iOS, where
+  # libmpv can't decode on the simulator, and ExoPlayer on Android.
+  video_player: ^2.14.1
 
 dev_dependencies:
   dependency_validator: ^5.0.3

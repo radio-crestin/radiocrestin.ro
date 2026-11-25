@@ -265,6 +265,18 @@ class AppColors {
   static const Color playerBar = Color(0xff75002c);
   static const Color playerBarLight = primaryDark;
 
+  // Stories: the full-screen viewer's backdrop behind media that doesn't
+  // fill it, and the bubble's ring, coloured (pink to orange) while the
+  // story is due and grey once seen.
+  static const Color storyBackdrop = Color(0xff111111);
+  static const List<Color> storyRing = [
+    Color(0xffe91e63),
+    Color(0xffff6f3c),
+    Color(0xffffb300),
+  ];
+  static const Color storySeenRingLight = Color(0x33000000);
+  static const Color storySeenRingDark = Color(0x40ffffff);
+
   // Light theme colors
   static const Color lightBackground = Color(0xfffafafa);
   static const Color lightSurface = Colors.white;

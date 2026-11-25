@@ -1307,6 +1307,29 @@ class AppAudioHandler extends BaseAudioHandler {
     }
   }
 
+  /// How loud the radio is under a story that plays its own sound: 1 when
+  /// no story does.
+  double _storyDuck = 1.0;
+  int _storyDuckRamp = 0;
+
+  /// Quiets the radio while a story plays a video with sound, and brings
+  /// it back after, without stopping the stream (a live stream would have
+  /// to start over). Fades over a quarter second either way.
+  Future<void> duckForStory(bool ducked) async {
+    final ramp = ++_storyDuckRamp;
+    final from = _storyDuck, to = ducked ? 0.0 : 1.0;
+    if (from == to) return;
+    const steps = 5;
+    for (var step = 1; step <= steps; step++) {
+      if (ramp != _storyDuckRamp) return;
+      _storyDuck = from + (to - from) * step / steps;
+      await _applyOutputVolume();
+      if (step < steps) {
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+      }
+    }
+  }
+
   /// The sleep timer's fade, applied on top of the listener's volume.
   Future<void> _setOutputVolume(double fade) async {
     _sleepFade = fade;
@@ -1317,7 +1340,7 @@ class AppAudioHandler extends BaseAudioHandler {
   /// engine that can be audible: the just_audio radio player and media_kit
   /// (TV, video and playlist items).
   Future<void> _applyOutputVolume() async {
-    final volume = _sleepFade * listenerVolume.value;
+    final volume = _sleepFade * _storyDuck * listenerVolume.value;
     await player.setVolume(volume);
     if (GetIt.instance.isRegistered<VideoPlaybackService>()) {
       await videoService.setVolume(volume);

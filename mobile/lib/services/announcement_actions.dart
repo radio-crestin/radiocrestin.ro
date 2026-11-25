@@ -39,7 +39,7 @@ class AnnouncementActions {
       AnnouncementActionType.page => _openPage(item),
       AnnouncementActionType.station => _playStation(action.stationSlug),
       AnnouncementActionType.form => _openForm(item, action.formSlug),
-      AnnouncementActionType.share => _share(action),
+      AnnouncementActionType.share => share(action),
       AnnouncementActionType.none => Future.value(true),
     };
     if (!await done) _showFailure();
@@ -139,7 +139,7 @@ class AnnouncementActions {
   /// Opens the system share sheet with the announcement's link and text;
   /// either absent, the listener's own invitation link (which counts the
   /// friends who open it) and the app's text.
-  static Future<bool> _share(AnnouncementAction action) async {
+  static Future<bool> share(AnnouncementAction action) async {
     final link = safeLink(action.url)?.toString() ?? await _ownShareUrl();
     await ShareHandler.shareViaSystem(
       shareUrl: link,
