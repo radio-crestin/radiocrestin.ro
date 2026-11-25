@@ -420,7 +420,7 @@ function SlideLayer({ slide, active, onLoaded, videoRef, onVideoEnded, onEmbedOp
       v.currentTime = 0;
     }
   }, [active]);
-  const cls = [styles.layer, active ? styles.active : "", slide.landscape ? styles.landscape : ""].join(" ");
+  const cls = active ? `${styles.layer} ${styles.active}` : styles.layer;
   const media: StoryMedia = slide.media;
   return (
     <div className={cls} aria-hidden={!active}>

@@ -47,10 +47,10 @@ describe("toStoryView", () => {
     expect(toStoryView(t)!.slides[3].media).toMatchObject({ kind: "instagram", thumbnail: undefined });
   });
 
-  it("covers with the first slide's still when cover_url is null", () => {
+  it("takes the cover as the API sends it (the backend does the fallback)", () => {
     const s = story();
     s.cover_url = null;
-    expect(toStoryView(s)!.cover).toBe("https://cdn.radiocrestin.ro/stories/slides/afis.webp");
+    expect(toStoryView(s)!.cover).toBeNull();
   });
 
   it("keeps slide durations between 2 and 60 seconds (6 when missing)", () => {

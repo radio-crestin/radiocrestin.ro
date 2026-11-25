@@ -25,7 +25,6 @@ export interface StoryLink {
 export interface StorySlideView {
   id: number;
   media: StoryMedia;
-  landscape: boolean;
   /** Seconds on screen (a video runs for its own length). */
   duration: number;
   hasSound: boolean;
@@ -146,17 +145,6 @@ const slideMedia = (slide: IStorySlide): StoryMedia | null => {
   }
 };
 
-/** The cover: cover_url, else the first slide's picture or poster. */
-const coverOf = (story: IStory): string | null => {
-  const cover = safeHttpUrl(story.cover_url);
-  if (cover) return cover;
-  for (const slide of story.slides ?? []) {
-    const still = (slide.type === "image" && safeHttpUrl(slide.media_url)) || safeHttpUrl(slide.poster_url);
-    if (still) return still;
-  }
-  return null;
-};
-
 /** The page's view of an API story, or null when there is nothing to show. */
 export const toStoryView = (data: unknown): StoryView | null => {
   const story = data as IStory | null;
@@ -167,7 +155,6 @@ export const toStoryView = (data: unknown): StoryView | null => {
       ? [{
           id: Number(slide.id) || 0,
           media,
-          landscape: slide.orientation === "landscape",
           duration: slideSeconds(slide.duration_seconds),
           hasSound: media.kind === "video" && slide.has_sound !== false,
           cta: ctaLink(slide.cta),
@@ -178,7 +165,8 @@ export const toStoryView = (data: unknown): StoryView | null => {
   return {
     slug: story.slug,
     title: (typeof story.title === "string" && story.title.trim()) || "Poveste",
-    cover: coverOf(story),
+    // The backend already falls back to the first slide's picture or poster.
+    cover: safeHttpUrl(story.cover_url),
     shareUrl: storyUrl(story.slug),
     likeCount: Math.max(0, Math.floor(Number(story.like_count) || 0)),
     slides,
