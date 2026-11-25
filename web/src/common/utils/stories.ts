@@ -16,6 +16,8 @@ export type StoryMedia =
   | { kind: "instagram"; url: string; embedUrl: string; thumbnail?: string; author?: string; caption?: string };
 
 export interface StoryLink {
+  /** As in the app: a button, a "swipe up" hint with the label, or both. */
+  style: "button" | "swipe_up" | "both";
   label: string;
   href: string;
   /** Leaves the site: opens in a new tab. */
@@ -25,6 +27,7 @@ export interface StoryLink {
 export interface StorySlideView {
   id: number;
   media: StoryMedia;
+  /** Framed sideways: letterboxed, never cropped. */
   landscape: boolean;
   /** Seconds on screen (a video runs for its own length). */
   duration: number;
@@ -58,13 +61,17 @@ export const safeHttpUrl = (raw: unknown): string | null => {
   }
 };
 
-const link = (label: string, href: string | null): StoryLink | null => {
+const CTA_STYLES = ["button", "swipe_up", "both"] as const;
+
+const link = (label: string, href: string | null, style: unknown = "button"): StoryLink | null => {
   if (!href) return null;
-  return { label, href, external: !href.startsWith("/") };
+  // An unknown style shows as a button (the contract's "Unknown values").
+  const known = CTA_STYLES.find((s) => s === style) ?? "button";
+  return { style: known, label, href, external: !href.startsWith("/") };
 };
 
-/** Where a CTA goes on the website; null hides it (an unknown target without a fallback). */
-export const ctaLink = (cta: IStoryCta | null | undefined): StoryLink | null => {
+/** The CTA's target; null for an unknown target without a fallback. */
+const ctaTarget = (cta: IStoryCta | null | undefined): StoryLink | null => {
   const label = typeof cta?.label === "string" ? cta.label.trim() : "";
   const target = cta?.target;
   if (!label || !target || typeof target !== "object") return null;
@@ -87,6 +94,12 @@ export const ctaLink = (cta: IStoryCta | null | undefined): StoryLink | null => 
     default:
       return link(label, fallback);
   }
+};
+
+/** Where a CTA goes on the website, and how it shows; null hides it. */
+export const ctaLink = (cta: IStoryCta | null | undefined): StoryLink | null => {
+  const target = ctaTarget(cta);
+  return target && link(target.label, target.href, cta?.style);
 };
 
 const youtubeMedia = (slide: IStorySlide): StoryMedia | null => {
@@ -146,17 +159,6 @@ const slideMedia = (slide: IStorySlide): StoryMedia | null => {
   }
 };
 
-/** The cover: cover_url, else the first slide's picture or poster. */
-const coverOf = (story: IStory): string | null => {
-  const cover = safeHttpUrl(story.cover_url);
-  if (cover) return cover;
-  for (const slide of story.slides ?? []) {
-    const still = (slide.type === "image" && safeHttpUrl(slide.media_url)) || safeHttpUrl(slide.poster_url);
-    if (still) return still;
-  }
-  return null;
-};
-
 /** The page's view of an API story, or null when there is nothing to show. */
 export const toStoryView = (data: unknown): StoryView | null => {
   const story = data as IStory | null;
@@ -178,7 +180,8 @@ export const toStoryView = (data: unknown): StoryView | null => {
   return {
     slug: story.slug,
     title: (typeof story.title === "string" && story.title.trim()) || "Poveste",
-    cover: coverOf(story),
+    // The backend already falls back to the first slide's picture or poster.
+    cover: safeHttpUrl(story.cover_url),
     shareUrl: storyUrl(story.slug),
     likeCount: Math.max(0, Math.floor(Number(story.like_count) || 0)),
     slides,

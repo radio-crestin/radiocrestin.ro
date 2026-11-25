@@ -47,10 +47,10 @@ describe("toStoryView", () => {
     expect(toStoryView(t)!.slides[3].media).toMatchObject({ kind: "instagram", thumbnail: undefined });
   });
 
-  it("covers with the first slide's still when cover_url is null", () => {
+  it("takes the cover as the API sends it (the backend does the fallback)", () => {
     const s = story();
     s.cover_url = null;
-    expect(toStoryView(s)!.cover).toBe("https://cdn.radiocrestin.ro/stories/slides/afis.webp");
+    expect(toStoryView(s)!.cover).toBeNull();
   });
 
   it("keeps slide durations between 2 and 60 seconds (6 when missing)", () => {
@@ -71,12 +71,18 @@ describe("toStoryView", () => {
 describe("ctaLink", () => {
   const cta = (target: any) => ({ style: "button", label: "Hai", target });
   it("maps each target type to a page link", () => {
-    expect(ctaLink(cta({ type: "url", url: "https://example.org/a" }))).toEqual({ label: "Hai", href: "https://example.org/a", external: true });
+    expect(ctaLink(cta({ type: "url", url: "https://example.org/a" }))).toEqual({ style: "button", label: "Hai", href: "https://example.org/a", external: true });
     expect(ctaLink(cta({ type: "in_app", route: "station", slug: "radio-vocea-evangheliei" }))?.href).toBe("/radio-vocea-evangheliei/");
     expect(ctaLink(cta({ type: "in_app", route: "announcement", slug: "donatii" }))?.href).toBe("/#anunt/donatii");
-    expect(ctaLink(cta({ type: "story", story_slug: "alta" }))).toEqual({ label: "Hai", href: "/poveste/alta/", external: false });
+    expect(ctaLink(cta({ type: "story", story_slug: "alta" }))).toEqual({ style: "button", label: "Hai", href: "/poveste/alta/", external: false });
     expect(ctaLink(cta({ type: "app_link", app_url: "spotify:track:1", fallback_url: "https://open.spotify.com/track/1" }))?.href)
       .toBe("https://open.spotify.com/track/1");
+  });
+  it("keeps the style (an unknown one shows as a button)", () => {
+    const target = { type: "url", url: "https://example.org/" };
+    expect(ctaLink({ style: "swipe_up", label: "Sus", target })?.style).toBe("swipe_up");
+    expect(ctaLink({ style: "both", label: "Sus", target })?.style).toBe("both");
+    expect(ctaLink({ style: "sticker", label: "Sus", target })?.style).toBe("button");
   });
   it("hides what it can't open, and unsafe links", () => {
     expect(ctaLink(cta({ type: "in_app", route: "settings" }))).toBeNull();

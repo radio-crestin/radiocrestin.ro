@@ -55,7 +55,17 @@ export function useStoryLike(story: StoryView) {
 const formatCount = (n: number) =>
   n >= 1_000_000 ? `${(n / 1_000_000).toFixed(1).replace(".0", "")}M` : n >= 10_000 ? `${Math.round(n / 1000)}K` : String(n);
 
-export default function StoryPlayer({ story }: { story: StoryView }) {
+interface PlayerProps {
+  story: StoryView;
+  /** In the in-page viewer: close it (on the share page the close button goes home). */
+  onClose?: () => void;
+  /** After the last slide (the viewer goes to the next story); absent: "Revezi povestea". */
+  onFinished?: () => void;
+  /** Back from the first slide (the viewer goes to the previous story); absent: replay it. */
+  onBackFromStart?: () => void;
+}
+
+export default function StoryPlayer({ story, onClose, onFinished, onBackFromStart }: PlayerProps) {
   const slides = story.slides;
   const count = slides.length;
   const [index, setIndex] = useState(0);
@@ -86,6 +96,10 @@ export default function StoryPlayer({ story }: { story: StoryView }) {
 
   const go = useCallback(
     (to: number) => {
+      if (to < 0 && onBackFromStart) {
+        onBackFromStart();
+        return;
+      }
       if (to < 0) {
         // Back on the first slide: play it again.
         elapsed.current = 0;
@@ -96,16 +110,20 @@ export default function StoryPlayer({ story }: { story: StoryView }) {
         return;
       }
       if (to >= count) {
+        void report([{ type: "complete", story: story.slug }]);
+        if (onFinished) {
+          onFinished();
+          return;
+        }
         setEnded(true);
         setBar(1);
-        void report([{ type: "complete", story: story.slug }]);
         return;
       }
       setEnded(false);
       setEmbedOpen(false);
       setIndex(to);
     },
-    [count, story.slug],
+    [count, story.slug, onFinished, onBackFromStart],
   );
 
   // A new story: from the start, and one "view".
@@ -187,6 +205,7 @@ export default function StoryPlayer({ story }: { story: StoryView }) {
       if (e.target instanceof HTMLElement && e.target.closest("input, textarea")) return;
       if (e.key === "ArrowRight") go(index + 1);
       else if (e.key === "ArrowLeft") go(index - 1);
+      else if (e.key === "Escape" && onClose) onClose();
       else if (e.key === " ") {
         e.preventDefault();
         setPaused((p) => !p);
@@ -194,7 +213,7 @@ export default function StoryPlayer({ story }: { story: StoryView }) {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [go, index]);
+  }, [go, index, onClose]);
 
   // Gestures: tap (left third back, else on), swipe left / right, press and hold for double speed.
   const gesture = useRef<{ x: number; y: number; id: number; holdTimer: number; held: boolean; swiping: boolean } | null>(null);
@@ -258,7 +277,7 @@ export default function StoryPlayer({ story }: { story: StoryView }) {
 
   return (
     <div className={styles.wrap}>
-      {index > 0 && (
+      {(index > 0 || onBackFromStart) && (
         <button type="button" className={`${styles.side} ${styles.sidePrev}`} aria-label="Înapoi" onClick={() => go(index - 1)}>
           <Chevron left />
         </button>
@@ -295,96 +314,125 @@ export default function StoryPlayer({ story }: { story: StoryView }) {
           </div>
         )}
 
-        <div className={styles.top}>
-          <div className={styles.bars} role="tablist" aria-label="Diapozitive">
-            {slides.map((s, i) => (
-              <button
-                key={`${s.id}-${i}`}
-                type="button"
-                role="tab"
-                aria-selected={i === index}
-                aria-label={`Diapozitivul ${i + 1} din ${count}`}
-                className={styles.bar}
-                onClick={() => go(i)}
-              >
-                <span
-                  ref={i === index ? barRef : undefined}
-                  className={styles.fill}
-                  style={{ transform: `scaleX(${i < index || (ended && i === index) ? 1 : 0})` }}
-                />
-              </button>
-            ))}
-          </div>
-          <div className={styles.head}>
-            {story.cover ? <img className={styles.avatar} src={story.cover} alt="" /> : <span className={styles.avatar} />}
-            <div className={styles.who}>
-              <h1 className={styles.title}>{story.title}</h1>
-              <span className={styles.by}>Radio Creștin{fast ? " · 2×" : ""}</span>
-            </div>
-            {slide.hasSound && (
-              <button type="button" className={styles.icon} aria-label={muted ? "Pornește sunetul" : "Oprește sunetul"} onClick={() => setMuted((m) => !m)}>
-                {muted ? <MutedIcon /> : <SoundIcon />}
-              </button>
-            )}
-            <button type="button" className={styles.icon} aria-label={paused ? "Redă" : "Pauză"} aria-pressed={paused} onClick={() => setPaused((p) => !p)}>
-              {paused ? <PlayIcon /> : <PauseIcon />}
-            </button>
-            <a href="/" className={styles.icon} aria-label="Închide">
-              <CloseIcon />
-            </a>
-          </div>
-        </div>
+        <div className={styles.shade} aria-hidden="true" />
 
-        {ended && (
-          <div className={styles.end}>
-            <button type="button" className={styles.replay} onClick={restart}>
-              ↻ Revezi povestea
-            </button>
-          </div>
+        {fast && (
+          <span className={styles.fastBadge} aria-live="polite">
+            2×
+          </span>
+        )}
+        {paused && !ended && (
+          <span className={styles.pausedBadge} aria-hidden="true">
+            <PlayIcon />
+          </span>
         )}
 
-        <div className={styles.rail}>
-          <button
-            type="button"
-            className={liked ? `${styles.railButton} ${styles.liked}` : styles.railButton}
-            aria-label={liked ? "Nu-mi mai place" : "Îmi place"}
-            aria-pressed={liked}
-            onClick={() => void toggleLike()}
-            data-testid="story-like"
-          >
-            <HeartIcon filled={liked} />
-            <span className={styles.railLabel}>{formatCount(likes)}</span>
-          </button>
-          <button type="button" className={styles.railButton} aria-label="Distribuie" onClick={share} data-testid="story-share">
-            <ShareIcon />
-            <span className={styles.railLabel}>Distribuie</span>
-          </button>
-        </div>
+        {/* Like the app: the chrome fades while a finger holds the slide. */}
+        <div className={fast ? `${styles.chrome} ${styles.chromeHidden}` : styles.chrome}>
+          <div className={styles.top}>
+            <div className={styles.bars} role="tablist" aria-label="Diapozitive">
+              {slides.map((s, i) => (
+                <button
+                  key={`${s.id}-${i}`}
+                  type="button"
+                  role="tab"
+                  aria-selected={i === index}
+                  aria-label={`Diapozitivul ${i + 1} din ${count}`}
+                  className={styles.bar}
+                  onClick={() => go(i)}
+                >
+                  <span
+                    ref={i === index ? barRef : undefined}
+                    className={styles.fill}
+                    style={{ transform: `scaleX(${i < index || (ended && i === index) ? 1 : 0})` }}
+                  />
+                </button>
+              ))}
+            </div>
+            <div className={styles.head}>
+              {story.cover ? <img className={styles.avatar} src={story.cover} alt="" /> : <span className={styles.avatar} />}
+              <h1 className={styles.title}>{story.title}</h1>
+              {slide.hasSound && (
+                <button type="button" className={styles.icon} aria-label={muted ? "Pornește sunetul" : "Oprește sunetul"} onClick={() => setMuted((m) => !m)}>
+                  {muted ? <MutedIcon /> : <SoundIcon />}
+                </button>
+              )}
+              {onClose ? (
+                <button type="button" className={styles.icon} aria-label="Închide" onClick={onClose} data-testid="story-close">
+                  <CloseIcon />
+                </button>
+              ) : (
+                <a href="/" className={styles.icon} aria-label="Închide" data-testid="story-close">
+                  <CloseIcon />
+                </a>
+              )}
+            </div>
+          </div>
 
-        <div className={styles.bottom}>
-          {slide.cta && (
-            <a
-              key={`${slide.id}-${index}`}
-              className={ctaShown ? `${styles.cta} ${styles.ctaIn}` : styles.cta}
-              href={slide.cta.href}
-              aria-hidden={!ctaShown}
-              tabIndex={ctaShown ? undefined : -1}
-              data-testid="story-cta"
-              onClick={() => void report([{ type: "cta_click", story: story.slug, slide: slide.id, target: "button" }])}
-              {...(slide.cta.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
-            >
-              <span className={styles.ctaIcon} aria-hidden="true">
-                <LinkIcon />
-              </span>
-              <span className={styles.ctaLabel}>{slide.cta.label}</span>
-              <span className={styles.ctaArrow} aria-hidden="true">
-                <Chevron />
-              </span>
-            </a>
+          {ended && (
+            <div className={styles.end}>
+              <button type="button" className={styles.replay} onClick={restart}>
+                ↻ Revezi povestea
+              </button>
+            </div>
           )}
+
+          <div className={styles.footer}>
+            {slide.cta && slide.cta.style !== "button" && (
+              <a
+                key={`hint-${slide.id}-${index}`}
+                className={ctaShown ? `${styles.swipeUp} ${styles.ctaIn}` : styles.swipeUp}
+                href={slide.cta.href}
+                aria-hidden={!ctaShown}
+                tabIndex={ctaShown && slide.cta.style === "swipe_up" ? undefined : -1}
+                aria-label={slide.cta.style === "swipe_up" ? slide.cta.label : "Glisează în sus"}
+                data-testid={slide.cta.style === "swipe_up" ? "story-cta" : "story-swipe-up"}
+                onClick={() => void report([{ type: "cta_click", story: story.slug, slide: slide.id, target: "swipe_up" }])}
+                {...(slide.cta.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+              >
+                <span className={styles.chevronUp}>
+                  <ChevronUp />
+                </span>
+                {slide.cta.style === "swipe_up" && <span className={styles.swipeLabel}>{slide.cta.label}</span>}
+              </a>
+            )}
+            <div className={styles.row}>
+              <div className={styles.ctaSlot}>
+                {slide.cta && slide.cta.style !== "swipe_up" && (
+                  <a
+                    key={`cta-${slide.id}-${index}`}
+                    className={ctaShown ? `${styles.cta} ${styles.ctaIn}` : styles.cta}
+                    href={slide.cta.href}
+                    aria-hidden={!ctaShown}
+                    tabIndex={ctaShown ? undefined : -1}
+                    data-testid="story-cta"
+                    onClick={() => void report([{ type: "cta_click", story: story.slug, slide: slide.id, target: "button" }])}
+                    {...(slide.cta.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+                  >
+                    <ArrowOutward />
+                    <span className={styles.ctaLabel}>{slide.cta.label}</span>
+                  </a>
+                )}
+              </div>
+              <button
+                type="button"
+                className={liked ? `${styles.like} ${styles.liked}` : styles.like}
+                aria-label={liked ? "Nu-mi mai place" : "Îmi place"}
+                aria-pressed={liked}
+                onClick={() => void toggleLike()}
+                data-testid="story-like"
+              >
+                <HeartIcon filled={liked} />
+                {likes > 0 && <span className={styles.likeCount}>{formatCount(likes)}</span>}
+              </button>
+              <button type="button" className={styles.icon} aria-label="Distribuie" onClick={share} data-testid="story-share">
+                <ShareIcon />
+              </button>
+            </div>
+          </div>
         </div>
       </div>
-      {index < count - 1 && (
+      {(index < count - 1 || onFinished) && (
         <button type="button" className={`${styles.side} ${styles.sideNext}`} aria-label="Înainte" onClick={() => go(index + 1)}>
           <Chevron />
         </button>
@@ -528,16 +576,21 @@ const HeartIcon = ({ filled }: { filled: boolean }) => (
     <path d="M12 21s-7.5-4.6-9.6-9.2C.9 8.3 3.1 4.5 6.9 4.5c2.1 0 3.5 1.1 5.1 3 1.6-1.9 3-3 5.1-3 3.8 0 6 3.8 4.5 7.3C19.5 16.4 12 21 12 21z" />
   </Svg>
 );
+// Material's ios_share, as in the app.
 const ShareIcon = () => (
   <Svg>
-    <path d="M22 3 9.2 15.8" />
-    <path d="M22 3 15 21l-3.8-7.2L4 10z" />
+    <path d="M12 3v12M8 7l4-4 4 4" />
+    <path d="M8 10H6.5A1.5 1.5 0 0 0 5 11.5v8A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5v-8a1.5 1.5 0 0 0-1.5-1.5H16" />
   </Svg>
 );
-const PauseIcon = () => (
-  <Svg fill="currentColor" stroke="none">
-    <rect x="6" y="4.5" width="4" height="15" rx="1" />
-    <rect x="14" y="4.5" width="4" height="15" rx="1" />
+const ArrowOutward = () => (
+  <Svg width="18" height="18" strokeWidth="2.6">
+    <path d="M7 17 17 7M8 7h9v9" />
+  </Svg>
+);
+const ChevronUp = () => (
+  <Svg width="32" height="32" strokeWidth="2.4">
+    <path d="M6 15l6-6 6 6" />
   </Svg>
 );
 const PlayIcon = () => (
@@ -555,12 +608,6 @@ const MutedIcon = () => (
   <Svg>
     <path d="M11 5 6 9H3v6h3l5 4z" />
     <path d="m16 9 6 6M22 9l-6 6" />
-  </Svg>
-);
-const LinkIcon = () => (
-  <Svg width="18" height="18" strokeWidth="2.4">
-    <path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7" />
-    <path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7" />
   </Svg>
 );
 const CloseIcon = () => (
