@@ -817,6 +817,7 @@ class _Bottom extends StatelessWidget {
     final cta = this.cta;
     final messages = story.messages;
     final keyboard = MediaQuery.viewInsetsOf(context).bottom;
+    final compact = isCompactStory(context);
     return Padding(
       padding: EdgeInsets.fromLTRB(12, 0, 8, 8 + keyboard),
       child: Column(
@@ -839,7 +840,7 @@ class _Bottom extends StatelessWidget {
                         if (cta != null && cta.style.hasButton) ...[
                           StoryCtaBar(
                               cta: cta, onPressed: () => onCta('button')),
-                          const SizedBox(height: 14),
+                          SizedBox(height: compact ? 8 : 14),
                         ],
                         StoryAuthorRow(story: story, slide: slide),
                       ],
@@ -865,7 +866,7 @@ class _Bottom extends StatelessWidget {
             ),
           ],
           if (messages.enabled) ...[
-            const SizedBox(height: 12),
+            SizedBox(height: compact ? 8 : 12),
             Align(
               alignment: Alignment.centerLeft,
               child: ConstrainedBox(

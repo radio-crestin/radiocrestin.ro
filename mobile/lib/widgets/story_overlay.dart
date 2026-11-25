@@ -8,6 +8,11 @@ import '../services/story.dart';
 import '../theme.dart';
 import 'story_slide_view.dart';
 
+/// Whether the screen is short (a phone held sideways): the overlay
+/// tightens to leave the slide in view.
+bool isCompactStory(BuildContext context) =>
+    MediaQuery.sizeOf(context).height < 500;
+
 /// A count as the viewer shows it, with Romanian thousands: `2.229`.
 String formatStoryCount(int count) {
   final digits = count.abs().toString();
@@ -42,21 +47,24 @@ class StoryActionColumn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final compact = isCompactStory(context);
+    final gap = SizedBox(height: compact ? 10 : 18);
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         _LikeAction(story: story, service: service),
         if (onMessage != null) ...[
-          const SizedBox(height: 18),
+          gap,
           _Action(
             key: const ValueKey('story-message'),
             icon: Icons.chat_bubble_outline_rounded,
             label: 'Mesaj',
             tooltip: 'Trimite un mesaj',
             onPressed: onMessage!,
+            showLabel: !compact,
           ),
         ],
-        const SizedBox(height: 18),
+        gap,
         _Action(
           key: const ValueKey('story-share'),
           icon: Icons.send_rounded,
@@ -64,6 +72,7 @@ class StoryActionColumn extends StatelessWidget {
           tooltip: 'Distribuie',
           onPressed: onShare,
           turn: -0.08,
+          showLabel: !compact,
         ),
       ],
     );
@@ -78,8 +87,10 @@ class _Action extends StatelessWidget {
     required this.tooltip,
     required this.onPressed,
     this.turn = 0,
+    this.showLabel = true,
   });
 
+  final bool showLabel;
   final IconData icon;
   final String label;
   final String tooltip;
@@ -105,8 +116,10 @@ class _Action extends StatelessWidget {
               child: Icon(icon, color: Colors.white, size: 30,
                   shadows: _shadow),
             ),
-            const SizedBox(height: 4),
-            Text(label, style: _countStyle),
+            if (showLabel) ...[
+              const SizedBox(height: 4),
+              Text(label, style: _countStyle),
+            ],
           ],
         ),
       ),
@@ -275,8 +288,9 @@ class _StoryCtaBarState extends State<StoryCtaBar>
               child: InkWell(
                 onTap: widget.onPressed,
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 18, vertical: 14),
+                  padding: EdgeInsets.symmetric(
+                      horizontal: 18,
+                      vertical: isCompactStory(context) ? 10 : 14),
                   child: Row(
                     children: [
                       Expanded(
@@ -329,7 +343,9 @@ class StoryAuthorRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final author = story.author;
     final avatar = author?.avatarUrl ?? story.bubbleImageUrl;
-    final caption = slide.caption ?? (author == null ? null : story.title);
+    final caption = isCompactStory(context)
+        ? null
+        : slide.caption ?? (author == null ? null : story.title);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
@@ -560,7 +576,7 @@ class _StoryMessageFieldState extends State<StoryMessageField> {
 
   Widget _field(bool hasText) {
     return Container(
-      height: 48,
+      height: isCompactStory(context) ? 42 : 48,
       padding: const EdgeInsets.only(left: 18, right: 4),
       decoration: BoxDecoration(
         color: const Color(0x33000000),
