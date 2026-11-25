@@ -808,6 +808,10 @@ class _Bottom extends StatelessWidget {
   final VoidCallback onShare;
   final Future<StoryMessageResult> Function(String text) onSendMessage;
 
+  /// The widest the call to action and the message field get.
+  static const double _maxWidth = 440;
+  static const double _maxFieldWidth = 560;
+
   @override
   Widget build(BuildContext context) {
     final cta = this.cta;
@@ -822,16 +826,25 @@ class _Bottom extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (cta != null && cta.style.hasButton) ...[
-                      StoryCtaBar(cta: cta, onPressed: () => onCta('button')),
-                      const SizedBox(height: 14),
-                    ],
-                    StoryAuthorRow(story: story, slide: slide),
-                  ],
+                // On a wide screen (sideways, a tablet) it keeps a phone's
+                // width, leaving the slide in view.
+                child: Align(
+                  alignment: Alignment.bottomLeft,
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: _maxWidth),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (cta != null && cta.style.hasButton) ...[
+                          StoryCtaBar(
+                              cta: cta, onPressed: () => onCta('button')),
+                          const SizedBox(height: 14),
+                        ],
+                        StoryAuthorRow(story: story, slide: slide),
+                      ],
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(width: 12),
@@ -853,10 +866,17 @@ class _Bottom extends StatelessWidget {
           ],
           if (messages.enabled) ...[
             const SizedBox(height: 12),
-            StoryMessageField(
-              hint: messages.hint,
-              focusNode: messageFocus,
-              onSend: onSendMessage,
+            Align(
+              alignment: Alignment.centerLeft,
+              child: ConstrainedBox(
+                constraints:
+                    const BoxConstraints(maxWidth: _maxFieldWidth),
+                child: StoryMessageField(
+                  hint: messages.hint,
+                  focusNode: messageFocus,
+                  onSend: onSendMessage,
+                ),
+              ),
             ),
           ],
         ],
