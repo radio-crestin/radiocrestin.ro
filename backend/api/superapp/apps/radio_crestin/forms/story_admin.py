@@ -12,8 +12,8 @@ from ..models.stories import MAX_VIDEO_BYTES, MAX_VIDEO_SECONDS
 from ..services import story_media
 from .announcement_admin import LOCALE_PATTERN, ListTextField
 
-# /api/v1/stories/liked/ and /api/v1/stories/events/ are endpoints.
-RESERVED_SLUGS = {'liked', 'events'}
+# /api/v1/stories/liked/, /events/ and /messages/ are endpoints.
+RESERVED_SLUGS = {'liked', 'events', 'messages'}
 
 VIDEO_REJECTIONS = {
     'unreadable': _('This video could not be read. Upload an MP4 file (H.264).'),

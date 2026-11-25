@@ -1,11 +1,11 @@
-"""The stories API (backend/docs/stories-api.md): the list, one story, a device's likes, and the events."""
+"""The stories API (backend/docs/stories-api.md): the list, one story, a device's likes, the events, messages."""
 import json
 
 from django.utils.decorators import method_decorator
 from django.views import View
 from django.views.decorators.csrf import csrf_exempt
 
-from ..services import announcement_feed, story_events, story_feed
+from ..services import announcement_feed, story_events, story_feed, story_messages
 from ..utils.client_request import client_country, client_ip, safe_ip
 from .announcements_api import (
     EVENTS_RATE_PER_DEVICE, EVENTS_RATE_PER_IP, PUBLIC_CACHE_CONTROL, _absolute_url, _json, _over_limit, _public,
@@ -79,6 +79,52 @@ class StoryEventsView(View):
             return _json({'error': 'rate limited'}, status=429)
         result = story_events.ingest(payload, country=client_country(request) or '', ip=ip)
         return _json({'status': 'ok', **result})
+
+    def options(self, request, *args, **kwargs):
+        response = _json({})
+        response['Access-Control-Allow-Methods'] = 'POST, OPTIONS'
+        response['Access-Control-Allow-Headers'] = 'Content-Type'
+        response['Access-Control-Max-Age'] = '86400'
+        return response
+
+
+# A person writes a few messages a minute at most; the per-IP rate leaves room for phones behind one address.
+MESSAGES_RATE_PER_DEVICE = '5/m'
+MESSAGES_RATE_PER_IP = '60/m'
+
+
+def _json_body(request):
+    """The request's JSON object, or a 400 response."""
+    try:
+        payload = json.loads((request.body or b'{}').decode('utf-8'))
+    except (ValueError, UnicodeDecodeError):
+        return None, _json({'error': 'invalid json'}, status=400)
+    if not isinstance(payload, dict):
+        return None, _json({'error': 'expected a json object'}, status=400)
+    return payload, None
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class StoryMessagesView(View):
+    """POST /api/v1/stories/messages/ - a listener's message under a story that takes messages."""
+
+    def post(self, request):
+        ip = safe_ip(client_ip(request))
+        if _over_limit(request, 'story-messages-ip', ip or '', MESSAGES_RATE_PER_IP):
+            return _json({'error': 'rate limited'}, status=429)
+        payload, error = _json_body(request)
+        if error:
+            return error
+        device_id = str(payload.get('device_id') or '').strip()
+        if not device_id:
+            return _json({'error': 'device_id is required'}, status=400)
+        if _over_limit(request, 'story-messages-device', device_id, MESSAGES_RATE_PER_DEVICE):
+            return _json({'error': 'rate limited'}, status=429)
+        try:
+            story_messages.upsert(payload, country=client_country(request) or '', ip=ip)
+        except story_messages.MessageRefused as refused:
+            return _json({'error': str(refused)}, status=400)
+        return _json({'status': 'ok'}, status=201)
 
     def options(self, request, *args, **kwargs):
         response = _json({})

@@ -167,11 +167,11 @@ class StoryApiShapeTests(TemporaryMediaMixin, TestCase):
 
         ctas = [slide['cta'] for slide in self.client.get('/api/v1/stories/ctas/').json()['slides']]
 
-        self.assertEqual(ctas[0], {'style': 'button', 'label': 'Go', 'target': {
+        self.assertEqual(ctas[0], {'style': 'button', 'label': 'Go', 'color': None, 'text_color': None, 'target': {
             'type': 'url', 'url': 'https://example.com/a', 'open_in': 'browser'}})
         self.assertEqual(ctas[1]['target'], {'type': 'app_link', 'app': 'spotify', 'app_url': 'spotify:track:1',
                                              'fallback_url': 'https://open.spotify.com/track/1'})
-        self.assertEqual(ctas[2], {'style': 'both', 'label': 'Go', 'target': {
+        self.assertEqual(ctas[2], {'style': 'both', 'label': 'Go', 'color': None, 'text_color': None, 'target': {
             'type': 'in_app', 'route': 'station', 'slug': 'radio-vocea'}})
         self.assertEqual(ctas[3]['target'], {
             'type': 'in_app', 'route': 'song', 'slug': str(song.pk),

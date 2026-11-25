@@ -1,6 +1,6 @@
 """Stories: full-screen slides shown in a bar at the top of the app (backend/docs/stories-api.md)."""
 from django.core.exceptions import ValidationError
-from django.core.validators import FileExtensionValidator, MaxValueValidator, MinValueValidator
+from django.core.validators import FileExtensionValidator, MaxValueValidator, MinValueValidator, RegexValidator
 from django.db import models
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
@@ -21,6 +21,12 @@ MAX_VIDEO_SECONDS = 60
 MAX_VIDEO_BYTES = 50 * 1024 * 1024
 DEFAULT_SECONDS = {'image': 6, 'video': 15, 'youtube': 15, 'instagram': 10}
 MAX_SLIDE_SECONDS = 120
+MAX_MESSAGE_CHARS = 1000
+
+# A CTA's colours, as the app takes them: #RRGGBB.
+validate_hex_color = RegexValidator(
+    r'^#[0-9A-Fa-f]{6}$', _('Enter a colour as #RRGGBB, such as #FFC107.'), code='invalid_color',
+)
 
 
 class SlideType(models.TextChoices):
@@ -114,6 +120,27 @@ class Story(models.Model):
         help_text=_("After a device saw it this many times, it leaves the stories bar there. Empty: no limit."),
     )
 
+    # Replies from listeners (docs/stories-api.md#messages)
+    messages_enabled = models.BooleanField(
+        _("Take messages"), default=False,
+        help_text=_("Listeners can write a message under the story; you read them in Story Messages."),
+    )
+    messages_placeholder = models.CharField(
+        _("Message placeholder"), max_length=120, blank=True, default='',
+        help_text=_("The hint in the empty message box, e.g. \"Write us a prayer request\". Empty: the app's own."),
+    )
+
+    # The account row under the call to action
+    author_name = models.CharField(
+        _("Author name"), max_length=80, blank=True, default='',
+        help_text=_("Shown with the avatar under the call to action. Empty: \"Radio Creștin\" with its logo."),
+    )
+    author_avatar = models.ImageField(
+        _("Author avatar"), storage=get_public_storage, upload_to='stories/authors/', blank=True, null=True,
+        validators=[FileExtensionValidator(IMAGE_EXTENSIONS)],
+        help_text=_("Square works best. Empty: the app shows the name without a picture."),
+    )
+
     # Who sees it: the announcements' filters, applied on the device
     platforms = models.JSONField(_("Platforms"), default=list, blank=True)
     countries_include = models.JSONField(_("Only in countries"), default=list, blank=True)
@@ -147,8 +174,13 @@ class Story(models.Model):
 
     def clean(self):
         super().clean()
+        errors = {}
         if self.starts_at and self.ends_at and self.ends_at <= self.starts_at:
-            raise ValidationError({'ends_at': _('The end must be after the start.')})
+            errors['ends_at'] = _('The end must be after the start.')
+        if self.author_avatar and not self.author_name.strip():
+            errors['author_name'] = _('An avatar needs the author\'s name too.')
+        if errors:
+            raise ValidationError(errors)
 
     def save(self, *args, **kwargs):
         if self.position is None:  # a new story goes last
@@ -215,6 +247,11 @@ class StorySlide(models.Model):
     video_seconds = models.FloatField(_("Video length (seconds)"), null=True, blank=True, editable=False)
     has_sound = models.BooleanField(_("Has sound"), default=False, editable=False)
 
+    caption = models.TextField(
+        _("Caption"), max_length=500, blank=True, default='',
+        help_text=_("Text over the bottom of the slide, like a Reels caption. Empty: none."),
+    )
+
     # Call to action
     cta_style = models.CharField(_("Call to action"), max_length=16, choices=CtaStyle.choices, default=CtaStyle.NONE)
     cta_label = models.CharField(
@@ -257,6 +294,14 @@ class StorySlide(models.Model):
     cta_share_text = models.CharField(_("Text to share"), max_length=300, blank=True, default='')
     cta_story = models.ForeignKey(
         Story, verbose_name=_("Story"), on_delete=models.SET_NULL, null=True, blank=True, related_name='+',
+    )
+    cta_color = models.CharField(
+        _("Button colour"), max_length=7, blank=True, default='', validators=[validate_hex_color],
+        help_text=_("#RRGGBB. Empty: the app's colour."),
+    )
+    cta_text_color = models.CharField(
+        _("Button text colour"), max_length=7, blank=True, default='', validators=[validate_hex_color],
+        help_text=_("#RRGGBB. Empty: the app's colour."),
     )
 
     # Totals, updated from the reported events

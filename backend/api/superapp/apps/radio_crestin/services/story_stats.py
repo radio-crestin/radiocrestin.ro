@@ -6,7 +6,7 @@ from django.db.models.functions import Coalesce
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
-from ..models import Story, StoryEvent, StoryEventType, StoryStatBucket
+from ..models import Story, StoryEvent, StoryEventType, StoryMessage, StoryStatBucket
 from .story_stat_buckets import day_start
 
 HISTORY_DAYS = 30
@@ -14,14 +14,19 @@ OPEN_TYPES = (StoryEventType.VIEW, StoryEventType.AUTO_OPEN)
 
 
 def with_list_counts(queryset):
-    """Each story's slide count and unique viewers (devices that opened it, over the kept events)."""
+    """Each story's slide count, message count and unique viewers (devices that opened it, over the kept events)."""
     viewers = (
         StoryEvent.objects.filter(story=OuterRef('pk'), type__in=OPEN_TYPES).order_by()
         .values('story').annotate(count=Count('device_id', distinct=True)).values('count')
     )
+    messages = (
+        StoryMessage.objects.filter(story=OuterRef('pk')).order_by()
+        .values('story').annotate(count=Count('pk')).values('count')
+    )
     return queryset.annotate(
         slide_count=Count('slides', distinct=True),
         unique_viewers=Coalesce(Subquery(viewers, output_field=IntegerField()), 0),
+        message_count=Coalesce(Subquery(messages, output_field=IntegerField()), 0),
     )
 
 

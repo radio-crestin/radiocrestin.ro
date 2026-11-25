@@ -21,7 +21,7 @@
   };
   var ALL_CTA = ['cta_label', 'cta_target', 'cta_url', 'cta_open_in', 'cta_app', 'cta_app_url',
     'cta_android_intent_uri', 'cta_fallback_url', 'cta_route', 'cta_station', 'cta_song', 'cta_announcement',
-    'cta_form', 'cta_share_text', 'cta_story'];
+    'cta_form', 'cta_share_text', 'cta_story', 'cta_color'];
 
   // A slide's form is its fields' name prefix ("slides-0-"): Unfold's inline forms have no id of their own.
   function field(prefix, name) {
@@ -51,7 +51,7 @@
     var hasCta = value(form, 'cta_style') && value(form, 'cta_style') !== 'none';
     show(form, ALL_CTA, false);
     if (!hasCta) return;
-    show(form, ['cta_label', 'cta_target'], true);
+    show(form, ['cta_label', 'cta_target', 'cta_color'], true);
     var target = value(form, 'cta_target');
     show(form, TARGETS[target] || [], true);
     if (target === 'in_app') show(form, ROUTES[value(form, 'cta_route')] || [], true);

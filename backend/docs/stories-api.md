@@ -14,6 +14,7 @@ already in the stores keep working. Clients must ignore keys they don't know, an
 | `GET /api/v1/stories/<slug>/` | One story in its time window (a share link, a CTA to another story) |
 | `GET /api/v1/stories/liked/?device_id=<id>` | The slugs this device liked (after a reinstall) |
 | `POST /api/v1/stories/events/` | Views, likes, CTA taps, shares and auto-opens, reported by the device |
+| `POST /api/v1/stories/messages/` | A listener's message under a story that takes messages (see [Messages](#messages)) |
 
 `?preview=<token>` on the two story GETs also returns the stories in **Preview** status, uncached; it is the
 same token as the announcements' preview link (Announcement settings), and a wrong token gets `403`.
@@ -51,6 +52,8 @@ match the device. Each listed story has at least one slide.
         "max_app_version": null
       },
       "display": { "auto_open": true, "every_days": 3, "every_actions": 10, "max_shows": 5 },
+      "messages": { "enabled": true, "placeholder": "Scrie-ne o cerere de rugăciune" },
+      "author": { "name": "Radio Vocea Evangheliei", "avatar_url": "https://cdn.radiocrestin.ro/stories/authors/vocea.webp" },
       "slides": [
         {
           "id": 40,
@@ -64,9 +67,12 @@ match the device. Each listed story has at least one slide.
           "instagram": null,
           "width": 1080,
           "height": 1920,
+          "caption": "Concert de Crăciun, 24 decembrie, la Arad",
           "cta": {
             "style": "button",
             "label": "Ascultă acum",
+            "color": "#FFC107",
+            "text_color": "#000000",
             "target": { "type": "in_app", "route": "station", "slug": "radio-vocea-evangheliei" }
           }
         },
@@ -169,9 +175,11 @@ match the device. Each listed story has at least one slide.
 | `share_url` | string | The page to share: a landing page on radiocrestin.ro that opens the app or offers it. |
 | `starts_at`, `ends_at` | ISO 8601 UTC\|null | `null`: no limit on that side. |
 | `updated_at` | ISO 8601 UTC | Changes when the admin edits the story or its slides. |
-| `like_count` | int | Total likes, as of the list's cache (up to a few minutes old); the events answer has fresher counts. |
+| `like_count` | int | Total likes. Read fresh on every request the backend answers (the rest of the body is cached for up to 5 minutes and dropped on every admin change); Cloudflare may keep a copy for up to 60 s (`max-age=60`). The events answer has the counts right after a like. |
 | `filters` | object | Same keys and meaning as the announcements' `filters`; every rule set must match. |
 | `display` | object | When the device shows it, see [Display rules](#display-rules). Always present. |
+| `messages` | object | `{"enabled": bool, "placeholder": string\|null}`. Always present. `enabled`: the viewer offers a message box (sent to [Messages](#messages)); `false` by default. `placeholder`: the hint in the empty box, set in the admin; `null`: the app's own. |
+| `author` | object\|null | The account row under the CTA: `{"name": string, "avatar_url": absolute URL\|null}`. `null`: show "Radio Creștin" with its logo. `avatar_url` `null`: the name without a picture (or the app's placeholder). |
 | `slides` | array | In order; at least one. |
 | `id`, `position` | int | *extra*: the story's id; its order (the list is already sorted). |
 
@@ -188,6 +196,7 @@ match the device. Each listed story has at least one slide.
 | `has_sound` | bool | The video has an audio track (`video`, `youtube`); the viewer offers mute/unmute. |
 | `youtube_url` | string\|null | `youtube`: the video's canonical URL. |
 | `instagram` | object\|null | `instagram`: see [Instagram](#instagram). |
+| `caption` | string\|null | Text over the bottom of the slide, like a Reels caption (at most 500 characters, may hold line breaks). `null`: none. |
 | `cta` | object\|null | The call to action, see [CTA](#cta). |
 | `width`, `height` | int | *extra*, `image` and `video`, when known. |
 | `size_bytes`, `mime_type` | | *extra*, `video`. |
@@ -225,6 +234,7 @@ to load, fall back to step 3.
 |---|---|
 | `style` | `swipe_up` (a "swipe up" hint with the label; swiping up opens the target), `button` (a labelled button), or `both` (the button, and swiping up also opens it). |
 | `label` | The hint's or the button's text. Always set. |
+| `color`, `text_color` | The button's background and text colours, `#RRGGBB` (upper case), each set on its own in the admin. `null`: the app's colours. Always present. |
 | `target` | What it opens. Only the keys its `type` uses are sent. |
 
 | `target.type` | Keys | Opens |
@@ -335,6 +345,44 @@ Like the announcements' events: at most 100 events and 10 stories per request; u
 slides are skipped; an `at` more than 24 h old or 5 min ahead is skipped; repeats from the same device are
 dropped (views and auto-opens for 30 minutes; slide views, CTA taps, completions and shares for 1 minute);
 rate limits are 600 requests a minute per IP and 30 per device (`429`, nothing stored).
+
+## Messages
+
+`POST /api/v1/stories/messages/`, JSON body (any Content-Type), only for a story whose `messages.enabled` is
+`true`:
+
+```json
+{
+  "device_id": "4f3c2a...",
+  "platform": "android",
+  "app_version": "1.9.0",
+  "locale": "ro-RO",
+  "story": "concert-craciun-2026",
+  "slide": 41,
+  "text": "Vă rog să vă rugați pentru mama mea."
+}
+```
+
+| Key | Notes |
+|---|---|
+| `device_id` | Required: the rate limit counts per device. |
+| `story` | The story's slug. |
+| `slide` | The slide on screen, or `null`. An id that isn't one of the story's slides is stored as `null`. |
+| `text` | 1 to 1000 characters once trimmed of surrounding spaces and line breaks. |
+| `platform`, `app_version`, `locale` | Like the events'; shown to the admin with the message. |
+
+| Answer | When |
+|---|---|
+| `201 {"status": "ok"}` | Stored. |
+| `400 {"error": "text is empty"}` | `text` missing, not a string, or only spaces. |
+| `400 {"error": "text is longer than 1000 characters"}` | |
+| `400 {"error": "this story does not take messages"}` | Unknown slug, messages off, or the story isn't active (or in Preview) inside its window. |
+| `400 {"error": "device_id is required"}`, `{"error": "invalid json"}`, `{"error": "expected a json object"}` | |
+| `429 {"error": "rate limited"}` | More than 5 requests a minute from one device, or 60 from one IP. Nothing stored. |
+
+The `error` texts are for logs; the app shows its own words. Messages are never shown to other listeners: the
+admin reads them under **Story Messages** (text, date, slide, platform and app version, device), filtered by
+story from the Messages column of the Stories list, and the latest 20 on the story's Messages tab.
 
 ## Stats in the admin
 

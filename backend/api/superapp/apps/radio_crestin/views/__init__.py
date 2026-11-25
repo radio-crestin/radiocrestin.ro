@@ -13,6 +13,6 @@ from .session_recording_api import SessionRecordingView
 from .device_registration_api import DeviceRegistrationView
 from .playlist_update_api import StationPlaylistUpdateView
 from .announcements_api import AnnouncementListView, AnnouncementDetailView, AnnouncementEventsView
-from .stories_api import StoryListView, StoryDetailView, StoryLikedView, StoryEventsView
+from .stories_api import StoryListView, StoryDetailView, StoryLikedView, StoryEventsView, StoryMessagesView
 from .forms_api import FormPageView, FormResultsView, FormSubmitView
 from .contact_api import ContactMessageView

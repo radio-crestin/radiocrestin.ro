@@ -29,16 +29,22 @@
           {% endif %}
         {% endif %}
       </div>
+      <div class="story-preview__bottom">
+      {% if item.caption %}<p class="story-preview__caption">{{ item.caption }}</p>{% endif %}
       {% if item.cta %}
       <div class="story-preview__cta">
         {% if item.cta.style == 'swipe_up' or item.cta.style == 'both' %}
           <span class="story-preview__swipe">︿<br>{% if item.cta.style == 'swipe_up' %}{{ item.cta.label }}{% else %}{% trans "Swipe up" %}{% endif %}</span>
         {% endif %}
         {% if item.cta.style == 'button' or item.cta.style == 'both' %}
-          <span class="story-preview__button">{{ item.cta.label }}</span>
+          <span class="story-preview__button" style="{% if item.cta.color %}background: {{ item.cta.color }};{% endif %}{% if item.cta.text_color %} color: {{ item.cta.text_color }};{% endif %}">{{ item.cta.label }}</span>
         {% endif %}
       </div>
       {% endif %}
+      <div class="story-preview__author">
+        {% if author %}{% if author.avatar_url %}<img src="{{ author.avatar_url }}" alt="">{% endif %}<span>{{ author.name }}</span>{% else %}<span>Radio Creștin</span>{% endif %}
+      </div>
+      </div>
       <div class="story-preview__like" aria-hidden="true">♡ {{ story.like_count }}</div>
     </div>
     <figcaption>

@@ -9,12 +9,19 @@ from django.utils.translation import gettext_lazy as _
 from superapp.apps.admin_portal.admin import SuperAppModelAdmin, SuperAppStackedInline
 from superapp.apps.admin_portal.sites import superapp_admin_site
 from ..forms.story_admin import StoryAdminForm, StorySlideForm
-from ..models import AnnouncementSettings, SlideType, Story, StorySettings, StorySlide
+from ..models import AnnouncementSettings, SlideType, Story, StoryMessage, StorySettings, StorySlide
 from ..services import announcement_order, instagram_embeds, story_embeds, story_feed, story_stats
+
+
+RECENT_MESSAGES = 20
 
 
 def _number(value):
     return f'{value or 0:,}'
+
+
+def _messages_url(story):
+    return reverse('admin:radio_crestin_storymessage_changelist') + f'?story__id__exact={story.pk}'
 
 
 class StorySlideInline(SuperAppStackedInline):
@@ -30,14 +37,14 @@ class StorySlideInline(SuperAppStackedInline):
     fieldsets = [
         (None, {'fields': [
             'position', 'type', 'orientation', 'duration_seconds',
-            'image', 'video', 'poster', 'youtube_url', 'instagram_url', 'media_info_display',
+            'image', 'video', 'poster', 'youtube_url', 'instagram_url', 'media_info_display', 'caption',
         ]}),
         (_('Call to action'), {'fields': [
             'cta_style', 'cta_label', 'cta_target',
             'cta_url', 'cta_open_in',
             'cta_app', 'cta_app_url', 'cta_android_intent_uri',
             'cta_route', 'cta_station', 'cta_song', 'cta_announcement', 'cta_form', 'cta_share_text',
-            'cta_story', 'cta_fallback_url',
+            'cta_story', 'cta_fallback_url', ('cta_color', 'cta_text_color'),
         ]}),
     ]
     verbose_name_plural = _('Slides (drag to reorder; the preview above shows them after Save)')
@@ -74,17 +81,17 @@ class StoryAdmin(SuperAppModelAdmin):
     inlines = [StorySlideInline]
     list_display = [
         'title', 'slug', 'status', 'starts_at', 'ends_at', 'slide_count',
-        'views', 'unique_viewers_display', 'like_count', 'cta_clicks', 'shares',
+        'views', 'unique_viewers_display', 'like_count', 'cta_clicks', 'shares', 'message_count_display',
     ]
     ordering = ['position', 'id']
     ordering_field = 'position'
     hide_ordering_field = True
     list_before_template = 'admin/radio_crestin/announcement/list_before.html'
     MAX_REORDER_ROWS = 1000
-    list_filter = ['status', 'auto_open']
+    list_filter = ['status', 'auto_open', 'messages_enabled']
     search_fields = ['title', 'slug']
     readonly_fields = [
-        'preview_display', 'stats_display', 'links_display',
+        'preview_display', 'stats_display', 'links_display', 'recent_messages_display',
         'views', 'auto_opens', 'completions', 'slide_views', 'cta_clicks', 'shares', 'like_count',
         'created_at', 'updated_at',
     ]
@@ -108,6 +115,11 @@ class StoryAdmin(SuperAppModelAdmin):
                 'platforms', 'countries_include', 'countries_exclude', 'locales',
                 ('min_app_version', 'max_app_version'),
             ]}),
+            (_('Messages and author'), {'classes': ['tab'], 'description': _(
+                "Listeners can write a message under a story that takes messages; they are listed in Story "
+                "Messages. The author is the account row under the call to action."), 'fields': [
+                'messages_enabled', 'messages_placeholder', 'author_name', 'author_avatar',
+            ]}),
         ]
         if obj is None:
             return fieldsets
@@ -119,6 +131,7 @@ class StoryAdmin(SuperAppModelAdmin):
                 ('views', 'auto_opens', 'completions'), ('slide_views', 'cta_clicks', 'shares', 'like_count'),
                 ('created_at', 'updated_at'),
             ]}),
+            (_('Messages'), {'classes': ['tab'], 'fields': ['recent_messages_display']}),
         ]
 
     def get_queryset(self, request):
@@ -159,7 +172,24 @@ class StoryAdmin(SuperAppModelAdmin):
     def unique_viewers_display(self, obj):
         return _number(obj.unique_viewers)
 
+    @admin.display(description=_('Messages'), ordering='message_count')
+    def message_count_display(self, obj):
+        if not obj.message_count:
+            return '0'
+        return format_html('<a href="{}">{}</a>', _messages_url(obj), _number(obj.message_count))
+
     # ------------------------------------------------------------ change page blocks
+
+    @admin.display(description=_('Latest messages'))
+    def recent_messages_display(self, obj):
+        if not obj or not obj.pk:
+            return '-'
+        return render_to_string('admin/radio_crestin/story/messages.html', {
+            'messages': obj.messages.select_related('slide')[:RECENT_MESSAGES],
+            'total': obj.messages.count(),
+            'all_url': _messages_url(obj),
+            'enabled': obj.messages_enabled,
+        })
 
     @admin.display(description=_('Preview'))
     def preview_display(self, obj):
@@ -169,6 +199,7 @@ class StoryAdmin(SuperAppModelAdmin):
         slides = [(slide, story_feed.serialize_slide(slide)) for slide in obj.slides.all()]
         return render_to_string('admin/radio_crestin/story/preview.html', {
             'story': obj,
+            'author': story_feed.author_payload(obj, lambda url: url),
             'slides': [{'slide': slide, 'item': item} for slide, item in slides],
         })
 
@@ -225,4 +256,32 @@ class StorySettingsAdmin(SuperAppModelAdmin):
         return not StorySettings.objects.exists() and super().has_add_permission(request)
 
     def has_delete_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(StoryMessage, site=superapp_admin_site)
+class StoryMessageAdmin(SuperAppModelAdmin):
+    """What listeners wrote under the stories: read-only, deletable."""
+
+    list_display = ['text_display', 'story', 'slide_number', 'created_at', 'platform', 'app_version', 'device_id']
+    list_filter = ['story', 'platform']
+    search_fields = ['text', 'device_id', 'story__title', 'story__slug']
+    date_hierarchy = 'created_at'
+    list_select_related = ['story', 'slide']
+    fields = ['story', 'slide', 'text', 'created_at', 'platform', 'app_version', 'locale', 'country', 'device_id',
+              'ip']
+    readonly_fields = fields
+
+    @admin.display(description=_('Message'))
+    def text_display(self, obj):
+        return obj.text if len(obj.text) <= 120 else obj.text[:119] + '…'
+
+    @admin.display(description=_('Slide'))
+    def slide_number(self, obj):
+        return obj.slide.position + 1 if obj.slide else '-'
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
         return False

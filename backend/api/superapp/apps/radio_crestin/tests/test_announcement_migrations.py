@@ -67,7 +67,25 @@ class StatusMigrationTests(TransactionTestCase):
             ('high', 0), ('mid', 1), ('low-new-later-row', 2), ('low-new', 3), ('low-old', 4),
         ])
 
+    def check_existing_stories_keep_their_look_after_0084(self):
+        """0084 (story messages, author, captions, CTA colours) adds fields whose defaults change nothing."""
+        apps = self.migrate([('radio_crestin', '0083_stories')])
+        story = apps.get_model('radio_crestin', 'Story').objects.create(
+            slug='old-story', title='Old', status='active', position=0, starts_at=timezone.now())
+        apps.get_model('radio_crestin', 'StorySlide').objects.create(story=story, type='image', position=0)
+
+        apps = self.migrate([('radio_crestin', '0084_story_messages_author_captions')])
+        story = apps.get_model('radio_crestin', 'Story').objects.get(slug='old-story')
+        slide = apps.get_model('radio_crestin', 'StorySlide').objects.get(story=story)
+        self.assertEqual((story.messages_enabled, story.messages_placeholder, story.author_name),
+                         (False, '', ''))
+        self.assertFalse(story.author_avatar)
+        self.assertEqual((slide.caption, slide.cta_color, slide.cta_text_color), ('', '', ''))
+        self.assertEqual(apps.get_model('radio_crestin', 'StoryMessage').objects.count(), 0)
+
     def test_data_migrations(self):
-        # One test: a second test in this class would trip guardian's post-migrate user on the reload.
+        # One test: a second test in this class (or another class like it) would trip guardian's
+        # post-migrate user on the reload.
         self.check_restricted_announcements_become_preview()
         self.check_priorities_become_positions_in_the_same_order()
+        self.check_existing_stories_keep_their_look_after_0084()
