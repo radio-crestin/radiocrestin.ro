@@ -2369,7 +2369,11 @@ void main() {
       await app.tester.enterText(field, 'Încă un mesaj');
       await app.pumpFor(const Duration(milliseconds: 500));
       await app.tapKey('story-message-send');
-      await app.waitFor(() => app.showsText('Ai trimis multe mesaje'),
+      await app.waitFor(
+          () => find
+              .textContaining('Ai trimis multe mesaje')
+              .evaluate()
+              .isNotEmpty,
           reason: 'the listener told to try again later');
       await app.pumpFor(const Duration(seconds: 2));
       expect(server.storyMessages, hasLength(1), reason: 'never retried');
@@ -2451,6 +2455,29 @@ void main() {
           timeout: const Duration(seconds: 15));
       await app.waitFor(() => server.storyEventsOf('complete').isNotEmpty,
           reason: 'the completion to reach the API');
+    });
+
+    storyTest(
+        'a swipe to the left turns to the next story, to the right back',
+        (app) async {
+      server.stories
+        ..add(StoryFixtures.verse(base(), messages: true))
+        ..add(StoryFixtures.teaser(base()));
+      await app.coldStartStories();
+      await app.tapStoryBubble(StoryFixtures.verseSlug);
+      final viewer = await app.waitForStory(StoryFixtures.verseSlug);
+      final size =
+          app.tester.view.physicalSize / app.tester.view.devicePixelRatio;
+      await app.tester.timedDragFrom(Offset(size.width * 0.9, size.height / 2),
+          Offset(-size.width * 0.85, 0), const Duration(milliseconds: 800));
+      await app.pumpFor(const Duration(seconds: 1));
+      expect(viewer.controller.story.slug, StoryFixtures.teaserSlug,
+          reason: 'left: the next story; ${app.describeStories()}');
+      await app.tester.timedDragFrom(Offset(size.width * 0.1, size.height / 2),
+          Offset(size.width * 0.85, 0), const Duration(milliseconds: 800));
+      await app.pumpFor(const Duration(seconds: 1));
+      expect(viewer.controller.story.slug, StoryFixtures.verseSlug,
+          reason: 'right: back; ${app.describeStories()}');
     });
 
     storyTest('a swipe down closes the viewer', (app) async {

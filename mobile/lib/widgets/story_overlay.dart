@@ -473,8 +473,8 @@ class StoryMessageField extends StatefulWidget {
   final String hint;
   final FocusNode focusNode;
 
-  /// Sends the text; true when it reached the team.
-  final Future<bool> Function(String text) onSend;
+  /// Sends the text, and says how it went.
+  final Future<StoryMessageResult> Function(String text) onSend;
 
   @override
   State<StoryMessageField> createState() => _StoryMessageFieldState();
@@ -483,6 +483,18 @@ class StoryMessageField extends StatefulWidget {
 class _StoryMessageFieldState extends State<StoryMessageField> {
   final TextEditingController _text = TextEditingController();
   bool _sending = false;
+
+  /// How the last send went, shown above the field for a moment.
+  StoryMessageResult? _result;
+  Timer? _resultTimer;
+
+  static String _say(StoryMessageResult result) => switch (result) {
+        StoryMessageResult.sent => 'Mesaj trimis',
+        StoryMessageResult.tooMany =>
+          'Ai trimis multe mesaje. Încearcă peste un minut.',
+        StoryMessageResult.failed =>
+          'Nu s-a trimis. Verifică internetul și încearcă din nou.',
+      };
 
   @override
   void initState() {
@@ -493,6 +505,7 @@ class _StoryMessageFieldState extends State<StoryMessageField> {
   @override
   void dispose() {
     _text.dispose();
+    _resultTimer?.cancel();
     super.dispose();
   }
 
@@ -500,10 +513,17 @@ class _StoryMessageFieldState extends State<StoryMessageField> {
     final text = _text.text.trim();
     if (text.isEmpty || _sending) return;
     setState(() => _sending = true);
-    final sent = await widget.onSend(text);
+    final result = await widget.onSend(text);
     if (!mounted) return;
-    setState(() => _sending = false);
-    if (sent) {
+    setState(() {
+      _sending = false;
+      _result = result;
+    });
+    _resultTimer?.cancel();
+    _resultTimer = Timer(const Duration(milliseconds: 2800), () {
+      if (mounted) setState(() => _result = null);
+    });
+    if (result == StoryMessageResult.sent) {
       _text.clear();
       widget.focusNode.unfocus();
     }
@@ -512,6 +532,33 @@ class _StoryMessageFieldState extends State<StoryMessageField> {
   @override
   Widget build(BuildContext context) {
     final hasText = _text.text.trim().isNotEmpty;
+    final result = _result;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        AnimatedSize(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeInOut,
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 200),
+            child: result == null
+                ? const SizedBox(width: double.infinity)
+                : Padding(
+                    key: ValueKey(result),
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: _StatusChip(
+                      text: _say(result),
+                      ok: result == StoryMessageResult.sent,
+                    ),
+                  ),
+          ),
+        ),
+        _field(hasText),
+      ],
+    );
+  }
+
+  Widget _field(bool hasText) {
     return Container(
       height: 48,
       padding: const EdgeInsets.only(left: 18, right: 4),
@@ -565,6 +612,49 @@ class _StoryMessageFieldState extends State<StoryMessageField> {
                     : const SizedBox(width: 12, height: 48),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// How a message went, in a small pill over the field: no dialog or
+/// scrim over the story.
+class _StatusChip extends StatelessWidget {
+  const _StatusChip({required this.text, required this.ok});
+
+  final String text;
+  final bool ok;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      liveRegion: true,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: const Color(0xCC000000),
+          borderRadius: BorderRadius.circular(18),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              ok ? Icons.check_circle_rounded : Icons.error_outline_rounded,
+              color: ok ? const Color(0xFF4CD964) : const Color(0xFFFFB4AB),
+              size: 18,
+            ),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                text,
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w600),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

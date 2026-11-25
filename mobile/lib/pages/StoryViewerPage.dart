@@ -218,38 +218,10 @@ class StoryViewerPageState extends State<StoryViewerPage>
         ? controller.pause(StoryPause.message)
         : controller.resume(StoryPause.message));
 
-  /// Sends [text] to the team from the slide on screen, and says how it
-  /// went; true when it was sent.
-  Future<bool> _sendMessage(String text) async {
-    final result = await _service.sendMessage(
-        controller.story, controller.slide, text);
-    if (!mounted) return result == StoryMessageResult.sent;
-    final (title, message, icon) = switch (result) {
-      StoryMessageResult.sent => (
-          'Mesaj trimis',
-          'Mulțumim! Echipa Radio Creștin îl va citi.',
-          Icons.check_circle_rounded,
-        ),
-      StoryMessageResult.tooMany => (
-          'Ai trimis multe mesaje',
-          'Încearcă din nou peste un minut.',
-          Icons.hourglass_bottom_rounded,
-        ),
-      StoryMessageResult.failed => (
-          'Mesajul nu a fost trimis',
-          'Verifică internetul și încearcă din nou.',
-          Icons.wifi_off_rounded,
-        ),
-    };
-    showBottomToast(
-      context,
-      title: title,
-      message: message,
-      icon: icon,
-      isError: result != StoryMessageResult.sent,
-    );
-    return result == StoryMessageResult.sent;
-  }
+  /// Sends [text] to the team from the slide on screen; the field says
+  /// how it went, over the story, without a dialog.
+  Future<StoryMessageResult> _sendMessage(String text) =>
+      _service.sendMessage(controller.story, controller.slide, text);
 
   // ── Sound ──────────────────────────────────────────────────────────────
 
@@ -834,7 +806,7 @@ class _Bottom extends StatelessWidget {
   final FocusNode messageFocus;
   final ValueChanged<String> onCta;
   final VoidCallback onShare;
-  final Future<bool> Function(String text) onSendMessage;
+  final Future<StoryMessageResult> Function(String text) onSendMessage;
 
   @override
   Widget build(BuildContext context) {
