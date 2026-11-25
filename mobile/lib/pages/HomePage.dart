@@ -44,8 +44,10 @@ import '../services/announcement_actions.dart';
 import '../services/stories_service.dart';
 import 'package:url_launcher/url_launcher.dart' show LaunchMode;
 import '../services/story.dart';
+import '../services/story_deep_link.dart';
 import '../widgets/announcement_form_sheet.dart';
 import '../widgets/stories_bar.dart';
+import '../widgets/bottom_toast.dart';
 import 'AnnouncementPage.dart';
 import 'StoryViewerPage.dart';
 import '../services/analytics_service.dart';
@@ -585,6 +587,26 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       [for (final bubble in _storyBubbles) bubble.story],
       index,
     ));
+  }
+
+  /// Opens the story [slug] a link named, alone in the viewer; tells the
+  /// listener when it is gone.
+  Future<void> _openStoryFromLink(String slug) async {
+    final story = await _stories.find(slug);
+    if (!mounted) return;
+    if (story == null) {
+      showBottomToast(
+        context,
+        title: 'Povestea nu mai este disponibilă',
+        message: 'A expirat sau a fost ștearsă.',
+        icon: Icons.auto_stories_outlined,
+        isError: true,
+      );
+      return;
+    }
+    // The home screen may still be opening (a link that launched the app).
+    await WidgetsBinding.instance.endOfFrame;
+    if (mounted) await _openStories([story], 0);
   }
 
   /// Opens a due story by itself, per its display rules, when nothing
@@ -1665,6 +1687,13 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         unawaited(_announcements
             .setPreviewToken(uri.queryParameters['token']));
         playerAutoplay();
+        return;
+      }
+
+      // A story's page on the website, or its "open in app".
+      final storySlug = storySlugFromUri(uri);
+      if (storySlug != null) {
+        unawaited(_openStoryFromLink(storySlug));
         return;
       }
 

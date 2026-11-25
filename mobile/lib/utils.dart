@@ -18,6 +18,7 @@ import 'globals.dart';
 import 'seek_mode_manager.dart';
 import 'services/network_service.dart';
 import 'services/store_review_prompt.dart';
+import 'services/story_deep_link.dart';
 import 'tv/tv_platform.dart';
 import 'widgets/retrying_network_image.dart';
 
@@ -126,6 +127,8 @@ class Utils {
   /// leak into it. The custom `radiocrestin://<slug>` scheme carries the
   /// slug as the host.
   static String stationSlugFromUri(Uri uri) {
+    // A story's link (`/poveste/<slug>`) names no station.
+    if (storySlugFromUri(uri) != null) return '';
     final firstSegment = uri.pathSegments
         .firstWhere((s) => s.isNotEmpty, orElse: () => '');
     if (uri.scheme == 'http' || uri.scheme == 'https') return firstSegment;
