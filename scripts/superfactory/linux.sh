@@ -8,13 +8,11 @@
 set -euo pipefail
 
 NODE_MAJOR=24
-PYTHON_VERSION=3.14
 FLUTTER_VERSION=$(sed -n 's/.*"flutter": *"\([^"]*\)".*/\1/p' mobile/.fvmrc)
 ANDROID_SDK="$HOME/Android/Sdk"
 ANDROID_PACKAGES=("platform-tools" "platforms;android-36" "build-tools;36.0.0" "ndk;27.0.12077973")
 CMDLINE_TOOLS_ZIP=commandlinetools-linux-13114758_latest.zip
 API_VENV="$HOME/.venvs/radiocrestin-api"
-STREAMING_VENV="$HOME/.venvs/radiocrestin-streaming"
 BIN="$HOME/.local/bin"
 mkdir -p "$BIN"
 export PATH="$BIN:$PATH"
@@ -63,30 +61,7 @@ install_node() {
 }
 
 install_python() {
-  have uv || { echo "setup: installing uv"; curl -LsSf https://astral.sh/uv/install.sh | env UV_NO_MODIFY_PATH=1 sh >/dev/null; }
-  uv python find "$PYTHON_VERSION" >/dev/null 2>&1 || uv python install "$PYTHON_VERSION"
-  # The API's requirements as its Dockerfile and CI gather them, at the versions constraints.txt pins.
-  local requirements
-  requirements=$(mktemp)
-  {
-    cat backend/api/requirements.txt
-    find backend/api/superapp -name requirements.txt -exec sh -c 'echo; cat "$1"' _ {} \;
-    echo pytest
-  } >"$requirements"
-  make_venv "$API_VENV" -r "$requirements" -c backend/api/constraints.txt
-  rm -f "$requirements"
-  # Streaming pins other versions (requests) than the API's constraints: a venv of its own.
-  make_venv "$STREAMING_VENV" -r backend/streaming/requirements.txt pytest
-  link "$API_VENV/bin/python3.14"
-  ln -sf "$API_VENV/bin/python" "$BIN/python-radiocrestin-api"
-  ln -sf "$STREAMING_VENV/bin/python" "$BIN/python-radiocrestin-streaming"
-}
-
-make_venv() {
-  local venv=$1
-  shift
-  [ -x "$venv/bin/python" ] || uv venv -q --python "$PYTHON_VERSION" "$venv"
-  VIRTUAL_ENV="$venv" uv pip install -q "$@"
+  bash scripts/superfactory/python-venvs.sh
 }
 
 install_flutter() {
