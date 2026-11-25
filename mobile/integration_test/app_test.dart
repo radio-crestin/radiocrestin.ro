@@ -2096,7 +2096,14 @@ void main() {
 
       final seen = story(StoryFixtures.verse(base()));
       final fresh = story(StoryFixtures.teaser(base()));
-      final histories = {seen.slug: shown(daysAgo: 1)};
+      final histories = {
+        seen.slug: StoryHistory(
+          shows: 1,
+          lastShownAt: now.subtract(const Duration(days: 1)),
+          actionsAtLastShow: 30,
+          seenSlides: {for (final slide in seen.slides) slide.id},
+        ),
+      };
       StoryHistory historyOf(String slug) =>
           histories[slug] ?? StoryHistory.none;
       expect(schedule.bar([seen, fresh], historyOf).map((s) => s.slug),

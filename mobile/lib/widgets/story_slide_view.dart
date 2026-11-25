@@ -314,7 +314,11 @@ class _StoryVideoState extends State<_StoryVideo> {
       unawaited(_video.setVolume(widget.muted ? 0 : 1));
     }
     if (oldWidget.paused != widget.paused || oldWidget.muted != widget.muted) {
-      _applyPlaying();
+      // The player reports its new state at once, which the viewer turns
+      // into a rebuild: not while this one runs.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _applyPlaying();
+      });
     }
   }
 
