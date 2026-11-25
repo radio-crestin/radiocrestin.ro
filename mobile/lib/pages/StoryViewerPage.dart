@@ -190,15 +190,24 @@ class StoryViewerPageState extends State<StoryViewerPage>
     switch (state) {
       case AppLifecycleState.resumed:
         controller.resume(StoryPause.background);
-        // Back from what a call to action opened.
-        controller.resume(StoryPause.cta);
+        // Back from what a call to action opened. A resume before the app
+        // was left doesn't count: iOS reports one while it hands a link
+        // to an app, before that app (or the browser) takes the screen.
+        if (_ctaLeftApp) {
+          _ctaLeftApp = false;
+          controller.resume(StoryPause.cta);
+        }
       case AppLifecycleState.paused:
       case AppLifecycleState.hidden:
         controller.pause(StoryPause.background);
+        if (controller.pauses.contains(StoryPause.cta)) _ctaLeftApp = true;
       default:
         break;
     }
   }
+
+  /// Whether the app was left while a call to action held the story.
+  bool _ctaLeftApp = false;
 
   // ── Sound ──────────────────────────────────────────────────────────────
 
