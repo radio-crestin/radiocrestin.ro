@@ -11,6 +11,8 @@ import DownloadAppBanner from "@/components/DownloadAppBanner";
 import FooterLinks from "@/components/FooterLinks";
 import RadioPlayer from "@/components/RadioPlayer";
 import { AnnouncementsProvider } from "@/components/Announcements";
+import { StoriesProvider } from "@/components/Story/StoriesBar";
+import type { StoryBubble } from "@/utils/stories";
 import type { IAnnouncementsSnapshot } from "@/models/Announcement";
 import StationReviewsSection from "@/components/Reviews/StationReviewsSection";
 import { Context } from "@/context/ContextProvider";
@@ -27,6 +29,8 @@ interface RadioAppProps {
   initialReviews?: IReview[];
   /** Build-time announcements snapshot (every station's), rendered into the HTML. */
   announcements?: IAnnouncementsSnapshot;
+  /** Build-time stories for the bar above the announcements. */
+  stories?: StoryBubble[];
 }
 
 interface RadioContentProps {
@@ -104,6 +108,7 @@ export default function RadioApp({
   showReviews = false,
   initialReviews,
   announcements,
+  stories,
 }: RadioAppProps) {
   const initialState = {
     stations,
@@ -114,11 +119,13 @@ export default function RadioApp({
   return (
     <ContextProvider initialState={initialState}>
       <SelectedStationAnnouncements snapshot={announcements}>
-        <RadioContent
-          showReviews={showReviews}
-          initialStationId={selectedStation?.id}
-          initialReviews={initialReviews}
-        />
+        <StoriesProvider stories={stories}>
+          <RadioContent
+            showReviews={showReviews}
+            initialStationId={selectedStation?.id}
+            initialReviews={initialReviews}
+          />
+        </StoriesProvider>
       </SelectedStationAnnouncements>
     </ContextProvider>
   );

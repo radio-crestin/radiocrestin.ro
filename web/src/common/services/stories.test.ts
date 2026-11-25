@@ -1,11 +1,13 @@
 // Reading the stories API for the share page, against fixture JSON.
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import fixture from "@/components/Story/fixtures/stories.json";
-import { fetchStory, getStoriesForBuild, sendStoryEvents } from "@/services/stories";
+import { fetchStory, fetchStoryBubbles, getStoriesForBuild, getStoryBubblesForBuild, sendStoryEvents } from "@/services/stories";
 
 const respond = (status: number, body: unknown) =>
   vi.fn(async () => ({ ok: status >= 200 && status < 300, status, text: async () => (typeof body === "string" ? body : JSON.stringify(body)) }));
 
+// The build reads the list once per build: start each test without it.
+beforeEach(() => delete (globalThis as { __storiesList?: unknown }).__storiesList);
 afterEach(() => vi.unstubAllGlobals());
 
 describe("fetchStory", () => {
@@ -41,6 +43,7 @@ describe("getStoriesForBuild", () => {
     vi.spyOn(console, "warn").mockImplementation(() => {});
     vi.stubGlobal("fetch", respond(404, "Not Found"));
     expect(await getStoriesForBuild()).toEqual([]);
+    delete (globalThis as { __storiesList?: unknown }).__storiesList;
     vi.stubGlobal("fetch", vi.fn(async () => { throw new Error("ENOTFOUND"); }));
     expect(await getStoriesForBuild()).toEqual([]);
   });
@@ -64,5 +67,22 @@ describe("sendStoryEvents", () => {
     vi.stubGlobal("fetch", respond(429, "slow down"));
     expect(await sendStoryEvents([{ type: "share", story: "x" }], "user_1")).toBeNull();
     expect(await sendStoryEvents([], "user_1")).toBeNull();
+  });
+});
+
+describe("the stories bar's list", () => {
+  it("reads the list once for every page of the build", async () => {
+    const forWeb = { ...fixture.stories[0], filters: { ...fixture.stories[0].filters, platforms: [] } };
+    const fetchMock = respond(200, { ...fixture, stories: [forWeb] });
+    vi.stubGlobal("fetch", fetchMock);
+    await getStoriesForBuild();
+    expect(await getStoryBubblesForBuild()).toHaveLength(1);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+  it("leaves app-only stories off the website's bar", async () => {
+    const web = { ...fixture.stories[0], slug: "pe-web", filters: { ...fixture.stories[0].filters, platforms: ["web_mobile"] } };
+    const all = { ...fixture.stories[0], slug: "toti", filters: { ...fixture.stories[0].filters, platforms: [] } };
+    vi.stubGlobal("fetch", respond(200, { ...fixture, stories: [fixture.stories[0], web, all] }));
+    expect((await fetchStoryBubbles())!.map((b) => b.slug)).toEqual(["pe-web", "toti"]);
   });
 });

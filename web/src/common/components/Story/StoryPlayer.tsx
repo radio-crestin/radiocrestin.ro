@@ -7,6 +7,7 @@ import { sendStoryEvents, type StoryEvent } from "@/services/stories";
 import { getUserId } from "@/utils/posthog";
 import { shareLink } from "@/components/Announcements/share";
 import type { StoryMedia, StorySlideView, StoryView } from "@/utils/stories";
+import { markStorySeen } from "./seen";
 import styles from "./StoryPlayer.module.scss";
 
 export const HOLD_MS = 220;
@@ -131,7 +132,8 @@ export default function StoryPlayer({ story, onClose, onFinished, onBackFromStar
     setIndex(0);
     setEnded(false);
     void report([{ type: "view", story: story.slug }]);
-  }, [story.slug]);
+    markStorySeen(story.slug, story.updatedAt);
+  }, [story.slug, story.updatedAt]);
 
   // Each slide: progress from zero, a "slide_view", and a fallback if its media never loads.
   useEffect(() => {

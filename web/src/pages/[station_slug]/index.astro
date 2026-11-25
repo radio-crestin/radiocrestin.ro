@@ -10,6 +10,7 @@ import { seoStation } from "@/utils/seo";
 import type { IReview, IStation } from "@/models/Station";
 import { ANONYMOUS_REVIEW_AUTHOR, SITE_URL } from "@/constants/constants";
 import { getRadioBuildSnapshot } from "@/services/announcementsBuild";
+import { getStoryBubblesForBuild } from "@/services/stories";
 
 export async function getStaticPaths() {
   const { stations } = await getStations();
@@ -116,6 +117,7 @@ const breadcrumbSchema = JSON.stringify({
 });
 
 const announcements = await getRadioBuildSnapshot(Astro.params.station_slug);
+const stories = await getStoryBubblesForBuild();
 ---
 
 <BaseLayout {...seo}>
@@ -131,7 +133,7 @@ const announcements = await getRadioBuildSnapshot(Astro.params.station_slug);
   />
   <script type="application/ld+json" set:html={radioStationSchema} slot="head" />
   <script type="application/ld+json" set:html={breadcrumbSchema} slot="head" />
-  <RadioApp client:load announcements={announcements} stations={toIslandStations(stations)} selectedStation={toIslandStations([selectedStation])[0]} showReviews={true} initialReviews={initialReviews} />
+  <RadioApp client:load stories={stories} announcements={announcements} stations={toIslandStations(stations)} selectedStation={toIslandStations([selectedStation])[0]} showReviews={true} initialReviews={initialReviews} />
   <FavoritesPrepaint stations={stations} selectedStation={selectedStation} />
   <PinStations />
 </BaseLayout>

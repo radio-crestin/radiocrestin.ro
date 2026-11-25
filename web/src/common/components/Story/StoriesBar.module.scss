@@ -1,0 +1,117 @@
+// The app's StoriesBar: 68 px bubbles, a 2.5 px gradient ring (pink, orange, amber) while new and
+// a thin grey one once seen, the title under each.
+.bar {
+  // Lined up with the announcements card under it (.ann-inHome).
+  max-width: 1230px;
+  width: 100%;
+  margin: 24px auto 0;
+  box-sizing: border-box;
+
+  @media screen and (max-width: 1378px) {
+    padding: 0 15px;
+  }
+
+  + :global(.ann-inHome) {
+    margin-top: 12px;
+  }
+}
+
+.list {
+  display: flex;
+  gap: 6px;
+  margin: 0;
+  padding: 6px 0 4px;
+  list-style: none;
+  overflow-x: auto;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+
+  li {
+    flex: none;
+  }
+}
+
+.bubble {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 76px;
+  padding: 2px 0;
+  border-radius: 12px;
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+
+  &:hover .ring {
+    transform: scale(1.04);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--link-color);
+  }
+}
+
+.ring {
+  width: 68px;
+  height: 68px;
+  padding: 1.5px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.25);
+  transition: transform 0.2s ease, padding 0.25s ease;
+
+  :global([data-theme="light"]) & {
+    background: rgba(0, 0, 0, 0.2);
+  }
+}
+
+.new .ring {
+  padding: 2.5px;
+  background: linear-gradient(to top right, #e91e63, #ff6f3c, #ffb300);
+}
+
+.gap {
+  display: block;
+  width: 100%;
+  height: 100%;
+  padding: 2px;
+  border-radius: 50%;
+  background: var(--bg-body);
+
+  img {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+    display: block;
+  }
+}
+
+.placeholder {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: #e91e63;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.title {
+  max-width: 100%;
+  margin-top: 5px;
+  color: var(--text-color);
+  opacity: 0.6;
+  font-size: 12px;
+  font-weight: 400;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.new .title {
+  opacity: 1;
+  font-weight: 600;
+}

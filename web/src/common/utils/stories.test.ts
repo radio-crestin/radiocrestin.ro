@@ -1,7 +1,7 @@
 // The story share page's view of the API (backend/docs/stories-api.md), from fixture JSON.
 import { describe, expect, it } from "vitest";
 import fixture from "@/components/Story/fixtures/stories.json";
-import { appLinks, ctaLink, isStoryLive, safeHttpUrl, seoStory, toStoryView } from "@/utils/stories";
+import { appLinks, ctaLink, isStoryLive, orderBubbles, safeHttpUrl, seoStory, toStoryBubble, toStoryView } from "@/utils/stories";
 
 const story = () => structuredClone(fixture.stories[0]) as any;
 
@@ -119,5 +119,28 @@ describe("helpers", () => {
       fullURL: "https://www.radiocrestin.ro/poveste/concert-craciun-2026/",
       twitterCard: "summary_large_image",
     });
+  });
+});
+
+describe("bubbles", () => {
+  const bubble = (slug: string, extra: Record<string, unknown> = {}) => toStoryBubble({ ...story(), slug, ...extra })!;
+  it("a bubble has the title, cover and time window", () => {
+    expect(bubble("concert-craciun-2026")).toEqual({
+      slug: "concert-craciun-2026",
+      title: "Concert de Crăciun",
+      cover: "https://cdn.radiocrestin.ro/stories/covers/concert.webp",
+      startsAt: "2020-01-01T00:00:00Z",
+      endsAt: null,
+      updatedAt: "2026-11-25T10:12:03Z",
+    });
+  });
+  it("orders new stories first, seen ones after, each in the API's order; only live ones", () => {
+    const a = bubble("a"), b = bubble("b"), c = bubble("c"), later = bubble("later", { starts_at: "2999-01-01T00:00:00Z" });
+    const seen = { a: "2026-11-25T10:12:03Z" };
+    expect(orderBubbles([a, b, c, later], seen).map((x) => x.slug)).toEqual(["b", "c", "a"]);
+  });
+  it("an edited story is new again", () => {
+    const a = bubble("a", { updated_at: "2026-12-01T00:00:00Z" });
+    expect(orderBubbles([bubble("b"), a], { a: "2026-11-25T10:12:03Z", b: "2026-11-25T10:12:03Z" }).map((x) => x.slug)).toEqual(["a", "b"]);
   });
 });

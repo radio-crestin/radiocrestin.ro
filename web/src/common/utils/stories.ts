@@ -40,6 +40,8 @@ export interface StoryView {
   title: string;
   cover: string | null;
   shareUrl: string;
+  /** Changes when the admin edits the story: a seen story with a newer one is new again. */
+  updatedAt: string;
   likeCount: number;
   slides: StorySlideView[];
 }
@@ -183,6 +185,7 @@ export const toStoryView = (data: unknown): StoryView | null => {
     // The backend already falls back to the first slide's picture or poster.
     cover: safeHttpUrl(story.cover_url),
     shareUrl: storyUrl(story.slug),
+    updatedAt: typeof story.updated_at === "string" ? story.updated_at : "",
     likeCount: Math.max(0, Math.floor(Number(story.like_count) || 0)),
     slides,
   };
@@ -225,3 +228,54 @@ export const seoStory = (story: StoryView, defaultImage: string) => ({
   // Stories expire: share previews read the meta, search engines needn't list them.
   noindex: true,
 });
+
+// ---- The stories bar (round pictures above the announcements, like the app's) ----
+
+/** What a bubble needs; the slides load when it's tapped. */
+export interface StoryBubble {
+  slug: string;
+  title: string;
+  cover: string | null;
+  startsAt: string | null;
+  endsAt: string | null;
+  updatedAt: string;
+}
+
+/** App-only stories (platforms set, none of them web) don't show on the website's bar. */
+export const canShowStoryOnWeb = (story: { filters?: { platforms?: string[] | null } | null }) => {
+  const platforms = story.filters?.platforms;
+  return !platforms?.length || platforms.some((p) => typeof p === "string" && p.startsWith("web"));
+};
+
+export const toStoryBubble = (data: unknown): StoryBubble | null => {
+  const story = data as IStory | null;
+  if (!story || typeof story !== "object" || !STORY_SLUG.test(story.slug ?? "")) return null;
+  if (!Array.isArray(story.slides) || !story.slides.length) return null;
+  return {
+    slug: story.slug,
+    title: (typeof story.title === "string" && story.title.trim()) || "Poveste",
+    cover: safeHttpUrl(story.cover_url),
+    startsAt: story.starts_at ?? null,
+    endsAt: story.ends_at ?? null,
+    updatedAt: typeof story.updated_at === "string" ? story.updated_at : "",
+  };
+};
+
+/** The bubbles of a stories list (GET /stories/), in the API's order. */
+export const toStoryBubbles = (data: unknown): StoryBubble[] => {
+  const stories = (data as { stories?: unknown[] } | null)?.stories;
+  if (!Array.isArray(stories)) return [];
+  return stories.flatMap((s) => (s && canShowStoryOnWeb(s as IStory) ? toStoryBubble(s) ?? [] : []));
+};
+
+/** slug -> updated_at of the version this device opened. */
+export type SeenStories = Record<string, string>;
+
+export const isBubbleSeen = (bubble: StoryBubble, seen: SeenStories) =>
+  bubble.slug in seen && seen[bubble.slug] >= bubble.updatedAt;
+
+/** As in the app: live ones only, new (coloured ring) first, each group in the API's order. */
+export const orderBubbles = (bubbles: StoryBubble[], seen: SeenStories, now = Date.now()) => {
+  const live = bubbles.filter((b) => isStoryLive({ starts_at: b.startsAt, ends_at: b.endsAt }, now));
+  return [...live.filter((b) => !isBubbleSeen(b, seen)), ...live.filter((b) => isBubbleSeen(b, seen))];
+};

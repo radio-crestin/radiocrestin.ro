@@ -58,5 +58,7 @@ export interface IStory {
   ends_at: string | null;
   updated_at?: string;
   like_count?: number;
+  /** Same keys as the announcements' filters; the website's bar reads `platforms`. */
+  filters?: { platforms?: string[] | null } | null;
   slides: IStorySlide[];
 }
