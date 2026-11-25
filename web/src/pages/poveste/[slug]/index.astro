@@ -60,13 +60,15 @@ const meta = {
   .story-share__card img {
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    /* Stories are often landscape: the whole picture, letterboxed like in the app. */
+    object-fit: contain;
   }
   .story-share__title {
     position: absolute;
     left: 16px;
     right: 16px;
     bottom: 16px;
+    color: #fff;
     font-size: 20px;
     font-weight: 700;
     text-shadow: 0 1px 4px rgba(0, 0, 0, 0.7);
