@@ -200,6 +200,12 @@ oEmbed when the admin saves the slide and stored with it (the API never waits on
 `null`: `thumbnail_url`, `author_name`, `caption`, `media_url` and `media_type` (`image` or `video`, when
 Instagram gives a direct media URL). *extra*: `shortcode`, `embed_url` (Instagram's embed page), `author_url`.
 
+The details need a Meta app token in the backend's environment, `INSTAGRAM_OEMBED_TOKEN` (`<app id>|<client
+token>`). Until it is set, Instagram slides carry only `url`, `kind`, `shortcode` and `embed_url`. Once it is
+set, saving a slide fetches its details, and `python manage.py refresh_story_embeds` (or the story admin's
+"Fetch YouTube and Instagram details again") fetches them for the slides saved before. A daily task fetches the
+listed slides again, since the thumbnail links expire.
+
 How to show it, best first:
 1. `media_url` with `media_type`: show or play it like an `image` / `video` slide.
 2. `thumbnail_url`: show it full screen with `author_name` and `caption`, and an "Open in Instagram" action
