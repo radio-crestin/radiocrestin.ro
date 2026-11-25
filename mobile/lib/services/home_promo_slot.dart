@@ -83,6 +83,20 @@ class HomePromoSlot {
     return const SharePromo();
   }
 
+  /// Whether a story may open by itself now: like the next card, only
+  /// [gapActions] actions after the last card or story closed, so the
+  /// listener never gets two in a row.
+  bool get allowsStoryPopup {
+    final closedAt = _prefs.getInt(_closedAtKey);
+    return closedAt == null ||
+        _notifications.actionsMade >= closedAt + gapActions;
+  }
+
+  /// A story that opened by itself was closed: the next card waits
+  /// [gapActions] actions, as after a card.
+  Future<void> storyPopupClosed() =>
+      _prefs.setInt(_closedAtKey, _notifications.actionsMade);
+
   /// Hides [promo] for good and starts the wait before the next card.
   ///
   /// An [AnnouncementPromo] closes one announcement at a time, on the

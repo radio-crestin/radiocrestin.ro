@@ -40,7 +40,7 @@ class StoryViewerController extends ChangeNotifier {
     this.onStoryShown,
     this.onStoryCompleted,
     this.onFinished,
-  })  : _stories = List.unmodifiable(stories),
+  })  : _stories = [...stories],
         _storyIndex = initialStory.clamp(0, stories.length - 1) {
     assert(stories.isNotEmpty);
   }
@@ -66,7 +66,7 @@ class StoryViewerController extends ChangeNotifier {
   /// The last story ended: the viewer closes.
   final VoidCallback? onFinished;
 
-  List<Story> get stories => _stories;
+  List<Story> get stories => List.unmodifiable(_stories);
   int get storyIndex => _storyIndex;
   int get slideIndex => _slideIndex;
   Story get story => _stories[_storyIndex];
@@ -168,6 +168,18 @@ class StoryViewerController extends ChangeNotifier {
   /// Jumps to the start of story [index] (a swipe, a CTA to a story).
   void showStory(int index) {
     if (_finished || index < 0 || index >= _stories.length) return;
+    _goTo(index, 0);
+  }
+
+  /// Shows [other] (a CTA to a story): where it is in the viewer, or
+  /// added after the current one.
+  void showOtherStory(Story other) {
+    if (_finished) return;
+    var index = _stories.indexWhere((story) => story.slug == other.slug);
+    if (index < 0) {
+      index = _storyIndex + 1;
+      _stories.insert(index, other);
+    }
     _goTo(index, 0);
   }
 

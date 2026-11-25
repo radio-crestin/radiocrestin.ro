@@ -39,6 +39,7 @@ import 'services/tv_channel_service.dart';
 import 'package:flutter_airplay/flutter_airplay.dart' as flutter_airplay;
 import 'services/analytics_service.dart';
 import 'services/announcements_service.dart';
+import 'services/stories_service.dart';
 import 'services/anr_reporter.dart';
 import 'services/android_renderer.dart';
 import 'services/app_start_log.dart';
@@ -347,6 +348,10 @@ Future<void> runRadioCrestin([
   );
   getIt.registerSingleton<AnnouncementsService>(announcementsService);
 
+  // The stories bar and viewer on the phone and tablet home.
+  final storiesService = StoriesService(prefs: prefs, client: apiHttpClient);
+  getIt.registerSingleton<StoriesService>(storiesService);
+
   final songLikeService = await songLikeFuture;
   getIt.registerSingleton<SongLikeService>(songLikeService);
 
@@ -379,6 +384,9 @@ Future<void> runRadioCrestin([
         'station_data_init', () => stationDataService.initialize()),
     PerformanceMonitor.trackAsync(
         'announcements_init', () => announcementsService.loadAtStartup()),
+    // Shows the kept stories at once; the fresh list never holds the
+    // first frame.
+    storiesService.loadAtStartup(),
   ]);
 
   // Now await Firebase (likely already done since audio init takes longer)

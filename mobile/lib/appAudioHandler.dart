@@ -17,6 +17,7 @@ import 'package:radio_crestin/performance_monitor.dart';
 import 'package:radio_crestin/types/Station.dart';
 import 'package:flutter_airplay/flutter_airplay.dart' as flutter_airplay;
 import 'package:radio_crestin/services/announcements_service.dart';
+import 'package:radio_crestin/services/stories_service.dart';
 import 'package:radio_crestin/services/image_cache_service.dart';
 import 'package:radio_crestin/services/android_auto_browse.dart';
 import 'package:radio_crestin/services/car_play_layout.dart';
@@ -2027,6 +2028,9 @@ class AppAudioHandler extends BaseAudioHandler {
     getIt<PlayCountService>().incrementPlayCount(slug);
     if (getIt.isRegistered<AnnouncementsService>()) {
       getIt<AnnouncementsService>().onPlayback(slug);
+    }
+    if (getIt.isRegistered<StoriesService>()) {
+      unawaited(getIt<StoriesService>().onPlayback());
     }
   }
   StreamSubscription<bool>? _playCountSub;

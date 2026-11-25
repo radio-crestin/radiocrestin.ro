@@ -291,6 +291,30 @@ class StorySlide {
   final StoryInstagram? instagram;
   final StoryCta? cta;
 
+  /// The call to action the viewer shows: the slide's own; without one,
+  /// an Instagram post or a YouTube video offers to open in its app.
+  StoryCta? get effectiveCta {
+    final own = cta;
+    if (own != null) return own;
+    final link = switch (type) {
+      StorySlideType.instagram => instagram?.url,
+      StorySlideType.youtube => youtubeUrl,
+      _ => null,
+    };
+    if (link == null) return null;
+    return StoryCta(
+      style: StoryCtaStyle.button,
+      label: type == StorySlideType.instagram
+          ? 'Deschide în Instagram'
+          : 'Deschide în YouTube',
+      target: StoryCtaTarget(
+        type: StoryCtaTargetType.appLink,
+        appUrl: link,
+        fallbackUrl: link,
+      ),
+    );
+  }
+
   static const defaultDuration = Duration(seconds: 6);
 
   /// The shortest and longest a slide's timer runs.
