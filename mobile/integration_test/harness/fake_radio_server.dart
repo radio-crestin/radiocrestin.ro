@@ -90,6 +90,10 @@ class FakeRadioServer {
   /// The events the app reported to `POST /stories/events/`.
   final List<Map<String, Object?>> storyEvents = [];
 
+  /// Files served under `/images/` in place of the station thumbnail, by
+  /// path: real pictures and videos for a recording.
+  final Map<String, ({List<int> bytes, String type})> files = {};
+
   /// The stories this device likes, as the API keeps them.
   final Set<String> storyLikes = {};
 
@@ -132,6 +136,7 @@ class FakeRadioServer {
     announcementListDelay = Duration.zero;
     forms.clear();
     stories.clear();
+    files.clear();
     storyEvents.clear();
     storyLikes.clear();
     storySettings = const {'auto_open_gap_actions': 0};
@@ -220,7 +225,12 @@ class FakeRadioServer {
       case Origin.mp3:
         return _mp3Stream(connection);
       case Origin.images:
-        if (uri.path.endsWith('.mp4')) return _storyVideo(connection);
+        final file = files[uri.path];
+        if (file != null) return _ranged(connection, file.bytes, file.type);
+        if (uri.path.endsWith('.mp4')) {
+          return _ranged(
+              connection, base64Decode(storyVideoMp4Base64), 'video/mp4');
+        }
         if (uri.path.startsWith('/images/instagram-embed/')) {
           return connection.send(
               utf8.encode(_instagramEmbed(uri.pathSegments[2])),
@@ -350,14 +360,14 @@ class FakeRadioServer {
     };
   }
 
-  /// The story video, whole or the byte range asked for: AVPlayer reads
-  /// an MP4 over HTTP only by ranges.
-  Future<void> _storyVideo(_Connection connection) async {
-    final video = base64Decode(storyVideoMp4Base64);
+  /// [video], whole or the byte range asked for: AVPlayer reads an MP4
+  /// over HTTP only by ranges.
+  Future<void> _ranged(
+      _Connection connection, List<int> video, String type) async {
     final range = RegExp(r'bytes=(\d*)-(\d*)')
         .firstMatch(connection.served.range ?? '');
     if (range == null) {
-      return connection.send(video, 'video/mp4',
+      return connection.send(video, type,
           headers: {'Accept-Ranges': 'bytes'});
     }
     final start = int.tryParse(range.group(1)!) ?? 0;
@@ -365,7 +375,7 @@ class FakeRadioServer {
         video.length - 1);
     final part = video.sublist(start, end + 1);
     connection.head(HttpStatus.partialContent, {
-      'Content-Type': 'video/mp4',
+      'Content-Type': type,
       'Content-Length': '${part.length}',
       'Content-Range': 'bytes $start-$end/${video.length}',
       'Accept-Ranges': 'bytes',
