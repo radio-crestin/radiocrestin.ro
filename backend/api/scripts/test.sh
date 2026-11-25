@@ -31,8 +31,12 @@ if [ -z "${DATABASE_URL:-}" ]; then
 fi
 
 if [ $# -gt 0 ]; then
-  exec "$PYTHON" manage.py test --noinput "$@"
+  "$PYTHON" manage.py test --noinput "$@"
+  exit
 fi
 "$PYTHON" manage.py check
 "$PYTHON" -m pytest -q tests
-"$PYTHON" manage.py test --noinput superapp
+# Each app's tests package only: discovering all of superapp would import management commands named test_*.py.
+labels=$(find superapp/apps -mindepth 2 -maxdepth 2 -type d -name tests -exec test -e '{}/__init__.py' ';' -print | sort | tr / .)
+# shellcheck disable=SC2086  # one label per word
+"$PYTHON" manage.py test --noinput $labels
