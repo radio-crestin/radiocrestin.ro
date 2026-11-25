@@ -261,6 +261,9 @@ class _StoryVideoState extends State<_StoryVideo>
   /// Whether the viewer holds the slide (a finger, a CTA, a sheet, …).
   bool _viewerPaused = false;
 
+  /// Where the video was when the app was left; it goes on from there.
+  Duration? _leftAt;
+
   @override
   void initState() {
     super.initState();
@@ -354,14 +357,32 @@ class _StoryVideoState extends State<_StoryVideo>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     // Inactive is not left: a system sheet over the app, a call coming.
     if (state == AppLifecycleState.inactive) return;
+    final wasInForeground = _inForeground;
     _inForeground = state == AppLifecycleState.resumed;
-    if (!_ready) return;
+    if (!_ready || wasInForeground == _inForeground) return;
     if (_inForeground) {
-      _applyPlaying();
+      unawaited(_comeBack());
     } else {
+      _leftAt = _video.value.position;
       widget.events.onSound(false);
       unawaited(_video.pause());
     }
+  }
+
+  /// Back in the app: AVPlayer may show its video from the start after
+  /// the app was left, whatever position it reports, so the video seeks
+  /// to where it was before it plays on.
+  Future<void> _comeBack() async {
+    final at = _leftAt;
+    _leftAt = null;
+    if (at != null && !_atEnd(_video.value)) {
+      try {
+        await _video.seekTo(at);
+      } catch (_) {
+        // It plays on from wherever the player is.
+      }
+    }
+    if (mounted && _inForeground) _applyPlaying();
   }
 
   @override
