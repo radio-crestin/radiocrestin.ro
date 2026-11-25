@@ -26,6 +26,9 @@ export interface StorySlideView {
   id: number;
   media: StoryMedia;
   landscape: boolean;
+  /** Seconds on screen (a video runs for its own length). */
+  duration: number;
+  hasSound: boolean;
   cta: StoryLink | null;
 }
 
@@ -34,8 +37,15 @@ export interface StoryView {
   title: string;
   cover: string | null;
   shareUrl: string;
+  likeCount: number;
   slides: StorySlideView[];
 }
+
+export const DEFAULT_SLIDE_SECONDS = 6;
+const slideSeconds = (raw: unknown) => {
+  const n = Number(raw);
+  return Number.isFinite(n) && n > 0 ? Math.min(Math.max(n, 2), 60) : DEFAULT_SLIDE_SECONDS;
+};
 
 /** An http(s) URL without credentials, or null. */
 export const safeHttpUrl = (raw: unknown): string | null => {
@@ -154,7 +164,14 @@ export const toStoryView = (data: unknown): StoryView | null => {
   const slides = story.slides.flatMap((slide): StorySlideView[] => {
     const media = slide && typeof slide === "object" ? slideMedia(slide) : null;
     return media
-      ? [{ id: Number(slide.id) || 0, media, landscape: slide.orientation === "landscape", cta: ctaLink(slide.cta) }]
+      ? [{
+          id: Number(slide.id) || 0,
+          media,
+          landscape: slide.orientation === "landscape",
+          duration: slideSeconds(slide.duration_seconds),
+          hasSound: media.kind === "video" && slide.has_sound !== false,
+          cta: ctaLink(slide.cta),
+        }]
       : [];
   });
   if (!slides.length) return null;
@@ -163,6 +180,7 @@ export const toStoryView = (data: unknown): StoryView | null => {
     title: (typeof story.title === "string" && story.title.trim()) || "Poveste",
     cover: coverOf(story),
     shareUrl: storyUrl(story.slug),
+    likeCount: Math.max(0, Math.floor(Number(story.like_count) || 0)),
     slides,
   };
 };

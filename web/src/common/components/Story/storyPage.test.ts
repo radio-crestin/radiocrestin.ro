@@ -13,7 +13,12 @@ describe("StoryPage", () => {
     expect(html).toContain('src="https://cdn.radiocrestin.ro/stories/slides/afis.webp"');
     expect(html).toContain('href="/radio-vocea-evangheliei/"');
     expect(html).toContain("Ascultă acum");
-    expect(html).toContain("1<!-- --> / <!-- -->4");
+    // The player: one progress bar per slide, like and share, nothing playing before load.
+    expect(html.match(/role="tab"/g)).toHaveLength(4);
+    expect(html).toContain('data-ready="0"');
+    expect(html).toContain('aria-label="Îmi place"');
+    expect(html).toContain(">152<");
+    expect(html).toContain('aria-label="Distribuie"');
     expect(html).toContain("apps.apple.com");
     expect(html).toContain("play.google.com");
     expect(html).toContain('href="/"');

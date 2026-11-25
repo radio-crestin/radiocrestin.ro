@@ -13,6 +13,9 @@ describe("toStoryView", () => {
     expect(view.cover).toBe("https://cdn.radiocrestin.ro/stories/covers/concert.webp");
     expect(view.shareUrl).toBe("https://www.radiocrestin.ro/poveste/concert-craciun-2026/");
     expect(view.slides.map((s) => s.media.kind)).toEqual(["image", "video", "youtube", "instagram"]);
+    expect(view.likeCount).toBe(152);
+    expect(view.slides.map((s) => s.duration)).toEqual([6, 14.5, 30, 10]);
+    expect(view.slides.map((s) => s.hasSound)).toEqual([false, true, false, false]);
     expect(view.slides[1].media).toMatchObject({ kind: "video", poster: "https://cdn.radiocrestin.ro/stories/posters/teaser.jpg" });
     expect(view.slides[2].media).toMatchObject({ kind: "youtube", videoId: "aBcDeFgHiJk" });
     expect(view.slides[3].media).toMatchObject({
@@ -48,6 +51,14 @@ describe("toStoryView", () => {
     const s = story();
     s.cover_url = null;
     expect(toStoryView(s)!.cover).toBe("https://cdn.radiocrestin.ro/stories/slides/afis.webp");
+  });
+
+  it("keeps slide durations between 2 and 60 seconds (6 when missing)", () => {
+    const s = story();
+    s.slides[0].duration_seconds = 0.5;
+    s.slides[2].duration_seconds = 600;
+    delete s.slides[3].duration_seconds;
+    expect(toStoryView(s)!.slides.map((x) => x.duration)).toEqual([2, 14.5, 60, 6]);
   });
 
   it("refuses unsafe slugs", () => {

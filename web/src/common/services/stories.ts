@@ -49,3 +49,40 @@ export const fetchStory = async (slug: string, timeoutMs = 8000): Promise<StoryV
     return "error";
   }
 };
+
+export type StoryEventType = "view" | "slide_view" | "complete" | "like" | "unlike" | "cta_click" | "share";
+export interface StoryEvent {
+  type: StoryEventType;
+  story: string;
+  slide?: number;
+  target?: "button" | "swipe_up";
+}
+export interface StoryEventsAnswer {
+  like_counts?: Record<string, number>;
+  liked?: string[];
+}
+
+/** Reports events (POST /stories/events/); the answer carries fresh like counts, or null. */
+export const sendStoryEvents = async (events: StoryEvent[], deviceId: string): Promise<StoryEventsAnswer | null> => {
+  if (!events.length || !deviceId) return null;
+  const at = new Date().toISOString();
+  try {
+    const response = await fetch(`${STORIES_API_BASE}/stories/events/`, {
+      method: "POST",
+      // text/plain: a "simple" request, no CORS preflight (the contract accepts any Content-Type).
+      headers: { "content-type": "text/plain;charset=UTF-8" },
+      body: JSON.stringify({
+        device_id: deviceId,
+        platform: "web",
+        locale: typeof navigator !== "undefined" ? navigator.language : undefined,
+        events: events.map((e) => ({ ...e, at })),
+      }),
+      keepalive: true,
+      signal: timeoutSignal(8000),
+    });
+    if (!response.ok) return null;
+    return (await parseJsonOrThrowTransient(response)) as StoryEventsAnswer | null;
+  } catch {
+    return null;
+  }
+};

@@ -1,7 +1,7 @@
 // Reading the stories API for the share page, against fixture JSON.
 import { afterEach, describe, expect, it, vi } from "vitest";
 import fixture from "@/components/Story/fixtures/stories.json";
-import { fetchStory, getStoriesForBuild } from "@/services/stories";
+import { fetchStory, getStoriesForBuild, sendStoryEvents } from "@/services/stories";
 
 const respond = (status: number, body: unknown) =>
   vi.fn(async () => ({ ok: status >= 200 && status < 300, status, text: async () => (typeof body === "string" ? body : JSON.stringify(body)) }));
@@ -43,5 +43,26 @@ describe("getStoriesForBuild", () => {
     expect(await getStoriesForBuild()).toEqual([]);
     vi.stubGlobal("fetch", vi.fn(async () => { throw new Error("ENOTFOUND"); }));
     expect(await getStoriesForBuild()).toEqual([]);
+  });
+});
+
+describe("sendStoryEvents", () => {
+  it("posts the events as text/plain and returns the fresh like counts", async () => {
+    const fetchMock = respond(200, { status: "ok", accepted: 1, like_counts: { "concert-craciun-2026": 153 }, liked: ["concert-craciun-2026"] });
+    vi.stubGlobal("fetch", fetchMock);
+    const answer = await sendStoryEvents([{ type: "like", story: "concert-craciun-2026" }], "user_1");
+    expect(answer?.like_counts?.["concert-craciun-2026"]).toBe(153);
+    const [url, init] = fetchMock.mock.calls[0] as any;
+    expect(url).toBe("https://api.radiocrestin.ro/api/v1/stories/events/");
+    expect(init.method).toBe("POST");
+    expect(init.headers["content-type"]).toMatch(/^text\/plain/);
+    const body = JSON.parse(init.body);
+    expect(body).toMatchObject({ device_id: "user_1", platform: "web", events: [{ type: "like", story: "concert-craciun-2026" }] });
+    expect(typeof body.events[0].at).toBe("string");
+  });
+  it("is quiet when it fails or has nothing to send", async () => {
+    vi.stubGlobal("fetch", respond(429, "slow down"));
+    expect(await sendStoryEvents([{ type: "share", story: "x" }], "user_1")).toBeNull();
+    expect(await sendStoryEvents([], "user_1")).toBeNull();
   });
 });
