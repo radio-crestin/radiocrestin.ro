@@ -6,6 +6,7 @@ import 'dart:typed_data';
 
 import 'live_hls.dart';
 import 'media.g.dart';
+import 'story_media.g.dart';
 import 'network_conditions.dart';
 import 'station_catalog.dart';
 
@@ -31,9 +32,10 @@ class ServedRequest {
   /// The body the app posted, if any.
   String? body;
 
-  /// The query and the `If-None-Match` header the app sent.
+  /// The query and the `If-None-Match` and `Range` headers the app sent.
   Map<String, String> query = const {};
   String? ifNoneMatch;
+  String? range;
 
   bool get isMedia => origin == Origin.hls || origin == Origin.mp3;
 }
@@ -77,6 +79,23 @@ class FakeRadioServer {
 
   /// The events the app reported to `POST /announcements/events/`.
   final List<Map<String, Object?>> announcementEvents = [];
+
+  /// What `GET /stories/` lists, as the API's JSON stories; empty unless
+  /// a test sets it.
+  final List<Map<String, Object?>> stories = [];
+
+  /// The stories list's `settings`.
+  Map<String, Object?> storySettings = const {'auto_open_gap_actions': 0};
+
+  /// The events the app reported to `POST /stories/events/`.
+  final List<Map<String, Object?>> storyEvents = [];
+
+  /// The stories this device likes, as the API keeps them.
+  final Set<String> storyLikes = {};
+
+  /// The events of [type] the app reported for stories.
+  List<Map<String, Object?>> storyEventsOf(String type) =>
+      storyEvents.where((event) => event['type'] == type).toList();
   final Map<String, LiveHlsStream> _hls = {
     for (final station in Stations.all) station.slug: LiveHlsStream(),
   };
@@ -112,6 +131,10 @@ class FakeRadioServer {
     announcementSettings = defaultAnnouncementSettings;
     announcementListDelay = Duration.zero;
     forms.clear();
+    stories.clear();
+    storyEvents.clear();
+    storyLikes.clear();
+    storySettings = const {'auto_open_gap_actions': 0};
     for (final stream in _hls.values) {
       stream.unfreeze();
     }
@@ -127,7 +150,8 @@ class FakeRadioServer {
     requests.add(served);
     served
       ..query = request.uri.queryParameters
-      ..ifNoneMatch = request.headers.value('if-none-match');
+      ..ifNoneMatch = request.headers.value('if-none-match')
+      ..range = request.headers.value('range');
     if (request.method == 'POST') {
       served.body = await utf8.decoder.bind(request).join();
     }
@@ -196,6 +220,12 @@ class FakeRadioServer {
       case Origin.mp3:
         return _mp3Stream(connection);
       case Origin.images:
+        if (uri.path.endsWith('.mp4')) return _storyVideo(connection);
+        if (uri.path.startsWith('/images/instagram-embed/')) {
+          return connection.send(
+              utf8.encode(_instagramEmbed(uri.pathSegments[2])),
+              'text/html; charset=utf-8');
+        }
         if (uri.path.endsWith('.svg')) {
           return connection.send(utf8.encode(iconSvg), 'image/svg+xml');
         }
@@ -209,6 +239,7 @@ class FakeRadioServer {
   Future<void> _api(Uri uri, _Connection connection) {
     final path = uri.path;
     if (path == '/api/v1/announcements/') return _announcementList(connection);
+    if (path == '/api/v1/stories/') return _storyList(connection);
     if (path.startsWith('/api/v1/forms/') && path.endsWith('/page/')) {
       return connection.send(
           utf8.encode(_formPage(uri.pathSegments[3],
@@ -218,6 +249,11 @@ class FakeRadioServer {
     final body = switch (path) {
       '/api/v1/announcements/events/' =>
         _acceptEvents(connection.served.body),
+      '/api/v1/stories/events/' => _acceptStoryEvents(connection.served.body),
+      '/api/v1/stories/liked/' => {'liked': storyLikes.toList()},
+      _ when path.startsWith('/api/v1/stories/') => stories
+          .where((story) => story['slug'] == uri.pathSegments[3])
+          .firstOrNull,
       _ when path.startsWith('/api/v1/announcements/') => announcements
           .where((a) => a['slug'] == uri.pathSegments[3])
           .firstOrNull,
@@ -268,6 +304,91 @@ class FakeRadioServer {
     return connection.send(body, 'application/json; charset=utf-8',
         headers: {'ETag': etag});
   }
+
+  /// The stories list, with an ETag and 304 like the announcements'.
+  Future<void> _storyList(_Connection connection) async {
+    final body = utf8.encode(
+        jsonEncode({'settings': storySettings, 'stories': stories}));
+    final hash = body.fold<int>(0, (a, b) => (a * 31 + b) & 0x7fffffff);
+    final etag = '"${body.length}-$hash"';
+    if (connection.served.ifNoneMatch == etag) {
+      return connection.status(HttpStatus.notModified);
+    }
+    return connection.send(body, 'application/json; charset=utf-8',
+        headers: {'ETag': etag});
+  }
+
+  /// Keeps the stories' events, applies likes as the API does
+  /// (idempotent per device), and answers with the like counts.
+  Map<String, Object?> _acceptStoryEvents(String? body) {
+    final events =
+        ((jsonDecode(body ?? '{}') as Map)['events'] as List? ?? [])
+            .cast<Map<String, Object?>>();
+    storyEvents.addAll(events);
+    for (final event in events) {
+      final slug = event['story'] as String?;
+      if (slug == null) continue;
+      if (event['type'] == 'like') storyLikes.add(slug);
+      if (event['type'] == 'unlike') storyLikes.remove(slug);
+    }
+    final named = {for (final event in events) event['story'] as String?};
+    int baseLikes(String slug) =>
+        stories.where((s) => s['slug'] == slug).firstOrNull?['like_count']
+            as int? ??
+        0;
+    return {
+      'status': 'ok',
+      'accepted': events.length,
+      'like_counts': {
+        for (final slug in named.whereType<String>())
+          slug: baseLikes(slug) + (storyLikes.contains(slug) ? 1 : 0),
+      },
+      'liked': [
+        for (final slug in named.whereType<String>())
+          if (storyLikes.contains(slug)) slug,
+      ],
+    };
+  }
+
+  /// The story video, whole or the byte range asked for: AVPlayer reads
+  /// an MP4 over HTTP only by ranges.
+  Future<void> _storyVideo(_Connection connection) async {
+    final video = base64Decode(storyVideoMp4Base64);
+    final range = RegExp(r'bytes=(\d*)-(\d*)')
+        .firstMatch(connection.served.range ?? '');
+    if (range == null) {
+      return connection.send(video, 'video/mp4',
+          headers: {'Accept-Ranges': 'bytes'});
+    }
+    final start = int.tryParse(range.group(1)!) ?? 0;
+    final end = min(int.tryParse(range.group(2)!) ?? video.length - 1,
+        video.length - 1);
+    final part = video.sublist(start, end + 1);
+    connection.head(HttpStatus.partialContent, {
+      'Content-Type': 'video/mp4',
+      'Content-Length': '${part.length}',
+      'Content-Range': 'bytes $start-$end/${video.length}',
+      'Accept-Ranges': 'bytes',
+    });
+    await connection.write(part);
+    await connection.end();
+  }
+
+  /// A page standing in for Instagram's embed of post [code]: its author,
+  /// a square picture and a caption, as Instagram lays it out.
+  String _instagramEmbed(String code) => '''
+<!doctype html><html><head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  body { margin: 0; background: #fff; font-family: system-ui, sans-serif; }
+  header { padding: 12px; font-weight: 600; }
+  .media { width: 100%; aspect-ratio: 1; background: #e91e63; }
+  p { padding: 12px; margin: 0; }
+</style></head><body>
+<header id="author">radiocrestin</header>
+<div class="media"></div>
+<p>Instagram post $code</p>
+</body></html>''';
 
   /// A form page that tells the app it is ready, as the backend's does,
   /// in the spec's card colors for the theme asked.
@@ -436,6 +557,9 @@ class _Connection {
     _socket.destroy();
   }
 
+  /// Ends a response written with [head] and [write].
+  Future<void> end() => _end();
+
   Future<void> _end() async {
     await _socket.flush();
     await _socket.close();
@@ -445,6 +569,7 @@ class _Connection {
   static const _reasons = {
     200: 'OK',
     204: 'No Content',
+    206: 'Partial Content',
     304: 'Not Modified',
     404: 'Not Found',
     503: 'Service Unavailable',

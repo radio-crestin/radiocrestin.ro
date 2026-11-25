@@ -519,6 +519,10 @@ class _StoryInstagramEmbedState extends State<StoryInstagramEmbed> {
         onWebResourceError: (error) {
           if (error.isForMainFrame ?? true) _fail();
         },
+        onHttpError: (error) {
+          final url = error.request?.uri.toString();
+          if (url == null || url == widget.instagram.embedUrl) _fail();
+        },
         // A link tapped in the embed opens Instagram (or the browser),
         // never a page inside the slide.
         onNavigationRequest: (request) {

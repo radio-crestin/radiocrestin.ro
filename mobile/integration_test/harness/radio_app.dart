@@ -12,7 +12,10 @@ import 'package:radio_crestin/app_launch_options.dart';
 import 'package:radio_crestin/components/MiniAudioPlayer.dart';
 import 'package:radio_crestin/main.dart';
 import 'package:radio_crestin/pages/SettingsPage.dart';
+import 'package:radio_crestin/pages/StoryViewerPage.dart';
 import 'package:radio_crestin/services/announcements_service.dart';
+import 'package:radio_crestin/services/stories_service.dart';
+import 'package:radio_crestin/services/story_viewer_controller.dart';
 import 'package:radio_crestin/services/network_service.dart';
 import 'package:radio_crestin/services/playback_preferences.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -155,6 +158,8 @@ class RadioApp {
 
   /// Back to silence, a healthy network and default settings, after a test.
   Future<void> reset() async {
+    // A story viewer a failed test left open would cover Home.
+    await closeStoryViewer();
     server.reset();
     await audio.stop();
     PlaybackPreferences.changePreferDirectStreams(false);
@@ -404,6 +409,78 @@ class RadioApp {
     getIt.registerSingleton<AnnouncementsService>(service);
     await service.loadAtStartup();
     await relaunch();
+  }
+
+  /// A cold start as far as stories go: the service starts again from
+  /// what it kept on the device, counts the app open, fetches the list,
+  /// and Home is built anew (where a due story may open by itself).
+  Future<void> coldStartStories() async {
+    final getIt = GetIt.instance;
+    await closeStoryViewer();
+    getIt<StoriesService>().dispose();
+    await getIt.unregister<StoriesService>();
+    final service =
+        StoriesService(prefs: await SharedPreferences.getInstance());
+    getIt.registerSingleton<StoriesService>(service);
+    await service.loadAtStartup();
+    await service.refresh();
+    await relaunch();
+  }
+
+  StoriesService get stories => GetIt.instance<StoriesService>();
+
+  /// The open story viewer's state, or null when it is closed.
+  StoryViewerPageState? get storyViewer {
+    final viewer = find.byType(StoryViewerPage).evaluate();
+    if (viewer.isEmpty) return null;
+    return (viewer.first as StatefulElement).state as StoryViewerPageState;
+  }
+
+  /// Waits for the viewer to show story [slug], its slide's media loaded.
+  Future<StoryViewerPageState> waitForStory(String slug) async {
+    await waitFor(
+      () {
+        final controller = storyViewer?.controller;
+        return controller != null &&
+            controller.story.slug == slug &&
+            !controller.pauses.contains(StoryPause.loading);
+      },
+      reason: 'the viewer to show story $slug; ${describeStories()}',
+    );
+    return storyViewer!;
+  }
+
+  /// Taps the bar's bubble of story [slug].
+  Future<void> tapStoryBubble(String slug) async {
+    await scrollToTop();
+    await tester.tap(find.byKey(ValueKey('story-bubble-$slug')).hitTestable());
+    await pumpFor(const Duration(milliseconds: 600));
+  }
+
+  /// The stories' slugs in the bar, in its order, with `*` after those
+  /// with a coloured ring.
+  List<String> get storyBar => [
+        for (final bubble in stories.bubbles.value)
+          '${bubble.story.slug}${bubble.highlighted ? '*' : ''}',
+      ];
+
+  /// Closes the story viewer if it is open, as Back does.
+  Future<void> closeStoryViewer() async {
+    final viewer = storyViewer;
+    if (viewer == null) return;
+    viewer.close();
+    await waitFor(() => storyViewer == null, reason: 'the viewer to close');
+  }
+
+  /// Where the viewer is, for a failure's message.
+  String describeStories() {
+    final controller = storyViewer?.controller;
+    final where = controller == null
+        ? 'viewer closed'
+        : 'viewer on ${controller.story.slug} slide ${controller.slideIndex} '
+            'progress ${controller.progress.toStringAsFixed(2)} '
+            'paused ${controller.pauses.map((p) => p.name)}';
+    return '$where; bar $storyBar';
   }
 
   /// Pulls the station list down from its top, as a listener refreshes.
