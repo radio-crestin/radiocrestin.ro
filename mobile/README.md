@@ -109,8 +109,25 @@ fvm flutter analyze lib   # what CI runs on every pull request
 Tests are end-to-end only, on a simulator or emulator against a fake radio server:
 [`integration_test/README.md`](integration_test/README.md).
 
-Android builds also need `android/app/google-services.json` (Firebase, for push notifications). It isn't in
-git, so ask the maintainers for it.
+#### 🤖 Android APK
+
+With JDK 17 and the Android SDK (platform 36, build-tools 36.0.0, NDK 27.0.12077973) installed, a debug APK
+builds from a fresh clone with no extra files:
+
+```bash
+export ANDROID_HOME=~/Android/Sdk   # wherever the SDK is; or: fvm flutter config --android-sdk <path>
+fvm flutter build apk --debug       # build/app/outputs/flutter-apk/app-debug.apk
+adb install -r build/app/outputs/flutter-apk/app-debug.apk
+```
+
+- `flutter` writes `android/local.properties` (`sdk.dir`, `flutter.sdk`) itself. `flutter.minSdkVersion` is
+  optional there: without it the app uses 26, as the store releases do.
+- Firebase: debug builds use the committed `android/app/src/debug/google-services.json`, made from the same
+  public values as `lib/firebase_options.dart`. Release builds use `android/app/google-services.json`, which
+  isn't in git: ask the maintainers for it, with `android/key.properties` and the upload keystore.
+- `posthog-android` is pinned to 3.x in `android/build.gradle`: `posthog_flutter` 5.30.0 doesn't compile
+  against 4.x. Drop the pin when `posthog_flutter` is upgraded to a 4.x-ready version.
+- Superfactory machines get the SDK from `scripts/superfactory/linux.sh` (Linux, `~/Android/Sdk`).
 
 ### 🗂️ Project structure
 
