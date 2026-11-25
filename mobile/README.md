@@ -127,7 +127,9 @@ adb install -r build/app/outputs/flutter-apk/app-debug.apk
   isn't in git: ask the maintainers for it, with `android/key.properties` and the upload keystore.
 - `posthog-android` is pinned to 3.x in `android/build.gradle`: `posthog_flutter` 5.30.0 doesn't compile
   against 4.x. Drop the pin when `posthog_flutter` is upgraded to a 4.x-ready version.
-- Superfactory machines get the SDK from `scripts/superfactory/linux.sh` (Linux, `~/Android/Sdk`).
+- Superfactory machines get the SDK from `scripts/superfactory/linux.sh` (Linux, `~/Android/Sdk`), with an x86_64
+  emulator: `emulator -avd radiocrestin_api34 -no-window -gpu guest`. On a VM whose vCPU isn't host-passthrough,
+  the emulator can crash (SIGILL, exit 132) when the app first renders; the APK still builds and installs.
 
 ### 🗂️ Project structure
 
