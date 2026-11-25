@@ -82,7 +82,6 @@ class StorySlideView extends StatelessWidget {
           sound: slide.hasSound,
           controller: controller,
           events: events,
-          paused: paused,
           muted: muted,
         ),
       StorySlideType.youtube => _StoryYoutube(
@@ -100,7 +99,6 @@ class StorySlideView extends StatelessWidget {
                   sound: true,
                   controller: controller,
                   events: events,
-                  paused: paused,
                   muted: muted,
                 )
               : StoryImage(
@@ -234,7 +232,6 @@ class _StoryVideo extends StatefulWidget {
     required this.sound,
     required this.controller,
     required this.events,
-    required this.paused,
     required this.muted,
   });
 
@@ -244,7 +241,6 @@ class _StoryVideo extends StatefulWidget {
   final bool sound;
   final StoryViewerController controller;
   final StorySlideEvents events;
-  final bool paused;
   final bool muted;
 
   @override
@@ -262,6 +258,9 @@ class _StoryVideoState extends State<_StoryVideo>
   /// False while the app is left (another app, the Home screen).
   bool _inForeground = true;
 
+  /// Whether the viewer holds the slide (a finger, a CTA, a sheet, …).
+  bool _viewerPaused = false;
+
   @override
   void initState() {
     super.initState();
@@ -271,6 +270,8 @@ class _StoryVideoState extends State<_StoryVideo>
       videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true),
     );
     _video.addListener(_onVideo);
+    _viewerPaused = _holdsSlide(widget.controller);
+    widget.controller.addListener(_onViewer);
     WidgetsBinding.instance.addObserver(this);
     _timeout = Timer(StorySlideView.loadTimeout, _fail);
     unawaited(_start());
@@ -318,12 +319,32 @@ class _StoryVideoState extends State<_StoryVideo>
 
   void _report(VideoPlayerValue value) {
     widget.controller.playerProgress(value.position, value.duration);
-    final atEnd = value.duration > Duration.zero &&
-        value.position >= value.duration - const Duration(milliseconds: 80);
-    if (atEnd && !value.isPlaying && !_ended) {
-      _ended = true;
-      widget.controller.slideEnded();
-    }
+    if (_atEnd(value) && !value.isPlaying) _end();
+  }
+
+  static bool _atEnd(VideoPlayerValue value) =>
+      value.duration > Duration.zero &&
+      value.position >= value.duration - const Duration(milliseconds: 80);
+
+  /// The video ran out: the slide ends (once).
+  void _end() {
+    if (_ended) return;
+    _ended = true;
+    // Not inside the viewer's notification that may have led here.
+    scheduleMicrotask(widget.controller.slideEnded);
+  }
+
+  static bool _holdsSlide(StoryViewerController controller) =>
+      controller.pauses.any((reason) => reason != StoryPause.loading);
+
+  /// Follows the viewer's pause at once, not at its next build: a CTA that
+  /// leaves the app gets no build before the app is gone, and the video
+  /// would play on to its end unseen.
+  void _onViewer() {
+    final paused = _holdsSlide(widget.controller);
+    if (paused == _viewerPaused) return;
+    _viewerPaused = paused;
+    _applyPlaying();
   }
 
   /// Leaving the app (a call to action, the Home button) stops the video
@@ -349,14 +370,14 @@ class _StoryVideoState extends State<_StoryVideo>
     if (oldWidget.muted != widget.muted && _ready) {
       unawaited(_video.setVolume(widget.muted ? 0 : 1));
     }
-    if (oldWidget.paused != widget.paused || oldWidget.muted != widget.muted) {
-      _applyPlaying();
-    }
+    if (oldWidget.muted != widget.muted) _applyPlaying();
   }
 
   void _applyPlaying() {
-    if (!_ready) return;
-    final play = !widget.paused && _inForeground;
+    if (!_ready || _ended) return;
+    final play = !_viewerPaused && _inForeground;
+    // Finished while held (or away): playing again would start it over.
+    if (play && _atEnd(_video.value)) return _end();
     widget.events.onSound(play && widget.sound && !widget.muted);
     unawaited(play ? _video.play() : _video.pause());
   }
@@ -364,6 +385,7 @@ class _StoryVideoState extends State<_StoryVideo>
   @override
   void dispose() {
     _timeout?.cancel();
+    widget.controller.removeListener(_onViewer);
     WidgetsBinding.instance.removeObserver(this);
     _video.removeListener(_onVideo);
     unawaited(_video.dispose());
