@@ -41,7 +41,7 @@
   padding: 7px 16px; border-radius: 999px; background: #fff; color: #111; font-weight: 600;
   max-width: 180px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.story-preview__like { position: absolute; right: 10px; bottom: 110px; z-index: 3; font-size: 12px; }
+.story-preview__like { position: absolute; right: 10px; bottom: 150px; z-index: 3; font-size: 12px; }
 .story-preview figcaption { font-size: 12px; margin-top: 6px; word-break: break-word; }
 .story-preview__warn { color: #dc2626; }
 .story-stats__totals { display: flex; flex-wrap: wrap; gap: 8px 20px; margin: 0 0 12px; }
