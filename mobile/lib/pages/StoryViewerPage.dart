@@ -1,10 +1,10 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:get_it/get_it.dart';
-import 'package:like_button/like_button.dart';
 
 import '../appAudioHandler.dart';
 import '../services/announcement.dart';
@@ -17,6 +17,7 @@ import '../services/story_viewer_controller.dart';
 import '../theme.dart';
 import '../widgets/bottom_toast.dart';
 import '../widgets/share_handler.dart';
+import '../widgets/story_overlay.dart';
 import '../widgets/story_slide_view.dart';
 
 /// The full-screen story viewer: one story after the other, each slide
@@ -126,6 +127,7 @@ class StoryViewerPageState extends State<StoryViewerPage>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _ticker.dispose();
+    _messageFocus.dispose();
     controller.removeListener(_onController);
     controller.dispose();
     _pages.dispose();
@@ -209,6 +211,31 @@ class StoryViewerPageState extends State<StoryViewerPage>
   /// Whether the app was left while a call to action held the story.
   bool _ctaLeftApp = false;
 
+  /// The message field's focus: the story waits while the listener
+  /// writes.
+  late final FocusNode _messageFocus = FocusNode()
+    ..addListener(() => _messageFocus.hasFocus
+        ? controller.pause(StoryPause.message)
+        : controller.resume(StoryPause.message));
+
+  /// Sends [text] to the team from the slide on screen, and says how it
+  /// went.
+  Future<bool> _sendMessage(String text) async {
+    final sent = await _service.sendMessage(
+        controller.story, controller.slide, text);
+    if (!mounted) return sent;
+    showBottomToast(
+      context,
+      title: sent ? 'Mesaj trimis' : 'Mesajul nu a fost trimis',
+      message: sent
+          ? 'Mulțumim! Echipa Radio Creștin îl va citi.'
+          : 'Verifică internetul și încearcă din nou.',
+      icon: sent ? Icons.check_circle_rounded : Icons.wifi_off_rounded,
+      isError: !sent,
+    );
+    return sent;
+  }
+
   // ── Sound ──────────────────────────────────────────────────────────────
 
   void _setSounding(bool sounding) {
@@ -242,6 +269,11 @@ class StoryViewerPageState extends State<StoryViewerPage>
   /// A tap goes on or back; a story paused for a call to action (back
   /// from an in-app browser) goes on where it was instead.
   void _onTap(bool forward) {
+    // A tap beside the message field puts the keyboard away.
+    if (_messageFocus.hasFocus) {
+      _messageFocus.unfocus();
+      return;
+    }
     if (controller.pauses.contains(StoryPause.cta)) {
       controller.resume(StoryPause.cta);
       return;
@@ -399,10 +431,14 @@ class StoryViewerPageState extends State<StoryViewerPage>
                         controller.showStory(index);
                       }
                     },
-                    itemBuilder: (context, index) =>
-                        index == controller.storyIndex
-                            ? _activeStory(context)
-                            : _StoryCover(story: controller.stories[index]),
+                    itemBuilder: (context, index) => _CubeFace(
+                      pages: _pages,
+                      index: index,
+                      current: controller.storyIndex,
+                      child: index == controller.storyIndex
+                          ? _activeStory(context)
+                          : _StoryCover(story: controller.stories[index]),
+                    ),
                   ),
                 ),
               ),
@@ -465,12 +501,16 @@ class StoryViewerPageState extends State<StoryViewerPage>
                   if (controller.pauses.contains(StoryPause.cta))
                     const _PausedBadge(),
                   const Spacer(),
-                  _Footer(
+                  _Bottom(
+                    key: ValueKey('story-bottom-${story.slug}-${slide.id}'),
                     story: story,
+                    slide: slide,
                     cta: cta,
                     service: _service,
+                    messageFocus: _messageFocus,
                     onCta: (via) => runCta(cta!, via: via),
                     onShare: share,
+                    onSendMessage: _sendMessage,
                   ),
                 ],
               ),
@@ -605,7 +645,6 @@ class _Header extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final avatar = story.bubbleImageUrl;
     return Padding(
       padding: const EdgeInsets.fromLTRB(8, 8, 4, 0),
       child: Column(
@@ -620,30 +659,7 @@ class _Header extends StatelessWidget {
           const SizedBox(height: 8),
           Row(
             children: [
-              const SizedBox(width: 4),
-              ClipOval(
-                child: SizedBox(
-                  width: 32,
-                  height: 32,
-                  child: avatar == null
-                      ? const ColoredBox(color: AppColors.primary)
-                      : StoryImage(url: avatar),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  story.title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    shadows: [Shadow(blurRadius: 4, color: Colors.black45)],
-                  ),
-                ),
-              ),
+              const Spacer(),
               if (showMute)
                 _ChromeButton(
                   key: const ValueKey('story-mute'),
@@ -741,206 +757,122 @@ class _PausedBadge extends StatelessWidget {
       );
 }
 
-/// The call to action (a swipe-up hint and/or a button), the like and the
-/// share buttons.
-class _Footer extends StatelessWidget {
-  const _Footer({
+/// A story as one face of a cube: swiping between stories turns it about
+/// the edge it shares with the next one, as Instagram's stories do.
+class _CubeFace extends StatelessWidget {
+  const _CubeFace({
+    required this.pages,
+    required this.index,
+    required this.current,
+    required this.child,
+  });
+
+  final PageController pages;
+  final int index;
+  final int current;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: pages,
+      child: child,
+      builder: (context, child) {
+        final page = pages.hasClients && pages.position.haveDimensions
+            ? pages.page ?? current.toDouble()
+            : current.toDouble();
+        final offset = (page - index).clamp(-1.0, 1.0);
+        if (offset == 0) return child!;
+        return Transform(
+          alignment:
+              offset > 0 ? Alignment.centerRight : Alignment.centerLeft,
+          transform: Matrix4.identity()
+            ..setEntry(3, 2, 0.0012)
+            ..rotateY(-offset * math.pi / 2),
+          child: child,
+        );
+      },
+    );
+  }
+}
+
+/// The bottom of a slide, as Reels lays it out: the call to action and
+/// who the story is from on the left, the actions on the right, then the
+/// swipe-up hint and the message field at the bottom edge.
+class _Bottom extends StatelessWidget {
+  const _Bottom({
+    super.key,
     required this.story,
+    required this.slide,
     required this.cta,
     required this.service,
+    required this.messageFocus,
     required this.onCta,
     required this.onShare,
+    required this.onSendMessage,
   });
 
   final Story story;
+  final StorySlide slide;
   final StoryCta? cta;
   final StoriesService service;
+  final FocusNode messageFocus;
   final ValueChanged<String> onCta;
   final VoidCallback onShare;
+  final Future<bool> Function(String text) onSendMessage;
 
   @override
   Widget build(BuildContext context) {
     final cta = this.cta;
+    final messages = story.messages;
+    final keyboard = MediaQuery.viewInsetsOf(context).bottom;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 8, 8),
+      padding: EdgeInsets.fromLTRB(12, 0, 8, 8 + keyboard),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (cta != null && cta.style == StoryCtaStyle.swipeUp)
-            _SwipeUpHint(label: cta.label, onTap: () => onCta('swipe_up')),
-          if (cta != null && cta.style == StoryCtaStyle.both)
-            const _SwipeUpHint(label: null, onTap: null),
-          const SizedBox(height: 8),
           Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Expanded(
-                child: cta != null && cta.style.hasButton
-                    ? Align(
-                        alignment: Alignment.centerLeft,
-                        child: _CtaButton(
-                          label: cta.label,
-                          onPressed: () => onCta('button'),
-                        ),
-                      )
-                    : const SizedBox.shrink(),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (cta != null && cta.style.hasButton) ...[
+                      StoryCtaBar(cta: cta, onPressed: () => onCta('button')),
+                      const SizedBox(height: 14),
+                    ],
+                    StoryAuthorRow(story: story, slide: slide),
+                  ],
+                ),
               ),
-              _LikeAction(story: story, service: service),
-              _ChromeButton(
-                key: const ValueKey('story-share'),
-                icon: Icons.ios_share_rounded,
-                tooltip: 'Distribuie',
-                onPressed: onShare,
+              const SizedBox(width: 12),
+              StoryActionColumn(
+                story: story,
+                service: service,
+                onMessage:
+                    messages.enabled ? messageFocus.requestFocus : null,
+                onShare: onShare,
               ),
             ],
           ),
-        ],
-      ),
-    );
-  }
-}
-
-class _CtaButton extends StatelessWidget {
-  const _CtaButton({required this.label, required this.onPressed});
-
-  final String label;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) => FilledButton.icon(
-        key: const ValueKey('story-cta-button'),
-        onPressed: onPressed,
-        style: FilledButton.styleFrom(
-          backgroundColor: Colors.white,
-          foregroundColor: Colors.black,
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-          shape: const StadiumBorder(),
-          textStyle:
-              const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
-        ),
-        icon: const Icon(Icons.arrow_outward_rounded, size: 18),
-        label: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
-      );
-}
-
-/// "Swipe up" with a chevron that keeps rising; [label] under it (none
-/// when a button says it already).
-class _SwipeUpHint extends StatefulWidget {
-  const _SwipeUpHint({required this.label, required this.onTap});
-
-  final String? label;
-  final VoidCallback? onTap;
-
-  @override
-  State<_SwipeUpHint> createState() => _SwipeUpHintState();
-}
-
-class _SwipeUpHintState extends State<_SwipeUpHint>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _bounce = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 900),
-  )..repeat(reverse: true);
-
-  @override
-  void dispose() {
-    _bounce.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final label = widget.label;
-    return Semantics(
-      button: widget.onTap != null,
-      label: label ?? 'Glisează în sus',
-      child: GestureDetector(
-        key: const ValueKey('story-swipe-up'),
-        behavior: HitTestBehavior.opaque,
-        onTap: widget.onTap,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            AnimatedBuilder(
-              animation: _bounce,
-              builder: (context, child) => Transform.translate(
-                offset: Offset(0, -6 * Curves.easeInOut.transform(_bounce.value)),
-                child: child,
-              ),
-              child: const Icon(Icons.keyboard_arrow_up_rounded,
-                  color: Colors.white, size: 32,
-                  shadows: [Shadow(blurRadius: 4, color: Colors.black45)]),
+          if (cta != null && cta.style.hasSwipeUp) ...[
+            const SizedBox(height: 10),
+            StorySwipeUpHint(
+              label: cta.style.hasButton ? 'Glisează în sus' : cta.label,
+              onTap: () => onCta('swipe_up'),
             ),
-            if (label != null)
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  label,
-                  style: const TextStyle(
-                    color: Colors.black,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-/// The heart and the story's like count, liked at once (optimistic), the
-/// API told right away.
-class _LikeAction extends StatelessWidget {
-  const _LikeAction({required this.story, required this.service});
-
-  final Story story;
-  final StoriesService service;
-
-  @override
-  Widget build(BuildContext context) {
-    return StreamBuilder<Set<String>>(
-      stream: service.liked,
-      initialData: service.liked.value,
-      builder: (context, liked) => StreamBuilder<Map<String, int>>(
-        stream: service.likeCounts,
-        initialData: service.likeCounts.value,
-        builder: (context, _) {
-          final isLiked = liked.data?.contains(story.slug) ?? false;
-          final count = service.likeCountOf(story);
-          return Semantics(
-            button: true,
-            label: isLiked ? 'Nu-mi mai place' : 'Îmi place',
-            value: '$count',
-            child: LikeButton(
-              key: ValueKey('story-like-${story.slug}'),
-              size: 28,
-              bubblesSize: 36,
-              isLiked: isLiked,
-              likeCount: count,
-              countBuilder: (count, liked, text) => Text(
-                (count ?? 0) > 0 ? text : '',
-                style: const TextStyle(
-                    color: Colors.white, fontWeight: FontWeight.w600),
-              ),
-              likeBuilder: (liked) => Icon(
-                liked ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                color: liked ? AppColors.primary : Colors.white,
-                size: 28,
-                shadows: const [Shadow(blurRadius: 4, color: Colors.black45)],
-              ),
-              onTap: (wasLiked) async {
-                unawaited(service.toggleLike(story));
-                return !wasLiked;
-              },
+          if (messages.enabled) ...[
+            const SizedBox(height: 12),
+            StoryMessageField(
+              hint: messages.hint,
+              focusNode: messageFocus,
+              onSend: onSendMessage,
             ),
-          );
-        },
+          ],
+        ],
       ),
     );
   }

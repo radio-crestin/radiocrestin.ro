@@ -94,6 +94,9 @@ class FakeRadioServer {
   /// path: real pictures and videos for a recording.
   final Map<String, ({List<int> bytes, String type})> files = {};
 
+  /// The messages listeners sent from stories (`POST /stories/messages/`).
+  final List<Map<String, Object?>> storyMessages = [];
+
   /// The stories this device likes, as the API keeps them.
   final Set<String> storyLikes = {};
 
@@ -138,6 +141,7 @@ class FakeRadioServer {
     stories.clear();
     files.clear();
     storyEvents.clear();
+    storyMessages.clear();
     storyLikes.clear();
     storySettings = const {'auto_open_gap_actions': 0};
     for (final stream in _hls.values) {
@@ -261,6 +265,7 @@ class FakeRadioServer {
         _acceptEvents(connection.served.body),
       '/api/v1/stories/events/' => _acceptStoryEvents(connection.served.body),
       '/api/v1/stories/liked/' => {'liked': storyLikes.toList()},
+      '/api/v1/stories/messages/' => _acceptStoryMessage(connection.served.body),
       _ when path.startsWith('/api/v1/stories/') => stories
           .where((story) => story['slug'] == uri.pathSegments[3])
           .firstOrNull,
@@ -358,6 +363,12 @@ class FakeRadioServer {
           if (storyLikes.contains(slug)) slug,
       ],
     };
+  }
+
+  /// Keeps a message sent from a story.
+  Map<String, Object?> _acceptStoryMessage(String? body) {
+    storyMessages.add((jsonDecode(body ?? '{}') as Map).cast<String, Object?>());
+    return {'status': 'ok'};
   }
 
   /// [video], whole or the byte range asked for: AVPlayer reads an MP4

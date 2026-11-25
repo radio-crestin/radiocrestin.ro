@@ -308,6 +308,49 @@ class StoriesService with WidgetsBindingObserver {
     await _store.saveLiked(slugs);
   }
 
+  /// The longest message a listener can send from a story.
+  static const maxMessageLength = 1000;
+
+  /// Sends [text] to the team from [slide] of [story]; false when it
+  /// didn't reach the API (the listener can try again).
+  Future<bool> sendMessage(
+    Story story,
+    StorySlide slide,
+    String text,
+  ) async {
+    final message = text.trim();
+    if (message.isEmpty || !story.messages.enabled) return false;
+    AnalyticsService.instance.capture('story_message_sent', {
+      'story_slug': story.slug,
+      'slide_id': slide.id,
+      'length': message.length,
+      'platform': platform,
+    });
+    try {
+      final response = await _client
+          .post(
+            Uri.parse(CONSTANTS.STORY_MESSAGES_URL),
+            headers: const {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'device_id': globals.deviceId,
+              'platform': platform,
+              'app_version': globals.appVersion,
+              'locale': _locale,
+              'story': story.slug,
+              'slide': int.tryParse(slide.id) ?? slide.id,
+              'text': message.length > maxMessageLength
+                  ? message.substring(0, maxMessageLength)
+                  : message,
+            }),
+          )
+          .timeout(_timeout);
+      return response.statusCode >= 200 && response.statusCode < 300;
+    } catch (e) {
+      developer.log('Stories: message not sent: $e');
+      return false;
+    }
+  }
+
   /// Queues [event] for the API and sends it to PostHog. Likes and CTA
   /// taps go at once: a CTA may take the listener out of the app.
   void report(

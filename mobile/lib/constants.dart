@@ -33,6 +33,7 @@ class CONSTANTS {
   // "$STORIES_URL/<slug>/"; a device's likes: "$STORIES_URL/liked/".
   static String get STORIES_URL => "$API_BASE_URL/stories";
   static String get STORY_EVENTS_URL => "$API_BASE_URL/stories/events/";
+  static String get STORY_MESSAGES_URL => "$API_BASE_URL/stories/messages/";
   static String DEFAULT_STATION_THUMBNAIL_URL = "";
   static String IMAGE_PROXY_PREFIX = "";
   static String STATIC_MP3_URL =

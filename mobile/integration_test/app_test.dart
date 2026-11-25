@@ -21,6 +21,7 @@ import 'package:radio_crestin/services/story.dart';
 import 'package:radio_crestin/services/story_cta.dart';
 import 'package:radio_crestin/services/story_deep_link.dart';
 import 'package:radio_crestin/utils.dart';
+import 'package:radio_crestin/widgets/story_overlay.dart';
 import 'package:radio_crestin/services/story_schedule.dart';
 import 'package:radio_crestin/services/story_viewer_controller.dart';
 import 'package:radio_crestin/theme.dart';
@@ -2287,6 +2288,82 @@ void main() {
       expect(await app.stories.find('e2e-gone'), isNull);
     });
 
+    test('the new keys: messages, author, caption, CTA colours; counts',
+        (app) async {
+      final plain = story(StoryFixtures.verse(base()));
+      expect(plain.messages.enabled, isFalse,
+          reason: 'no messages key: no field');
+      expect(plain.author, isNull);
+      final full = story({
+        ...StoryFixtures.verse(base(), messages: true),
+        'author': {'name': 'Radio Vocea Evangheliei', 'avatar_url': null},
+      });
+      expect(full.messages.enabled, isTrue);
+      expect(full.messages.hint, StoryFixtures.messagePlaceholder);
+      expect(story({
+        ...StoryFixtures.verse(base()),
+        'messages': {'enabled': true, 'placeholder': null},
+      }).messages.hint, StoryMessages.defaultPlaceholder);
+      expect(full.author?.name, 'Radio Vocea Evangheliei');
+      expect(full.slides.first.caption, StoryFixtures.caption);
+      final cta = StoryCta.fromJson({
+        'style': 'button',
+        'label': 'Vezi',
+        'color': '#2D5BFF',
+        'text_color': '#FFFFFF',
+        'target': {'type': 'url', 'url': 'https://radiocrestin.ro'},
+      });
+      expect(cta?.color, const Color(0xFF2D5BFF));
+      expect(formatStoryCount(2229), '2.229');
+      expect(formatStoryCount(152340), '152.340');
+      expect(formatStoryCount(7), '7');
+    });
+
+    storyTest(
+        'a story that takes messages shows its placeholder; a message '
+        'holds the story while written and reaches the team', (app) async {
+      server.stories.add(StoryFixtures.verse(base(), messages: true));
+      await app.coldStartStories();
+      await app.tapStoryBubble(StoryFixtures.verseSlug);
+      final viewer = await app.waitForStory(StoryFixtures.verseSlug);
+      expect(app.showsText(StoryFixtures.messagePlaceholder), isTrue,
+          reason: 'the admin\'s placeholder');
+      expect(app.showsText(StoryFixtures.caption), isTrue,
+          reason: 'the slide\'s caption');
+      await app.tester.tap(
+          find.byKey(const ValueKey('story-message-field')).hitTestable());
+      await app.pumpFor(const Duration(milliseconds: 500));
+      expect(viewer.controller.pauses, contains(StoryPause.message),
+          reason: 'the story waits while the listener writes');
+      final held = viewer.controller.progress;
+      await app.tester.enterText(
+          find.byKey(const ValueKey('story-message-field')), 'Vă mulțumim!');
+      await app.pumpFor(const Duration(seconds: 2));
+      expect(viewer.controller.progress, closeTo(held, 0.02));
+      await app.tapKey('story-message-send');
+      await app.waitFor(() => server.storyMessages.isNotEmpty,
+          reason: 'the message to reach the API');
+      final message = server.storyMessages.single;
+      expect(message['text'], 'Vă mulțumim!');
+      expect(message['story'], StoryFixtures.verseSlug);
+      expect(message['slide'], 401);
+      await app.waitFor(() => app.showsText('Mesaj trimis'),
+          reason: 'the listener told it went');
+      await app.waitFor(
+          () => !viewer.controller.pauses.contains(StoryPause.message),
+          reason: 'the story to go on once sent');
+    });
+
+    storyTest('a story that takes no messages has no message field',
+        (app) async {
+      server.stories.add(StoryFixtures.verse(base()));
+      await app.coldStartStories();
+      await app.tapStoryBubble(StoryFixtures.verseSlug);
+      await app.waitForStory(StoryFixtures.verseSlug);
+      expect(app.findsKey('story-message-field'), isFalse);
+      expect(app.findsKey('story-message'), isFalse);
+    });
+
     storyTest(
         'the bar shows new stories first with a coloured ring, and a '
         'story once seen after them, grey', (app) async {
@@ -2375,10 +2452,8 @@ void main() {
       final like = 'story-like-${StoryFixtures.verseSlug}';
       await app.tapKey(like);
       expect(app.stories.isLiked(StoryFixtures.verseSlug), isTrue);
-      expect(find.descendant(
-              of: find.byKey(ValueKey(like)), matching: find.text('5')),
-          findsOneWidget,
-          reason: 'the count goes up at once');
+      expect(app.findsKey('story-likes-5'), isTrue,
+          reason: 'the count under the heart goes up at once');
       await app.waitFor(
           () => server.storyLikes.contains(StoryFixtures.verseSlug),
           reason: 'the like to reach the API');

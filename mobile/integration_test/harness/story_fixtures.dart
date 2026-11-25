@@ -18,15 +18,27 @@ class StoryFixtures {
   static const autoSlug = 'e2e-story-auto';
   static const autoTitle = 'Noutăți';
   static const stationCta = 'Ascultă acum';
+  static const messagePlaceholder = 'Scrie-ne o cerere de rugăciune…';
+  static const caption = 'În fiecare dimineață, un verset';
 
   /// Two pictures; the second has a button that plays [Stations.alpha].
-  static Map<String, Object?> verse(String base, {int likeCount = 4}) =>
+  ///
+  /// With [messages], it takes messages with [messagePlaceholder].
+  static Map<String, Object?> verse(
+    String base, {
+    int likeCount = 4,
+    bool messages = false,
+  }) =>
       _story(
         slug: verseSlug,
         title: verseTitle,
         likeCount: likeCount,
+        extra: {
+          if (messages)
+            'messages': {'enabled': true, 'placeholder': messagePlaceholder},
+        },
         slides: [
-          _image(base, 401, seconds: 4),
+          {..._image(base, 401, seconds: 4), 'caption': caption},
           _image(base, 402, seconds: 4, cta: {
             'style': 'button',
             'label': stationCta,
@@ -132,8 +144,10 @@ class StoryFixtures {
     required List<Map<String, Object?>> slides,
     int likeCount = 0,
     Map<String, Object?>? display,
+    Map<String, Object?> extra = const {},
   }) =>
       {
+        ...extra,
         'id': slug.hashCode & 0xffff,
         'slug': slug,
         'title': title,

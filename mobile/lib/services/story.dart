@@ -1,4 +1,6 @@
-import 'announcement.dart' show AnnouncementFilters;
+import 'dart:ui' show Color;
+
+import 'announcement.dart' show AnnouncementFilters, parseHexColor;
 
 /// What a slide shows (`slides[].type` in the stories API).
 enum StorySlideType {
@@ -181,11 +183,17 @@ class StoryCta {
     required this.style,
     required this.label,
     required this.target,
+    this.color,
+    this.textColor,
   });
 
   final StoryCtaStyle style;
   final String label;
   final StoryCtaTarget target;
+
+  /// The bar's colours, as the admin set them; null for the app's own.
+  final Color? color;
+  final Color? textColor;
 
   /// The label shown when the admin left it empty.
   static const defaultLabel = 'Vezi mai mult';
@@ -198,6 +206,8 @@ class StoryCta {
       style: StoryCtaStyle.parse(json['style']),
       label: _string(json['label']) ?? defaultLabel,
       target: target,
+      color: parseHexColor(json['color']),
+      textColor: parseHexColor(json['text_color']),
     );
   }
 }
@@ -269,6 +279,7 @@ class StorySlide {
     this.youtubeUrl,
     this.instagram,
     this.cta,
+    this.caption,
   });
 
   final String id;
@@ -290,6 +301,9 @@ class StorySlide {
   final String? youtubeUrl;
   final StoryInstagram? instagram;
   final StoryCta? cta;
+
+  /// A line of text under the author, over the slide.
+  final String? caption;
 
   /// The call to action the viewer shows: the slide's own; without one,
   /// an Instagram post or a YouTube video offers to open in its app.
@@ -355,6 +369,7 @@ class StorySlide {
           ? StoryInstagram.fromJson(json['instagram'])
           : null,
       cta: StoryCta.fromJson(json['cta']),
+      caption: _string(json['caption']),
     );
     return slide._isComplete ? slide : null;
   }
@@ -406,6 +421,43 @@ class StoryDisplay {
   }
 }
 
+/// Whether a story takes messages from listeners, and what its field
+/// says before they type (`messages` in the API).
+class StoryMessages {
+  const StoryMessages({this.enabled = false, this.placeholder});
+
+  static const off = StoryMessages();
+
+  /// The field's text when the admin set none.
+  static const defaultPlaceholder = 'Trimite un mesaj…';
+
+  final bool enabled;
+  final String? placeholder;
+
+  String get hint => placeholder ?? defaultPlaceholder;
+
+  static StoryMessages fromJson(Object? json) {
+    if (json is! Map || json['enabled'] != true) return off;
+    return StoryMessages(
+        enabled: true, placeholder: _string(json['placeholder']));
+  }
+}
+
+/// Who a story is from, shown under its call to action.
+class StoryAuthor {
+  const StoryAuthor({required this.name, this.avatarUrl});
+
+  final String name;
+  final String? avatarUrl;
+
+  static StoryAuthor? fromJson(Object? json) {
+    if (json is! Map) return null;
+    final name = _string(json['name']);
+    if (name == null) return null;
+    return StoryAuthor(name: name, avatarUrl: _string(json['avatar_url']));
+  }
+}
+
 /// A story: a few slides shown one after the other, full screen.
 class Story {
   const Story({
@@ -419,6 +471,8 @@ class Story {
     this.likeCount = 0,
     this.filters = const AnnouncementFilters(),
     this.display = const StoryDisplay(),
+    this.messages = StoryMessages.off,
+    this.author,
   });
 
   final String slug;
@@ -435,6 +489,12 @@ class Story {
   final int likeCount;
   final AnnouncementFilters filters;
   final StoryDisplay display;
+
+  /// Whether listeners can write to the team from this story.
+  final StoryMessages messages;
+
+  /// Who the story is from; null for Radio Creștin itself.
+  final StoryAuthor? author;
 
   /// The bubble's picture, falling back to the first slide's.
   String? get bubbleImageUrl {
@@ -475,6 +535,8 @@ class Story {
       likeCount: likes is int && likes > 0 ? likes : 0,
       filters: AnnouncementFilters.fromJson(json['filters']),
       display: StoryDisplay.fromJson(json['display']),
+      messages: StoryMessages.fromJson(json['messages']),
+      author: StoryAuthor.fromJson(json['author']),
     );
   }
 
@@ -489,6 +551,8 @@ class Story {
         likeCount: likeCount ?? this.likeCount,
         filters: filters,
         display: display,
+        messages: messages,
+        author: author,
       );
 }
 
