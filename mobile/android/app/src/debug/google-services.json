@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1067346595846",
+    "project_id": "radio-crestin-aea7e",
+    "storage_bucket": "radio-crestin-aea7e.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1067346595846:android:151bbec6d16276113e7387",
+        "android_client_info": {
+          "package_name": "com.radiocrestin.radio_crestin"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAi3B0VC8ixYPOdG-of9CJb_m1ejGexYgs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

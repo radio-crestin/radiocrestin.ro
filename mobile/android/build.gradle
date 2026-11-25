@@ -58,6 +58,20 @@ subprojects {
     }
 }
 
+// posthog_flutter 5.30.0 asks for posthog-android [3.51.0,4.0.0], which takes 4.0.0 since its
+// release (Nov 2026); 4.0.0 drops APIs the plugin still calls (PostHogOnFeatureFlags, RRStyle), so
+// the plugin no longer compiles. Pin the last 3.x until posthog_flutter moves to a 4.x-ready version.
+subprojects {
+    configurations.configureEach {
+        resolutionStrategy.eachDependency { details ->
+            if (details.requested.group == 'com.posthog' && details.requested.name == 'posthog-android') {
+                details.useVersion '3.77.1'
+                details.because 'posthog_flutter 5.30.0 does not compile against posthog-android 4.x'
+            }
+        }
+    }
+}
+
 rootProject.buildDir = '../build'
 subprojects {
     project.buildDir = "${rootProject.buildDir}/${project.name}"
