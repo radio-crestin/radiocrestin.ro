@@ -2326,7 +2326,8 @@ void main() {
       await app.coldStartStories();
       await app.tapStoryBubble(StoryFixtures.verseSlug);
       final viewer = await app.waitForStory(StoryFixtures.verseSlug);
-      expect(app.showsText(StoryFixtures.messagePlaceholder), isTrue,
+      // The field lies over its hint: it is there, not hit-testable.
+      expect(find.text(StoryFixtures.messagePlaceholder), findsOneWidget,
           reason: 'the admin\'s placeholder');
       expect(app.showsText(StoryFixtures.caption), isTrue,
           reason: 'the slide\'s caption');
@@ -2538,6 +2539,10 @@ void main() {
       final viewer = await app.waitForStory(StoryFixtures.verseSlug);
       viewer.controller.next();
       await app.waitForStory(StoryFixtures.verseSlug);
+      // The bar rises in once the slide shows.
+      await app.pumpFor(StoryCtaBar.fillAfter);
+      expect(find.text(StoryFixtures.stationCta), findsOneWidget,
+          reason: 'the CTA bar; ${app.describeStories()}');
       final since = DateTime.now();
       await app.tapText(StoryFixtures.stationCta);
       await app.waitFor(() => app.storyViewer == null,
