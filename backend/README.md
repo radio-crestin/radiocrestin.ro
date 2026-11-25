@@ -87,17 +87,29 @@ backup.
 
 ### Tests
 
-Unit tests need only Python 3.14, no Docker. CI runs exactly these on every pull request that touches
-`backend/`:
+One command runs every API test (Django's system check, `api/tests` and each app's Django tests in
+`api/superapp/apps/*/tests`) against a throwaway PostgreSQL (TimescaleDB) container. It needs Python 3.14 with
+the API's requirements, and Docker:
+
+```bash
+make test                                                  # from backend/
+api/scripts/test.sh superapp.apps.radio_crestin.tests.test_forms   # only some Django tests
+```
+
+With `DATABASE_URL` set, `api/scripts/test.sh` uses that server instead of starting one (CI's service
+container). Redis is optional: without `REDIS_BROKER_URL` the cache is in-process. CI runs the same script on
+every pull request that touches `backend/`. The API's requirements, once:
 
 ```bash
 cd api
 for f in requirements.txt $(find superapp -name requirements.txt); do cat "$f"; echo; done > /tmp/api-requirements.txt
 pip install -r /tmp/api-requirements.txt -c constraints.txt pytest
-SECRET_KEY=dev python manage.py check
-SECRET_KEY=dev python -m pytest -q tests
+```
 
-cd ../streaming
+The streaming unit tests need no services:
+
+```bash
+cd streaming
 pip install -r requirements.txt pytest
 python -m pytest -q tests --ignore=tests/test_hls_stream.py --ignore=tests/test_segment_serving.py
 ```
