@@ -111,7 +111,7 @@ Tests are end-to-end only, on a simulator or emulator against a fake radio serve
 
 #### 🤖 Android APK
 
-With JDK 17 and the Android SDK (platform 36, build-tools 36.0.0, NDK 27.0.12077973) installed, a debug APK
+With JDK 17 and the Android SDK (platforms 36 and 34, build-tools 36.0.0, NDK 27.0.12077973) installed, a debug APK
 builds from a fresh clone with no extra files:
 
 ```bash
