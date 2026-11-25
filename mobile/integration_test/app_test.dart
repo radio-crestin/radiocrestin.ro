@@ -2433,6 +2433,21 @@ void main() {
           reason: 'the CTA tap to reach the API');
       expect(server.storyEventsOf('cta_click').single['target'], 'swipe_up');
 
+      // YouTube takes the screen: the video waits where it was, and goes on
+      // from there on the way back.
+      final left = viewer.controller.progress;
+      app.goToBackground();
+      await Future<void>.delayed(const Duration(seconds: 3));
+      await app.comeBack();
+      expect(viewer.controller.progress, closeTo(left, 0.1),
+          reason: 'the video waited; ${app.describeStories()}');
+      await app.waitFor(
+          () =>
+              !viewer.controller.isPaused &&
+              viewer.controller.progress > left + 0.05,
+          reason: 'the video to go on from where it was; '
+              '${app.describeStories()}');
+
       await app.closeStoryViewer();
       await app.waitFor(() => app.audio.player.volume > 0.95,
           reason: 'the radio back at its volume');

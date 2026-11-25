@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:video_player/video_player.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:youtube_player_iframe/youtube_player_iframe.dart';
@@ -250,7 +251,8 @@ class _StoryVideo extends StatefulWidget {
   State<_StoryVideo> createState() => _StoryVideoState();
 }
 
-class _StoryVideoState extends State<_StoryVideo> {
+class _StoryVideoState extends State<_StoryVideo>
+    with WidgetsBindingObserver {
   late final VideoPlayerController _video;
   bool _ready = false;
   bool _failed = false;
@@ -266,6 +268,7 @@ class _StoryVideoState extends State<_StoryVideo> {
       videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true),
     );
     _video.addListener(_onVideo);
+    WidgetsBinding.instance.addObserver(this);
     _timeout = Timer(StorySlideView.loadTimeout, _fail);
     unawaited(_start());
   }
@@ -298,12 +301,39 @@ class _StoryVideoState extends State<_StoryVideo> {
       if (value.hasError) _fail();
       return;
     }
+    // A pause the viewer asked for while building is reported at once;
+    // the viewer hears it after that build.
+    if (SchedulerBinding.instance.schedulerPhase ==
+        SchedulerPhase.persistentCallbacks) {
+      SchedulerBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _report(_video.value);
+      });
+    } else {
+      _report(value);
+    }
+  }
+
+  void _report(VideoPlayerValue value) {
     widget.controller.playerProgress(value.position, value.duration);
     final atEnd = value.duration > Duration.zero &&
         value.position >= value.duration - const Duration(milliseconds: 80);
     if (atEnd && !value.isPlaying && !_ended) {
       _ended = true;
       widget.controller.slideEnded();
+    }
+  }
+
+  /// Leaving the app (a call to action, the Home button) stops the video
+  /// at once: no frame comes to apply the viewer's pause after that, and
+  /// the video would play on to its end unseen.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (!_ready) return;
+    if (state == AppLifecycleState.resumed) {
+      _applyPlaying();
+    } else {
+      widget.events.onSound(false);
+      unawaited(_video.pause());
     }
   }
 
@@ -314,17 +344,14 @@ class _StoryVideoState extends State<_StoryVideo> {
       unawaited(_video.setVolume(widget.muted ? 0 : 1));
     }
     if (oldWidget.paused != widget.paused || oldWidget.muted != widget.muted) {
-      // The player reports its new state at once, which the viewer turns
-      // into a rebuild: not while this one runs.
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _applyPlaying();
-      });
+      _applyPlaying();
     }
   }
 
   void _applyPlaying() {
     if (!_ready) return;
-    final play = !widget.paused;
+    final play = !widget.paused &&
+        WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed;
     widget.events.onSound(play && widget.sound && !widget.muted);
     unawaited(play ? _video.play() : _video.pause());
   }
@@ -332,6 +359,7 @@ class _StoryVideoState extends State<_StoryVideo> {
   @override
   void dispose() {
     _timeout?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
     _video.removeListener(_onVideo);
     unawaited(_video.dispose());
     super.dispose();
