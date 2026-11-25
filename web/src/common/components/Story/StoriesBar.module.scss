@@ -1,18 +1,25 @@
 // The app's StoriesBar: 68 px bubbles, a 2.5 px gradient ring (pink, orange, amber) while new and
 // a thin grey one once seen, the title under each.
 .bar {
-  // Lined up with the announcements card under it (.ann-inHome).
+  // Under the announcements card, lined up with it (.ann-inHome): the card sits 36px under the
+  // hero; the bubbles sit closer to the card than to the stations under them, as one group.
+  // The same box as .ann-inHome, so the bubbles start where the card does at every width.
   max-width: 1230px;
   width: 100%;
-  margin: 24px auto 0;
-  box-sizing: border-box;
+  box-sizing: content-box;
+  // No card shown (none, or dismissed: the slot is [hidden]): the card's own 36px under the hero.
+  margin: 36px auto 0;
 
   @media screen and (max-width: 1378px) {
+    width: calc(100% - 30px);
     padding: 0 15px;
   }
 
-  + :global(.ann-inHome) {
-    margin-top: 12px;
+  // The titles carry their own room: the stations' 44px under them would read as a second gap.
+  margin-bottom: -20px;
+
+  :global(.ann-inHome:not([hidden])) + & {
+    margin-top: 20px;
   }
 }
 

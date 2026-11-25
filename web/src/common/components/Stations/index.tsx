@@ -404,8 +404,8 @@ const Stations = () => {
   return (
     <div className={styles.container}>
       {/* Above the favourites (or the search row without them); it stays while searching. */}
-      <StoriesBar />
       <Announcements inHome />
+      <StoriesBar />
       {ctx.favouriteStations?.length > 0 && (
         <FavouriteStationsSection stations={ctx.favouriteStations} />
       )}
