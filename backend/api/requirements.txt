@@ -4,6 +4,8 @@ uvicorn[standard]==0.34.*
 whitenoise==6.9.*
 django-debug-toolbar==5.0.*
 dj-database-url==2.3.*
+# PostgreSQL driver: DATABASE_URL is postgres:// everywhere but a bare `manage.py check` (SQLite).
+psycopg2-binary==2.9.*
 django_superapp==1.*
 redis==5.2.*
 django-storages[s3]==1.14.*
