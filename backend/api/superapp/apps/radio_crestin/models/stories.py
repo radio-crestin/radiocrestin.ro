@@ -22,7 +22,6 @@ MAX_VIDEO_BYTES = 50 * 1024 * 1024
 DEFAULT_SECONDS = {'image': 6, 'video': 15, 'youtube': 15, 'instagram': 10}
 MAX_SLIDE_SECONDS = 120
 MAX_COMMENT_CHARS = 500
-MAX_COMMENT_AUTHOR_CHARS = 40
 
 # A CTA's colours, as the clients take them: #RRGGBB, or #AARRGGBB with the opacity first.
 validate_hex_color = RegexValidator(
@@ -134,14 +133,9 @@ class Story(models.Model):
     )
 
     # The account row under the call to action
-    author_name = models.CharField(
-        _("Author name"), max_length=80, blank=True, default='',
-        help_text=_("Shown with the avatar under the call to action. Empty: \"Radio Creștin\" with its logo."),
-    )
-    author_avatar = models.ImageField(
-        _("Author avatar"), storage=get_public_storage, upload_to='stories/authors/', blank=True, null=True,
-        validators=[FileExtensionValidator(IMAGE_EXTENSIONS)],
-        help_text=_("Square works best. Empty: the app shows the name without a picture."),
+    author = models.ForeignKey(
+        'Profile', verbose_name=_("Author"), on_delete=models.SET_NULL, null=True, blank=True, related_name='+',
+        help_text=_("Its name and avatar are shown under the call to action. Empty: \"Radio Creștin\" with its logo."),
     )
 
     # Who sees it: the announcements' filters, applied on the device
@@ -180,8 +174,6 @@ class Story(models.Model):
         errors = {}
         if self.starts_at and self.ends_at and self.ends_at <= self.starts_at:
             errors['ends_at'] = _('The end must be after the start.')
-        if self.author_avatar and not self.author_name.strip():
-            errors['author_name'] = _('An avatar needs the author\'s name too.')
         if errors:
             raise ValidationError(errors)
 

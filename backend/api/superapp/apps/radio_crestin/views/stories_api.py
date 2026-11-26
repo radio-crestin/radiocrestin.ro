@@ -143,8 +143,8 @@ class StoryCommentsView(View):
         if story is None:
             return _per_device(_json({'error': 'not found'}, status=404))
         device_id = request.GET.get('device_id', '').strip()[:512]
-        return _per_device(_json(story_comments.page(story, before=_int(request.GET.get('before')),
-                                                     device_id=device_id)))
+        return _per_device(_json(story_comments.page(story, _absolute_url(request),
+                                                     before=_int(request.GET.get('before')), device_id=device_id)))
 
     def post(self, request, slug: str):
         ip = safe_ip(client_ip(request))
@@ -166,7 +166,10 @@ class StoryCommentsView(View):
                                             country=client_country(request) or '', ip=ip)
         except story_comments.CommentRefused as refused:
             return _json({'error': str(refused)}, status=400)
-        return _per_device(_json({'comment': story_comments.serialize(comment, device_id)}, status=201))
+        except story_comments.NoProfile:
+            return _json({'error': 'only profiles can comment'}, status=403)
+        comment = {'comment': story_comments.serialize(comment, device_id, _absolute_url(request))}
+        return _per_device(_json(comment, status=201))
 
     def options(self, request, *args, **kwargs):
         return _comment_options()

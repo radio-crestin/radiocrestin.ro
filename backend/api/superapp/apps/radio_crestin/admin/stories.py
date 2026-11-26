@@ -94,6 +94,7 @@ class StoryAdmin(SuperAppModelAdmin):
     ordering_field = 'position'
     hide_ordering_field = True
     list_before_template = 'admin/radio_crestin/announcement/list_before.html'
+    autocomplete_fields = ['author']
     MAX_REORDER_ROWS = 1000
     list_filter = ['status', 'auto_open', 'comments_enabled']
     search_fields = ['title', 'slug']
@@ -123,9 +124,10 @@ class StoryAdmin(SuperAppModelAdmin):
                 ('min_app_version', 'max_app_version'),
             ]}),
             (_('Comments and author'), {'classes': ['tab'], 'description': _(
-                "With comments on, listeners read and write public comments under the story; hide or delete them "
-                "in Story Comments. The author is the account row under the call to action."), 'fields': [
-                'comments_enabled', 'comments_placeholder', 'author_name', 'author_avatar',
+                "With comments on, listeners read the story's public comments, and devices linked to a Profile write "
+                "them (Story Settings decides whether others may too); hide or delete them in Story Comments. The "
+                "author is the profile on the account row under the call to action."), 'fields': [
+                'comments_enabled', 'comments_placeholder', 'author',
             ]}),
         ]
         if obj is None:
@@ -190,7 +192,7 @@ class StoryAdmin(SuperAppModelAdmin):
         if not obj or not obj.pk:
             return '-'
         return render_to_string('admin/radio_crestin/story/comments.html', {
-            'comments': obj.comments.select_related('slide')[:RECENT_COMMENTS],
+            'comments': obj.comments.select_related('slide', 'profile', 'user')[:RECENT_COMMENTS],
             'visible': obj.comments.filter(is_hidden=False).count(),
             'hidden': obj.comments.filter(is_hidden=True).count(),
             'all_url': _comments_url(obj),
@@ -258,8 +260,8 @@ class StoryAdmin(SuperAppModelAdmin):
 
 @admin.register(StorySettings, site=superapp_admin_site)
 class StorySettingsAdmin(SuperAppModelAdmin):
-    list_display = ['__str__', 'auto_open_gap_actions', 'stats_updated_until', 'updated_at']
-    fields = ['auto_open_gap_actions', 'stats_updated_until', 'created_at', 'updated_at']
+    list_display = ['__str__', 'auto_open_gap_actions', 'comments_need_profile', 'stats_updated_until', 'updated_at']
+    fields = ['auto_open_gap_actions', 'comments_need_profile', 'stats_updated_until', 'created_at', 'updated_at']
     readonly_fields = ['stats_updated_until', 'created_at', 'updated_at']
 
     def has_add_permission(self, request):
@@ -273,24 +275,20 @@ class StorySettingsAdmin(SuperAppModelAdmin):
 class StoryCommentAdmin(SuperAppModelAdmin):
     """Moderation of the public comments: hide (kept, seen by no listener), show again, or delete."""
 
-    list_display = ['text_display', 'author_display', 'story', 'slide_number', 'created_at', 'is_hidden',
-                    'platform', 'device_id']
+    list_display = ['text_display', 'profile', 'story', 'slide_number', 'created_at', 'is_hidden',
+                    'platform', 'user']
     list_filter = ['is_hidden', 'story', 'platform']
-    search_fields = ['text', 'author_name', 'device_id', 'story__title', 'story__slug']
+    search_fields = ['text', 'profile__name', 'user__anonymous_id', 'story__title', 'story__slug']
     date_hierarchy = 'created_at'
-    list_select_related = ['story', 'slide']
-    fields = ['is_hidden', 'story', 'slide', 'author_name', 'text', 'created_at', 'platform', 'app_version', 'locale',
-              'country', 'device_id', 'ip']
+    list_select_related = ['story', 'slide', 'profile', 'user']
+    fields = ['is_hidden', 'story', 'slide', 'profile', 'user', 'text', 'created_at', 'platform', 'app_version',
+              'locale', 'country', 'ip']
     readonly_fields = [field for field in fields if field != 'is_hidden']
     actions = ['hide_action', 'show_action']
 
     @admin.display(description=_('Comment'))
     def text_display(self, obj):
         return obj.text if len(obj.text) <= 120 else obj.text[:119] + '…'
-
-    @admin.display(description=_('Name'), ordering='author_name')
-    def author_display(self, obj):
-        return obj.author_name or '-'
 
     @admin.display(description=_('Slide'))
     def slide_number(self, obj):

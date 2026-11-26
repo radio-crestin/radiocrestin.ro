@@ -32,6 +32,7 @@ from .stories import (
 )
 from .story_settings import StorySettings
 from .story_events import StoryCtaTarget, StoryEvent, StoryEventType, StoryLike, StoryStatBucket
+from .profiles import Profile
 from .story_comments import StoryComment
 from .contact_messages import CLOSED_STATUSES, ContactImageRole, ContactKind, ContactMessage, ContactMessageImage, ContactStatus
 
@@ -105,4 +106,5 @@ __all__ = [
     'StoryLike',
     'StoryStatBucket',
     'StoryComment',
+    'Profile',
 ]

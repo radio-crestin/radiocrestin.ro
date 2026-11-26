@@ -12,6 +12,7 @@ from .session_recording import SessionRecordingConfigAdmin, SessionRecordingOver
 from .share_links import ShareLinkAdmin, ShareLinkVisitAdmin
 from .songs import SongsAdmin
 from .stories import StoryAdmin, StoryCommentAdmin, StorySettingsAdmin
+from .profiles import ProfileAdmin
 from .song_thumbnail_checks import SongThumbnailChecksAdmin
 from .station_groups import StationGroupsAdmin
 from .station_metadata_fetch_categories import StationMetadataFetchCategoriesAdmin

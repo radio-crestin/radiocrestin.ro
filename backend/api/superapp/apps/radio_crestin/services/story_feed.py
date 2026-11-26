@@ -196,11 +196,15 @@ def comments_payload(story: Story, count: int = 0) -> dict:
     }
 
 
-def author_payload(story: Story, absolute_url: AbsoluteUrl) -> Optional[dict]:
-    name = story.author_name.strip()
-    if not name:
+def profile_payload(profile, absolute_url: AbsoluteUrl) -> Optional[dict]:
+    """A profile's public face: its name and avatar; None without a profile."""
+    if profile is None or not profile.name.strip():
         return None
-    return {'name': name, 'avatar_url': _file_url(story.author_avatar, absolute_url)}
+    return {'name': profile.name.strip(), 'avatar_url': _file_url(profile.avatar, absolute_url)}
+
+
+def author_payload(story: Story, absolute_url: AbsoluteUrl) -> Optional[dict]:
+    return profile_payload(story.author, absolute_url)
 
 
 def _cover_url(story: Story, slides: list, absolute_url: AbsoluteUrl) -> Optional[str]:
@@ -249,7 +253,8 @@ def _with_slides(queryset):
     slides = StorySlide.objects.select_related(
         'cta_station', 'cta_song__artist', 'cta_announcement', 'cta_form', 'cta_story',
     ).order_by('position', 'id')
-    return queryset.prefetch_related(Prefetch('slides', queryset=slides)).order_by('position', 'id')
+    return (queryset.select_related('author').prefetch_related(Prefetch('slides', queryset=slides))
+            .order_by('position', 'id'))
 
 
 def listed(statuses=PUBLIC_STATUSES, now: Optional[datetime] = None):

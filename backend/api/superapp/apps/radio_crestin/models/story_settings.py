@@ -12,6 +12,13 @@ class StorySettings(models.Model):
             "story it opened by itself, so stories that open by themselves never come one after another. 0: no gap."
         ),
     )
+    comments_need_profile = models.BooleanField(
+        _("Only profiles comment"), default=True,
+        help_text=_(
+            "On: only devices linked to a Profile (created here by the team) can write comments, under the "
+            "profile's name. Off: every device can, and those without a profile show as \"Ascultător\"."
+        ),
+    )
     stats_updated_until = models.DateTimeField(
         _("History updated until"), null=True, blank=True, editable=False,
         help_text=_("Events received up to this time are in the daily history."),

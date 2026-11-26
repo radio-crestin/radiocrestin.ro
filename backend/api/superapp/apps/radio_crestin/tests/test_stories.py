@@ -18,7 +18,8 @@ from django.utils import timezone
 
 from ..forms.story_admin import StoryAdminForm, StorySlideForm
 from ..models import (
-    Announcement, AnnouncementSettings, Artists, Form, Songs, Story, StoryEvent, StoryLike, StorySettings, StorySlide,
+    Announcement, AnnouncementSettings, Artists, Form, Profile, Songs, Story, StoryEvent, StoryLike, StorySettings,
+    StorySlide,
     StoryStatBucket,
 )
 from ..models.announcement_validators import validate_app_url
@@ -34,7 +35,8 @@ EXPECTED_FILTERS_KEYS = {'platforms', 'countries_include', 'countries_exclude', 
                          'min_app_version', 'max_app_version'}
 EXPECTED_SLIDE_KEYS = {'id', 'type', 'media_url', 'poster_url', 'duration_seconds', 'orientation', 'has_sound',
                        'youtube_url', 'instagram', 'cta'}
-FILE_FIELDS = [(Story, 'cover_image'), (StorySlide, 'image'), (StorySlide, 'video'), (StorySlide, 'poster')]
+FILE_FIELDS = [(Story, 'cover_image'), (StorySlide, 'image'), (StorySlide, 'video'), (StorySlide, 'poster'),
+               (Profile, 'avatar')]
 NO_YOUTUBE = patch.object(youtube_embeds, 'fetch_details', return_value={})
 
 
