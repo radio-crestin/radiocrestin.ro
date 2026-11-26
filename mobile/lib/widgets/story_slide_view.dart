@@ -271,6 +271,10 @@ class _StoryVideoState extends State<_StoryVideo>
   /// Where the video was when the app was left; it goes on from there.
   Duration? _leftAt;
 
+  /// How long coming back waits for that seek: a paused AVPlayer may
+  /// finish it only once it plays.
+  static const _seekWait = Duration(milliseconds: 800);
+
   @override
   void initState() {
     super.initState();
@@ -384,7 +388,7 @@ class _StoryVideoState extends State<_StoryVideo>
     _leftAt = null;
     if (at != null && !_atEnd(_video.value)) {
       try {
-        await _video.seekTo(at);
+        await _video.seekTo(at).timeout(_seekWait);
       } catch (_) {
         // It plays on from wherever the player is.
       }
