@@ -38,6 +38,10 @@ export interface IStation {
   stream_url: string;
   proxy_stream_url: string;
   hls_stream_url: string;
+  // Loudness correction in dB (-20..+20). Baked into the HLS stream; the
+  // player applies it to direct streams (utils/streamGain.ts). Missing on
+  // older API responses and the fallback data: treated as 0.
+  audio_gain_db?: number;
   thumbnail_url: string;
   total_listeners: number;
   radio_crestin_listeners: number;

@@ -105,6 +105,13 @@ class Station {
     return url;
   }
 
+  /// The station's loudness correction in dB (`audio_gain_db`), or null
+  /// when the API or cache is older than the field.
+  ///
+  /// The live HLS stream already has it; the player applies it only to a
+  /// direct stream (see [StationGain]).
+  double? get audioGainDb => rawStationData.audio_gain_db;
+
   /// Whether the preferred stream (lowest `order`) is HLS, which the player
   /// starts a seek offset behind live; a direct stream plays live.
   bool get prefersHls {

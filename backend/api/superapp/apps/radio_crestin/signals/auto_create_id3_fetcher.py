@@ -22,7 +22,8 @@ def auto_create_stream_id3_fetcher(sender, instance, created, **kwargs):
     Uses priority=0 so any manually configured scrapers (priority >= 1)
     take precedence during metadata merging.
     """
-    if not instance.stream_url:
+    # raw: loaddata, whose fixture already holds the station's fetchers.
+    if kwargs.get('raw') or not instance.stream_url:
         return
 
     try:

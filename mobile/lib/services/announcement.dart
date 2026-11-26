@@ -1,5 +1,7 @@
 import 'dart:ui' show Color;
 
+import 'announcement_hide_rules.dart';
+
 /// What tapping an announcement's button does (`action.type` in the API).
 enum AnnouncementActionType {
   external,
@@ -8,6 +10,9 @@ enum AnnouncementActionType {
   page,
   station,
   form,
+
+  /// Opens the system share sheet with a link to the app (`share`).
+  share,
   none;
 
   /// The API's name for this type, also sent to PostHog as `action_type`.
@@ -30,6 +35,7 @@ class AnnouncementAction {
     this.fallbackUrl,
     this.stationSlug,
     this.formSlug,
+    this.shareText,
   });
 
   final AnnouncementActionType type;
@@ -38,6 +44,10 @@ class AnnouncementAction {
   final String? fallbackUrl;
   final String? stationSlug;
   final String? formSlug;
+
+  /// For [AnnouncementActionType.share]: the text shared with [url]; null
+  /// for the app's own invitation.
+  final String? shareText;
 
   static AnnouncementAction? fromJson(Object? json) {
     if (json is! Map) return null;
@@ -48,6 +58,7 @@ class AnnouncementAction {
       fallbackUrl: _string(json['fallback_url']),
       stationSlug: _string(json['station_slug']),
       formSlug: _string(json['form_slug']),
+      shareText: _string(json['share_text']),
     );
   }
 }
@@ -337,6 +348,14 @@ class Announcement {
     this.endsAt,
     this.hideAfterSeconds,
     this.maxImpressions,
+    this.hideAfterClicks,
+    this.impressionsAfterClick,
+    this.hideClickTarget = HideClickTarget.main,
+    this.countOn = CountOn.visits,
+    this.countStationSlugs = const [],
+    this.showAfter,
+    this.showAgainTimes,
+    this.showAgainAfter,
   });
 
   final String slug;
@@ -359,6 +378,52 @@ class Announcement {
   final int? hideAfterSeconds;
   final int? maxImpressions;
 
+  /// Hide it after this many clicks on the device (`hide_after_clicks`).
+  final int? hideAfterClicks;
+
+  /// After those clicks, show it this many more times
+  /// (`impressions_after_click`).
+  final int? impressionsAfterClick;
+
+  /// Which clicks count toward [hideAfterClicks].
+  final HideClickTarget hideClickTarget;
+
+  /// What [showAfter] and [showAgainAfter] count (`count_on`).
+  final CountOn countOn;
+
+  /// With [CountOn.playbacks], the stations whose playbacks count
+  /// (`count_station_slugs`); empty: any station.
+  final List<String> countStationSlugs;
+
+  /// [countOn] events before its first showing (`show_after`).
+  final int? showAfter;
+
+  /// After max impressions or the clicks hid it, it comes back this many
+  /// times (`show_again_times`), each after [showAgainAfter] events.
+  final int? showAgainTimes;
+
+  /// [countOn] events it stays hidden before each return
+  /// (`show_again_after`).
+  final int? showAgainAfter;
+
+  /// When it stops showing on this device.
+  AnnouncementHideRules get hideRules => AnnouncementHideRules(
+        dismissible: dismissible,
+        // 0 was "no limit" before the rules were written down.
+        maxImpressions: (maxImpressions ?? 0) > 0 ? maxImpressions : null,
+        hideAfterClicks: hideAfterClicks,
+        impressionsAfterClick: impressionsAfterClick,
+        clickTarget: hideClickTarget,
+        countOn: countOn,
+        countStationSlugs: countStationSlugs,
+        showAfter: showAfter,
+        showAgainTimes: showAgainTimes,
+        showAgainAfter: showAgainAfter,
+      );
+
+  /// Whether its button shares the app.
+  bool get sharesApp => button?.action.type == AnnouncementActionType.share;
+
   /// The type of the primary button's action, for analytics.
   String get actionType =>
       (button?.action.type ?? AnnouncementActionType.none).apiName;
@@ -376,6 +441,7 @@ class Announcement {
     if (slug == null || title == null) return null;
     final category = AnnouncementCategory.fromJson(json['category']);
     final icon = json['icon'] is Map ? json['icon'] as Map : const {};
+    final rules = AnnouncementHideRules.fromJson(json);
     return Announcement(
       slug: slug,
       category: category,
@@ -401,6 +467,14 @@ class Announcement {
       endsAt: DateTime.tryParse(_string(json['ends_at']) ?? ''),
       hideAfterSeconds: (json['hide_after_seconds'] as num?)?.toInt(),
       maxImpressions: (json['max_impressions'] as num?)?.toInt(),
+      hideAfterClicks: rules.hideAfterClicks,
+      impressionsAfterClick: rules.impressionsAfterClick,
+      hideClickTarget: rules.clickTarget,
+      countOn: rules.countOn,
+      countStationSlugs: rules.countStationSlugs,
+      showAfter: rules.showAfter,
+      showAgainTimes: rules.showAgainTimes,
+      showAgainAfter: rules.showAgainAfter,
     );
   }
 }

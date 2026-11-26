@@ -1574,3 +1574,30 @@
     }
   }
 }
+
+// ---------- share action: "link copied" notice (share.ts) ----------
+.ann-notice {
+  position: fixed;
+  left: 50%;
+  bottom: calc(96px + env(safe-area-inset-bottom, 0px)); // above the player bar
+  z-index: 10001;
+  max-width: calc(100vw - 32px);
+  padding: 10px 16px;
+  border-radius: 8px;
+  transform: translateX(-50%);
+  background: #1f1f1f;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.3);
+
+  &[hidden] {
+    display: none;
+  }
+}
+
+:root[data-theme="light"] .ann-notice {
+  background: #262626;
+}

@@ -1,0 +1,31 @@
+# yaml-language-server: $schema=https://superfactory.bringes.io/schemas/superfactory.schema.json
+# What Radio Crestin is for Superfactory: the machines its tasks need and how each one is set up.
+# Open it when a Superfactory task can't build something, or "Preparing machine…" fails.
+version: 1
+name: Radio Crestin
+description: >-
+  A Christian radio aggregator: the radiocrestin.ro website (Astro + React), the Radio Crestin app
+  (Flutter: Android, iOS, macOS, Apple TV, Windows) and its backend (Django API, admin and HLS streaming).
+tags: [astro, react, flutter, django, python, android, ios]
+links:
+  repo: https://github.com/radio-crestin/radiocrestin.ro
+machines:
+  - os: linux
+    default: true
+    purpose: Most tasks. The backend, the website, and the app's Android builds and analysis.
+    needs: [python3.14, node24, flutter, android-sdk, docker]
+    min: { cpus: 8, memoryGb: 16 }
+  - os: macos
+    purpose: Only the Apple work. iOS, macOS and Apple TV builds, CocoaPods and the simulator.
+    needs: [xcode, flutter, cocoapods]
+    min: { cpus: 4, memoryGb: 16 }
+setup:
+  linux: scripts/superfactory/linux.sh
+  macos: scripts/superfactory/macos.sh
+  inputs:
+    - mobile/.fvmrc
+    - backend/api/requirements.txt
+    - backend/api/constraints.txt
+    - backend/api/superapp/**/requirements.txt
+    - backend/streaming/requirements.txt
+install: bash scripts/superfactory/worktree-install.sh

@@ -1,8 +1,8 @@
 """Rebuilds radiocrestin.ro when something it renders at build time changes.
 
 The website renders stations, groups and the announcement card into its HTML at
-build time, so a change triggers its Cloudflare Pages deploy hook (env
-WEB_DEPLOY_HOOK_URL). Builds are coalesced:
+build time, so a change triggers its Cloudflare Workers Builds deploy hook
+(env WEB_DEPLOY_HOOK_URL). Builds are coalesced:
 
 - the first change schedules a build DEBOUNCE_SECONDS later; changes until then ride along;
 - builds start at most once per MIN_INTERVAL_SECONDS: a change during that window

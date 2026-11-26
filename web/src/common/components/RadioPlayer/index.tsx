@@ -2,6 +2,7 @@
 
 import React, { useContext, useEffect, useRef, useState } from "react";
 import { StationAnnouncementsBell } from "@/components/Announcements";
+import { reportPlayback } from "@/components/Announcements/playbacks";
 import type HlsType from "hls.js";
 import type { HlsConfig } from "hls.js";
 
@@ -38,6 +39,21 @@ import { getValidImageUrl, roPlural, stepImageFallback } from "@/utils";
 import { HlsSongTimeline, parseSongBoundaries, songFromHint } from "@/utils/hlsSongTimeline";
 import { hlsStartVariantUrl, isHlsStartVariantUrl } from "@/utils/hlsStartVariant";
 import type { ISongBoundary } from "@/utils/hlsSongTimeline";
+import { NO_GAIN, elementVolume, normalizeGainDb, planStreamGain, wantsBoost } from "@/utils/streamGain";
+import type { GainPlan } from "@/utils/streamGain";
+import {
+  boostSupported,
+  installContextUnlock,
+  isRouted,
+  knownNoCors,
+  markContextFailed,
+  markNoCors,
+  prepareBoostContext,
+  releaseElement,
+  routeElement,
+  setBoost,
+  whenContextRunning,
+} from "@/utils/audioBoost";
 import { getAdjacentStation } from "@/utils/stationQueue";
 import SkipPreviousIcon from "@/icons/SkipPrevious";
 import SkipNextIcon from "@/icons/SkipNext";
@@ -80,6 +96,8 @@ export default function RadioPlayer() {
   const favouriteItems = useFavourite((s) => s.favouriteItems);
   const toggleFavourite = useFavourite((s) => s.toggleFavourite);
   const incrementPlayCount = usePlayCount((s) => s.incrementPlayCount);
+  /** The station whose playback was reported (reportPlayback); null once stopped. */
+  const playbackReportedRef = useRef<string | null>(null);
   const { refreshStations } = useRefreshStations();
   const [isFavorite, setIsFavorite] = useState(false);
   const [expanded, setExpanded] = useState(false);
@@ -111,6 +129,14 @@ export default function RadioPlayer() {
   // they load index.m3u8 instead.
   const noStartVariantSlugsRef = useRef<Set<string>>(new Set());
   const [loadKey, setLoadKey] = useState(0);
+  // Remounts the <audio> element: an element routed through Web Audio for a
+  // boosted stream can't be un-routed (see audioBoost.ts), so every other
+  // source plays on a fresh one.
+  const [audioKey, setAudioKey] = useState(0);
+  // The station gain applied to the current source (streamGain.ts).
+  const gainPlanRef = useRef<GainPlan>(NO_GAIN);
+  // URL of the current load when it is boosted (crossOrigin + Web Audio).
+  const boostedUrlRef = useRef<string | null>(null);
   const prevLoadKeyRef = useRef(0);
   const listeningStartRef = useRef<{ time: number; slug: string; title: string; id: number } | null>(null);
   // true = playback was interrupted by a network loss and should auto-resume
@@ -128,7 +154,9 @@ export default function RadioPlayer() {
   // Central cleanup: destroys current HLS instance or cancels non-HLS audio download,
   // clears timeouts and listeners.
   // Suppresses spurious onPause events fired by hls.destroy() → media.load().
-  const destroyCurrentStream = () => {
+  // `element`: the <audio> the load used. After a remount (audioKey) the id
+  // already names the new element, while the old one would play on.
+  const destroyCurrentStream = (element?: HTMLAudioElement) => {
     isDestroyingRef.current = true;
     clearHlsTimeout();
     // Null the ref BEFORE destroy — hls.destroy() fires synchronous events,
@@ -148,7 +176,7 @@ export default function RadioPlayer() {
       // Without this, the old audio.src request continues and its events
       // (onPause, onError) can fire after isDestroyingRef resets, killing the
       // new station's stream.
-      const audio = document.getElementById("audioPlayer") as HTMLAudioElement;
+      const audio = element ?? (document.getElementById("audioPlayer") as HTMLAudioElement);
       if (audio && audio.src) {
         audio.pause();
         audio.removeAttribute("src");
@@ -222,7 +250,7 @@ export default function RadioPlayer() {
     }
 
     const audio = document.getElementById("audioPlayer") as HTMLAudioElement;
-    if (audio) audio.volume = playerVolume / 100;
+    if (audio) audio.volume = elementVolume(playerVolume, gainPlanRef.current);
 
     const preferredStreamOrder = [
       STREAM_TYPE.HLS,
@@ -445,8 +473,17 @@ export default function RadioPlayer() {
   useEffect(() => {
     const audio = document.getElementById("audioPlayer") as HTMLAudioElement;
     if (!audio) return;
-    audio.volume = playerVolume / 100;
+    audio.volume = elementVolume(playerVolume, gainPlanRef.current);
   }, [playerVolume]);
+
+  // Resumes a suspended AudioContext on the visitor's next gesture.
+  useEffect(() => (boostSupported() ? installContextUnlock() : undefined), []);
+
+  const applyGainPlan = (audio: HTMLAudioElement, plan: GainPlan) => {
+    gainPlanRef.current = plan;
+    audio.volume = elementVolume(usePlayer.getState().playerVolume, plan);
+    setBoost(audio, plan.boost);
+  };
 
   const isHttpMixedContent = (url: string) => {
     return (
@@ -832,6 +869,7 @@ export default function RadioPlayer() {
       case PLAYBACK_STATE.STOPPED:
         // A stop (user or exhausted retries) cancels any pending network auto-resume
         waitingForNetworkRef.current = false;
+        playbackReportedRef.current = null; // playing again is a new playback
         if (listeningStartRef.current) {
           const durationSeconds = (Date.now() - listeningStartRef.current.time) / 1000;
           trackListeningStopped(listeningStartRef.current.slug, listeningStartRef.current.title, durationSeconds, "stop", listeningStartRef.current.id);
@@ -976,7 +1014,25 @@ export default function RadioPlayer() {
       return;
     }
 
+    // Station gain, re-decided on every source switch: none on HLS (baked in
+    // server-side), audio.volume for a cut, Web Audio for a boost.
+    const gainDb = normalizeGainDb(station.audio_gain_db);
+    const boost =
+      wantsBoost(streamType, gainDb) &&
+      boostSupported() &&
+      !knownNoCors(streamUrl) &&
+      prepareBoostContext();
+    boostedUrlRef.current = null;
+    if (!boost && isRouted(audio)) {
+      // This element only plays CORS sources audibly now: load on a fresh one.
+      releaseElement(audio);
+      setAudioKey((k) => k + 1);
+      return;
+    }
+
     if (streamType === STREAM_TYPE.HLS) {
+      audio.removeAttribute("crossorigin");
+      applyGainPlan(audio, NO_GAIN);
       let cancelled = false;
       let stopNativeWatchdog: (() => void) | null = null;
       getHls().then((Hls) => {
@@ -993,18 +1049,38 @@ export default function RadioPlayer() {
       return () => {
         cancelled = true;
         stopNativeWatchdog?.();
-        destroyCurrentStream();
+        destroyCurrentStream(audio);
       };
     }
+
+    let boosted = false;
+    if (boost) {
+      audio.crossOrigin = "anonymous";
+      boosted = routeElement(audio);
+    }
+    if (!boosted) audio.removeAttribute("crossorigin");
+    applyGainPlan(audio, planStreamGain(streamType, gainDb, boosted));
+    if (boosted) boostedUrlRef.current = streamUrl;
 
     audio.src = streamUrl;
     audio.play().catch((error) => handlePlayError(error, `Stream error [${streamType}]`));
     const stopWatchdog = startStallWatchdog(audio);
+    let cancelled = false;
+    if (boosted) {
+      // Routed to a context that never starts = silence: play without the boost.
+      whenContextRunning(2000).then((running) => {
+        if (running || cancelled) return;
+        markContextFailed();
+        releaseElement(audio);
+        setAudioKey((k) => k + 1);
+      });
+    }
     return () => {
+      cancelled = true;
       stopWatchdog();
-      destroyCurrentStream();
+      destroyCurrentStream(audio);
     };
-  }, [streamType, station.slug, loadKey]);
+  }, [streamType, station.slug, loadKey, audioKey]);
 
   const retryMechanism = () => {
     const audio = document.getElementById("audioPlayer") as HTMLAudioElement;
@@ -1599,12 +1675,18 @@ export default function RadioPlayer() {
           className="ph-no-capture"
           preload="none"
           id="audioPlayer"
+          key={audioKey}
           onPlaying={(e) => {
             if (isDestroyingRef.current) return;
             // Healthy playback: cancel any pending network auto-resume and
             // refill the retry budget so long sessions survive many hiccups.
             waitingForNetworkRef.current = false;
             retriesRef.current = MAX_MEDIA_RETRIES;
+            // a playback for the announcement waits: once per station started (not per recovery)
+            if (playbackReportedRef.current !== station.slug) {
+              playbackReportedRef.current = station.slug;
+              reportPlayback(station.slug);
+            }
             setPlaybackState(PLAYBACK_STATE.PLAYING);
             setHasError(false);
             hlsRecoveryRef.current = 0;
@@ -1643,6 +1725,22 @@ export default function RadioPlayer() {
           }}
           onError={(e) => {
             if (isDestroyingRef.current) return;
+            const boostedUrl = boostedUrlRef.current;
+            if (boostedUrl && isRouted(e.currentTarget)) {
+              // A boosted (CORS-mode) load failed: most likely the stream
+              // doesn't allow CORS. Play it again without the boost on a fresh
+              // element; a stream that is really down then fails there and
+              // takes the normal retry path.
+              // Like a stream switch: the play() rejection and the pause
+              // that follow this error must not count as a failure or a stop.
+              isDestroyingRef.current = true;
+              setTimeout(() => { isDestroyingRef.current = false; }, 0);
+              boostedUrlRef.current = null;
+              markNoCors(boostedUrl);
+              releaseElement(e.currentTarget);
+              setAudioKey((k) => k + 1);
+              return;
+            }
             setHasError(true);
             const mediaError = (e.target as HTMLAudioElement)?.error;
             captureException(
