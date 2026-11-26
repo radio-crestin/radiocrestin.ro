@@ -948,8 +948,9 @@ class _Bottom extends StatelessWidget {
           if (cta != null && cta.style.hasSwipeUp)
             StoryCtaReveal(
               shown: ctaPhase != StoryCtaPhase.hidden,
+              alignment: Alignment.topCenter,
               child: Padding(
-                padding: const EdgeInsets.only(top: 10),
+                padding: const EdgeInsets.only(top: 6),
                 child: StorySwipeUpHint(
                   label: cta.style.hasButton ? 'Glisează în sus' : cta.label,
                   onTap: () => onCta('swipe_up'),

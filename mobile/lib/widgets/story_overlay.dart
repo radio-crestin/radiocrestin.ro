@@ -217,10 +217,19 @@ class _LikeAction extends StatelessWidget {
 ///
 /// Hidden, it takes no room and no taps.
 class StoryCtaReveal extends StatefulWidget {
-  const StoryCtaReveal({super.key, required this.shown, required this.child});
+  const StoryCtaReveal({
+    super.key,
+    required this.shown,
+    required this.child,
+    this.alignment = Alignment.topLeft,
+  });
 
   final bool shown;
   final Widget child;
+
+  /// Where it sits across its room: the bar on the left, the swipe-up
+  /// hint in the middle.
+  final Alignment alignment;
 
   /// How long the room takes to open, and the rise with its overshoot.
   static const roomDuration = Duration(milliseconds: 350);
@@ -271,7 +280,7 @@ class _StoryCtaRevealState extends State<StoryCtaReveal>
           // Open, its shadow may spill out.
           clipBehavior: room < 1 ? Clip.hardEdge : Clip.none,
           child: Align(
-            alignment: Alignment.topLeft,
+            alignment: widget.alignment,
             heightFactor: room,
             child: Opacity(
               opacity: fade,
@@ -279,7 +288,7 @@ class _StoryCtaRevealState extends State<StoryCtaReveal>
                 offset: Offset(0, 12 * (1 - rise)),
                 child: Transform.scale(
                   scale: 0.96 + 0.04 * rise,
-                  alignment: Alignment.bottomLeft,
+                  alignment: Alignment(widget.alignment.x, 1),
                   child: child,
                 ),
               ),
@@ -523,7 +532,7 @@ class _StorySwipeUpHintState extends State<StorySwipeUpHint>
         behavior: HitTestBehavior.opaque,
         onTap: widget.onTap,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 2),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -534,18 +543,18 @@ class _StorySwipeUpHintState extends State<StorySwipeUpHint>
                   return Opacity(
                     opacity: v < 0.75 ? 1 : 1 - (v - 0.75) / 0.25,
                     child: Transform.translate(
-                        offset: Offset(0, 6 - 12 * v), child: child),
+                        offset: Offset(0, 4 - 8 * v), child: child),
                   );
                 },
                 child: const Icon(Icons.keyboard_arrow_up_rounded,
-                    color: Colors.white, size: 30, shadows: _shadow),
+                    color: Colors.white, size: 22, shadows: _shadow),
               ),
               Text(
                 widget.label,
                 style: const TextStyle(
                   color: Colors.white,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w600,
                   shadows: _shadow,
                 ),
               ),

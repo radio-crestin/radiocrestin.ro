@@ -2763,6 +2763,12 @@ void main() {
           reason: 'the CTA button');
       expect(app.findsKey('story-swipe-up'), isTrue,
           reason: 'the swipe-up hint');
+      final hint =
+          app.tester.getCenter(find.byKey(const ValueKey('story-swipe-up')));
+      final screen =
+          app.tester.view.physicalSize / app.tester.view.devicePixelRatio;
+      expect(hint.dx, closeTo(screen.width / 2, 6),
+          reason: 'the swipe-up hint in the middle');
 
       final launcher = RecordingLauncher()..appInstalled = false;
       final systemLauncher = UrlLauncherPlatform.instance;
