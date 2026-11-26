@@ -36,13 +36,30 @@ enum StoryEvent {
       };
 }
 
-/// How sending a message from a story went.
-enum StoryMessageResult {
-  sent,
+/// How posting a comment went.
+enum StoryCommentResult {
+  posted,
 
-  /// Too many messages from this phone lately (`429`): later.
+  /// Too many comments from this phone lately (`429`): later.
   tooMany,
   failed,
+}
+
+/// A page of a story's comments, newest first.
+class StoryCommentPage {
+  const StoryCommentPage({
+    required this.comments,
+    this.count,
+    this.nextBefore,
+  });
+
+  final List<StoryComment> comments;
+
+  /// All the story's visible comments, when the API said.
+  final int? count;
+
+  /// The id to ask the next page [before]; null on the last page.
+  final String? nextBefore;
 }
 
 /// One bubble of the stories bar.
@@ -317,52 +334,157 @@ class StoriesService with WidgetsBindingObserver {
     await _store.saveLiked(slugs);
   }
 
-  /// The longest message a listener can send from a story.
-  static const maxMessageLength = 1000;
+  /// The longest comment, and the longest name signed under it.
+  static const maxCommentLength = 500;
+  static const maxNameLength = 40;
 
-  /// Sends [text] to the team from [slide] of [story], once: a refused
-  /// message (429) counts toward the limit, so it is never retried.
-  Future<StoryMessageResult> sendMessage(
+  static const _commentNameKey = 'stories_comment_name';
+
+  /// The name this listener signs comments with; null for "Ascultător".
+  String? get commentName => _prefs.getString(_commentNameKey);
+
+  Future<void> saveCommentName(String? name) async {
+    final trimmed = name?.trim() ?? '';
+    if (trimmed.isEmpty) {
+      await _prefs.remove(_commentNameKey);
+    } else {
+      await _prefs.setString(_commentNameKey,
+          trimmed.length > maxNameLength
+              ? trimmed.substring(0, maxNameLength)
+              : trimmed);
+    }
+  }
+
+  /// The comment counts this phone knows better than the list (its own
+  /// comments added at once), by slug.
+  final BehaviorSubject<Map<String, int>> commentCounts =
+      BehaviorSubject.seeded(const {});
+
+  int commentCountOf(Story story) =>
+      commentCounts.value[story.slug] ?? story.comments.count;
+
+  Uri _commentsUri(Story story, [String? id]) => Uri.parse(
+      '${CONSTANTS.STORIES_URL}/${Uri.encodeComponent(story.slug)}/comments/'
+      '${id == null ? '' : '${Uri.encodeComponent(id)}/'}');
+
+  /// A page of [story]'s comments, newest first, [before] the comment id
+  /// given; null when they could not be had.
+  Future<StoryCommentPage?> fetchComments(Story story, {String? before}) async {
+    try {
+      final response = await _client
+          .get(_commentsUri(story).replace(queryParameters: {
+            'device_id': globals.deviceId,
+            if (before != null) 'before': before,
+          }))
+          .timeout(_timeout);
+      if (response.statusCode != 200) return null;
+      final json = jsonDecode(utf8.decode(response.bodyBytes));
+      if (json is! Map) return null;
+      final page = StoryCommentPage(
+        comments: (json['comments'] as List? ?? const [])
+            .map(StoryComment.fromJson)
+            .whereType<StoryComment>()
+            .toList(),
+        count: json['count'] is int ? json['count'] as int : null,
+        nextBefore: json['next_before'] == null ? null : '${json['next_before']}',
+      );
+      final count = page.count;
+      if (count != null && before == null) {
+        commentCounts.add({...commentCounts.value, story.slug: count});
+      }
+      return page;
+    } catch (e) {
+      developer.log('Stories: comments not fetched: $e');
+      return null;
+    }
+  }
+
+  /// Posts [text] as a public comment on [story], signed with
+  /// [commentName], once: a refused one (429) counts toward the limit, so
+  /// it is never retried.
+  Future<(StoryCommentResult, StoryComment?)> postComment(
     Story story,
-    StorySlide slide,
+    StorySlide? slide,
     String text,
   ) async {
-    final message = text.trim();
-    if (message.isEmpty || !story.messages.enabled) {
-      return StoryMessageResult.failed;
+    final comment = text.trim();
+    if (comment.isEmpty || !story.comments.enabled) {
+      return (StoryCommentResult.failed, null);
     }
-    AnalyticsService.instance.capture('story_message_sent', {
+    AnalyticsService.instance.capture('story_comment_posted', {
       'story_slug': story.slug,
-      'slide_id': slide.id,
-      'length': message.length,
+      if (slide != null) 'slide_id': slide.id,
+      'length': comment.length,
       'platform': platform,
     });
     try {
       final response = await _client
           .post(
-            Uri.parse(CONSTANTS.STORY_MESSAGES_URL),
+            _commentsUri(story),
             headers: const {'Content-Type': 'application/json'},
             body: jsonEncode({
               'device_id': globals.deviceId,
               'platform': platform,
               'app_version': globals.appVersion,
               'locale': _locale,
-              'story': story.slug,
-              'slide': int.tryParse(slide.id) ?? slide.id,
-              'text': message.length > maxMessageLength
-                  ? message.substring(0, maxMessageLength)
-                  : message,
+              if (slide != null) 'slide': int.tryParse(slide.id) ?? slide.id,
+              'text': comment.length > maxCommentLength
+                  ? comment.substring(0, maxCommentLength)
+                  : comment,
+              'author_name': commentName,
             }),
           )
           .timeout(_timeout);
-      return switch (response.statusCode) {
-        >= 200 && < 300 => StoryMessageResult.sent,
-        429 => StoryMessageResult.tooMany,
-        _ => StoryMessageResult.failed,
-      };
+      if (response.statusCode == 429) return (StoryCommentResult.tooMany, null);
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        return (StoryCommentResult.failed, null);
+      }
+      commentCounts.add({
+        ...commentCounts.value,
+        story.slug: commentCountOf(story) + 1,
+      });
+      StoryComment? posted;
+      try {
+        final json = jsonDecode(utf8.decode(response.bodyBytes));
+        posted = json is Map ? StoryComment.fromJson(json['comment']) : null;
+      } on FormatException {
+        posted = null;
+      }
+      return (
+        StoryCommentResult.posted,
+        posted ??
+            StoryComment(
+              id: 'local-${DateTime.now().microsecondsSinceEpoch}',
+              authorName: commentName ?? StoryComment.anonymousName,
+              text: comment,
+              createdAt: DateTime.now(),
+              mine: true,
+            ),
+      );
     } catch (e) {
-      developer.log('Stories: message not sent: $e');
-      return StoryMessageResult.failed;
+      developer.log('Stories: comment not posted: $e');
+      return (StoryCommentResult.failed, null);
+    }
+  }
+
+  /// Deletes this phone's own [comment]; false when it could not.
+  Future<bool> deleteComment(Story story, StoryComment comment) async {
+    try {
+      final response = await _client
+          .delete(_commentsUri(story, comment.id)
+              .replace(queryParameters: {'device_id': globals.deviceId}))
+          .timeout(_timeout);
+      final ok = response.statusCode >= 200 && response.statusCode < 300;
+      if (ok) {
+        commentCounts.add({
+          ...commentCounts.value,
+          story.slug: (commentCountOf(story) - 1).clamp(0, 1 << 31),
+        });
+      }
+      return ok;
+    } catch (e) {
+      developer.log('Stories: comment not deleted: $e');
+      return false;
     }
   }
 

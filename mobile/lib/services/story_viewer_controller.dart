@@ -25,8 +25,8 @@ enum StoryPause {
   /// The listener drags the viewer down to close it.
   drag,
 
-  /// The listener writes a message to the team.
-  message,
+  /// The listener writes a public comment.
+  comment,
 }
 
 /// Where the viewer is and whether it runs: the story, the slide, how far

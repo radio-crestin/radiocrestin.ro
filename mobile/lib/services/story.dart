@@ -421,25 +421,68 @@ class StoryDisplay {
   }
 }
 
-/// Whether a story takes messages from listeners, and what its field
-/// says before they type (`messages` in the API).
-class StoryMessages {
-  const StoryMessages({this.enabled = false, this.placeholder});
+/// Whether a story takes public comments, what its field says before
+/// one is written, and how many it has (`comments` in the API). Off
+/// unless the admin turned them on for the story.
+class StoryComments {
+  const StoryComments({this.enabled = false, this.placeholder, this.count = 0});
 
-  static const off = StoryMessages();
+  static const off = StoryComments();
 
-  /// The field's text when the admin set none.
-  static const defaultPlaceholder = 'Trimite un mesaj…';
+  /// The field's text when the admin set none; it says the comment is
+  /// public.
+  static const defaultPlaceholder = 'Adaugă un comentariu public…';
 
   final bool enabled;
   final String? placeholder;
+  final int count;
 
   String get hint => placeholder ?? defaultPlaceholder;
 
-  static StoryMessages fromJson(Object? json) {
+  static StoryComments fromJson(Object? json) {
     if (json is! Map || json['enabled'] != true) return off;
-    return StoryMessages(
-        enabled: true, placeholder: _string(json['placeholder']));
+    final count = json['count'];
+    return StoryComments(
+      enabled: true,
+      placeholder: _string(json['placeholder']),
+      count: count is int && count > 0 ? count : 0,
+    );
+  }
+}
+
+/// One public comment on a story.
+class StoryComment {
+  const StoryComment({
+    required this.id,
+    required this.authorName,
+    required this.text,
+    required this.createdAt,
+    this.mine = false,
+  });
+
+  /// Shown for a listener who gave no name.
+  static const anonymousName = 'Ascultător';
+
+  final String id;
+  final String authorName;
+  final String text;
+  final DateTime createdAt;
+
+  /// Written from this phone: its author may delete it.
+  final bool mine;
+
+  static StoryComment? fromJson(Object? json) {
+    if (json is! Map) return null;
+    final id = json['id'];
+    final text = _string(json['text']);
+    if (id == null || text == null) return null;
+    return StoryComment(
+      id: '$id',
+      authorName: _string(json['author_name']) ?? anonymousName,
+      text: text,
+      createdAt: _date(json['created_at'])?.toLocal() ?? DateTime.now(),
+      mine: json['mine'] == true,
+    );
   }
 }
 
@@ -471,7 +514,7 @@ class Story {
     this.likeCount = 0,
     this.filters = const AnnouncementFilters(),
     this.display = const StoryDisplay(),
-    this.messages = StoryMessages.off,
+    this.comments = StoryComments.off,
     this.author,
   });
 
@@ -490,8 +533,8 @@ class Story {
   final AnnouncementFilters filters;
   final StoryDisplay display;
 
-  /// Whether listeners can write to the team from this story.
-  final StoryMessages messages;
+  /// Whether listeners can comment on this story, publicly.
+  final StoryComments comments;
 
   /// Who the story is from; null for Radio Creștin itself.
   final StoryAuthor? author;
@@ -535,7 +578,7 @@ class Story {
       likeCount: likes is int && likes > 0 ? likes : 0,
       filters: AnnouncementFilters.fromJson(json['filters']),
       display: StoryDisplay.fromJson(json['display']),
-      messages: StoryMessages.fromJson(json['messages']),
+      comments: StoryComments.fromJson(json['comments']),
       author: StoryAuthor.fromJson(json['author']),
     );
   }
@@ -551,7 +594,7 @@ class Story {
         likeCount: likeCount ?? this.likeCount,
         filters: filters,
         display: display,
-        messages: messages,
+        comments: comments,
         author: author,
       );
 }

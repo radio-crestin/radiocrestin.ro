@@ -18,24 +18,28 @@ class StoryFixtures {
   static const autoSlug = 'e2e-story-auto';
   static const autoTitle = 'Noutăți';
   static const stationCta = 'Ascultă acum';
-  static const messagePlaceholder = 'Scrie-ne o cerere de rugăciune…';
+  static const commentPlaceholder = 'Spune ce te-a încurajat (public)…';
   static const caption = 'În fiecare dimineață, un verset';
 
   /// Two pictures; the second has a button that plays [Stations.alpha].
   ///
-  /// With [messages], it takes messages with [messagePlaceholder].
+  /// With [comments], it takes public comments with [commentPlaceholder].
   static Map<String, Object?> verse(
     String base, {
     int likeCount = 4,
-    bool messages = false,
+    bool comments = false,
   }) =>
       _story(
         slug: verseSlug,
         title: verseTitle,
         likeCount: likeCount,
         extra: {
-          if (messages)
-            'messages': {'enabled': true, 'placeholder': messagePlaceholder},
+          if (comments)
+            'comments': {
+              'enabled': true,
+              'placeholder': commentPlaceholder,
+              'count': 0,
+            },
         },
         slides: [
           {..._image(base, 401, seconds: 4), 'caption': caption},

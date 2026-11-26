@@ -37,6 +37,9 @@ class ServedRequest {
   String? ifNoneMatch;
   String? range;
 
+  /// The HTTP method.
+  String method = 'GET';
+
   bool get isMedia => origin == Origin.hls || origin == Origin.mp3;
 }
 
@@ -94,11 +97,15 @@ class FakeRadioServer {
   /// path: real pictures and videos for a recording.
   final Map<String, ({List<int> bytes, String type})> files = {};
 
-  /// The messages listeners sent from stories (`POST /stories/messages/`).
-  final List<Map<String, Object?>> storyMessages = [];
+  /// Each story's public comments, newest first, as the API keeps them;
+  /// `posted` is what the app sent.
+  final Map<String, List<Map<String, Object?>>> storyComments = {};
 
-  /// Answers `POST /stories/messages/` with 429 (its rate limit) when set.
-  bool storyMessagesLimited = false;
+  /// The comments the app posted, as it sent them (refused ones too).
+  final List<Map<String, Object?>> postedComments = [];
+
+  /// Answers posting a comment with 429 (its rate limit) when set.
+  bool storyCommentsLimited = false;
 
   /// The stories this device likes, as the API keeps them.
   final Set<String> storyLikes = {};
@@ -144,8 +151,9 @@ class FakeRadioServer {
     stories.clear();
     files.clear();
     storyEvents.clear();
-    storyMessages.clear();
-    storyMessagesLimited = false;
+    storyComments.clear();
+    postedComments.clear();
+    storyCommentsLimited = false;
     storyLikes.clear();
     storySettings = const {'auto_open_gap_actions': 0};
     for (final stream in _hls.values) {
@@ -164,7 +172,8 @@ class FakeRadioServer {
     served
       ..query = request.uri.queryParameters
       ..ifNoneMatch = request.headers.value('if-none-match')
-      ..range = request.headers.value('range');
+      ..range = request.headers.value('range')
+      ..method = request.method;
     if (request.method == 'POST') {
       served.body = await utf8.decoder.bind(request).join();
     }
@@ -258,9 +267,10 @@ class FakeRadioServer {
     final path = uri.path;
     if (path == '/api/v1/announcements/') return _announcementList(connection);
     if (path == '/api/v1/stories/') return _storyList(connection);
-    if (path == '/api/v1/stories/messages/' && storyMessagesLimited) {
-      storyMessages.add({'refused': true});
-      return connection.status(HttpStatus.tooManyRequests);
+    final comments = RegExp(r'^/api/v1/stories/([^/]+)/comments/(?:([^/]+)/)?$')
+        .firstMatch(path);
+    if (comments != null) {
+      return _comments(connection, comments.group(1)!, comments.group(2));
     }
     if (path.startsWith('/api/v1/forms/') && path.endsWith('/page/')) {
       return connection.send(
@@ -273,7 +283,6 @@ class FakeRadioServer {
         _acceptEvents(connection.served.body),
       '/api/v1/stories/events/' => _acceptStoryEvents(connection.served.body),
       '/api/v1/stories/liked/' => {'liked': storyLikes.toList()},
-      '/api/v1/stories/messages/' => _acceptStoryMessage(connection.served.body),
       _ when path.startsWith('/api/v1/stories/') => stories
           .where((story) => story['slug'] == uri.pathSegments[3])
           .firstOrNull,
@@ -373,10 +382,53 @@ class FakeRadioServer {
     };
   }
 
-  /// Keeps a message sent from a story.
-  Map<String, Object?> _acceptStoryMessage(String? body) {
-    storyMessages.add((jsonDecode(body ?? '{}') as Map).cast<String, Object?>());
-    return {'status': 'ok'};
+  /// A story's comments: the list (GET), a new one (POST), or deleting
+  /// one's own (DELETE), as `backend/docs/stories-api.md` has them.
+  Future<void> _comments(
+      _Connection connection, String slug, String? id) async {
+    final list = storyComments.putIfAbsent(slug, () => []);
+    final device = connection.served.query['device_id'];
+    Map<String, Object?> shown(Map<String, Object?> c) => {
+          ...c,
+          'mine': c['device_id'] != null && c['device_id'] == device,
+        }..remove('device_id');
+    Future<void> json(Object body, {int status = 200}) {
+      final bytes = utf8.encode(jsonEncode(body));
+      connection.head(status, {
+        'Content-Type': 'application/json; charset=utf-8',
+        'Content-Length': '${bytes.length}',
+      });
+      return connection.write(bytes).then((_) => connection.end());
+    }
+
+    switch (connection.served.method) {
+      case 'POST':
+        final body = (jsonDecode(connection.served.body ?? '{}') as Map)
+            .cast<String, Object?>();
+        postedComments.add(body);
+        if (storyCommentsLimited) {
+          return connection.status(HttpStatus.tooManyRequests);
+        }
+        final comment = {
+          'id': 1000 + postedComments.length,
+          'author_name': body['author_name'],
+          'text': body['text'],
+          'created_at': DateTime.now().toUtc().toIso8601String(),
+          'device_id': body['device_id'],
+        };
+        list.insert(0, comment);
+        return json({'comment': {...shown(comment), 'mine': true}},
+            status: HttpStatus.created);
+      case 'DELETE':
+        list.removeWhere((c) => '${c['id']}' == id && c['device_id'] == device);
+        return connection.status(HttpStatus.noContent);
+      default:
+        return json({
+          'count': list.length,
+          'comments': [for (final c in list) shown(c)],
+          'next_before': null,
+        });
+    }
   }
 
   /// [video], whole or the byte range asked for: AVPlayer reads an MP4
@@ -599,6 +651,7 @@ class _Connection {
     200: 'OK',
     204: 'No Content',
     206: 'Partial Content',
+    201: 'Created',
     429: 'Too Many Requests',
     304: 'Not Modified',
     404: 'Not Found',

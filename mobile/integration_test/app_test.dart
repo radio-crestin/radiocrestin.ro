@@ -21,6 +21,7 @@ import 'package:radio_crestin/services/story.dart';
 import 'package:radio_crestin/services/story_cta.dart';
 import 'package:radio_crestin/services/story_deep_link.dart';
 import 'package:radio_crestin/utils.dart';
+import 'package:radio_crestin/widgets/story_comments.dart';
 import 'package:radio_crestin/widgets/story_overlay.dart';
 import 'package:radio_crestin/services/story_schedule.dart';
 import 'package:radio_crestin/services/story_viewer_controller.dart';
@@ -2288,22 +2289,28 @@ void main() {
       expect(await app.stories.find('e2e-gone'), isNull);
     });
 
-    test('the new keys: messages, author, caption, CTA colours; counts',
+    test('the new keys: comments, author, caption, CTA colours; counts',
         (app) async {
       final plain = story(StoryFixtures.verse(base()));
-      expect(plain.messages.enabled, isFalse,
-          reason: 'no messages key: no field');
-      expect(plain.author, isNull);
-      final full = story({
-        ...StoryFixtures.verse(base(), messages: true),
-        'author': {'name': 'Radio Vocea Evangheliei', 'avatar_url': null},
-      });
-      expect(full.messages.enabled, isTrue);
-      expect(full.messages.hint, StoryFixtures.messagePlaceholder);
+      expect(plain.comments.enabled, isFalse,
+          reason: 'comments are off unless the admin turns them on');
       expect(story({
         ...StoryFixtures.verse(base()),
-        'messages': {'enabled': true, 'placeholder': null},
-      }).messages.hint, StoryMessages.defaultPlaceholder);
+        'comments': {'enabled': false, 'placeholder': 'x', 'count': 3},
+      }).comments.enabled, isFalse);
+      expect(plain.author, isNull);
+      final full = story({
+        ...StoryFixtures.verse(base(), comments: true),
+        'author': {'name': 'Radio Vocea Evangheliei', 'avatar_url': null},
+      });
+      expect(full.comments.enabled, isTrue);
+      expect(full.comments.hint, StoryFixtures.commentPlaceholder);
+      expect(story({
+        ...StoryFixtures.verse(base()),
+        'comments': {'enabled': true, 'placeholder': null, 'count': 12},
+      }).comments.hint, StoryComments.defaultPlaceholder);
+      expect(StoryComments.defaultPlaceholder, contains('public'),
+          reason: 'the field says the comment is public');
       expect(full.author?.name, 'Radio Vocea Evangheliei');
       expect(full.slides.first.caption, StoryFixtures.caption);
       final cta = StoryCta.fromJson({
@@ -2317,78 +2324,134 @@ void main() {
       expect(formatStoryCount(2229), '2.229');
       expect(formatStoryCount(152340), '152.340');
       expect(formatStoryCount(7), '7');
+      final now = DateTime(2026, 11, 26, 12);
+      expect(storyCommentAge(now.subtract(const Duration(seconds: 20)),
+          now: now), 'acum');
+      expect(storyCommentAge(now.subtract(const Duration(minutes: 5)),
+          now: now), 'acum 5 min');
+      expect(storyCommentAge(now.subtract(const Duration(hours: 3)),
+          now: now), 'acum 3 h');
+      expect(storyCommentAge(now.subtract(const Duration(days: 1)),
+          now: now), 'ieri');
+      expect(StoryComment.fromJson({'id': 7, 'text': 'Amin',
+          'author_name': null, 'created_at': '2026-11-26T10:00:00Z'})
+          ?.authorName, StoryComment.anonymousName);
     });
 
     storyTest(
-        'a story that takes messages shows its placeholder; a message '
-        'holds the story while written and reaches the team', (app) async {
-      server.stories.add(StoryFixtures.verse(base(), messages: true));
+        'a story with comments says the field is public, holds while one is '
+        'written, posts it signed, and lists it with the others',
+        (app) async {
+      server
+        ..stories.add(StoryFixtures.verse(base(), comments: true))
+        ..storyComments[StoryFixtures.verseSlug] = [
+          {
+            'id': 1,
+            'author_name': 'Maria',
+            'text': 'Ce verset frumos!',
+            'created_at': DateTime.now().toUtc().toIso8601String(),
+            'device_id': 'someone-else',
+          },
+        ];
       await app.coldStartStories();
       await app.tapStoryBubble(StoryFixtures.verseSlug);
       final viewer = await app.waitForStory(StoryFixtures.verseSlug);
       // The field lies over its hint: it is there, not hit-testable.
-      expect(find.text(StoryFixtures.messagePlaceholder), findsOneWidget,
+      expect(find.text(StoryFixtures.commentPlaceholder), findsOneWidget,
           reason: 'the admin\'s placeholder');
       expect(app.showsText(StoryFixtures.caption), isTrue,
           reason: 'the slide\'s caption');
-      await app.tester.tap(
-          find.byKey(const ValueKey('story-message-field')).hitTestable());
+      final field = find.byKey(const ValueKey('story-comment-field'));
+      await app.tester.tap(field.hitTestable());
       await app.pumpFor(const Duration(milliseconds: 500));
-      expect(viewer.controller.pauses, contains(StoryPause.message),
+      expect(viewer.controller.pauses, contains(StoryPause.comment),
           reason: 'the story waits while the listener writes');
-      final held = viewer.controller.progress;
+      await app.waitFor(
+          () => find
+              .byKey(const ValueKey('story-comment-public'))
+              .evaluate()
+              .isNotEmpty,
+          reason: 'it says the comment is public, and under which name');
+      expect(find.textContaining('Ascultător'), findsWidgets);
+
+      await app.tapKey('story-comment-name');
       await app.tester.enterText(
-          find.byKey(const ValueKey('story-message-field')), 'Vă mulțumim!');
+          find.byKey(const ValueKey('story-comment-name-field')), 'Ana');
+      await app.tapKey('story-comment-name-save');
+      await app.tester.tap(field.hitTestable());
+      await app.pumpFor(const Duration(milliseconds: 500));
+      expect(find.textContaining('„Ana”'), findsOneWidget,
+          reason: 'signed with the new name');
+
+      final held = viewer.controller.progress;
+      await app.tester.enterText(field, 'Vă mulțumim!');
       await app.pumpFor(const Duration(seconds: 2));
       expect(viewer.controller.progress, closeTo(held, 0.02));
-      await app.tapKey('story-message-send');
-      await app.waitFor(() => server.storyMessages.isNotEmpty,
-          reason: 'the message to reach the API');
-      final message = server.storyMessages.single;
-      expect(message['text'], 'Vă mulțumim!');
-      expect(message['story'], StoryFixtures.verseSlug);
-      expect(message['slide'], 401);
-      await app.waitFor(() => app.showsText('Mesaj trimis'),
-          reason: 'the listener told it went');
-      await app.waitFor(
-          () => !viewer.controller.pauses.contains(StoryPause.message),
-          reason: 'the story to go on once sent');
+      await app.tapKey('story-comment-send');
+      await app.waitFor(() => server.postedComments.isNotEmpty,
+          reason: 'the comment to reach the API');
+      final posted = server.postedComments.single;
+      expect(posted['text'], 'Vă mulțumim!');
+      expect(posted['author_name'], 'Ana');
+      expect(posted['slide'], 401);
+      await app.waitFor(() => app.showsText('Comentariu publicat'),
+          reason: 'the listener told it is published');
+      expect(app.findsKey('story-comments'), isTrue);
+      expect(find.descendant(
+              of: find.byKey(const ValueKey('story-comments')),
+              matching: find.text('1')),
+          findsOneWidget,
+          reason: 'the count goes up at once');
+
+      await app.tapKey('story-comments');
+      await app.waitFor(() => app.showsText('Ce verset frumos!'),
+          reason: 'the comments sheet with the others\' comments');
+      expect(app.showsText('Vă mulțumim!'), isTrue, reason: 'and ours');
+      expect(viewer.controller.pauses, contains(StoryPause.sheet),
+          reason: 'the story waits under the sheet');
+      final mine = server.storyComments[StoryFixtures.verseSlug]!.first['id'];
+      expect(app.findsKey('story-comment-delete-1'), isFalse,
+          reason: 'another listener\'s comment can\'t be deleted');
+      await app.tapKey('story-comment-delete-$mine');
+      await app.waitFor(() => !app.showsText('Vă mulțumim!'),
+          reason: 'our own comment deleted');
+      expect(server.storyComments[StoryFixtures.verseSlug], hasLength(1));
     });
 
     storyTest(
-        'over the messages limit (429) the listener is told to try later, '
+        'over the comments limit (429) the listener is told to try later, '
         'once, and keeps the text', (app) async {
       server
-        ..stories.add(StoryFixtures.verse(base(), messages: true))
-        ..storyMessagesLimited = true;
+        ..stories.add(StoryFixtures.verse(base(), comments: true))
+        ..storyCommentsLimited = true;
       await app.coldStartStories();
       await app.tapStoryBubble(StoryFixtures.verseSlug);
       await app.waitForStory(StoryFixtures.verseSlug);
-      final field = find.byKey(const ValueKey('story-message-field'));
+      final field = find.byKey(const ValueKey('story-comment-field'));
       await app.tester.tap(field.hitTestable());
-      await app.tester.enterText(field, 'Încă un mesaj');
+      await app.tester.enterText(field, 'Încă un comentariu');
       await app.pumpFor(const Duration(milliseconds: 500));
-      await app.tapKey('story-message-send');
+      await app.tapKey('story-comment-send');
       await app.waitFor(
           () => find
-              .textContaining('Ai trimis multe mesaje')
+              .textContaining('Ai trimis multe comentarii')
               .evaluate()
               .isNotEmpty,
           reason: 'the listener told to try again later');
       await app.pumpFor(const Duration(seconds: 2));
-      expect(server.storyMessages, hasLength(1), reason: 'never retried');
-      expect(find.text('Încă un mesaj'), findsOneWidget,
+      expect(server.postedComments, hasLength(1), reason: 'never retried');
+      expect(find.text('Încă un comentariu'), findsOneWidget,
           reason: 'the text stays to send later');
     });
 
-    storyTest('a story that takes no messages has no message field',
+    storyTest('comments are off by default: no field, no comments button',
         (app) async {
       server.stories.add(StoryFixtures.verse(base()));
       await app.coldStartStories();
       await app.tapStoryBubble(StoryFixtures.verseSlug);
       await app.waitForStory(StoryFixtures.verseSlug);
-      expect(app.findsKey('story-message-field'), isFalse);
-      expect(app.findsKey('story-message'), isFalse);
+      expect(app.findsKey('story-comment-field'), isFalse);
+      expect(app.findsKey('story-comments'), isFalse);
     });
 
     storyTest(
@@ -2461,7 +2524,7 @@ void main() {
         'a swipe to the left turns to the next story, to the right back',
         (app) async {
       server.stories
-        ..add(StoryFixtures.verse(base(), messages: true))
+        ..add(StoryFixtures.verse(base(), comments: true))
         ..add(StoryFixtures.teaser(base()));
       await app.coldStartStories();
       await app.tapStoryBubble(StoryFixtures.verseSlug);
@@ -2673,8 +2736,8 @@ void main() {
 
     storyTest('the viewer works sideways, on a phone held landscape',
         (app) async {
-      // Its tallest bottom: the CTA bar, the caption and the message field.
-      server.stories.add(StoryFixtures.verse(base(), messages: true));
+      // Its tallest bottom: the CTA bar, the caption and the comment field.
+      server.stories.add(StoryFixtures.verse(base(), comments: true));
       await app.coldStartStories();
       await app.tapStoryBubble(StoryFixtures.verseSlug);
       final view = app.tester.view;
@@ -2688,7 +2751,7 @@ void main() {
         app.storyViewer!.controller.next();
         await app.waitForStory(StoryFixtures.verseSlug);
         await app.pumpFor(StoryCtaBar.fillAfter);
-        expect(app.findsKey('story-message-field'), isTrue);
+        expect(app.findsKey('story-comment-field'), isTrue);
         expect(app.showsText(StoryFixtures.stationCta), isTrue);
         expect(app.tester.takeException(), isNull, reason: 'no overflow');
       } finally {

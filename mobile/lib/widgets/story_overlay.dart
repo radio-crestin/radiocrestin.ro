@@ -27,22 +27,22 @@ String formatStoryCount(int count) {
 const _shadow = [Shadow(blurRadius: 6, color: Color(0x73000000))];
 
 /// The column of actions on the right, as in Reels: the heart with the
-/// story's like count, the message button (when the story takes
-/// messages) and share.
+/// story's like count, the comments with theirs (when the story takes
+/// comments) and share.
 class StoryActionColumn extends StatelessWidget {
   const StoryActionColumn({
     super.key,
     required this.story,
     required this.service,
-    required this.onMessage,
+    required this.onComments,
     required this.onShare,
   });
 
   final Story story;
   final StoriesService service;
 
-  /// Null when the story takes no messages.
-  final VoidCallback? onMessage;
+  /// Null when the story takes no comments.
+  final VoidCallback? onComments;
   final VoidCallback onShare;
 
   @override
@@ -53,15 +53,22 @@ class StoryActionColumn extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         _LikeAction(story: story, service: service),
-        if (onMessage != null) ...[
+        if (onComments != null) ...[
           gap,
-          _Action(
-            key: const ValueKey('story-message'),
-            icon: Icons.chat_bubble_outline_rounded,
-            label: 'Mesaj',
-            tooltip: 'Trimite un mesaj',
-            onPressed: onMessage!,
-            showLabel: !compact,
+          StreamBuilder<Map<String, int>>(
+            stream: service.commentCounts,
+            builder: (context, _) {
+              final count = service.commentCountOf(story);
+              return _Action(
+                key: const ValueKey('story-comments'),
+                icon: Icons.mode_comment_outlined,
+                label: count > 0 ? formatStoryCount(count) : 'Comentarii',
+                tooltip: 'Comentarii',
+                onPressed: onComments!,
+                // The count is what the column is for: it stays.
+                showLabel: !compact || count > 0,
+              );
+            },
           ),
         ],
         gap,
@@ -460,206 +467,6 @@ class _StorySwipeUpHintState extends State<StorySwipeUpHint>
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-}
-
-/// The field to write to the team from a story, with the placeholder the
-/// admin set; the send button shows once there is text.
-class StoryMessageField extends StatefulWidget {
-  const StoryMessageField({
-    super.key,
-    required this.hint,
-    required this.focusNode,
-    required this.onSend,
-  });
-
-  final String hint;
-  final FocusNode focusNode;
-
-  /// Sends the text, and says how it went.
-  final Future<StoryMessageResult> Function(String text) onSend;
-
-  @override
-  State<StoryMessageField> createState() => _StoryMessageFieldState();
-}
-
-class _StoryMessageFieldState extends State<StoryMessageField> {
-  final TextEditingController _text = TextEditingController();
-  bool _sending = false;
-
-  /// How the last send went, shown above the field for a moment.
-  StoryMessageResult? _result;
-  Timer? _resultTimer;
-
-  static String _say(StoryMessageResult result) => switch (result) {
-        StoryMessageResult.sent => 'Mesaj trimis',
-        StoryMessageResult.tooMany =>
-          'Ai trimis multe mesaje. Încearcă peste un minut.',
-        StoryMessageResult.failed =>
-          'Nu s-a trimis. Verifică internetul și încearcă din nou.',
-      };
-
-  @override
-  void initState() {
-    super.initState();
-    _text.addListener(() => setState(() {}));
-  }
-
-  @override
-  void dispose() {
-    _text.dispose();
-    _resultTimer?.cancel();
-    super.dispose();
-  }
-
-  Future<void> _send() async {
-    final text = _text.text.trim();
-    if (text.isEmpty || _sending) return;
-    setState(() => _sending = true);
-    final result = await widget.onSend(text);
-    if (!mounted) return;
-    setState(() {
-      _sending = false;
-      _result = result;
-    });
-    _resultTimer?.cancel();
-    _resultTimer = Timer(const Duration(milliseconds: 2800), () {
-      if (mounted) setState(() => _result = null);
-    });
-    if (result == StoryMessageResult.sent) {
-      _text.clear();
-      widget.focusNode.unfocus();
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final hasText = _text.text.trim().isNotEmpty;
-    final result = _result;
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        AnimatedSize(
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeInOut,
-          child: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 200),
-            child: result == null
-                ? const SizedBox(width: double.infinity)
-                : Padding(
-                    key: ValueKey(result),
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: _StatusChip(
-                      text: _say(result),
-                      ok: result == StoryMessageResult.sent,
-                    ),
-                  ),
-          ),
-        ),
-        _field(hasText),
-      ],
-    );
-  }
-
-  Widget _field(bool hasText) {
-    return Container(
-      height: isCompactStory(context) ? 42 : 48,
-      padding: const EdgeInsets.only(left: 18, right: 4),
-      decoration: BoxDecoration(
-        color: const Color(0x33000000),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.45)),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: TextField(
-              key: const ValueKey('story-message-field'),
-              controller: _text,
-              focusNode: widget.focusNode,
-              maxLength: StoriesService.maxMessageLength,
-              textInputAction: TextInputAction.send,
-              onSubmitted: (_) => _send(),
-              cursorColor: Colors.white,
-              style: const TextStyle(color: Colors.white, fontSize: 15),
-              decoration: InputDecoration(
-                hintText: widget.hint,
-                hintStyle: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.8), fontSize: 15),
-                border: InputBorder.none,
-                counterText: '',
-                isDense: true,
-              ),
-            ),
-          ),
-          AnimatedSwitcher(
-            duration: const Duration(milliseconds: 150),
-            child: _sending
-                ? const Padding(
-                    padding: EdgeInsets.all(12),
-                    child: SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                          strokeWidth: 2.5, color: Colors.white),
-                    ),
-                  )
-                : hasText
-                    ? IconButton(
-                        key: const ValueKey('story-message-send'),
-                        tooltip: 'Trimite',
-                        onPressed: _send,
-                        icon: const Icon(Icons.send_rounded,
-                            color: Colors.white),
-                      )
-                    : const SizedBox(width: 12, height: 48),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// How a message went, in a small pill over the field: no dialog or
-/// scrim over the story.
-class _StatusChip extends StatelessWidget {
-  const _StatusChip({required this.text, required this.ok});
-
-  final String text;
-  final bool ok;
-
-  @override
-  Widget build(BuildContext context) {
-    return Semantics(
-      liveRegion: true,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        decoration: BoxDecoration(
-          color: const Color(0xCC000000),
-          borderRadius: BorderRadius.circular(18),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              ok ? Icons.check_circle_rounded : Icons.error_outline_rounded,
-              color: ok ? const Color(0xFF4CD964) : const Color(0xFFFFB4AB),
-              size: 18,
-            ),
-            const SizedBox(width: 8),
-            Flexible(
-              child: Text(
-                text,
-                style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 13.5,
-                    fontWeight: FontWeight.w600),
-              ),
-            ),
-          ],
         ),
       ),
     );

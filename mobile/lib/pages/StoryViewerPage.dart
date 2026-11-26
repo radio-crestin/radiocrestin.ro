@@ -18,6 +18,7 @@ import '../services/story_viewer_controller.dart';
 import '../theme.dart';
 import '../widgets/bottom_toast.dart';
 import '../widgets/share_handler.dart';
+import '../widgets/story_comments.dart';
 import '../widgets/story_overlay.dart';
 import '../widgets/story_slide_view.dart';
 
@@ -138,7 +139,7 @@ class StoryViewerPageState extends State<StoryViewerPage>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _ticker.dispose();
-    _messageFocus.dispose();
+    _commentFocus.dispose();
     controller.removeListener(_onController);
     controller.dispose();
     _pages.dispose();
@@ -222,17 +223,35 @@ class StoryViewerPageState extends State<StoryViewerPage>
   /// Whether the app was left while a call to action held the story.
   bool _ctaLeftApp = false;
 
-  /// The message field's focus: the story waits while the listener
+  /// The comment field's focus: the story waits while the listener
   /// writes.
-  late final FocusNode _messageFocus = FocusNode()
-    ..addListener(() => _messageFocus.hasFocus
-        ? controller.pause(StoryPause.message)
-        : controller.resume(StoryPause.message));
+  late final FocusNode _commentFocus = FocusNode()
+    ..addListener(() => _commentFocus.hasFocus
+        ? controller.pause(StoryPause.comment)
+        : controller.resume(StoryPause.comment));
 
-  /// Sends [text] to the team from the slide on screen; the field says
-  /// how it went, over the story, without a dialog.
-  Future<StoryMessageResult> _sendMessage(String text) =>
-      _service.sendMessage(controller.story, controller.slide, text);
+  /// Posts [text] as a public comment from the slide on screen; the field
+  /// says how it went, over the story, without a dialog.
+  Future<StoryCommentResult> _postComment(String text) async {
+    final (result, _) = await _service.postComment(
+        controller.story, controller.slide, text);
+    return result;
+  }
+
+  /// The story's comments in a sheet; the story waits while it is open.
+  Future<void> openComments() async {
+    controller.pause(StoryPause.sheet);
+    try {
+      await StoryCommentsSheet.show(
+        context,
+        story: controller.story,
+        slide: controller.slide,
+        service: _service,
+      );
+    } finally {
+      if (mounted) controller.resume(StoryPause.sheet);
+    }
+  }
 
   // ── Sound ──────────────────────────────────────────────────────────────
 
@@ -267,9 +286,9 @@ class StoryViewerPageState extends State<StoryViewerPage>
   /// A tap goes on or back; a story paused for a call to action (back
   /// from an in-app browser) goes on where it was instead.
   void _onTap(bool forward) {
-    // A tap beside the message field puts the keyboard away.
-    if (_messageFocus.hasFocus) {
-      _messageFocus.unfocus();
+    // A tap beside the comment field puts the keyboard away.
+    if (_commentFocus.hasFocus) {
+      _commentFocus.unfocus();
       return;
     }
     if (controller.pauses.contains(StoryPause.cta)) {
@@ -505,10 +524,11 @@ class StoryViewerPageState extends State<StoryViewerPage>
                     slide: slide,
                     cta: cta,
                     service: _service,
-                    messageFocus: _messageFocus,
+                    commentFocus: _commentFocus,
                     onCta: (via) => runCta(cta!, via: via),
                     onShare: share,
-                    onSendMessage: _sendMessage,
+                    onPostComment: _postComment,
+                    onOpenComments: openComments,
                   ),
                 ],
               ),
@@ -796,7 +816,7 @@ class _CubeFace extends StatelessWidget {
 
 /// The bottom of a slide, as Reels lays it out: the call to action and
 /// who the story is from on the left, the actions on the right, then the
-/// swipe-up hint and the message field at the bottom edge.
+/// swipe-up hint and the public comment field at the bottom edge.
 class _Bottom extends StatelessWidget {
   const _Bottom({
     super.key,
@@ -804,29 +824,31 @@ class _Bottom extends StatelessWidget {
     required this.slide,
     required this.cta,
     required this.service,
-    required this.messageFocus,
+    required this.commentFocus,
     required this.onCta,
     required this.onShare,
-    required this.onSendMessage,
+    required this.onPostComment,
+    required this.onOpenComments,
   });
 
   final Story story;
   final StorySlide slide;
   final StoryCta? cta;
   final StoriesService service;
-  final FocusNode messageFocus;
+  final FocusNode commentFocus;
   final ValueChanged<String> onCta;
   final VoidCallback onShare;
-  final Future<StoryMessageResult> Function(String text) onSendMessage;
+  final Future<StoryCommentResult> Function(String text) onPostComment;
+  final VoidCallback onOpenComments;
 
-  /// The widest the call to action and the message field get.
+  /// The widest the call to action and the comment field get.
   static const double _maxWidth = 440;
   static const double _maxFieldWidth = 560;
 
   @override
   Widget build(BuildContext context) {
     final cta = this.cta;
-    final messages = story.messages;
+    final comments = story.comments;
     final keyboard = MediaQuery.viewInsetsOf(context).bottom;
     final compact = isCompactStory(context);
     return Padding(
@@ -863,8 +885,7 @@ class _Bottom extends StatelessWidget {
               StoryActionColumn(
                 story: story,
                 service: service,
-                onMessage:
-                    messages.enabled ? messageFocus.requestFocus : null,
+                onComments: comments.enabled ? onOpenComments : null,
                 onShare: onShare,
               ),
             ],
@@ -876,17 +897,18 @@ class _Bottom extends StatelessWidget {
               onTap: () => onCta('swipe_up'),
             ),
           ],
-          if (messages.enabled) ...[
+          if (comments.enabled) ...[
             SizedBox(height: compact ? 8 : 12),
             Align(
               alignment: Alignment.centerLeft,
               child: ConstrainedBox(
                 constraints:
                     const BoxConstraints(maxWidth: _maxFieldWidth),
-                child: StoryMessageField(
-                  hint: messages.hint,
-                  focusNode: messageFocus,
-                  onSend: onSendMessage,
+                child: StoryCommentField(
+                  hint: comments.hint,
+                  service: service,
+                  focusNode: commentFocus,
+                  onSend: onPostComment,
                 ),
               ),
             ),
