@@ -3,18 +3,20 @@
 // back and the rest to go on, swipe left / right, press and hold to play at double speed, a
 // pause and a sound button, and like and share. Arrow keys and Space work on a keyboard.
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { sendStoryEvents, type StoryEvent } from "@/services/stories";
+import { MAX_MESSAGE_LENGTH, sendStoryEvents, sendStoryMessage, type StoryEvent, type StoryMessageResult } from "@/services/stories";
 import { getUserId } from "@/utils/posthog";
 import { shareLink } from "@/components/Announcements/share";
-import type { StoryMedia, StorySlideView, StoryView } from "@/utils/stories";
+import { formatStoryCount, type StoryMedia, type StorySlideView, type StoryView } from "@/utils/stories";
 import { markStorySeen } from "./seen";
 import styles from "./StoryPlayer.module.scss";
 
 export const HOLD_MS = 220;
 export const FAST_RATE = 2;
-/** The CTA comes in after this much of the slide has played (sooner on a short slide, so it shows at least CTA_MIN_SHOWN_MS). */
-export const CTA_DELAY_MS = 4000;
-const CTA_MIN_SHOWN_MS = 1500;
+/**
+ * As the app's StoryCtaBar: the CTA is on screen from the start, glassy, and its colour sweeps in
+ * from the left once this much of the slide has played (half a slide shorter than that).
+ */
+export const CTA_FILL_AFTER_MS = 2000;
 const SWIPE_PX = 50;
 const LOAD_TIMEOUT_MS = 10_000;
 const LIKES_KEY = "stories-liked";
@@ -53,9 +55,6 @@ export function useStoryLike(story: StoryView) {
   return { liked, count, toggle };
 }
 
-const formatCount = (n: number) =>
-  n >= 1_000_000 ? `${(n / 1_000_000).toFixed(1).replace(".0", "")}M` : n >= 10_000 ? `${Math.round(n / 1000)}K` : String(n);
-
 interface PlayerProps {
   story: StoryView;
   /** In the in-page viewer: close it (on the share page the close button goes home). */
@@ -77,7 +76,10 @@ export default function StoryPlayer({ story, onClose, onFinished, onBackFromStar
   const [ended, setEnded] = useState(false);
   const [embedOpen, setEmbedOpen] = useState(false);
   const [hidden, setHidden] = useState(false);
-  const [ctaShown, setCtaShown] = useState(false);
+  const [ctaFilled, setCtaShown] = useState(false);
+  // Writing a message pauses the story, as in the app.
+  const [typing, setTyping] = useState(false);
+  const messageRef = useRef<HTMLInputElement>(null);
   const ctaShownRef = useRef(false);
   const { liked, count: likes, toggle: toggleLike } = useStoryLike(story);
 
@@ -87,7 +89,7 @@ export default function StoryPlayer({ story, onClose, onFinished, onBackFromStar
   const elapsed = useRef(0);
   const slide = slides[Math.min(index, count - 1)];
   const ready = !!loaded[index];
-  const running = ready && !paused && !ended && !embedOpen && !hidden;
+  const running = ready && !paused && !ended && !embedOpen && !hidden && !typing;
 
   const markLoaded = useCallback((i: number) => setLoaded((l) => (l[i] ? l : { ...l, [i]: true })), []);
 
@@ -173,7 +175,7 @@ export default function StoryPlayer({ story, onClose, onFinished, onBackFromStar
     let last = performance.now();
     let frame = 0;
     const showCtaAfter = (playedMs: number, totalMs: number) => {
-      if (!ctaShownRef.current && slide.cta && playedMs >= Math.max(0, Math.min(CTA_DELAY_MS, totalMs - CTA_MIN_SHOWN_MS))) {
+      if (!ctaShownRef.current && slide.cta && playedMs >= Math.min(CTA_FILL_AFTER_MS, totalMs / 2)) {
         ctaShownRef.current = true;
         setCtaShown(true);
       }
@@ -220,7 +222,7 @@ export default function StoryPlayer({ story, onClose, onFinished, onBackFromStar
   // Gestures: tap (left third back, else on), swipe left / right, press and hold for double speed.
   const gesture = useRef<{ x: number; y: number; id: number; holdTimer: number; held: boolean; swiping: boolean } | null>(null);
   const onPointerDown = (e: React.PointerEvent) => {
-    if ((e.target as HTMLElement).closest("button, a, iframe, video[controls]") || e.button > 0) return;
+    if ((e.target as HTMLElement).closest("button, a, iframe, input, form, video[controls]") || e.button > 0) return;
     const holdTimer = window.setTimeout(() => {
       if (gesture.current) {
         gesture.current.held = true;
@@ -352,8 +354,7 @@ export default function StoryPlayer({ story, onClose, onFinished, onBackFromStar
               ))}
             </div>
             <div className={styles.head}>
-              {story.cover ? <img className={styles.avatar} src={story.cover} alt="" /> : <span className={styles.avatar} />}
-              <h1 className={styles.title}>{story.title}</h1>
+              <h1 className={styles.srOnly}>{story.title}</h1>
               {slide.hasSound && (
                 <button type="button" className={styles.icon} aria-label={muted ? "Pornește sunetul" : "Oprește sunetul"} onClick={() => setMuted((m) => !m)}>
                   {muted ? <MutedIcon /> : <SoundIcon />}
@@ -379,15 +380,82 @@ export default function StoryPlayer({ story, onClose, onFinished, onBackFromStar
             </div>
           )}
 
-          <div className={styles.footer}>
+          {/* As the app's _Bottom (Reels): CTA and who it's from on the left, the actions on the right. */}
+          <div className={styles.bottom}>
+            <div className={styles.bottomRow}>
+              <div className={styles.left}>
+                {slide.cta && slide.cta.style !== "swipe_up" && (
+                  <a
+                    key={`cta-${slide.id}-${index}`}
+                    className={ctaFilled ? `${styles.cta} ${styles.ctaFilled}` : styles.cta}
+                    style={
+                      {
+                        "--cta-color": slide.cta.color ?? "#e91e63",
+                        "--cta-text": slide.cta.textColor ?? "#fff",
+                      } as React.CSSProperties
+                    }
+                    href={slide.cta.href}
+                    data-testid="story-cta"
+                    data-filled={ctaFilled ? "1" : "0"}
+                    onClick={() => void report([{ type: "cta_click", story: story.slug, slide: slide.id, target: "button" }])}
+                    {...(slide.cta.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+                  >
+                    <span className={styles.ctaSweep} aria-hidden="true" />
+                    <span className={styles.ctaLabel}>{slide.cta.label}</span>
+                    <ChevronRight />
+                  </a>
+                )}
+                <div className={styles.author}>
+                  <span className={styles.authorAvatar}>
+                    {story.author?.avatar ?? story.cover ? (
+                      <img src={(story.author?.avatar ?? story.cover)!} alt="" />
+                    ) : (
+                      <img src="/favicon/android-chrome-192x192.png" alt="" />
+                    )}
+                  </span>
+                  <span className={styles.authorName}>{story.author?.name ?? story.title}</span>
+                </div>
+                {(slide.caption ?? (story.author ? story.title : null)) && (
+                  <p className={styles.caption}>{slide.caption ?? story.title}</p>
+                )}
+              </div>
+              <div className={styles.actions}>
+                <button
+                  type="button"
+                  className={liked ? `${styles.action} ${styles.liked}` : styles.action}
+                  aria-label={liked ? "Nu-mi mai place" : "Îmi place"}
+                  aria-pressed={liked}
+                  onClick={() => void toggleLike()}
+                  data-testid="story-like"
+                >
+                  <HeartIcon filled={liked} />
+                  <span key={likes} className={styles.actionLabel} data-testid="story-like-count">
+                    {likes > 0 ? formatStoryCount(likes) : "Îmi place"}
+                  </span>
+                </button>
+                {story.messages.enabled && (
+                  <button
+                    type="button"
+                    className={styles.action}
+                    aria-label="Trimite un mesaj"
+                    onClick={() => messageRef.current?.focus()}
+                    data-testid="story-message"
+                  >
+                    <ChatIcon />
+                    <span className={styles.actionLabel}>Mesaj</span>
+                  </button>
+                )}
+                <button type="button" className={styles.action} aria-label="Distribuie" onClick={share} data-testid="story-share">
+                  <SendIcon />
+                  <span className={styles.actionLabel}>Trimite</span>
+                </button>
+              </div>
+            </div>
             {slide.cta && slide.cta.style !== "button" && (
               <a
-                key={`hint-${slide.id}-${index}`}
-                className={ctaShown ? `${styles.swipeUp} ${styles.ctaIn}` : styles.swipeUp}
+                className={styles.swipeUp}
                 href={slide.cta.href}
-                aria-hidden={!ctaShown}
-                tabIndex={ctaShown && slide.cta.style === "swipe_up" ? undefined : -1}
-                aria-label={slide.cta.style === "swipe_up" ? slide.cta.label : "Glisează în sus"}
+                aria-label={slide.cta.label}
                 data-testid={slide.cta.style === "swipe_up" ? "story-cta" : "story-swipe-up"}
                 onClick={() => void report([{ type: "cta_click", story: story.slug, slide: slide.id, target: "swipe_up" }])}
                 {...(slide.cta.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
@@ -395,42 +463,17 @@ export default function StoryPlayer({ story, onClose, onFinished, onBackFromStar
                 <span className={styles.chevronUp}>
                   <ChevronUp />
                 </span>
-                {slide.cta.style === "swipe_up" && <span className={styles.swipeLabel}>{slide.cta.label}</span>}
+                <span className={styles.swipeLabel}>{slide.cta.style === "both" ? "Glisează în sus" : slide.cta.label}</span>
               </a>
             )}
-            <div className={styles.row}>
-              <div className={styles.ctaSlot}>
-                {slide.cta && slide.cta.style !== "swipe_up" && (
-                  <a
-                    key={`cta-${slide.id}-${index}`}
-                    className={ctaShown ? `${styles.cta} ${styles.ctaIn}` : styles.cta}
-                    href={slide.cta.href}
-                    aria-hidden={!ctaShown}
-                    tabIndex={ctaShown ? undefined : -1}
-                    data-testid="story-cta"
-                    onClick={() => void report([{ type: "cta_click", story: story.slug, slide: slide.id, target: "button" }])}
-                    {...(slide.cta.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
-                  >
-                    <ArrowOutward />
-                    <span className={styles.ctaLabel}>{slide.cta.label}</span>
-                  </a>
-                )}
-              </div>
-              <button
-                type="button"
-                className={liked ? `${styles.like} ${styles.liked}` : styles.like}
-                aria-label={liked ? "Nu-mi mai place" : "Îmi place"}
-                aria-pressed={liked}
-                onClick={() => void toggleLike()}
-                data-testid="story-like"
-              >
-                <HeartIcon filled={liked} />
-                {likes > 0 && <span className={styles.likeCount}>{formatCount(likes)}</span>}
-              </button>
-              <button type="button" className={styles.icon} aria-label="Distribuie" onClick={share} data-testid="story-share">
-                <ShareIcon />
-              </button>
-            </div>
+            {story.messages.enabled && (
+              <MessageField
+                inputRef={messageRef}
+                placeholder={story.messages.placeholder}
+                onFocusChange={setTyping}
+                onSend={(text) => sendStoryMessage(story.slug, slide.id, text, getUserId())}
+              />
+            )}
           </div>
         </div>
       </div>
@@ -560,13 +603,96 @@ function InstagramLayer({
   return (
     <>
       <img ref={imgRef} src={media.thumbnail} alt="" draggable={false} onLoad={onLoaded} onError={() => setEmbed(true)} />
-      <a className={styles.caption} href={media.url} target="_blank" rel="noopener noreferrer">
+      <a className={styles.igCaption} href={media.url} target="_blank" rel="noopener noreferrer">
         {media.author && <strong>@{media.author}</strong>}
         {media.caption && <span>{media.caption}</span>}
       </a>
     </>
   );
 }
+
+/** The app's StoryMessageField: a glassy pill with the admin's placeholder, send once there is text, the result in a chip above. */
+function MessageField({
+  inputRef,
+  placeholder,
+  onFocusChange,
+  onSend,
+}: {
+  inputRef: React.RefObject<HTMLInputElement | null>;
+  placeholder: string;
+  onFocusChange: (focused: boolean) => void;
+  onSend: (text: string) => Promise<StoryMessageResult>;
+}) {
+  const [text, setText] = useState("");
+  const [sending, setSending] = useState(false);
+  const [result, setResult] = useState<StoryMessageResult | null>(null);
+  useEffect(() => {
+    if (!result) return;
+    const timer = window.setTimeout(() => setResult(null), 2800);
+    return () => window.clearTimeout(timer);
+  }, [result]);
+  const send = async () => {
+    if (!text.trim() || sending) return;
+    setSending(true);
+    const outcome = await onSend(text);
+    setSending(false);
+    setResult(outcome);
+    if (outcome === "sent") {
+      setText("");
+      inputRef.current?.blur();
+    }
+  };
+  const say = { sent: "Mesaj trimis", tooMany: "Ai trimis multe mesaje. Încearcă peste un minut.", failed: "Nu s-a trimis. Verifică internetul și încearcă din nou." };
+  return (
+    <div className={styles.message}>
+      {result && (
+        <span className={result === "sent" ? `${styles.chip} ${styles.chipOk}` : styles.chip} role="status" data-testid="story-message-status">
+          {result === "sent" ? <CheckIcon /> : <ErrorIcon />}
+          {say[result]}
+        </span>
+      )}
+      <form
+        className={styles.field}
+        onSubmit={(e) => {
+          e.preventDefault();
+          void send();
+        }}
+      >
+        <input
+          ref={inputRef}
+          value={text}
+          maxLength={MAX_MESSAGE_LENGTH}
+          placeholder={placeholder}
+          enterKeyHint="send"
+          aria-label={placeholder}
+          data-testid="story-message-field"
+          onChange={(e) => setText(e.target.value)}
+          onFocus={() => onFocusChange(true)}
+          onBlur={() => onFocusChange(false)}
+        />
+        {sending ? (
+          <span className={styles.fieldSpinner} />
+        ) : text.trim() ? (
+          <button type="submit" className={styles.send} aria-label="Trimite" data-testid="story-message-send">
+            <SendIcon />
+          </button>
+        ) : null}
+      </form>
+    </div>
+  );
+}
+
+const CheckIcon = () => (
+  <Svg width="18" height="18" fill="#4cd964" stroke="none">
+    <path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm-1.5 14.5-4-4 1.4-1.4 2.6 2.6 5.6-5.6 1.4 1.4-7 7z" />
+  </Svg>
+);
+const ErrorIcon = () => (
+  <Svg width="18" height="18" stroke="#ffb4ab">
+    <circle cx="12" cy="12" r="9" />
+    <path d="M12 8v5M12 16h.01" />
+  </Svg>
+);
 
 const Svg = ({ children, ...rest }: React.SVGProps<SVGSVGElement>) => (
   <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...rest}>
@@ -578,20 +704,24 @@ const HeartIcon = ({ filled }: { filled: boolean }) => (
     <path d="M12 21s-7.5-4.6-9.6-9.2C.9 8.3 3.1 4.5 6.9 4.5c2.1 0 3.5 1.1 5.1 3 1.6-1.9 3-3 5.1-3 3.8 0 6 3.8 4.5 7.3C19.5 16.4 12 21 12 21z" />
   </Svg>
 );
-// Material's ios_share, as in the app.
-const ShareIcon = () => (
-  <Svg>
-    <path d="M12 3v12M8 7l4-4 4 4" />
-    <path d="M8 10H6.5A1.5 1.5 0 0 0 5 11.5v8A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5v-8a1.5 1.5 0 0 0-1.5-1.5H16" />
+// Material's send_rounded, tilted as the app's paper plane.
+const SendIcon = () => (
+  <Svg fill="currentColor" stroke="none" style={{ transform: "rotate(-29deg)" }}>
+    <path d="M3.4 20.4 20.85 12.92a1 1 0 0 0 0-1.84L3.4 3.6a.99.99 0 0 0-1.39.91L2 9.12c0 .5.37.93.87.99L17 12 2.87 13.88c-.5.07-.87.5-.87 1l.01 4.61c0 .71.73 1.2 1.39.91z" />
   </Svg>
 );
-const ArrowOutward = () => (
-  <Svg width="18" height="18" strokeWidth="2.6">
-    <path d="M7 17 17 7M8 7h9v9" />
+const ChatIcon = () => (
+  <Svg strokeWidth="2">
+    <path d="M20 4H4a1 1 0 0 0-1 1v15l3.5-3H20a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1z" />
+  </Svg>
+);
+const ChevronRight = () => (
+  <Svg width="22" height="22" strokeWidth="2.6">
+    <path d="M9 6l6 6-6 6" />
   </Svg>
 );
 const ChevronUp = () => (
-  <Svg width="32" height="32" strokeWidth="2.4">
+  <Svg width="30" height="30" strokeWidth="2.6">
     <path d="M6 15l6-6 6 6" />
   </Svg>
 );

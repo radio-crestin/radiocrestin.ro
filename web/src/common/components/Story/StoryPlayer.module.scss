@@ -144,7 +144,8 @@ $text-shadow: 0 0 4px rgba(0, 0, 0, 0.45);
   transition: opacity 0.2s ease;
 
   button,
-  a {
+  a,
+  input {
     pointer-events: auto;
   }
 }
@@ -153,7 +154,8 @@ $text-shadow: 0 0 4px rgba(0, 0, 0, 0.45);
   opacity: 0;
 
   button,
-  a {
+  a,
+  input {
     pointer-events: none;
   }
 }
@@ -188,32 +190,18 @@ $text-shadow: 0 0 4px rgba(0, 0, 0, 0.45);
 
 .head {
   display: flex;
+  justify-content: flex-end;
   align-items: center;
   margin-top: 8px;
-  padding-left: 4px;
 }
 
-.avatar {
-  width: 32px;
-  height: 32px;
-  flex: none;
-  border-radius: 50%;
-  object-fit: cover;
-  background: $primary;
-  margin-right: 10px;
-}
-
-.title {
-  flex: 1;
-  min-width: 0;
-  margin: 0;
-  color: #fff;
-  font-size: 14px;
-  font-weight: 700;
-  white-space: nowrap;
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
   overflow: hidden;
-  text-overflow: ellipsis;
-  text-shadow: $text-shadow;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
 }
 
 // The app's _ChromeButton: a 26 px white icon with a soft shadow.
@@ -297,130 +285,170 @@ $text-shadow: 0 0 4px rgba(0, 0, 0, 0.45);
   cursor: pointer;
 }
 
-.footer {
+// The app's _Bottom, as Reels lays it out.
+$shadow: 0 0 6px rgba(0, 0, 0, 0.45);
+
+.bottom {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  padding: 0 8px max(8px, env(safe-area-inset-bottom)) 16px;
+  padding: 0 8px max(8px, env(safe-area-inset-bottom)) 12px;
 }
 
-// The app's _SwipeUpHint: a chevron that keeps rising, the label in a white pill under it.
-.swipeUp {
+.bottomRow {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin-bottom: 8px;
-  color: #fff;
-  text-decoration: none;
+  align-items: flex-end;
+  gap: 12px;
 }
 
-.chevronUp {
-  display: flex;
-  filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.45));
-  animation: rise 0.9s ease-in-out infinite alternate;
-}
-
-@keyframes rise {
-  to {
-    transform: translateY(-6px);
-  }
-}
-
-.swipeLabel {
-  padding: 8px 16px;
-  border-radius: 20px;
-  background: #fff;
-  color: #000;
-  font-size: 14px;
-  font-weight: 700;
-}
-
-.row {
-  display: flex;
-  align-items: center;
-  width: 100%;
-}
-
-.ctaSlot {
+.left {
   flex: 1;
   min-width: 0;
+  max-width: 440px;
   display: flex;
+  flex-direction: column;
+  align-items: stretch;
 }
 
-// The app's _CtaButton: a white stadium button with the arrow_outward icon.
+// The app's StoryCtaBar: a full-width glassy bar; its colour sweeps in from the left after
+// CTA_FILL_AFTER_MS and the label turns to its text colour.
 .cta {
-  display: inline-flex;
+  position: relative;
+  display: flex;
   align-items: center;
-  gap: 8px;
-  max-width: 100%;
-  padding: 12px 18px;
-  border-radius: 999px;
-  background: #fff;
-  color: #000;
-  font-size: 15px;
+  height: 40px;
+  margin-bottom: 14px;
+  padding: 0 8px 0 14px;
+  border-radius: 10px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.22);
+  color: #fff;
+  font-size: 14.5px;
   font-weight: 700;
+  letter-spacing: 0.1px;
   text-decoration: none;
+  box-shadow: 0 4px 14px transparent;
+  transition: color 0.45s cubic-bezier(0.33, 1, 0.68, 1), box-shadow 0.45s ease;
+  animation: cta-up 0.35s cubic-bezier(0.33, 1, 0.68, 1);
 
   svg {
+    position: relative;
     flex: none;
   }
+}
 
-  &:hover {
-    background: #f0f0f0;
+@keyframes cta-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+
+.ctaSweep {
+  position: absolute;
+  inset: 0;
+  background: var(--cta-color);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 0.45s cubic-bezier(0.33, 1, 0.68, 1);
+}
+
+.ctaFilled {
+  color: var(--cta-text);
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--cta-color) 45%, transparent);
+
+  .ctaSweep {
+    transform: scaleX(1);
+  }
+
+  .ctaLabel {
+    color: var(--cta-text);
   }
 }
 
 .ctaLabel {
+  position: relative;
+  flex: 1;
   min-width: 0;
-  color: #000;
+  color: inherit;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: color 0.45s cubic-bezier(0.33, 1, 0.68, 1);
+}
+
+// The app's StoryAuthorRow.
+.author {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.authorAvatar {
+  width: 34px;
+  height: 34px;
+  flex: none;
+  box-sizing: border-box;
+  padding: 1.5px;
+  border-radius: 50%;
+  background: #fff;
+
+  img {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+    display: block;
+  }
+}
+
+.authorName {
+  min-width: 0;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  text-shadow: $shadow;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-// The CTA (button or hint) comes in after CTA_DELAY_MS of the slide.
-.cta,
-.swipeUp {
-  opacity: 0;
-  visibility: hidden;
-  transform: translateY(16px) scale(0.92);
+.caption {
+  margin: 8px 0 0;
+  color: #fff;
+  font-size: 14px;
+  line-height: 1.4;
+  text-shadow: $shadow;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
-.ctaIn {
-  visibility: visible;
-  animation: cta-in 0.45s cubic-bezier(0.2, 1.4, 0.45, 1) forwards;
-}
-
-@keyframes cta-in {
-  0% {
-    opacity: 0;
-    transform: translateY(16px) scale(0.92);
-  }
-  60% {
-    opacity: 1;
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-// The app's like button: a 28 px heart, pink once liked, the count beside it.
-.like {
+// The app's StoryActionColumn: heart, message, share, each with its label under it.
+.actions {
   display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+}
+
+.action {
+  display: flex;
+  flex-direction: column;
   align-items: center;
   gap: 4px;
-  height: 48px;
-  padding: 0 8px;
+  min-width: 52px;
+  padding: 0;
   border: 0;
   background: transparent;
   color: #fff;
   cursor: pointer;
-  filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.45));
 
   svg {
-    width: 28px;
-    height: 28px;
+    width: 30px;
+    height: 30px;
+    filter: drop-shadow(0 0 3px rgba(0, 0, 0, 0.45));
     transition: transform 0.15s ease;
   }
 
@@ -429,24 +457,153 @@ $text-shadow: 0 0 4px rgba(0, 0, 0, 0.45);
   }
 }
 
+.action[data-testid="story-like"] svg {
+  width: 32px;
+  height: 32px;
+}
+
 .liked svg {
   color: $primary;
   animation: pop 0.35s ease;
 }
 
-@keyframes pop {
-  40% {
-    transform: scale(1.3);
+.actionLabel {
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 600;
+  text-shadow: $shadow;
+  animation: count-in 0.2s ease;
+}
+
+@keyframes count-in {
+  from {
+    opacity: 0;
+    transform: translateY(40%);
   }
 }
 
-.likeCount {
+// The app's StorySwipeUpHint: a chevron rising over the label, no pill.
+.swipeUp {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  align-self: center;
+  margin-top: 10px;
+  padding: 4px 24px;
+  color: #fff;
+  text-decoration: none;
+}
+
+.chevronUp {
+  display: flex;
+  filter: drop-shadow(0 0 3px rgba(0, 0, 0, 0.45));
+  animation: rise 1.1s ease-out infinite;
+}
+
+@keyframes rise {
+  0% {
+    transform: translateY(6px);
+    opacity: 1;
+  }
+  75% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-6px);
+    opacity: 0;
+  }
+}
+
+.swipeLabel {
   color: #fff;
   font-size: 14px;
+  font-weight: 700;
+  text-shadow: $shadow;
+}
+
+// The app's StoryMessageField.
+.message {
+  max-width: 560px;
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  padding: 8px 14px;
+  border-radius: 18px;
+  background: rgba(0, 0, 0, 0.8);
+  color: #fff;
+  font-size: 13.5px;
   font-weight: 600;
 }
 
-.caption {
+.field {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 48px;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0 4px 0 18px;
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  border-radius: 24px;
+  background: rgba(0, 0, 0, 0.2);
+
+  input {
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    color: #fff;
+    caret-color: #fff;
+    font-size: 15px;
+    font-family: inherit;
+
+    &::placeholder {
+      color: rgba(255, 255, 255, 0.8);
+    }
+  }
+}
+
+.send {
+  width: 44px;
+  height: 44px;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #fff;
+  cursor: pointer;
+
+  svg {
+    width: 24px;
+    height: 24px;
+  }
+}
+
+.fieldSpinner {
+  width: 20px;
+  height: 20px;
+  margin: 12px;
+  border-radius: 50%;
+  border: 2.5px solid rgba(255, 255, 255, 0.25);
+  border-top-color: #fff;
+  animation: spin 0.8s linear infinite;
+}
+
+
+.igCaption {
   position: absolute;
   left: 0;
   right: 0;
@@ -511,4 +668,10 @@ $text-shadow: 0 0 4px rgba(0, 0, 0, 0.45);
 
 .sideNext {
   left: calc(50% + min(50%, calc((100dvh - 40px) * 9 / 32), 230px) + 16px);
+}
+
+@keyframes pop {
+  40% {
+    transform: scale(1.3);
+  }
 }

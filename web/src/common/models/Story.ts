@@ -18,6 +18,9 @@ export interface IStoryCtaTarget {
 export interface IStoryCta {
   style: "swipe_up" | "button" | "both" | string;
   label: string;
+  /** The button's colour and its label's (`#RRGGBB`, or `#AARRGGBB` as the app reads it). */
+  color?: string | null;
+  text_color?: string | null;
   target: IStoryCtaTarget;
 }
 
@@ -44,6 +47,8 @@ export interface IStorySlide {
   youtube?: { video_id?: string; title?: string; thumbnail?: string; kind?: string } | null;
   instagram: IStoryInstagram | null;
   cta: IStoryCta | null;
+  /** Shown under who the story is from. */
+  caption?: string | null;
   width?: number;
   height?: number;
 }
@@ -60,5 +65,9 @@ export interface IStory {
   like_count?: number;
   /** Same keys as the announcements' filters; the website's bar reads `platforms`. */
   filters?: { platforms?: string[] | null } | null;
+  /** Who the story is from, under the call to action (the app's default: the title). */
+  author?: { name?: string | null; avatar_url?: string | null } | null;
+  /** The story takes messages to the team (POST /stories/messages/). */
+  messages?: { enabled?: boolean; placeholder?: string | null } | null;
   slides: IStorySlide[];
 }

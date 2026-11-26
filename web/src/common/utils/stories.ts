@@ -19,6 +19,9 @@ export interface StoryLink {
   /** As in the app: a button, a "swipe up" hint with the label, or both. */
   style: "button" | "swipe_up" | "both";
   label: string;
+  /** CSS colours of the button and its label, when the admin set them. */
+  color?: string;
+  textColor?: string;
   href: string;
   /** Leaves the site: opens in a new tab. */
   external: boolean;
@@ -33,6 +36,7 @@ export interface StorySlideView {
   duration: number;
   hasSound: boolean;
   cta: StoryLink | null;
+  caption: string | null;
 }
 
 export interface StoryView {
@@ -43,8 +47,14 @@ export interface StoryView {
   /** Changes when the admin edits the story: a seen story with a newer one is new again. */
   updatedAt: string;
   likeCount: number;
+  /** Who it's from, under the CTA; null: the app shows the title there. */
+  author: { name: string; avatar: string | null } | null;
+  /** Messages to the team: the field shows only when enabled. */
+  messages: { enabled: boolean; placeholder: string };
   slides: StorySlideView[];
 }
+
+export const DEFAULT_MESSAGE_PLACEHOLDER = "Trimite un mesaj…";
 
 export const DEFAULT_SLIDE_SECONDS = 6;
 const slideSeconds = (raw: unknown) => {
@@ -61,6 +71,12 @@ export const safeHttpUrl = (raw: unknown): string | null => {
   } catch {
     return null;
   }
+};
+
+/** A count as the app shows it, with Romanian thousands: `2.229`. */
+export const formatStoryCount = (count: number) => {
+  const digits = String(Math.abs(Math.trunc(count)));
+  return `${count < 0 ? "-" : ""}${digits.replace(/\B(?=(\d{3})+(?!\d))/g, ".")}`;
 };
 
 const CTA_STYLES = ["button", "swipe_up", "both"] as const;
@@ -98,10 +114,26 @@ const ctaTarget = (cta: IStoryCta | null | undefined): StoryLink | null => {
   }
 };
 
+/** `#RRGGBB` or `#AARRGGBB` (the app's reading) as a CSS colour, or undefined. */
+export const cssColor = (raw: unknown): string | undefined => {
+  if (typeof raw !== "string") return undefined;
+  const hex = raw.replace(/^#/, "");
+  if (/^[0-9a-f]{6}$/i.test(hex)) return `#${hex.toLowerCase()}`;
+  if (/^[0-9a-f]{8}$/i.test(hex)) {
+    const [a, r, g, b] = [0, 2, 4, 6].map((i) => parseInt(hex.slice(i, i + 2), 16));
+    return `rgba(${r}, ${g}, ${b}, ${+(a / 255).toFixed(3)})`;
+  }
+  return undefined;
+};
+
 /** Where a CTA goes on the website, and how it shows; null hides it. */
 export const ctaLink = (cta: IStoryCta | null | undefined): StoryLink | null => {
   const target = ctaTarget(cta);
-  return target && link(target.label, target.href, cta?.style);
+  const found = target && link(target.label, target.href, cta?.style);
+  if (!found) return null;
+  const color = cssColor(cta?.color);
+  const textColor = cssColor(cta?.text_color);
+  return { ...found, ...(color && { color }), ...(textColor && { textColor }) };
 };
 
 const youtubeMedia = (slide: IStorySlide): StoryMedia | null => {
@@ -175,6 +207,7 @@ export const toStoryView = (data: unknown): StoryView | null => {
           duration: slideSeconds(slide.duration_seconds),
           hasSound: media.kind === "video" && slide.has_sound !== false,
           cta: ctaLink(slide.cta),
+          caption: typeof slide.caption === "string" && slide.caption.trim() ? slide.caption.trim() : null,
         }]
       : [];
   });
@@ -187,6 +220,14 @@ export const toStoryView = (data: unknown): StoryView | null => {
     shareUrl: storyUrl(story.slug),
     updatedAt: typeof story.updated_at === "string" ? story.updated_at : "",
     likeCount: Math.max(0, Math.floor(Number(story.like_count) || 0)),
+    author:
+      typeof story.author?.name === "string" && story.author.name.trim()
+        ? { name: story.author.name.trim(), avatar: safeHttpUrl(story.author.avatar_url) }
+        : null,
+    messages: {
+      enabled: story.messages?.enabled === true,
+      placeholder: (typeof story.messages?.placeholder === "string" && story.messages.placeholder.trim()) || DEFAULT_MESSAGE_PLACEHOLDER,
+    },
     slides,
   };
 };

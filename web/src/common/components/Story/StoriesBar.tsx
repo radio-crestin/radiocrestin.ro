@@ -66,6 +66,8 @@ export default function StoriesBar() {
 
   // Opening adds one history entry (Back closes the viewer); moving between stories replaces it.
   const pushed = useRef(false);
+  // The tapped circle, for the viewer to grow out of (the app's _GrowFromBubble).
+  const origin = useRef<DOMRect | null>(null);
   const openStory = useCallback((slug: string) => {
     pushed.current = true;
     window.location.hash = `${HASH_PREFIX.slice(1)}${slug}`;
@@ -84,6 +86,7 @@ export default function StoriesBar() {
     // Opened from a #poveste link: drop the hash, stay on the page.
     window.history.replaceState(null, "", window.location.pathname + window.location.search);
     openRef.current = null;
+    origin.current = null;
     setOpen(null);
   }, []);
   const prefetch = (slug: string) => {
@@ -111,6 +114,7 @@ export default function StoriesBar() {
                     onClick={(e) => {
                       if (e.metaKey || e.ctrlKey || e.shiftKey || e.button > 0) return; // a new tab: the share page
                       e.preventDefault();
+                      origin.current = (e.currentTarget.firstElementChild as HTMLElement | null)?.getBoundingClientRect() ?? null;
                       openStory(bubble.slug);
                     }}
                   >
@@ -135,7 +139,7 @@ export default function StoriesBar() {
       )}
       {open && (
         <Suspense fallback={null}>
-          <StoryViewer slug={open} order={viewOrder} onOpen={switchStory} onClose={closeViewer} />
+          <StoryViewer slug={open} order={viewOrder} origin={origin.current} onOpen={switchStory} onClose={closeViewer} />
         </Suspense>
       )}
     </>

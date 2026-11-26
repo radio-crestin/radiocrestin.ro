@@ -5,13 +5,18 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  animation: open 0.25s ease-out;
 }
 
-@keyframes open {
-  from {
-    opacity: 0;
-    transform: scale(0.96);
+.stage {
+  position: relative;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+
+  > * {
+    pointer-events: auto;
   }
 }
 
@@ -19,6 +24,13 @@
   position: absolute;
   inset: 0;
   background: rgba(0, 0, 0, 0.92);
+  animation: backdrop-in 0.3s ease-out;
+}
+
+@keyframes backdrop-in {
+  from {
+    opacity: 0;
+  }
 }
 
 // While the story loads: the player's card, dark, with the app's pink spinner.

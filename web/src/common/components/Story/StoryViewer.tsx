@@ -2,7 +2,7 @@
 // on a phone, a card on a dark backdrop on a desktop. After a story's last slide it goes on to
 // the next one in the bar, back from the first slide to the previous one, and closes after the
 // last; Escape and the close button close it.
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { fetchStoryCached } from "@/services/stories";
 import type { StoryView } from "@/utils/stories";
 import StoryPlayer from "./StoryPlayer";
@@ -14,10 +14,51 @@ interface Props {
   order: string[];
   onOpen: (slug: string) => void;
   onClose: () => void;
+  /** The tapped circle: the viewer grows out of it, as in the app. */
+  origin?: DOMRect | null;
 }
 
-export default function StoryViewer({ slug, order, onOpen, onClose }: Props) {
-  const [story, setStory] = useState<StoryView | "loading" | "gone" | "error">("loading");
+export default function StoryViewer({
+  slug,
+  order,
+  onOpen,
+  onClose,
+  origin,
+}: Props) {
+  const stageRef = useRef<HTMLDivElement>(null);
+
+  // The app's _GrowFromBubble: scaled and moved from the circle to the screen, corners rounding
+  // off as it grows; no fade. Skipped for reduced motion.
+  useEffect(() => {
+    const el = stageRef.current;
+    if (
+      !el ||
+      !origin ||
+      !el.animate ||
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    )
+      return;
+    const box = el.getBoundingClientRect();
+    const scale = origin.width / box.width;
+    const dx = origin.left + origin.width / 2 - (box.left + box.width / 2);
+    const dy = origin.top + origin.height / 2 - (box.top + box.height / 2);
+    el.animate(
+      [
+        {
+          transform: `translate(${dx}px, ${dy}px) scale(${scale})`,
+          clipPath: `inset(0 round ${box.width / 2}px)`,
+        },
+        { transform: "none", clipPath: "inset(0 round 0px)" },
+      ],
+      { duration: 300, easing: "cubic-bezier(0.33, 1, 0.68, 1)" },
+    );
+    // Once, when the viewer opens.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const [story, setStory] = useState<StoryView | "loading" | "gone" | "error">(
+    "loading",
+  );
 
   useEffect(() => {
     let alive = true;
@@ -50,26 +91,53 @@ export default function StoryViewer({ slug, order, onOpen, onClose }: Props) {
   const previous = at > 0 ? order[at - 1] : null;
 
   return (
-    <div className={styles.overlay} role="dialog" aria-modal="true" aria-label="Poveste" data-testid="story-viewer">
+    <div
+      className={styles.overlay}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Poveste"
+      data-testid="story-viewer"
+    >
       <div className={styles.backdrop} onClick={onClose} aria-hidden="true" />
-      {typeof story === "object" ? (
-        <StoryPlayer
-          key={story.slug}
-          story={story}
-          onClose={onClose}
-          onFinished={() => (next ? onOpen(next) : onClose())}
-          onBackFromStart={previous ? () => onOpen(previous) : undefined}
-        />
-      ) : (
-        <div className={styles.card}>
-          <button type="button" className={styles.close} aria-label="Închide" onClick={onClose}>
-            ✕
-          </button>
-          {story === "loading" && <span className={styles.spinner} role="status" aria-label="Se încarcă" />}
-          {story === "gone" && <p className={styles.message}>Povestea nu mai este disponibilă.</p>}
-          {story === "error" && <p className={styles.message}>Povestea nu s-a putut încărca. Verifică conexiunea.</p>}
-        </div>
-      )}
+      <div className={styles.stage} ref={stageRef}>
+        {typeof story === "object" ? (
+          <StoryPlayer
+            key={story.slug}
+            story={story}
+            onClose={onClose}
+            onFinished={() => (next ? onOpen(next) : onClose())}
+            onBackFromStart={previous ? () => onOpen(previous) : undefined}
+          />
+        ) : (
+          <div className={styles.card}>
+            <button
+              type="button"
+              className={styles.close}
+              aria-label="Închide"
+              onClick={onClose}
+            >
+              ✕
+            </button>
+            {story === "loading" && (
+              <span
+                className={styles.spinner}
+                role="status"
+                aria-label="Se încarcă"
+              />
+            )}
+            {story === "gone" && (
+              <p className={styles.message}>
+                Povestea nu mai este disponibilă.
+              </p>
+            )}
+            {story === "error" && (
+              <p className={styles.message}>
+                Povestea nu s-a putut încărca. Verifică conexiunea.
+              </p>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

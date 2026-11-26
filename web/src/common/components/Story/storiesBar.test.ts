@@ -7,7 +7,7 @@ import StoriesBar, { StoriesProvider } from "@/components/Story/StoriesBar";
 import { toStoryBubble } from "@/utils/stories";
 
 const render = (stories: unknown[]) =>
-  renderToString(createElement(StoriesProvider, { stories: stories.map((s) => toStoryBubble(s)!) }, createElement(StoriesBar)));
+  renderToString(createElement(StoriesProvider, { stories: stories.map((s) => toStoryBubble(s)!), children: createElement(StoriesBar) }));
 
 describe("StoriesBar", () => {
   it("renders a bubble per story: its picture, title and share page link", () => {

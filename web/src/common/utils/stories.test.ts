@@ -1,7 +1,7 @@
 // The story share page's view of the API (backend/docs/stories-api.md), from fixture JSON.
 import { describe, expect, it } from "vitest";
 import fixture from "@/components/Story/fixtures/stories.json";
-import { appLinks, ctaLink, isStoryLive, orderBubbles, safeHttpUrl, seoStory, toStoryBubble, toStoryView } from "@/utils/stories";
+import { appLinks, cssColor, ctaLink, formatStoryCount, isStoryLive, orderBubbles, safeHttpUrl, seoStory, toStoryBubble, toStoryView } from "@/utils/stories";
 
 const story = () => structuredClone(fixture.stories[0]) as any;
 
@@ -142,5 +142,34 @@ describe("bubbles", () => {
   it("an edited story is new again", () => {
     const a = bubble("a", { updated_at: "2026-12-01T00:00:00Z" });
     expect(orderBubbles([bubble("b"), a], { a: "2026-11-25T10:12:03Z", b: "2026-11-25T10:12:03Z" }).map((x) => x.slug)).toEqual(["a", "b"]);
+  });
+});
+
+describe("the app's Reels fields", () => {
+  it("author, caption and messages, with the app's defaults", () => {
+    const plain = toStoryView(story())!;
+    expect(plain.author).toBeNull();
+    expect(plain.messages).toEqual({ enabled: false, placeholder: "Trimite un mesaj…" });
+    expect(plain.slides[0].caption).toBeNull();
+    const s = story();
+    s.author = { name: "Radio Creștin", avatar_url: "https://cdn.radiocrestin.ro/a.png" };
+    s.messages = { enabled: true, placeholder: "Scrie-ne" };
+    s.slides[0].caption = "  Concertul de Crăciun  ";
+    const view = toStoryView(s)!;
+    expect(view.author).toEqual({ name: "Radio Creștin", avatar: "https://cdn.radiocrestin.ro/a.png" });
+    expect(view.messages).toEqual({ enabled: true, placeholder: "Scrie-ne" });
+    expect(view.slides[0].caption).toBe("Concertul de Crăciun");
+  });
+  it("CTA colours: #RRGGBB, or #AARRGGBB as the app reads it", () => {
+    expect(cssColor("#E91E63")).toBe("#e91e63");
+    expect(cssColor("80FF0000")).toBe("rgba(255, 0, 0, 0.502)");
+    expect(cssColor("red")).toBeUndefined();
+    const cta = ctaLink({ style: "button", label: "Hai", color: "#112233", text_color: "#ffffff", target: { type: "url", url: "https://a.b/" } });
+    expect(cta).toMatchObject({ color: "#112233", textColor: "#ffffff" });
+  });
+  it("counts with Romanian thousands, as the app", () => {
+    expect(formatStoryCount(2229)).toBe("2.229");
+    expect(formatStoryCount(152)).toBe("152");
+    expect(formatStoryCount(1234567)).toBe("1.234.567");
   });
 });
