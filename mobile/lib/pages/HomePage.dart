@@ -580,12 +580,13 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   static const _storyAutoOpenDelay = Duration(milliseconds: 1500);
 
   /// Opens the viewer at bubble [index] of the bar.
-  void _openStoryBubble(int index) {
+  void _openStoryBubble(int index, Rect from) {
     AnalyticsService.instance
         .capture('button_clicked', {'button_name': 'story_bubble'});
     unawaited(_openStories(
       [for (final bubble in _storyBubbles) bubble.story],
       index,
+      from: from,
     ));
   }
 
@@ -628,6 +629,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     List<Story> stories,
     int index, {
     bool autoOpened = false,
+    Rect? from,
   }) async {
     if (_storyViewerOpen || stories.isEmpty) return;
     _storyViewerOpen = true;
@@ -636,6 +638,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       stories: stories,
       initialStory: index,
       autoOpened: autoOpened,
+      from: from,
     );
     _storyViewerOpen = false;
     if (autoOpened) {

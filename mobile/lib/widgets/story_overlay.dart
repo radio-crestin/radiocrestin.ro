@@ -205,58 +205,41 @@ class _LikeAction extends StatelessWidget {
   }
 }
 
-/// The call to action as a full-width bar with a chevron, as Reels' ads
-/// have it: it rises in once the slide shows, glassy at first, then fills
-/// with its colour, and its chevron nudges toward the target now and then.
+/// The call to action as a full-width bar, as Instagram's ads have it:
+/// on screen from the start, glassy, then its colour sweeps in from the
+/// left after [fillAfter] and the label turns to its text colour.
 class StoryCtaBar extends StatefulWidget {
   const StoryCtaBar({super.key, required this.cta, required this.onPressed});
 
   final StoryCta cta;
   final VoidCallback onPressed;
 
-  /// When it rises in, and when it fills with its colour.
-  static const appearAfter = Duration(milliseconds: 350);
-  static const fillAfter = Duration(milliseconds: 1400);
+  /// When the colour starts to sweep in, and how long the sweep takes.
+  static const fillAfter = Duration(milliseconds: 2000);
+  static const fillDuration = Duration(milliseconds: 450);
 
   @override
   State<StoryCtaBar> createState() => _StoryCtaBarState();
 }
 
 class _StoryCtaBarState extends State<StoryCtaBar>
-    with TickerProviderStateMixin {
-  late final AnimationController _enter = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 380),
-  );
+    with SingleTickerProviderStateMixin {
   late final AnimationController _fill = AnimationController(
     vsync: this,
-    duration: const Duration(milliseconds: 400),
+    duration: StoryCtaBar.fillDuration,
   );
-  late final AnimationController _nudge = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 1600),
-  );
-  final List<Timer> _timers = [];
+  Timer? _timer;
 
   @override
   void initState() {
     super.initState();
-    _timers
-      ..add(Timer(StoryCtaBar.appearAfter, _enter.forward))
-      ..add(Timer(StoryCtaBar.fillAfter, () {
-        _fill.forward();
-        _nudge.repeat();
-      }));
+    _timer = Timer(StoryCtaBar.fillAfter, _fill.forward);
   }
 
   @override
   void dispose() {
-    for (final timer in _timers) {
-      timer.cancel();
-    }
-    _enter.dispose();
+    _timer?.cancel();
     _fill.dispose();
-    _nudge.dispose();
     super.dispose();
   }
 
@@ -264,68 +247,75 @@ class _StoryCtaBarState extends State<StoryCtaBar>
   Widget build(BuildContext context) {
     final color = widget.cta.color ?? AppColors.primary;
     final textColor = widget.cta.textColor ?? Colors.white;
-    final entrance = CurvedAnimation(
-        parent: _enter, curve: Curves.fastOutSlowIn);
-    return FadeTransition(
-      opacity: entrance,
-      child: SlideTransition(
-        position: Tween(begin: const Offset(0, 0.6), end: Offset.zero)
-            .animate(entrance),
-        child: AnimatedBuilder(
-          animation: _fill,
-          builder: (context, child) {
-            final t = Curves.easeInOut.transform(_fill.value);
-            return Material(
-              key: const ValueKey('story-cta-button'),
-              color: Color.lerp(const Color(0x40FFFFFF), color, t),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-                side: BorderSide(
-                  color: Colors.white.withValues(alpha: 0.35 * (1 - t)),
+    const radius = BorderRadius.all(Radius.circular(10));
+    return Semantics(
+      button: true,
+      label: widget.cta.label,
+      excludeSemantics: true,
+      child: AnimatedBuilder(
+        animation: _fill,
+        builder: (context, _) {
+          final t = Curves.easeOutCubic.transform(_fill.value);
+          final label = Color.lerp(Colors.white, textColor, t)!;
+          return DecoratedBox(
+            key: const ValueKey('story-cta-button'),
+            decoration: BoxDecoration(
+              borderRadius: radius,
+              boxShadow: [
+                BoxShadow(
+                  color: color.withValues(alpha: 0.45 * t),
+                  blurRadius: 14,
+                  offset: const Offset(0, 4),
                 ),
-              ),
-              clipBehavior: Clip.antiAlias,
-              child: InkWell(
-                onTap: widget.onPressed,
-                child: Padding(
-                  padding: EdgeInsets.symmetric(
-                      horizontal: 18,
-                      vertical: isCompactStory(context) ? 10 : 14),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          widget.cta.label,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: Color.lerp(Colors.white, textColor, t),
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: radius,
+              child: Material(
+                color: const Color(0x38FFFFFF),
+                child: InkWell(
+                  onTap: widget.onPressed,
+                  child: SizedBox(
+                    height: isCompactStory(context) ? 36 : 40,
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        // The colour sweeping in from the left edge.
+                        FractionallySizedBox(
+                          alignment: Alignment.centerLeft,
+                          widthFactor: t,
+                          child: ColoredBox(color: color),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.only(left: 14, right: 8),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  widget.cta.label,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    color: label,
+                                    fontSize: 14.5,
+                                    fontWeight: FontWeight.w700,
+                                    letterSpacing: 0.1,
+                                  ),
+                                ),
+                              ),
+                              Icon(Icons.chevron_right_rounded,
+                                  color: label, size: 22),
+                            ],
                           ),
                         ),
-                      ),
-                      child!,
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
-            );
-          },
-          child: AnimatedBuilder(
-            animation: _nudge,
-            builder: (context, child) {
-              // A quick nudge to the right, then rest.
-              final v = _nudge.value;
-              final dx = v < 0.25 ? Curves.easeOut.transform(v / 0.25) * 5
-                  : v < 0.5 ? (1 - Curves.easeIn.transform((v - 0.25) / 0.25)) * 5
-                  : 0.0;
-              return Transform.translate(offset: Offset(dx, 0), child: child);
-            },
-            child: Icon(Icons.chevron_right_rounded,
-                color: widget.cta.textColor ?? Colors.white, size: 26),
-          ),
-        ),
+            ),
+          );
+        },
       ),
     );
   }

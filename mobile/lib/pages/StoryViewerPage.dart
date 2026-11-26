@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math' as math;
+import 'dart:ui' show lerpDouble;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
@@ -46,11 +47,16 @@ class StoryViewerPage extends StatefulWidget {
 
   /// Opens the viewer over the app; its future gives the page of the app a
   /// call to action asked for, or null.
+  ///
+  /// With [from] (a bubble's circle on the screen) it grows out of the
+  /// bubble and shrinks back into it, as Instagram's stories do;
+  /// otherwise (a link, opening by itself) it slides up.
   static Future<StoryCtaTarget?> open(
     BuildContext context, {
     required List<Story> stories,
     int initialStory = 0,
     bool autoOpened = false,
+    Rect? from,
   }) =>
       Navigator.of(context).push<StoryCtaTarget>(PageRouteBuilder(
         opaque: false,
@@ -62,16 +68,21 @@ class StoryViewerPage extends StatefulWidget {
           initialStory: initialStory,
           autoOpened: autoOpened,
         ),
-        transitionsBuilder: (context, animation, secondary, child) =>
-            SlideTransition(
-          position: Tween(begin: const Offset(0, 1), end: Offset.zero)
-              .animate(CurvedAnimation(
-            parent: animation,
-            curve: Curves.fastOutSlowIn,
-            reverseCurve: Curves.easeInOut,
-          )),
-          child: child,
-        ),
+        transitionsBuilder: (context, animation, secondary, child) {
+          if (from != null && !from.isEmpty) {
+            return _GrowFromBubble(
+                animation: animation, from: from, child: child);
+          }
+          return SlideTransition(
+            position: Tween(begin: const Offset(0, 1), end: Offset.zero)
+                .animate(CurvedAnimation(
+              parent: animation,
+              curve: Curves.fastOutSlowIn,
+              reverseCurve: Curves.easeInOut,
+            )),
+            child: child,
+          );
+        },
       ));
 
   @override
@@ -882,6 +893,52 @@ class _Bottom extends StatelessWidget {
           ],
         ],
       ),
+    );
+  }
+}
+
+/// The viewer growing out of a bubble's circle ([from]) to the whole
+/// screen, and back into it on the way out: scaled and moved, its corners
+/// rounding as it shrinks. No fade, so the GPU draws it once a frame.
+class _GrowFromBubble extends StatelessWidget {
+  const _GrowFromBubble({
+    required this.animation,
+    required this.from,
+    required this.child,
+  });
+
+  final Animation<double> animation;
+  final Rect from;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final curved = CurvedAnimation(
+      parent: animation,
+      curve: Curves.easeOutCubic,
+      reverseCurve: Curves.easeInCubic,
+    );
+    return AnimatedBuilder(
+      animation: curved,
+      child: child,
+      builder: (context, child) {
+        final t = curved.value;
+        if (t >= 1) return child!;
+        final size = MediaQuery.sizeOf(context);
+        final scale = lerpDouble(from.width / size.width, 1, t)!;
+        final center = Offset.lerp(from.center, size.center(Offset.zero), t)!;
+        final shift = center - size.center(Offset.zero);
+        return Transform(
+          transform: Matrix4.translationValues(shift.dx, shift.dy, 0)
+            ..multiply(Matrix4.diagonal3Values(scale, scale, 1)),
+          alignment: Alignment.center,
+          child: ClipRRect(
+            borderRadius:
+                BorderRadius.circular(lerpDouble(size.width / 2, 0, t)!),
+            child: child,
+          ),
+        );
+      },
     );
   }
 }
