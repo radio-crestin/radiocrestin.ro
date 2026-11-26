@@ -1,0 +1,29 @@
+{% load i18n %}
+<div class="story-stats">
+  <dl class="story-stats__totals">
+    {% for label, value in totals %}<div><dt>{{ label }}</dt><dd>{{ value }}</dd></div>{% endfor %}
+    <div><dt>{% trans "Watched to the end, of opens" %}</dt><dd>{{ completion_rate }}</dd></div>
+    <div><dt>{% trans "Liked, of unique viewers" %}</dt><dd>{{ like_rate }}</dd></div>
+  </dl>
+  <table class="story-stats__table">
+    <thead><tr><th>{% trans "Slide" %}</th><th>{% trans "Type" %}</th><th>{% trans "Seen" %}</th><th>{% trans "CTA taps" %}</th><th>{% trans "CTA rate" %}</th></tr></thead>
+    <tbody>
+    {% for slide in slides %}
+      <tr><td>{{ slide.number }}</td><td>{{ slide.type }}</td><td>{{ slide.views }}</td>
+        <td>{% if slide.has_cta %}{{ slide.cta_clicks }}{% else %}-{% endif %}</td>
+        <td>{% if slide.has_cta %}{{ slide.cta_rate }}{% else %}-{% endif %}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  <table class="story-stats__table">
+    <caption>{% blocktrans %}Last {{ history_days }} days{% endblocktrans %}</caption>
+    <thead><tr><th>{% trans "Day" %}</th><th>{% trans "Opened" %}</th><th>{% trans "By itself" %}</th><th>{% trans "Unique viewers" %}</th><th>{% trans "To the end" %}</th><th>{% trans "Likes" %}</th><th>{% trans "Unlikes" %}</th><th>{% trans "CTA taps" %}</th><th>{% trans "Shares" %}</th></tr></thead>
+    <tbody>
+    {% for day in days %}
+      <tr><td>{{ day.day|date:"Y-m-d" }}</td><td>{{ day.views }}</td><td>{{ day.auto_opens }}</td><td>{{ day.unique_viewers }}</td><td>{{ day.completions }}</td><td>{{ day.likes }}</td><td>{{ day.unlikes }}</td><td>{{ day.cta_clicks }}</td><td>{{ day.shares }}</td></tr>
+    {% empty %}
+      <tr><td colspan="9">{% trans "No events yet (the history is updated every 5 minutes)." %}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
