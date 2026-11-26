@@ -2180,6 +2180,56 @@ void main() {
       controller.dispose();
     });
 
+    test('the CTA comes in after 4 s of play, or 30% of the slide sooner',
+        (app) async {
+      Duration ms(int n) => Duration(milliseconds: n);
+      const six = Duration(seconds: 6);
+      expect(StoryCtaTiming.showAt(six), ms(1800));
+      expect(StoryCtaTiming.showAt(const Duration(seconds: 10)), ms(3000));
+      expect(StoryCtaTiming.showAt(ms(14500)), ms(4000));
+      expect(StoryCtaTiming.showAt(const Duration(seconds: 60)), ms(4000));
+      expect(StoryCtaTiming.phaseAt(ms(1799), six), StoryCtaPhase.hidden);
+      expect(StoryCtaTiming.phaseAt(ms(1800), six), StoryCtaPhase.shown);
+      expect(StoryCtaTiming.phaseAt(ms(2799), six), StoryCtaPhase.shown);
+      expect(StoryCtaTiming.phaseAt(ms(2800), six), StoryCtaPhase.filled,
+          reason: 'its colour a second after it comes in');
+
+      final controller = StoryViewerController(stories: [
+        story(StoryFixtures.verse(base())),
+        story(StoryFixtures.teaser(base())),
+      ])
+        ..start();
+      // A 4 s picture: in at 1.2 s of play, its colour at 2.2 s.
+      controller.tick(ms(1000));
+      expect(controller.ctaPhase, StoryCtaPhase.hidden);
+      controller.pause(StoryPause.hold);
+      controller.tick(ms(2000));
+      expect(controller.ctaPhase, StoryCtaPhase.hidden,
+          reason: 'a hold stops the count');
+      controller.resume(StoryPause.hold);
+      controller.tick(ms(300));
+      expect(controller.ctaPhase, StoryCtaPhase.shown);
+      controller.tick(ms(1000));
+      expect(controller.ctaPhase, StoryCtaPhase.filled);
+      controller.next();
+      expect(controller.ctaPhase, StoryCtaPhase.hidden,
+          reason: 'each slide counts afresh');
+
+      // A 3 s video counts its own position: in at 0.9 s.
+      controller.showStory(1);
+      controller.tick(const Duration(seconds: 10));
+      expect(controller.ctaPhase, StoryCtaPhase.hidden,
+          reason: 'the timer doesn\'t count for a video');
+      controller.playerProgress(ms(800), const Duration(seconds: 3));
+      expect(controller.ctaPhase, StoryCtaPhase.hidden);
+      controller.playerProgress(ms(950), const Duration(seconds: 3));
+      expect(controller.ctaPhase, StoryCtaPhase.shown);
+      controller.playerProgress(ms(500), const Duration(seconds: 3));
+      expect(controller.ctaPhase, StoryCtaPhase.shown,
+          reason: 'a seek back doesn\'t hide it again');
+      controller.dispose();
+    });
+
     test('the CTA routing: what each target does, and the app link order',
         (app) async {
       StoryCtaTarget target(Map<String, Object?> json) =>
@@ -2629,8 +2679,15 @@ void main() {
               '${app.describeStories()}');
       await app.waitFor(() => app.audio.player.volume < 0.05,
           reason: 'the radio to step back under the video\'s sound');
+      await app.waitFor(
+          () => viewer.controller.ctaPhase != StoryCtaPhase.hidden,
+          reason: 'the CTA to come in at 30% of the video; '
+              '${app.describeStories()}');
+      await app.pumpFor(StoryCtaReveal.riseDuration);
       expect(app.showsText(StoryFixtures.teaserCta), isTrue,
           reason: 'the CTA button');
+      expect(app.findsKey('story-swipe-up'), isTrue,
+          reason: 'the swipe-up hint');
 
       final launcher = RecordingLauncher()..appInstalled = false;
       final systemLauncher = UrlLauncherPlatform.instance;
@@ -2688,8 +2745,15 @@ void main() {
       final viewer = await app.waitForStory(StoryFixtures.verseSlug);
       viewer.controller.next();
       await app.waitForStory(StoryFixtures.verseSlug);
-      // The bar rises in once the slide shows.
-      await app.pumpFor(StoryCtaBar.fillAfter);
+      // The bar comes in after 30% of the 4 s slide's play, its colour a
+      // second later.
+      expect(app.showsText(StoryFixtures.stationCta), isFalse,
+          reason: 'the CTA waits for its time; ${app.describeStories()}');
+      expect(app.findsKey('story-swipe-up'), isFalse);
+      await app.waitFor(
+          () => viewer.controller.ctaPhase == StoryCtaPhase.filled,
+          reason: 'the CTA to come in; ${app.describeStories()}');
+      await app.pumpFor(StoryCtaBar.fillDuration);
       expect(find.text(StoryFixtures.stationCta), findsOneWidget,
           reason: 'the CTA bar; ${app.describeStories()}');
       final since = DateTime.now();
@@ -2726,6 +2790,11 @@ void main() {
       final systemLauncher = UrlLauncherPlatform.instance;
       UrlLauncherPlatform.instance = launcher;
       try {
+        await app.waitFor(
+            () => viewer.controller.ctaPhase != StoryCtaPhase.hidden,
+            reason: 'Open in Instagram to come in at 30% of the slide; '
+                '${app.describeStories()}');
+        await app.pumpFor(StoryCtaReveal.riseDuration);
         await app.tapText('Deschide în Instagram');
         await app.waitFor(() => launcher.launches.isNotEmpty,
             reason: 'Instagram to open');
@@ -2787,7 +2856,11 @@ void main() {
         expect(app.findsKey('story-like-${StoryFixtures.verseSlug}'), isTrue);
         app.storyViewer!.controller.next();
         await app.waitForStory(StoryFixtures.verseSlug);
-        await app.pumpFor(StoryCtaBar.fillAfter);
+        await app.waitFor(
+            () => app.storyViewer!.controller.ctaPhase !=
+                StoryCtaPhase.hidden,
+            reason: 'the CTA to come in');
+        await app.pumpFor(StoryCtaReveal.riseDuration);
         expect(app.findsKey('story-comment-field'), isTrue);
         expect(app.showsText(StoryFixtures.stationCta), isTrue);
         expect(app.tester.takeException(), isNull, reason: 'no overflow');

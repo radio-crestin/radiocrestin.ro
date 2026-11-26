@@ -212,17 +212,101 @@ class _LikeAction extends StatelessWidget {
   }
 }
 
+/// A call to action coming in, as on the website's player: its room
+/// opens smoothly, pushing what is above it up, and it rises in.
+///
+/// Hidden, it takes no room and no taps.
+class StoryCtaReveal extends StatefulWidget {
+  const StoryCtaReveal({super.key, required this.shown, required this.child});
+
+  final bool shown;
+  final Widget child;
+
+  /// How long the room takes to open, and the rise with its overshoot.
+  static const roomDuration = Duration(milliseconds: 350);
+  static const riseDuration = Duration(milliseconds: 450);
+
+  @override
+  State<StoryCtaReveal> createState() => _StoryCtaRevealState();
+}
+
+class _StoryCtaRevealState extends State<StoryCtaReveal>
+    with SingleTickerProviderStateMixin {
+  // The website's curves: the room eases out, the rise springs past.
+  static const _roomCurve = Cubic(0.33, 1, 0.68, 1);
+  static const _riseCurve = Cubic(0.2, 1.3, 0.45, 1);
+
+  late final AnimationController _in = AnimationController(
+    vsync: this,
+    duration: StoryCtaReveal.riseDuration,
+    value: widget.shown ? 1 : 0,
+  );
+
+  @override
+  void didUpdateWidget(StoryCtaReveal oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.shown && !oldWidget.shown) _in.forward();
+    if (!widget.shown && oldWidget.shown) _in.value = 0;
+  }
+
+  @override
+  void dispose() {
+    _in.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    const roomShare = 350 / 450;
+    return AnimatedBuilder(
+      animation: _in,
+      child: widget.child,
+      builder: (context, child) {
+        final v = _in.value;
+        if (v == 0) return const SizedBox.shrink();
+        final room = _roomCurve.transform((v / roomShare).clamp(0.0, 1.0));
+        final rise = _riseCurve.transform(v);
+        final fade = Curves.ease.transform((v / roomShare).clamp(0.0, 1.0));
+        return ClipRect(
+          // Open, its shadow may spill out.
+          clipBehavior: room < 1 ? Clip.hardEdge : Clip.none,
+          child: Align(
+            alignment: Alignment.topLeft,
+            heightFactor: room,
+            child: Opacity(
+              opacity: fade,
+              child: Transform.translate(
+                offset: Offset(0, 12 * (1 - rise)),
+                child: Transform.scale(
+                  scale: 0.96 + 0.04 * rise,
+                  alignment: Alignment.bottomLeft,
+                  child: child,
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
 /// The call to action as a full-width bar, as Instagram's ads have it:
-/// on screen from the start, glassy, then its colour sweeps in from the
-/// left after [fillAfter] and the label turns to its text colour.
+/// glassy as it comes in, then, once [filled], its colour sweeps in from
+/// the left and the label turns to its text colour.
 class StoryCtaBar extends StatefulWidget {
-  const StoryCtaBar({super.key, required this.cta, required this.onPressed});
+  const StoryCtaBar({
+    super.key,
+    required this.cta,
+    required this.filled,
+    required this.onPressed,
+  });
 
   final StoryCta cta;
+  final bool filled;
   final VoidCallback onPressed;
 
-  /// When the colour starts to sweep in, and how long the sweep takes.
-  static const fillAfter = Duration(milliseconds: 2000);
+  /// How long the colour takes to sweep in.
   static const fillDuration = Duration(milliseconds: 450);
 
   @override
@@ -234,18 +318,18 @@ class _StoryCtaBarState extends State<StoryCtaBar>
   late final AnimationController _fill = AnimationController(
     vsync: this,
     duration: StoryCtaBar.fillDuration,
+    value: widget.filled ? 1 : 0,
   );
-  Timer? _timer;
 
   @override
-  void initState() {
-    super.initState();
-    _timer = Timer(StoryCtaBar.fillAfter, _fill.forward);
+  void didUpdateWidget(StoryCtaBar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.filled && !oldWidget.filled) _fill.forward();
+    if (!widget.filled && oldWidget.filled) _fill.value = 0;
   }
 
   @override
   void dispose() {
-    _timer?.cancel();
     _fill.dispose();
     super.dispose();
   }

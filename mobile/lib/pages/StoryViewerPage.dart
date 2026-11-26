@@ -115,7 +115,7 @@ class StoryViewerPageState extends State<StoryViewerPage>
 
   /// What the page shows changes only with these; the bars follow the
   /// controller on their own.
-  (int, int, bool, Set<StoryPause>)? _shown;
+  (int, int, bool, Set<StoryPause>, StoryCtaPhase)? _shown;
 
   @override
   void initState() {
@@ -174,13 +174,15 @@ class StoryViewerPageState extends State<StoryViewerPage>
       controller.slideIndex,
       controller.isFinished,
       controller.pauses,
+      controller.ctaPhase,
     );
     final before = _shown;
     if (before != null &&
         before.$1 == shown.$1 &&
         before.$2 == shown.$2 &&
         before.$3 == shown.$3 &&
-        _sameSet(before.$4, shown.$4)) {
+        _sameSet(before.$4, shown.$4) &&
+        before.$5 == shown.$5) {
       return;
     }
     _shown = shown;
@@ -318,7 +320,10 @@ class StoryViewerPageState extends State<StoryViewerPage>
       setState(() => _drag = 0);
     } else if (_dragUp > 60 || velocity < -600) {
       final cta = controller.slide.effectiveCta;
-      if (cta != null && cta.style.hasSwipeUp) {
+      // Only once it shows: a call to action not yet in doesn't run.
+      if (cta != null &&
+          cta.style.hasSwipeUp &&
+          controller.ctaPhase != StoryCtaPhase.hidden) {
         unawaited(runCta(cta, via: 'swipe_up'));
       }
     }
@@ -522,6 +527,7 @@ class StoryViewerPageState extends State<StoryViewerPage>
                     story: story,
                     slide: slide,
                     cta: cta,
+                    ctaPhase: controller.ctaPhase,
                     service: _service,
                     commentFocus: _commentFocus,
                     onCta: (via) => runCta(cta!, via: via),
@@ -843,6 +849,7 @@ class _Bottom extends StatelessWidget {
     required this.story,
     required this.slide,
     required this.cta,
+    required this.ctaPhase,
     required this.service,
     required this.commentFocus,
     required this.onCta,
@@ -854,6 +861,7 @@ class _Bottom extends StatelessWidget {
   final Story story;
   final StorySlide slide;
   final StoryCta? cta;
+  final StoryCtaPhase ctaPhase;
   final StoriesService service;
   final FocusNode commentFocus;
   final ValueChanged<String> onCta;
@@ -890,11 +898,21 @@ class _Bottom extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        if (cta != null && cta.style.hasButton) ...[
-                          StoryCtaBar(
-                              cta: cta, onPressed: () => onCta('button')),
-                          SizedBox(height: compact ? 8 : 14),
-                        ],
+                        if (cta != null && cta.style.hasButton)
+                          // Its room opens when it comes in, pushing who
+                          // the story is from up.
+                          StoryCtaReveal(
+                            shown: ctaPhase != StoryCtaPhase.hidden,
+                            child: Padding(
+                              padding:
+                                  EdgeInsets.only(bottom: compact ? 8 : 14),
+                              child: StoryCtaBar(
+                                cta: cta,
+                                filled: ctaPhase == StoryCtaPhase.filled,
+                                onPressed: () => onCta('button'),
+                              ),
+                            ),
+                          ),
                         StoryAuthorRow(story: story, slide: slide),
                       ],
                     ),
@@ -910,13 +928,17 @@ class _Bottom extends StatelessWidget {
               ),
             ],
           ),
-          if (cta != null && cta.style.hasSwipeUp) ...[
-            const SizedBox(height: 10),
-            StorySwipeUpHint(
-              label: cta.style.hasButton ? 'Glisează în sus' : cta.label,
-              onTap: () => onCta('swipe_up'),
+          if (cta != null && cta.style.hasSwipeUp)
+            StoryCtaReveal(
+              shown: ctaPhase != StoryCtaPhase.hidden,
+              child: Padding(
+                padding: const EdgeInsets.only(top: 10),
+                child: StorySwipeUpHint(
+                  label: cta.style.hasButton ? 'Glisează în sus' : cta.label,
+                  onTap: () => onCta('swipe_up'),
+                ),
+              ),
             ),
-          ],
           if (comments.enabled) ...[
             SizedBox(height: compact ? 8 : 12),
             Align(

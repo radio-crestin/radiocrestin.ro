@@ -29,6 +29,45 @@ enum StoryPause {
   comment,
 }
 
+/// How far a slide's call to action has come in.
+enum StoryCtaPhase {
+  /// Not yet: nothing shows, and a swipe up does nothing.
+  hidden,
+
+  /// In: the bar (glassy) and the swipe-up hint.
+  shown,
+
+  /// The bar's colour has swept in.
+  filled,
+}
+
+/// When a slide's call to action comes in, as on the website's player
+/// (`web/src/common/components/Story/StoryPlayer.tsx`): after 4 s of play,
+/// or 30% of the slide when that is sooner; its colour a second later.
+///
+/// It counts play time: a pause or a hold stops it, and a video counts
+/// its own position.
+abstract final class StoryCtaTiming {
+  static const showAfter = Duration(seconds: 4);
+  static const maxShare = 0.3;
+  static const fillDelay = Duration(seconds: 1);
+
+  /// When a slide [length] long shows its call to action: 1.8 s for 6 s,
+  /// 3 s for 10 s, 4 s from 13.3 s on.
+  static Duration showAt(Duration length) {
+    final share = length * maxShare;
+    return share < showAfter ? share : showAfter;
+  }
+
+  /// The phase after [played] of a slide [length] long.
+  static StoryCtaPhase phaseAt(Duration played, Duration length) {
+    final at = showAt(length);
+    if (played >= at + fillDelay) return StoryCtaPhase.filled;
+    if (played >= at) return StoryCtaPhase.shown;
+    return StoryCtaPhase.hidden;
+  }
+}
+
 /// Where the viewer is and whether it runs: the story, the slide, how far
 /// the slide's bar has filled, and why it is paused.
 ///
@@ -54,6 +93,7 @@ class StoryViewerController extends ChangeNotifier {
   double _progress = 0;
   Duration? _playerDuration;
   final Set<StoryPause> _pauses = {};
+  StoryCtaPhase _ctaPhase = StoryCtaPhase.hidden;
   bool _finished = false;
   bool _started = false;
 
@@ -80,6 +120,13 @@ class StoryViewerController extends ChangeNotifier {
   bool get isPaused => _pauses.isNotEmpty;
   Set<StoryPause> get pauses => Set.unmodifiable(_pauses);
   bool get isFinished => _finished;
+
+  /// How long the current slide has played.
+  Duration get played => slideDuration * _progress;
+
+  /// How far the current slide's call to action has come in; it never
+  /// goes back on the same slide.
+  StoryCtaPhase get ctaPhase => _ctaPhase;
 
   /// How far bar [index] of the current story has filled.
   double barProgress(int index) => index < _slideIndex
@@ -110,6 +157,7 @@ class StoryViewerController extends ChangeNotifier {
     final total = slideDuration.inMicroseconds;
     if (total <= 0) return;
     _progress += elapsed.inMicroseconds / total;
+    _updateCta();
     if (_progress >= 1) {
       next();
     } else {
@@ -123,6 +171,7 @@ class StoryViewerController extends ChangeNotifier {
     _playerDuration = duration;
     _progress = (position.inMicroseconds / duration.inMicroseconds)
         .clamp(0.0, 1.0);
+    _updateCta();
     notifyListeners();
   }
 
@@ -205,9 +254,15 @@ class StoryViewerController extends ChangeNotifier {
     _slideIndex = slideIndex;
     _progress = 0;
     _playerDuration = null;
+    _ctaPhase = StoryCtaPhase.hidden;
     // A new slide loads afresh; what held the old one doesn't hold it.
     _pauses.removeAll(const {StoryPause.loading, StoryPause.embed});
     _announce(storyChanged: storyChanged);
+  }
+
+  void _updateCta() {
+    final phase = StoryCtaTiming.phaseAt(played, slideDuration);
+    if (phase.index > _ctaPhase.index) _ctaPhase = phase;
   }
 
   void _announce({required bool storyChanged}) {
