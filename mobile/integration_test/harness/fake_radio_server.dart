@@ -107,6 +107,14 @@ class FakeRadioServer {
   /// Answers posting a comment with 429 (its rate limit) when set.
   bool storyCommentsLimited = false;
 
+  /// The profile the team linked to this phone (`{name, avatar_url}`);
+  /// null: none.
+  Map<String, Object?>? storyCommentProfile;
+
+  /// "Only profiles comment", on by default: a phone without a profile
+  /// reads the comments but can't write one (403).
+  bool storyCommentsProfilesOnly = true;
+
   /// The stories this device likes, as the API keeps them.
   final Set<String> storyLikes = {};
 
@@ -154,6 +162,8 @@ class FakeRadioServer {
     storyComments.clear();
     postedComments.clear();
     storyCommentsLimited = false;
+    storyCommentProfile = null;
+    storyCommentsProfilesOnly = true;
     storyLikes.clear();
     storySettings = const {'auto_open_gap_actions': 0};
     for (final stream in _hls.values) {
@@ -401,6 +411,9 @@ class FakeRadioServer {
       return connection.write(bytes).then((_) => connection.end());
     }
 
+    final profile = storyCommentProfile;
+    final canComment = profile != null || !storyCommentsProfilesOnly;
+
     switch (connection.served.method) {
       case 'POST':
         final body = (jsonDecode(connection.served.body ?? '{}') as Map)
@@ -409,9 +422,14 @@ class FakeRadioServer {
         if (storyCommentsLimited) {
           return connection.status(HttpStatus.tooManyRequests);
         }
+        if (!canComment) {
+          return json({'error': 'only profiles can comment'},
+              status: HttpStatus.forbidden);
+        }
         final comment = {
           'id': 1000 + postedComments.length,
-          'author_name': body['author_name'],
+          'author_name': profile?['name'] ?? 'Ascultător',
+          'author_avatar_url': profile?['avatar_url'],
           'text': body['text'],
           'created_at': DateTime.now().toUtc().toIso8601String(),
           'device_id': body['device_id'],
@@ -427,6 +445,8 @@ class FakeRadioServer {
           'count': list.length,
           'comments': [for (final c in list) shown(c)],
           'next_before': null,
+          'can_comment': canComment,
+          'profile': profile,
         });
     }
   }

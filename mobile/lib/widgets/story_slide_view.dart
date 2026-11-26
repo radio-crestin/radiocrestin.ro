@@ -120,11 +120,16 @@ class StoryImage extends StatefulWidget {
     required this.url,
     this.fit = BoxFit.cover,
     this.events,
+    this.fallback,
   });
 
   final String url;
   final BoxFit fit;
   final StorySlideEvents? events;
+
+  /// Shown while it loads and when it can't (an avatar's initial); else
+  /// a spinner, then a broken picture.
+  final Widget? fallback;
 
   @override
   State<StoryImage> createState() => _StoryImageState();
@@ -200,6 +205,8 @@ class _StoryImageState extends State<StoryImage> {
   @override
   Widget build(BuildContext context) {
     final file = _file;
+    final fallback = widget.fallback;
+    if (file == null && fallback != null) return fallback;
     if (_failed && file == null) return const _MediaFailed();
     if (file == null) return const _MediaLoading();
     return SizedBox.expand(
@@ -215,7 +222,7 @@ class _StoryImageState extends State<StoryImage> {
         },
         errorBuilder: (context, error, stack) {
           WidgetsBinding.instance.addPostFrameCallback((_) => _fail());
-          return const _MediaFailed();
+          return widget.fallback ?? const _MediaFailed();
         },
       ),
     );

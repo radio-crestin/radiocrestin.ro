@@ -2387,14 +2387,31 @@ void main() {
       expect(StoryComment.fromJson({'id': 7, 'text': 'Amin',
           'author_name': null, 'created_at': '2026-11-26T10:00:00Z'})
           ?.authorName, StoryComment.anonymousName);
+      expect(StoryComment.fromJson({'id': 8, 'text': 'Amin',
+          'author_name': 'Ana', 'author_avatar_url': 'https://x/a.webp'})
+          ?.authorAvatarUrl, 'https://x/a.webp');
+      final profile = StoryCommentAccess.fromJson({
+        'can_comment': true,
+        'profile': {'name': 'Ana', 'avatar_url': null},
+      });
+      expect(profile.canComment, isTrue);
+      expect(profile.profile?.name, 'Ana');
+      expect(StoryCommentAccess.fromJson({'can_comment': false}).canComment,
+          isFalse, reason: 'only profiles comment, and this phone has none');
+      expect(StoryCommentAccess.fromJson({}).canComment, isTrue,
+          reason: 'an API before profiles lets everyone comment');
     });
 
     storyTest(
-        'a story with comments says the field is public, holds while one is '
-        'written, posts it signed, and lists it with the others',
-        (app) async {
+        'a phone with a profile gets the comment field, told it is public '
+        'and as whom; it holds the story, posts as the profile, and lists '
+        'it with the others, with their pictures', (app) async {
       server
         ..stories.add(StoryFixtures.verse(base(), comments: true))
+        ..storyCommentProfile = {
+          'name': 'Ana',
+          'avatar_url': '${base()}/images/profile-ana.png',
+        }
         ..storyComments[StoryFixtures.verseSlug] = [
           {
             'id': 1,
@@ -2407,6 +2424,9 @@ void main() {
       await app.coldStartStories();
       await app.tapStoryBubble(StoryFixtures.verseSlug);
       final viewer = await app.waitForStory(StoryFixtures.verseSlug);
+      await app.waitFor(() => app.findsKey('story-comment-field'),
+          reason: 'the field, once the API says this phone may comment');
+      await app.pumpFor(StoryCtaReveal.riseDuration);
       // The field lies over its hint: it is there, not hit-testable.
       expect(find.text(StoryFixtures.commentPlaceholder), findsOneWidget,
           reason: 'the admin\'s placeholder');
@@ -2422,17 +2442,15 @@ void main() {
               .byKey(const ValueKey('story-comment-public'))
               .evaluate()
               .isNotEmpty,
-          reason: 'it says the comment is public, and under which name');
-      expect(find.textContaining('Ascultător'), findsWidgets);
-
-      await app.tapKey('story-comment-name');
-      await app.tester.enterText(
-          find.byKey(const ValueKey('story-comment-name-field')), 'Ana');
-      await app.tapKey('story-comment-name-save');
-      await app.tester.tap(field.hitTestable());
-      await app.pumpFor(const Duration(milliseconds: 500));
-      expect(find.textContaining('„Ana”'), findsOneWidget,
-          reason: 'signed with the new name');
+          reason: 'it says the comment is public, and as whom');
+      expect(
+          find.descendant(
+              of: find.byKey(const ValueKey('story-comment-public')),
+              matching: find.byType(StoryAvatar)),
+          findsOneWidget,
+          reason: 'with the profile\'s picture');
+      expect(find.textContaining('Ana'), findsWidgets,
+          reason: 'and its name');
 
       final held = viewer.controller.progress;
       await app.tester.enterText(field, 'Vă mulțumim!');
@@ -2443,16 +2461,17 @@ void main() {
           reason: 'the comment to reach the API');
       final posted = server.postedComments.single;
       expect(posted['text'], 'Vă mulțumim!');
-      expect(posted['author_name'], 'Ana');
+      expect(posted.containsKey('author_name'), isFalse,
+          reason: 'the profile signs it, not a name the app sends');
       expect(posted['slide'], 401);
       await app.waitFor(() => app.showsText('Comentariu publicat'),
           reason: 'the listener told it is published');
       expect(app.findsKey('story-comments'), isTrue);
       expect(find.descendant(
               of: find.byKey(const ValueKey('story-comments')),
-              matching: find.text('1')),
+              matching: find.text('2')),
           findsOneWidget,
-          reason: 'the count goes up at once');
+          reason: 'Maria\'s and ours: the count goes up at once');
 
       await app.tapKey('story-comments');
       await app.waitFor(() => app.showsText('Ce verset frumos!'),
@@ -2461,6 +2480,19 @@ void main() {
       expect(viewer.controller.pauses, contains(StoryPause.sheet),
           reason: 'the story waits under the sheet');
       final mine = server.storyComments[StoryFixtures.verseSlug]!.first['id'];
+      // Maria has no picture: her initial; Ana's comment, her picture.
+      expect(
+          find.descendant(
+              of: find.byKey(const ValueKey('story-comment-avatar-1')),
+              matching: find.text('M')),
+          findsOneWidget,
+          reason: 'a profile without a picture shows its initial');
+      expect(
+          find.descendant(
+              of: find.byKey(ValueKey('story-comment-avatar-$mine')),
+              matching: find.byType(Image)),
+          findsOneWidget,
+          reason: 'our comment shows the profile\'s picture');
       expect(app.findsKey('story-comment-delete-1'), isFalse,
           reason: 'another listener\'s comment can\'t be deleted');
       await app.tapKey('story-comment-delete-$mine');
@@ -2474,10 +2506,14 @@ void main() {
         'once, and keeps the text', (app) async {
       server
         ..stories.add(StoryFixtures.verse(base(), comments: true))
+        ..storyCommentProfile = {'name': 'Ana', 'avatar_url': null}
         ..storyCommentsLimited = true;
       await app.coldStartStories();
       await app.tapStoryBubble(StoryFixtures.verseSlug);
       await app.waitForStory(StoryFixtures.verseSlug);
+      await app.waitFor(() => app.findsKey('story-comment-field'),
+          reason: 'the field for a profile');
+      await app.pumpFor(StoryCtaReveal.riseDuration);
       final field = find.byKey(const ValueKey('story-comment-field'));
       await app.tester.tap(field.hitTestable());
       await app.tester.enterText(field, 'Încă un comentariu');
@@ -2493,6 +2529,38 @@ void main() {
       expect(server.postedComments, hasLength(1), reason: 'never retried');
       expect(find.text('Încă un comentariu'), findsOneWidget,
           reason: 'the text stays to send later');
+    });
+
+    storyTest(
+        'only profiles comment: a phone without one reads the comments, '
+        'with no field to write', (app) async {
+      server
+        ..stories.add(StoryFixtures.verse(base(), comments: true))
+        ..storyComments[StoryFixtures.verseSlug] = [
+          {
+            'id': 1,
+            'author_name': 'Maria',
+            'text': 'Ce verset frumos!',
+            'created_at': DateTime.now().toUtc().toIso8601String(),
+            'device_id': 'someone-else',
+          },
+        ];
+      await app.coldStartStories();
+      await app.tapStoryBubble(StoryFixtures.verseSlug);
+      await app.waitForStory(StoryFixtures.verseSlug);
+      await app.waitFor(
+          () =>
+              app.stories.commentAccess.value[StoryFixtures.verseSlug] !=
+              null,
+          reason: 'the API to say whether this phone may comment');
+      await app.pumpFor(const Duration(milliseconds: 500));
+      expect(app.findsKey('story-comment-field'), isFalse,
+          reason: 'no profile: no field');
+      await app.tapKey('story-comments');
+      await app.waitFor(() => app.showsText('Ce verset frumos!'),
+          reason: 'the comments, to read');
+      expect(app.findsKey('story-comment-field'), isFalse,
+          reason: 'no field in the sheet either');
     });
 
     storyTest('comments are off by default: no field, no comments button',
@@ -2843,7 +2911,9 @@ void main() {
     storyTest('the viewer works sideways, on a phone held landscape',
         (app) async {
       // Its tallest bottom: the CTA bar, the caption and the comment field.
-      server.stories.add(StoryFixtures.verse(base(), comments: true));
+      server
+        ..stories.add(StoryFixtures.verse(base(), comments: true))
+        ..storyCommentProfile = {'name': 'Ana', 'avatar_url': null};
       await app.coldStartStories();
       await app.tapStoryBubble(StoryFixtures.verseSlug);
       final view = app.tester.view;

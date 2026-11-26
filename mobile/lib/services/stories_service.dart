@@ -42,6 +42,9 @@ enum StoryCommentResult {
 
   /// Too many comments from this phone lately (`429`): later.
   tooMany,
+
+  /// Only profiles comment on this story, and this phone has none (`403`).
+  notAllowed,
   failed,
 }
 
@@ -334,26 +337,26 @@ class StoriesService with WidgetsBindingObserver {
     await _store.saveLiked(slugs);
   }
 
-  /// The longest comment, and the longest name signed under it.
+  /// The longest comment.
   static const maxCommentLength = 500;
-  static const maxNameLength = 40;
 
-  static const _commentNameKey = 'stories_comment_name';
+  /// Whether this phone may comment on a story, and as whom, by slug: what
+  /// its comments list said last ([loadCommentAccess]).
+  final BehaviorSubject<Map<String, StoryCommentAccess>> commentAccess =
+      BehaviorSubject.seeded(const {});
 
-  /// The name this listener signs comments with; null for "Ascultător".
-  String? get commentName => _prefs.getString(_commentNameKey);
+  /// Null until the story's comments list answered.
+  StoryCommentAccess? commentAccessOf(Story story) =>
+      story.comments.enabled ? commentAccess.value[story.slug] : null;
 
-  Future<void> saveCommentName(String? name) async {
-    final trimmed = name?.trim() ?? '';
-    if (trimmed.isEmpty) {
-      await _prefs.remove(_commentNameKey);
-    } else {
-      await _prefs.setString(_commentNameKey,
-          trimmed.length > maxNameLength
-              ? trimmed.substring(0, maxNameLength)
-              : trimmed);
-    }
+  /// Asks whether this phone may comment on [story] (a story shown in the
+  /// viewer); the first page of its comments says, and its count.
+  Future<void> loadCommentAccess(Story story) async {
+    if (story.comments.enabled) await fetchComments(story);
   }
+
+  void _setCommentAccess(Story story, StoryCommentAccess access) =>
+      commentAccess.add({...commentAccess.value, story.slug: access});
 
   /// The comment counts this phone knows better than the list (its own
   /// comments added at once), by slug.
@@ -392,6 +395,9 @@ class StoriesService with WidgetsBindingObserver {
       if (count != null && before == null) {
         commentCounts.add({...commentCounts.value, story.slug: count});
       }
+      if (before == null) {
+        _setCommentAccess(story, StoryCommentAccess.fromJson(json));
+      }
       return page;
     } catch (e) {
       developer.log('Stories: comments not fetched: $e');
@@ -399,9 +405,9 @@ class StoriesService with WidgetsBindingObserver {
     }
   }
 
-  /// Posts [text] as a public comment on [story], signed with
-  /// [commentName], once: a refused one (429) counts toward the limit, so
-  /// it is never retried.
+  /// Posts [text] as a public comment on [story], under this phone's
+  /// profile, once: a refused one (429) counts toward the limit, so it is
+  /// never retried.
   Future<(StoryCommentResult, StoryComment?)> postComment(
     Story story,
     StorySlide? slide,
@@ -431,11 +437,15 @@ class StoriesService with WidgetsBindingObserver {
               'text': comment.length > maxCommentLength
                   ? comment.substring(0, maxCommentLength)
                   : comment,
-              'author_name': commentName,
             }),
           )
           .timeout(_timeout);
       if (response.statusCode == 429) return (StoryCommentResult.tooMany, null);
+      if (response.statusCode == 403) {
+        // Only profiles comment here: the field goes away.
+        _setCommentAccess(story, const StoryCommentAccess(canComment: false));
+        return (StoryCommentResult.notAllowed, null);
+      }
       if (response.statusCode < 200 || response.statusCode >= 300) {
         return (StoryCommentResult.failed, null);
       }
@@ -455,7 +465,9 @@ class StoriesService with WidgetsBindingObserver {
         posted ??
             StoryComment(
               id: 'local-${DateTime.now().microsecondsSinceEpoch}',
-              authorName: commentName ?? StoryComment.anonymousName,
+              authorName: commentAccessOf(story)?.profile?.name ??
+                  StoryComment.anonymousName,
+              authorAvatarUrl: commentAccessOf(story)?.profile?.avatarUrl,
               text: comment,
               createdAt: DateTime.now(),
               mine: true,

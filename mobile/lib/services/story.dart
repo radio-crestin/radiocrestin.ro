@@ -457,14 +457,20 @@ class StoryComment {
     required this.authorName,
     required this.text,
     required this.createdAt,
+    this.authorAvatarUrl,
     this.mine = false,
   });
 
-  /// Shown for a listener who gave no name.
+  /// Shown for a comment written without a profile.
   static const anonymousName = 'Ascultător';
 
   final String id;
+
+  /// The name of the profile that wrote it, or [anonymousName].
   final String authorName;
+
+  /// The profile's picture; null: its initial instead.
+  final String? authorAvatarUrl;
   final String text;
   final DateTime createdAt;
 
@@ -479,11 +485,34 @@ class StoryComment {
     return StoryComment(
       id: '$id',
       authorName: _string(json['author_name']) ?? anonymousName,
+      authorAvatarUrl: _string(json['author_avatar_url']),
       text: text,
       createdAt: _date(json['created_at'])?.toLocal() ?? DateTime.now(),
       mine: json['mine'] == true,
     );
   }
+}
+
+/// Whether this phone may comment on a story, and as whom: the team links
+/// a phone to a profile in the admin, and a story may take comments from
+/// profiles only (`can_comment` in its comments list).
+class StoryCommentAccess {
+  const StoryCommentAccess({required this.canComment, this.profile});
+
+  final bool canComment;
+
+  /// The profile this phone's comments show; null: "Ascultător".
+  final StoryAuthor? profile;
+
+  /// What a comments page says; a page without `can_comment` (an API
+  /// before profiles) lets everyone comment.
+  static StoryCommentAccess fromJson(Map<Object?, Object?> json) =>
+      StoryCommentAccess(
+        canComment: json['can_comment'] is bool
+            ? json['can_comment'] as bool
+            : true,
+        profile: StoryAuthor.fromJson(json['profile']),
+      );
 }
 
 /// Who a story is from, shown under its call to action.

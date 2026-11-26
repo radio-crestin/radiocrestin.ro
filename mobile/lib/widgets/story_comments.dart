@@ -6,6 +6,7 @@ import '../services/stories_service.dart';
 import '../services/story.dart';
 import '../theme.dart';
 import 'story_overlay.dart' show isCompactStory, formatStoryCount;
+import 'story_slide_view.dart' show StoryImage;
 
 /// When a comment was written, as a listener says it: `acum`, `acum 5 min`,
 /// `acum 3 h`, `ieri`, `acum 4 zile`, or the date.
@@ -24,24 +25,30 @@ String _say(StoryCommentResult result) => switch (result) {
       StoryCommentResult.posted => 'Comentariu publicat',
       StoryCommentResult.tooMany =>
         'Ai trimis multe comentarii. Încearcă peste un minut.',
+      StoryCommentResult.notAllowed =>
+        'La această poveste comentează doar profilurile.',
       StoryCommentResult.failed =>
         'Nu s-a publicat. Verifică internetul și încearcă din nou.',
     };
 
 /// The field for a public comment: a globe and the admin's placeholder say
 /// it is public; while it is being written, a line above it says who will
-/// see it and under which name, which the listener can change.
+/// see it and under which profile (its name and picture).
+///
+/// Shown only to a phone that may comment (`can_comment`).
 class StoryCommentField extends StatefulWidget {
   const StoryCommentField({
     super.key,
     required this.hint,
-    required this.service,
+    required this.profile,
     required this.focusNode,
     required this.onSend,
   });
 
   final String hint;
-  final StoriesService service;
+
+  /// Whom the comment shows as; null: "Ascultător".
+  final StoryAuthor? profile;
   final FocusNode focusNode;
 
   /// Posts the text, and says how it went.
@@ -96,11 +103,6 @@ class _StoryCommentFieldState extends State<StoryCommentField> {
     }
   }
 
-  Future<void> _changeName() async {
-    await StoryCommentName.edit(context, widget.service);
-    if (mounted) setState(() {});
-  }
-
   @override
   Widget build(BuildContext context) {
     final result = _result;
@@ -128,10 +130,7 @@ class _StoryCommentFieldState extends State<StoryCommentField> {
                     ? Padding(
                         key: const ValueKey('public-notice'),
                         padding: const EdgeInsets.only(bottom: 8),
-                        child: _PublicNotice(
-                          name: widget.service.commentName,
-                          onChangeName: _changeName,
-                        ),
+                        child: _PublicNotice(profile: widget.profile),
                       )
                     : const SizedBox(width: double.infinity),
           ),
@@ -206,19 +205,17 @@ class _StoryCommentFieldState extends State<StoryCommentField> {
   }
 }
 
-/// "Public: every listener sees it, signed «Ana»", with a way to change
-/// the name.
+/// "Public: every listener sees it, as «Ana»", with the profile's picture.
 class _PublicNotice extends StatelessWidget {
-  const _PublicNotice({required this.name, required this.onChangeName});
+  const _PublicNotice({required this.profile});
 
-  final String? name;
-  final VoidCallback onChangeName;
+  final StoryAuthor? profile;
 
   @override
   Widget build(BuildContext context) {
-    final signed = name ?? StoryComment.anonymousName;
+    final name = profile?.name ?? StoryComment.anonymousName;
     return Container(
-      padding: const EdgeInsets.fromLTRB(12, 6, 6, 6),
+      padding: const EdgeInsets.fromLTRB(12, 6, 12, 6),
       decoration: BoxDecoration(
         color: const Color(0xCC000000),
         borderRadius: BorderRadius.circular(14),
@@ -235,23 +232,23 @@ class _PublicNotice extends StatelessWidget {
                   text: 'Comentariu public',
                   style: TextStyle(fontWeight: FontWeight.w700),
                 ),
-                TextSpan(text: ' · îl văd toți ascultătorii, semnat „$signed”'),
+                const TextSpan(text: ' · îl văd toți ascultătorii, ca '),
+                WidgetSpan(
+                  alignment: PlaceholderAlignment.middle,
+                  child: Padding(
+                    padding: const EdgeInsets.only(right: 4),
+                    child: StoryAvatar(
+                        name: name, url: profile?.avatarUrl, size: 18),
+                  ),
+                ),
+                TextSpan(
+                  text: name,
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
               ]),
               key: const ValueKey('story-comment-public'),
               style: const TextStyle(color: Colors.white, fontSize: 12.5),
             ),
-          ),
-          TextButton(
-            key: const ValueKey('story-comment-name'),
-            onPressed: onChangeName,
-            style: TextButton.styleFrom(
-              foregroundColor: AppColors.primaryLight,
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              minimumSize: const Size(0, 32),
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            ),
-            child: const Text('Schimbă',
-                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12.5)),
           ),
         ],
       ),
@@ -259,62 +256,52 @@ class _PublicNotice extends StatelessWidget {
   }
 }
 
-/// The name a listener signs comments with, asked in a small dialog.
-class StoryCommentName extends StatefulWidget {
-  const StoryCommentName({super.key, required this.initial});
+/// A profile's round picture; its initial on a colour of its own while
+/// the picture loads, when it can't, or when there is none.
+class StoryAvatar extends StatelessWidget {
+  const StoryAvatar({
+    super.key,
+    required this.name,
+    required this.url,
+    this.size = 32,
+  });
 
-  final String? initial;
+  final String name;
+  final String? url;
+  final double size;
 
-  static Future<void> edit(BuildContext context, StoriesService service) async {
-    final name = await showDialog<String>(
-      context: context,
-      builder: (context) => StoryCommentName(initial: service.commentName),
-    );
-    if (name != null) await service.saveCommentName(name);
-  }
-
-  @override
-  State<StoryCommentName> createState() => _StoryCommentNameState();
-}
-
-class _StoryCommentNameState extends State<StoryCommentName> {
-  // Owned here: the dialog still builds its field while it animates out.
-  late final TextEditingController _name =
-      TextEditingController(text: widget.initial ?? '');
-
-  @override
-  void dispose() {
-    _name.dispose();
-    super.dispose();
-  }
+  // The brand's pink and darker tones that keep white letters readable.
+  static const _colors = [
+    AppColors.primaryDark,
+    Color(0xFF6A1B9A),
+    Color(0xFF283593),
+    Color(0xFF00695C),
+    Color(0xFF8D4A00),
+    Color(0xFF455A64),
+  ];
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text('Numele sub comentarii'),
-      content: TextField(
-        key: const ValueKey('story-comment-name-field'),
-        controller: _name,
-        autofocus: true,
-        maxLength: StoriesService.maxNameLength,
-        textCapitalization: TextCapitalization.words,
-        decoration: const InputDecoration(
-          hintText: StoryComment.anonymousName,
-          helperText: 'Gol: „Ascultător”. Îl văd toți cei care citesc.',
+    final url = this.url;
+    final initial = Container(
+      alignment: Alignment.center,
+      color: _colors[name.hashCode.abs() % _colors.length],
+      child: Text(
+        name.isEmpty ? '?' : name.characters.first.toUpperCase(),
+        style: TextStyle(
+          color: Colors.white,
+          fontSize: size * 0.45,
+          fontWeight: FontWeight.w700,
         ),
-        onSubmitted: (value) => Navigator.of(context).pop(value),
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Renunță'),
-        ),
-        FilledButton(
-          key: const ValueKey('story-comment-name-save'),
-          onPressed: () => Navigator.of(context).pop(_name.text),
-          child: const Text('Salvează'),
-        ),
-      ],
+    );
+    return SizedBox.square(
+      dimension: size,
+      child: ClipOval(
+        child: url == null
+            ? initial
+            : StoryImage(url: url, fallback: initial),
+      ),
     );
   }
 }
@@ -465,18 +452,35 @@ class _StoryCommentsSheetState extends State<StoryCommentsSheet> {
             ),
             const Divider(height: 1, color: Colors.white12),
             Expanded(child: _list()),
-            const Divider(height: 1, color: Colors.white12),
-            SafeArea(
-              top: false,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-                child: StoryCommentField(
-                  hint: widget.story.comments.hint,
-                  service: widget.service,
-                  focusNode: _focus,
-                  onSend: _post,
-                ),
-              ),
+            // Only a phone that may comment gets the field; the others
+            // read.
+            StreamBuilder<Map<String, StoryCommentAccess>>(
+              stream: widget.service.commentAccess,
+              builder: (context, _) {
+                final access = widget.service.commentAccessOf(widget.story);
+                if (access == null || !access.canComment) {
+                  return const SafeArea(
+                      top: false, child: SizedBox(width: double.infinity));
+                }
+                return SafeArea(
+                  top: false,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Divider(height: 1, color: Colors.white12),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+                        child: StoryCommentField(
+                          hint: widget.story.comments.hint,
+                          profile: access.profile,
+                          focusNode: _focus,
+                          onSend: _post,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
             ),
           ],
         ),
@@ -549,20 +553,15 @@ class _CommentTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final initial = comment.authorName.isEmpty
-        ? '?'
-        : comment.authorName.characters.first.toUpperCase();
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 4, 8),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          CircleAvatar(
-            radius: 16,
-            backgroundColor: AppColors.primaryDark,
-            child: Text(initial,
-                style: const TextStyle(
-                    color: Colors.white, fontWeight: FontWeight.w700)),
+          StoryAvatar(
+            key: ValueKey('story-comment-avatar-${comment.id}'),
+            name: comment.authorName,
+            url: comment.authorAvatarUrl,
           ),
           const SizedBox(width: 12),
           Expanded(

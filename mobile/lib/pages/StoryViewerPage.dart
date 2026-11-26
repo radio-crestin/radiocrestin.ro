@@ -158,6 +158,7 @@ class StoryViewerPageState extends State<StoryViewerPage>
     final auto = widget.autoOpened && !_autoShowRecorded;
     _autoShowRecorded = true;
     unawaited(_service.recordShow(story, auto: auto));
+    unawaited(_service.loadCommentAccess(story));
   }
 
   void _onSlideShown(Story story, StorySlide slide) {
@@ -939,21 +940,35 @@ class _Bottom extends StatelessWidget {
                 ),
               ),
             ),
-          if (comments.enabled) ...[
-            SizedBox(height: compact ? 8 : 12),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: _maxFieldWidth),
-                child: StoryCommentField(
-                  hint: comments.hint,
-                  service: service,
-                  focusNode: commentFocus,
-                  onSend: onPostComment,
-                ),
-              ),
+          if (comments.enabled)
+            // Only for a phone that may comment (a profile's, when only
+            // profiles comment): it comes in once the API says so.
+            StreamBuilder<Map<String, StoryCommentAccess>>(
+              stream: service.commentAccess,
+              builder: (context, _) {
+                final access = service.commentAccessOf(story);
+                final allowed = access?.canComment ?? false;
+                return StoryCtaReveal(
+                  shown: allowed,
+                  child: Padding(
+                    padding: EdgeInsets.only(top: compact ? 8 : 12),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: ConstrainedBox(
+                        constraints:
+                            const BoxConstraints(maxWidth: _maxFieldWidth),
+                        child: StoryCommentField(
+                          hint: comments.hint,
+                          profile: access?.profile,
+                          focusNode: commentFocus,
+                          onSend: onPostComment,
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
             ),
-          ],
         ],
       ),
     );
