@@ -1,3 +1,4 @@
+from django.core.exceptions import ValidationError
 from django.core.validators import FileExtensionValidator, MinValueValidator
 from django.db import models
 from django.utils import timezone
@@ -40,6 +41,7 @@ class ActionType(models.TextChoices):
     PAGE = 'page', _('Announcement page')
     STATION = 'station', _('Station')
     FORM = 'form', _('Form (question, poll or questionnaire)')
+    SHARE = 'share', _('Share the app')
 
 
 class WebLinkTarget(models.TextChoices):
@@ -59,6 +61,19 @@ class TargetPlatform(models.TextChoices):
     WEB_DESKTOP = 'web_desktop', _('Website on desktop')
     ANDROID = 'android', _('Android app')
     IOS = 'ios', _('iOS app')
+
+
+class HideClickTarget(models.TextChoices):
+    """Which clicks count toward `hide_after_clicks` (docs/announcement-hide-rules.md)."""
+    MAIN = 'main', _('The main button (or the card, when the whole card is the button)')
+    ANY = 'any', _('Any click on the card: the main button, a second button or a link in the description')
+
+
+class CountOn(models.TextChoices):
+    """What an announcement's waits count on the device (docs/announcement-hide-rules.md)."""
+    IMPRESSIONS = 'impressions', _('Other announcements seen')
+    VISITS = 'visits', _('App opens and website visits')
+    PLAYBACKS = 'playbacks', _('Station playbacks')
 
 
 class AnnouncementStatus(models.TextChoices):
@@ -133,6 +148,10 @@ class Announcement(models.Model):
         _("Fallback link"), max_length=2000, blank=True, default='', validators=[validate_web_url],
         help_text=_("Opened on the website, on iOS, and when the Android intent fails."),
     )
+    share_text = models.CharField(
+        _("Text to share"), max_length=300, blank=True, default='',
+        help_text=_("Shared with the link. Empty: the app's and website's own share message."),
+    )
     station = models.ForeignKey(
         Stations, verbose_name=_("Station"), on_delete=models.SET_NULL, null=True, blank=True, related_name='+',
     )
@@ -178,6 +197,46 @@ class Announcement(models.Model):
     )
     max_impressions = models.PositiveIntegerField(
         _("Max impressions per device"), null=True, blank=True,
+        help_text=_("Hide it on a device after it was shown this many times there. Empty: no limit."),
+    )
+
+    # Hide rules after clicks, counted per device by the clients; every rule that is set can hide it,
+    # whichever matches first. The semantics and shared test cases: backend/docs/announcement-hide-rules.md.
+    hide_after_clicks = models.PositiveIntegerField(
+        _("Number of clicks"), null=True, blank=True, validators=[MinValueValidator(1)],
+        help_text=_("Hide it on a device after this many clicks there; 1 is the first click. "
+                    "Empty: clicks never hide it."),
+    )
+    impressions_after_click = models.PositiveIntegerField(
+        _("Then show it this many more times"), null=True, blank=True, validators=[MinValueValidator(1)],
+        help_text=_("After those clicks, show it this many more times as a reminder, then hide it."),
+    )
+    hide_click_target = models.CharField(
+        _("Clicks that count"), max_length=8, choices=HideClickTarget.choices, default=HideClickTarget.MAIN,
+    )
+    # Waits: before the first showing and before each return. They count `count_on` events on the device
+    # (docs/announcement-hide-rules.md); the hide rules above count this card's own impressions and clicks.
+    count_on = models.CharField(
+        _("Waits count"), max_length=16, choices=CountOn.choices, default=CountOn.VISITS,
+        help_text=_("What \"Show it after\" and \"Hidden for\" count."),
+    )
+    count_stations = models.ManyToManyField(
+        Stations, verbose_name=_("Only playbacks of"), blank=True, related_name='+',
+        help_text=_("For station playbacks: count only these stations. Empty: any station."),
+    )
+    show_after = models.PositiveIntegerField(
+        _("Show it after"), null=True, blank=True, validators=[MinValueValidator(1)],
+        help_text=_("Wait this many of the counted events on a device before showing it there the first time. "
+                    "Empty: right away."),
+    )
+    show_again_times = models.PositiveIntegerField(
+        _("Show it again, times"), null=True, blank=True, validators=[MinValueValidator(1)],
+        help_text=_("After max impressions or the clicks hid it, it comes back this many times; each time the "
+                    "rules above start counting again. Never after closing. Empty: once hidden, it stays hidden."),
+    )
+    show_again_after = models.PositiveIntegerField(
+        _("Hidden for"), null=True, blank=True, validators=[MinValueValidator(1)],
+        help_text=_("How many of the counted events it stays hidden before each return."),
     )
 
     # Filters: every rule that is set must match; empty means everyone. Clients evaluate
@@ -234,6 +293,40 @@ class Announcement(models.Model):
 
     def __str__(self):
         return self.title
+
+    def clean(self):
+        super().clean()
+        errors = {}
+        if self.impressions_after_click is not None and self.hide_after_clicks is None:
+            errors['impressions_after_click'] = _(
+                'Set the number of clicks first: these impressions are counted after those clicks.')
+        if (self.hide_after_clicks is not None and self.hide_click_target == HideClickTarget.MAIN
+                and self.action_type == ActionType.NONE):
+            errors['hide_click_target'] = _(
+                'This announcement has no button to click: count any click, or add a button.')
+        errors.update(self._show_again_errors())
+        errors.update(self._share_errors())
+        if errors:
+            raise ValidationError(errors)
+
+    def _show_again_errors(self) -> dict:
+        times, pause = self.show_again_times, self.show_again_after
+        if times is None and pause is None:
+            return {}
+        if times is None:
+            return {'show_again_times': _('How many times should it come back?')}
+        if pause is None:
+            return {'show_again_after': _('How long should it stay hidden before it comes back?')}
+        if self.max_impressions is None and self.hide_after_clicks is None:
+            return {'show_again_times': _(
+                'Only max impressions or the clicks can bring it back: set one of them, or leave this empty.')}
+        return {}
+
+    def _share_errors(self) -> dict:
+        if self.action_type == ActionType.SHARE and not self.min_app_version:
+            return {'min_app_version': _(
+                'Older apps can\'t share from an announcement: set the first app version that can.')}
+        return {}
 
     def save(self, *args, **kwargs):
         if self.position is None:  # a new announcement goes last

@@ -39,3 +39,7 @@ export function sortByScore(stations: IStation[], scoreSnapshot: Record<string, 
 export function sortStationsByRecommendedScore(stations: IStation[]): IStation[] {
   return sortByScore(stations, buildScoreSnapshot(stations));
 }
+
+/** How many of the listener's most-played stations "Pentru tine" pins after the
+ * station of the day (Stations/index.tsx and the pre-paint PinStations.astro). */
+export const MOST_PLAYED_PINNED = 5;

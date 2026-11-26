@@ -160,10 +160,14 @@ class StationSortService {
     }
   }
 
+  /// How many of the user's most-played stations "Pentru tine" pins after the
+  /// station of the day. The website pins as many (web MOST_PLAYED_PINNED).
+  static const mostPlayedPinned = 5;
+
   /// "Pentru tine" algorithm:
   /// 1. Station of the day (deterministic daily rotation)
-  /// 2-4. Top 3 most-played by user (excluding favorites, backfilled by score)
-  /// 5+. Remaining sorted by score (50% reviews + 50% listeners)
+  /// 2. The user's [mostPlayedPinned] most-played (excluding favorites, backfilled by score)
+  /// 3. Remaining sorted by score (50% reviews + 50% listeners)
   static StationSortResult _sortRecommended(
     List<Station> stations,
     Map<String, int> playCounts,
@@ -173,7 +177,7 @@ class StationSortService {
     final stationOfDaySlug = _getStationOfTheDay(stations);
     final favoriteSet = favoriteSlugs.toSet();
 
-    // Positions 2-4: top 3 most-played (excluding station of day and favorites)
+    // Next: the most-played (excluding station of day and favorites)
     final placedSlugs = <String>{};
     if (stationOfDaySlug != null) placedSlugs.add(stationOfDaySlug);
 
@@ -183,17 +187,17 @@ class StationSortService {
         .toList()
       ..sort((a, b) => b.value.compareTo(a.value));
 
-    final mostPlayedSlugs = mostPlayedEntries.take(3).map((e) => e.key).toList();
+    final mostPlayedSlugs = mostPlayedEntries.take(mostPlayedPinned).map((e) => e.key).toList();
 
-    // Backfill with top-scored if fewer than 3
-    if (mostPlayedSlugs.length < 3) {
+    // Backfill with top-scored if fewer
+    if (mostPlayedSlugs.length < mostPlayedPinned) {
       final alreadyPlaced = {...placedSlugs, ...mostPlayedSlugs};
       final candidates = stations
           .where((s) => !alreadyPlaced.contains(s.slug) && !favoriteSet.contains(s.slug))
           .toList();
       final topByScore = _sortByScore(candidates, scores);
       for (final s in topByScore) {
-        if (mostPlayedSlugs.length >= 3) break;
+        if (mostPlayedSlugs.length >= mostPlayedPinned) break;
         mostPlayedSlugs.add(s.slug);
       }
     }
@@ -215,7 +219,7 @@ class StationSortService {
       result.add(findStation[stationOfDaySlug]!);
     }
 
-    // Positions 2-4: most played by user
+    // Next: most played by user
     for (final slug in mostPlayedSlugs) {
       if (findStation.containsKey(slug)) {
         result.add(findStation[slug]!);

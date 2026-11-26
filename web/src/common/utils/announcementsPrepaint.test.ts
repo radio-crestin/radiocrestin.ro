@@ -258,7 +258,8 @@ describe("prepaintScript", () => {
       win,
     );
     expect(appended[0].textContent).toContain('[data-ann="a"]{display:grid!important;--h:visible!important;--pf:.4}');
-    expect(PREPAINT_CODE.length).toBeLessThan(1536);
+    // it runs inline in every page's <head>: about 1.65 KB (the hide-after-clicks rules took it past 1.5, show it again past 1.6)
+    expect(PREPAINT_CODE.length).toBeLessThan(1700);
   });
 });
 

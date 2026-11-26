@@ -7,15 +7,15 @@ import {
 } from "@/utils";
 
 describe("stationThumb2x", () => {
-  it("derives the @2x companion for a local thumbnail", () => {
+  it("derives the .2x companion for a local thumbnail", () => {
     expect(stationThumb2x("/station-thumbnails/rve-cluj.webp")).toBe(
-      "/station-thumbnails/rve-cluj@2x.webp",
+      "/station-thumbnails/rve-cluj.2x.webp",
     );
   });
 
-  it("is idempotent on an already-@2x url", () => {
-    expect(stationThumb2x("/station-thumbnails/rve-cluj@2x.webp")).toBe(
-      "/station-thumbnails/rve-cluj@2x.webp",
+  it("is idempotent on an already-.2x url", () => {
+    expect(stationThumb2x("/station-thumbnails/rve-cluj.2x.webp")).toBe(
+      "/station-thumbnails/rve-cluj.2x.webp",
     );
   });
 
@@ -38,7 +38,7 @@ describe("stationThumbImgProps", () => {
       stationThumbImgProps("/station-thumbnails/rve-cluj.webp", 224),
     ).toEqual({
       srcSet:
-        "/station-thumbnails/rve-cluj.webp 256w, /station-thumbnails/rve-cluj@2x.webp 512w",
+        "/station-thumbnails/rve-cluj.webp 256w, /station-thumbnails/rve-cluj.2x.webp 512w",
       sizes: "224px",
     });
   });
@@ -49,9 +49,9 @@ describe("stationThumbImgProps", () => {
     ).toEqual({});
   });
 
-  it("is empty when the url is already the @2x file (no self-pairing)", () => {
+  it("is empty when the url is already the .2x file (no self-pairing)", () => {
     expect(
-      stationThumbImgProps("/station-thumbnails/rve-cluj@2x.webp", 224),
+      stationThumbImgProps("/station-thumbnails/rve-cluj.2x.webp", 224),
     ).toEqual({});
   });
 
@@ -64,21 +64,21 @@ describe("stationThumbImgProps", () => {
 describe("stationThumbSmallImgProps", () => {
   it("pairs the 128px companion with the 256px base file", () => {
     expect(stationThumbSmall("/station-thumbnails/rve-cluj.webp")).toBe(
-      "/station-thumbnails/rve-cluj@sm.webp",
+      "/station-thumbnails/rve-cluj.sm.webp",
     );
     expect(
       stationThumbSmallImgProps("/station-thumbnails/rve-cluj.webp", "52px"),
     ).toEqual({
       srcSet:
-        "/station-thumbnails/rve-cluj@sm.webp 128w, /station-thumbnails/rve-cluj.webp 256w",
+        "/station-thumbnails/rve-cluj.sm.webp 128w, /station-thumbnails/rve-cluj.webp 256w",
       sizes: "52px",
     });
   });
 
-  it("is empty for remote, @2x and missing urls", () => {
+  it("is empty for remote, .2x and missing urls", () => {
     for (const url of [
       "https://cdn.radiocrestin.ro/?url=x",
-      "/station-thumbnails/rve-cluj@2x.webp",
+      "/station-thumbnails/rve-cluj.2x.webp",
       null,
       undefined,
     ]) {
