@@ -25,6 +25,10 @@ enum StoryPause {
   /// The listener drags the viewer down to close it.
   drag,
 
+  /// The listener swipes sideways to another story: the one turning away
+  /// waits, as on Instagram.
+  turn,
+
   /// The listener writes a public comment.
   comment,
 }

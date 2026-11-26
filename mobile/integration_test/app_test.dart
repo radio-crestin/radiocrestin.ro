@@ -2686,9 +2686,16 @@ void main() {
               '($farSide)');
       expect(app.tester.element(slide), same(before),
           reason: 'the slide turns without starting again');
+      expect(viewer.controller.pauses, contains(StoryPause.turn),
+          reason: 'the story waits while the finger turns it');
+      final held = viewer.controller.progress;
+      await app.pumpFor(const Duration(seconds: 1));
+      expect(viewer.controller.progress, held);
       await move();
       await turn.up();
       await app.pumpFor(const Duration(seconds: 1));
+      expect(viewer.controller.pauses, isNot(contains(StoryPause.turn)),
+          reason: 'the next story runs once turned');
       expect(viewer.controller.story.slug, StoryFixtures.teaserSlug,
           reason: 'left: the next story; ${app.describeStories()}');
       await app.tester.timedDragFrom(Offset(size.width * 0.1, size.height / 2),

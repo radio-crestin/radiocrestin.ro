@@ -300,6 +300,19 @@ class StoryViewerPageState extends State<StoryViewerPage>
     forward ? controller.next() : controller.previous();
   }
 
+  /// A sideways swipe holds the story while the finger turns it; turning
+  /// by itself (a story's end) doesn't.
+  bool _onTurn(ScrollNotification notification) {
+    if (notification.depth != 0) return false;
+    if (notification is ScrollStartNotification &&
+        notification.dragDetails != null) {
+      controller.pause(StoryPause.turn);
+    } else if (notification is ScrollEndNotification) {
+      controller.resume(StoryPause.turn);
+    }
+    return false;
+  }
+
   void _onVerticalDragStart(DragStartDetails details) {
     _dragUp = 0;
     controller.pause(StoryPause.drag);
@@ -445,21 +458,24 @@ class StoryViewerPageState extends State<StoryViewerPage>
                 borderRadius: BorderRadius.circular(dragged > 0 ? 16 : 0),
                 child: Material(
                   color: Colors.black,
-                  child: PageView.builder(
-                    controller: _pages,
-                    itemCount: controller.stories.length,
-                    onPageChanged: (index) {
-                      if (index != controller.storyIndex) {
-                        controller.showStory(index);
-                      }
-                    },
-                    itemBuilder: (context, index) => _CubeFace(
-                      pages: _pages,
-                      index: index,
-                      current: controller.storyIndex,
-                      child: index == controller.storyIndex
-                          ? _activeStory(context)
-                          : _StoryCover(story: controller.stories[index]),
+                  child: NotificationListener<ScrollNotification>(
+                    onNotification: _onTurn,
+                    child: PageView.builder(
+                      controller: _pages,
+                      itemCount: controller.stories.length,
+                      onPageChanged: (index) {
+                        if (index != controller.storyIndex) {
+                          controller.showStory(index);
+                        }
+                      },
+                      itemBuilder: (context, index) => _CubeFace(
+                        pages: _pages,
+                        index: index,
+                        current: controller.storyIndex,
+                        child: index == controller.storyIndex
+                            ? _activeStory(context)
+                            : _StoryCover(story: controller.stories[index]),
+                      ),
                     ),
                   ),
                 ),
