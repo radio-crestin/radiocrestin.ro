@@ -124,31 +124,3 @@ export const sendStoryEvents = async (events: StoryEvent[], deviceId: string): P
   }
 };
 
-export type StoryMessageResult = "sent" | "tooMany" | "failed";
-/** The longest message a listener can send from a story (as the app). */
-export const MAX_MESSAGE_LENGTH = 1000;
-
-/** Sends a message to the team from a story's slide (POST /stories/messages/), once. */
-export const sendStoryMessage = async (story: string, slide: number, text: string, deviceId: string): Promise<StoryMessageResult> => {
-  const message = text.trim().slice(0, MAX_MESSAGE_LENGTH);
-  if (!message || !deviceId) return "failed";
-  try {
-    const response = await fetch(`${STORIES_API_BASE}/stories/messages/`, {
-      method: "POST",
-      headers: { "content-type": "text/plain;charset=UTF-8" },
-      body: JSON.stringify({
-        device_id: deviceId,
-        platform: "web",
-        locale: typeof navigator !== "undefined" ? navigator.language : undefined,
-        story,
-        slide,
-        text: message,
-      }),
-      signal: timeoutSignal(10_000),
-    });
-    if (response.status === 429) return "tooMany";
-    return response.ok ? "sent" : "failed";
-  } catch {
-    return "failed";
-  }
-};

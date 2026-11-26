@@ -67,7 +67,7 @@ export interface IStory {
   filters?: { platforms?: string[] | null } | null;
   /** Who the story is from, under the call to action (the app's default: the title). */
   author?: { name?: string | null; avatar_url?: string | null } | null;
-  /** The story takes messages to the team (POST /stories/messages/). */
-  messages?: { enabled?: boolean; placeholder?: string | null } | null;
+  /** Public comments ("Comentarii"), off unless the admin turns them on; the website shows the count. */
+  comments?: { enabled?: boolean; placeholder?: string | null; count?: number } | null;
   slides: IStorySlide[];
 }

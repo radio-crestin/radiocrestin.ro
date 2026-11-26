@@ -49,12 +49,10 @@ export interface StoryView {
   likeCount: number;
   /** Who it's from, under the CTA; null: the app shows the title there. */
   author: { name: string; avatar: string | null } | null;
-  /** Messages to the team: the field shows only when enabled. */
-  messages: { enabled: boolean; placeholder: string };
+  /** Public comments: when on, the action column shows their count and sends people to the app. */
+  comments: { enabled: boolean; count: number };
   slides: StorySlideView[];
 }
-
-export const DEFAULT_MESSAGE_PLACEHOLDER = "Trimite un mesaj…";
 
 export const DEFAULT_SLIDE_SECONDS = 6;
 const slideSeconds = (raw: unknown) => {
@@ -224,9 +222,9 @@ export const toStoryView = (data: unknown): StoryView | null => {
       typeof story.author?.name === "string" && story.author.name.trim()
         ? { name: story.author.name.trim(), avatar: safeHttpUrl(story.author.avatar_url) }
         : null,
-    messages: {
-      enabled: story.messages?.enabled === true,
-      placeholder: (typeof story.messages?.placeholder === "string" && story.messages.placeholder.trim()) || DEFAULT_MESSAGE_PLACEHOLDER,
+    comments: {
+      enabled: story.comments?.enabled === true,
+      count: Math.max(0, Math.floor(Number(story.comments?.count) || 0)),
     },
     slides,
   };

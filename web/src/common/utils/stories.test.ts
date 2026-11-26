@@ -146,18 +146,18 @@ describe("bubbles", () => {
 });
 
 describe("the app's Reels fields", () => {
-  it("author, caption and messages, with the app's defaults", () => {
+  it("author, caption and comments, with the app's defaults", () => {
     const plain = toStoryView(story())!;
     expect(plain.author).toBeNull();
-    expect(plain.messages).toEqual({ enabled: false, placeholder: "Trimite un mesaj…" });
+    expect(plain.comments).toEqual({ enabled: false, count: 0 });
     expect(plain.slides[0].caption).toBeNull();
     const s = story();
     s.author = { name: "Radio Creștin", avatar_url: "https://cdn.radiocrestin.ro/a.png" };
-    s.messages = { enabled: true, placeholder: "Scrie-ne" };
+    s.comments = { enabled: true, placeholder: "Scrie un comentariu", count: 12 };
     s.slides[0].caption = "  Concertul de Crăciun  ";
     const view = toStoryView(s)!;
     expect(view.author).toEqual({ name: "Radio Creștin", avatar: "https://cdn.radiocrestin.ro/a.png" });
-    expect(view.messages).toEqual({ enabled: true, placeholder: "Scrie-ne" });
+    expect(view.comments).toEqual({ enabled: true, count: 12 });
     expect(view.slides[0].caption).toBe("Concertul de Crăciun");
   });
   it("CTA colours: #RRGGBB, or #AARRGGBB as the app reads it", () => {

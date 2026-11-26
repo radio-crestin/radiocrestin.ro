@@ -3,10 +3,10 @@
 // back and the rest to go on, swipe left / right, press and hold to play at double speed, a
 // pause and a sound button, and like and share. Arrow keys and Space work on a keyboard.
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { MAX_MESSAGE_LENGTH, sendStoryEvents, sendStoryMessage, type StoryEvent, type StoryMessageResult } from "@/services/stories";
+import { sendStoryEvents, type StoryEvent } from "@/services/stories";
 import { getUserId } from "@/utils/posthog";
 import { shareLink } from "@/components/Announcements/share";
-import { formatStoryCount, type StoryMedia, type StorySlideView, type StoryView } from "@/utils/stories";
+import { appLinks, formatStoryCount, type StoryMedia, type StorySlideView, type StoryView } from "@/utils/stories";
 import { markStorySeen } from "./seen";
 import styles from "./StoryPlayer.module.scss";
 
@@ -77,9 +77,8 @@ export default function StoryPlayer({ story, onClose, onFinished, onBackFromStar
   const [embedOpen, setEmbedOpen] = useState(false);
   const [hidden, setHidden] = useState(false);
   const [ctaFilled, setCtaShown] = useState(false);
-  // Writing a message pauses the story, as in the app.
-  const [typing, setTyping] = useState(false);
-  const messageRef = useRef<HTMLInputElement>(null);
+  // Comments are read and written in the app: the button says so, with a way there.
+  const [commentsPrompt, setCommentsPrompt] = useState(false);
   const ctaShownRef = useRef(false);
   const { liked, count: likes, toggle: toggleLike } = useStoryLike(story);
 
@@ -89,7 +88,7 @@ export default function StoryPlayer({ story, onClose, onFinished, onBackFromStar
   const elapsed = useRef(0);
   const slide = slides[Math.min(index, count - 1)];
   const ready = !!loaded[index];
-  const running = ready && !paused && !ended && !embedOpen && !hidden && !typing;
+  const running = ready && !paused && !ended && !embedOpen && !hidden && !commentsPrompt;
 
   const markLoaded = useCallback((i: number) => setLoaded((l) => (l[i] ? l : { ...l, [i]: true })), []);
 
@@ -433,16 +432,17 @@ export default function StoryPlayer({ story, onClose, onFinished, onBackFromStar
                     {likes > 0 ? formatStoryCount(likes) : "Îmi place"}
                   </span>
                 </button>
-                {story.messages.enabled && (
+                {story.comments.enabled && (
                   <button
                     type="button"
                     className={styles.action}
-                    aria-label="Trimite un mesaj"
-                    onClick={() => messageRef.current?.focus()}
-                    data-testid="story-message"
+                    aria-label={`Comentarii (${story.comments.count})`}
+                    aria-expanded={commentsPrompt}
+                    onClick={() => setCommentsPrompt((open) => !open)}
+                    data-testid="story-comments"
                   >
                     <ChatIcon />
-                    <span className={styles.actionLabel}>Mesaj</span>
+                    <span className={styles.actionLabel}>{story.comments.count > 0 ? formatStoryCount(story.comments.count) : "Comentarii"}</span>
                   </button>
                 )}
                 <button type="button" className={styles.action} aria-label="Distribuie" onClick={share} data-testid="story-share">
@@ -466,14 +466,7 @@ export default function StoryPlayer({ story, onClose, onFinished, onBackFromStar
                 <span className={styles.swipeLabel}>{slide.cta.style === "both" ? "Glisează în sus" : slide.cta.label}</span>
               </a>
             )}
-            {story.messages.enabled && (
-              <MessageField
-                inputRef={messageRef}
-                placeholder={story.messages.placeholder}
-                onFocusChange={setTyping}
-                onSend={(text) => sendStoryMessage(story.slug, slide.id, text, getUserId())}
-              />
-            )}
+            {commentsPrompt && <CommentsInApp slug={story.slug} count={story.comments.count} onClose={() => setCommentsPrompt(false)} />}
           </div>
         </div>
       </div>
@@ -611,88 +604,32 @@ function InstagramLayer({
   );
 }
 
-/** The app's StoryMessageField: a glassy pill with the admin's placeholder, send once there is text, the result in a chip above. */
-function MessageField({
-  inputRef,
-  placeholder,
-  onFocusChange,
-  onSend,
-}: {
-  inputRef: React.RefObject<HTMLInputElement | null>;
-  placeholder: string;
-  onFocusChange: (focused: boolean) => void;
-  onSend: (text: string) => Promise<StoryMessageResult>;
-}) {
-  const [text, setText] = useState("");
-  const [sending, setSending] = useState(false);
-  const [result, setResult] = useState<StoryMessageResult | null>(null);
+/**
+ * Comments live in the app (public, per story): the website shows their count, and this sheet
+ * offers the app (its link on a phone, the download page elsewhere). The story waits meanwhile.
+ */
+function CommentsInApp({ slug, count, onClose }: { slug: string; count: number; onClose: () => void }) {
+  const [href, setHref] = useState("/descarca-aplicatia-radio-crestin/");
   useEffect(() => {
-    if (!result) return;
-    const timer = window.setTimeout(() => setResult(null), 2800);
-    return () => window.clearTimeout(timer);
-  }, [result]);
-  const send = async () => {
-    if (!text.trim() || sending) return;
-    setSending(true);
-    const outcome = await onSend(text);
-    setSending(false);
-    setResult(outcome);
-    if (outcome === "sent") {
-      setText("");
-      inputRef.current?.blur();
-    }
-  };
-  const say = { sent: "Mesaj trimis", tooMany: "Ai trimis multe mesaje. Încearcă peste un minut.", failed: "Nu s-a trimis. Verifică internetul și încearcă din nou." };
+    const ua = navigator.userAgent;
+    const links = appLinks(slug);
+    if (/android/i.test(ua)) setHref(links.android);
+    else if (/iphone|ipad|ipod/i.test(ua)) setHref(links.ios);
+  }, [slug]);
   return (
-    <div className={styles.message}>
-      {result && (
-        <span className={result === "sent" ? `${styles.chip} ${styles.chipOk}` : styles.chip} role="status" data-testid="story-message-status">
-          {result === "sent" ? <CheckIcon /> : <ErrorIcon />}
-          {say[result]}
-        </span>
-      )}
-      <form
-        className={styles.field}
-        onSubmit={(e) => {
-          e.preventDefault();
-          void send();
-        }}
-      >
-        <input
-          ref={inputRef}
-          value={text}
-          maxLength={MAX_MESSAGE_LENGTH}
-          placeholder={placeholder}
-          enterKeyHint="send"
-          aria-label={placeholder}
-          data-testid="story-message-field"
-          onChange={(e) => setText(e.target.value)}
-          onFocus={() => onFocusChange(true)}
-          onBlur={() => onFocusChange(false)}
-        />
-        {sending ? (
-          <span className={styles.fieldSpinner} />
-        ) : text.trim() ? (
-          <button type="submit" className={styles.send} aria-label="Trimite" data-testid="story-message-send">
-            <SendIcon />
-          </button>
-        ) : null}
-      </form>
+    <div className={styles.sheet} role="dialog" aria-label="Comentarii" data-testid="story-comments-sheet">
+      <button type="button" className={styles.sheetClose} aria-label="Închide" onClick={onClose}>
+        <CloseIcon />
+      </button>
+      <ChatIcon />
+      <p className={styles.sheetTitle}>{count > 0 ? `${formatStoryCount(count)} ${count === 1 ? "comentariu" : "comentarii"}` : "Comentarii"}</p>
+      <p className={styles.sheetText}>Comentariile se citesc și se scriu în aplicația Radio Creștin.</p>
+      <a className={styles.sheetButton} href={href} data-testid="story-comments-app">
+        Deschide aplicația
+      </a>
     </div>
   );
 }
-
-const CheckIcon = () => (
-  <Svg width="18" height="18" fill="#4cd964" stroke="none">
-    <path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm-1.5 14.5-4-4 1.4-1.4 2.6 2.6 5.6-5.6 1.4 1.4-7 7z" />
-  </Svg>
-);
-const ErrorIcon = () => (
-  <Svg width="18" height="18" stroke="#ffb4ab">
-    <circle cx="12" cy="12" r="9" />
-    <path d="M12 8v5M12 16h.01" />
-  </Svg>
-);
 
 const Svg = ({ children, ...rest }: React.SVGProps<SVGSVGElement>) => (
   <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...rest}>
