@@ -4,7 +4,7 @@ from .views import (
     PodHealthReportView, SessionRecordingView, DeviceRegistrationView, StationPlaylistUpdateView,
     AnnouncementListView, AnnouncementDetailView, AnnouncementEventsView,
     FormPageView, FormResultsView, FormSubmitView, ContactMessageView,
-    StoryListView, StoryDetailView, StoryLikedView, StoryEventsView,
+    StoryListView, StoryDetailView, StoryLikedView, StoryEventsView, StoryCommentsView, StoryCommentDetailView,
 )
 
 # App-specific URL patterns
@@ -37,11 +37,14 @@ def extend_superapp_urlpatterns(main_urlpatterns):
         path('api/v1/announcements/', AnnouncementListView.as_view(), name='api_v1_announcements'),
         path('api/v1/announcements/events/', AnnouncementEventsView.as_view(), name='api_v1_announcement_events'),
         path('api/v1/announcements/<slug:slug>/', AnnouncementDetailView.as_view(), name='api_v1_announcement_detail'),
-        # Stories (backend/docs/stories-api.md): the list, a device's likes, the events, one story
+        # Stories (backend/docs/stories-api.md): the list, a device's likes, the events, one story and its comments
         path('api/v1/stories/', StoryListView.as_view(), name='api_v1_stories'),
         path('api/v1/stories/liked/', StoryLikedView.as_view(), name='api_v1_stories_liked'),
         path('api/v1/stories/events/', StoryEventsView.as_view(), name='api_v1_story_events'),
         path('api/v1/stories/<slug:slug>/', StoryDetailView.as_view(), name='api_v1_story_detail'),
+        path('api/v1/stories/<slug:slug>/comments/', StoryCommentsView.as_view(), name='api_v1_story_comments'),
+        path('api/v1/stories/<slug:slug>/comments/<int:comment_id>/', StoryCommentDetailView.as_view(),
+             name='api_v1_story_comment'),
         # Forms opened from announcements (under /api/: the public ingress routes only /api, /graphql, /health)
         path('api/v1/forms/<slug:slug>/page/', FormPageView.as_view(), name='api_v1_form_page'),
         path('api/v1/forms/<slug:slug>/submit/', FormSubmitView.as_view(), name='api_v1_form_submit'),

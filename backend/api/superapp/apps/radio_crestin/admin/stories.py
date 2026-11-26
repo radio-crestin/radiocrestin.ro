@@ -9,12 +9,26 @@ from django.utils.translation import gettext_lazy as _
 from superapp.apps.admin_portal.admin import SuperAppModelAdmin, SuperAppStackedInline
 from superapp.apps.admin_portal.sites import superapp_admin_site
 from ..forms.story_admin import StoryAdminForm, StorySlideForm
-from ..models import AnnouncementSettings, SlideType, Story, StorySettings, StorySlide
+from ..models import AnnouncementSettings, SlideType, Story, StoryComment, StorySettings, StorySlide
 from ..services import announcement_order, instagram_embeds, story_embeds, story_feed, story_stats
+
+
+RECENT_COMMENTS = 20
 
 
 def _number(value):
     return f'{value or 0:,}'
+
+
+def _css_color(value):
+    """The API's #AARRGGBB as CSS's #RRGGBBAA; #RRGGBB as it is."""
+    if value and len(value) == 9:
+        return f'#{value[3:]}{value[1:3]}'
+    return value
+
+
+def _comments_url(story):
+    return reverse('admin:radio_crestin_storycomment_changelist') + f'?story__id__exact={story.pk}'
 
 
 class StorySlideInline(SuperAppStackedInline):
@@ -30,14 +44,14 @@ class StorySlideInline(SuperAppStackedInline):
     fieldsets = [
         (None, {'fields': [
             'position', 'type', 'orientation', 'duration_seconds',
-            'image', 'video', 'poster', 'youtube_url', 'instagram_url', 'media_info_display',
+            'image', 'video', 'poster', 'youtube_url', 'instagram_url', 'media_info_display', 'caption',
         ]}),
         (_('Call to action'), {'fields': [
             'cta_style', 'cta_label', 'cta_target',
             'cta_url', 'cta_open_in',
             'cta_app', 'cta_app_url', 'cta_android_intent_uri',
             'cta_route', 'cta_station', 'cta_song', 'cta_announcement', 'cta_form', 'cta_share_text',
-            'cta_story', 'cta_fallback_url',
+            'cta_story', 'cta_fallback_url', ('cta_color', 'cta_text_color'),
         ]}),
     ]
     verbose_name_plural = _('Slides (drag to reorder; the preview above shows them after Save)')
@@ -74,17 +88,18 @@ class StoryAdmin(SuperAppModelAdmin):
     inlines = [StorySlideInline]
     list_display = [
         'title', 'slug', 'status', 'starts_at', 'ends_at', 'slide_count',
-        'views', 'unique_viewers_display', 'like_count', 'cta_clicks', 'shares',
+        'views', 'unique_viewers_display', 'like_count', 'cta_clicks', 'shares', 'comment_count_display',
     ]
     ordering = ['position', 'id']
     ordering_field = 'position'
     hide_ordering_field = True
     list_before_template = 'admin/radio_crestin/announcement/list_before.html'
+    autocomplete_fields = ['author']
     MAX_REORDER_ROWS = 1000
-    list_filter = ['status', 'auto_open']
+    list_filter = ['status', 'auto_open', 'comments_enabled']
     search_fields = ['title', 'slug']
     readonly_fields = [
-        'preview_display', 'stats_display', 'links_display',
+        'preview_display', 'stats_display', 'links_display', 'recent_comments_display',
         'views', 'auto_opens', 'completions', 'slide_views', 'cta_clicks', 'shares', 'like_count',
         'created_at', 'updated_at',
     ]
@@ -108,6 +123,12 @@ class StoryAdmin(SuperAppModelAdmin):
                 'platforms', 'countries_include', 'countries_exclude', 'locales',
                 ('min_app_version', 'max_app_version'),
             ]}),
+            (_('Comments and author'), {'classes': ['tab'], 'description': _(
+                "With comments on, listeners read the story's public comments, and devices linked to a Profile write "
+                "them (Story Settings decides whether others may too); hide or delete them in Story Comments. The "
+                "author is the profile on the account row under the call to action."), 'fields': [
+                'comments_enabled', 'comments_placeholder', 'author',
+            ]}),
         ]
         if obj is None:
             return fieldsets
@@ -119,6 +140,7 @@ class StoryAdmin(SuperAppModelAdmin):
                 ('views', 'auto_opens', 'completions'), ('slide_views', 'cta_clicks', 'shares', 'like_count'),
                 ('created_at', 'updated_at'),
             ]}),
+            (_('Comments'), {'classes': ['tab'], 'fields': ['recent_comments_display']}),
         ]
 
     def get_object(self, request, object_id, from_field=None):
@@ -166,7 +188,23 @@ class StoryAdmin(SuperAppModelAdmin):
     def unique_viewers_display(self, obj):
         return _number(obj.unique_viewers)
 
+    @admin.display(description=_('Comments'), ordering='comment_count')
+    def comment_count_display(self, obj):
+        return format_html('<a href="{}">{}</a>', _comments_url(obj), _number(obj.comment_count))
+
     # ------------------------------------------------------------ change page blocks
+
+    @admin.display(description=_('Latest comments'))
+    def recent_comments_display(self, obj):
+        if not obj or not obj.pk:
+            return '-'
+        return render_to_string('admin/radio_crestin/story/comments.html', {
+            'comments': obj.comments.select_related('slide', 'profile', 'user')[:RECENT_COMMENTS],
+            'visible': obj.comments.filter(is_hidden=False).count(),
+            'hidden': obj.comments.filter(is_hidden=True).count(),
+            'all_url': _comments_url(obj),
+            'enabled': obj.comments_enabled,
+        })
 
     @admin.display(description=_('Preview'))
     def preview_display(self, obj):
@@ -177,7 +215,12 @@ class StoryAdmin(SuperAppModelAdmin):
         slides = [(slide, story_feed.serialize_slide(slide, absolute_url)) for slide in obj.slides.all()]
         return render_to_string('admin/radio_crestin/story/preview.html', {
             'story': obj,
-            'slides': [{'slide': slide, 'item': item} for slide, item in slides],
+            'author': story_feed.author_payload(obj, absolute_url),
+            'slides': [{
+                'slide': slide, 'item': item,
+                'cta_color': _css_color(item and item['cta'] and item['cta']['color']),
+                'cta_text_color': _css_color(item and item['cta'] and item['cta']['text_color']),
+            } for slide, item in slides],
         })
 
     @admin.display(description=_('Links'))
@@ -225,12 +268,49 @@ class StoryAdmin(SuperAppModelAdmin):
 
 @admin.register(StorySettings, site=superapp_admin_site)
 class StorySettingsAdmin(SuperAppModelAdmin):
-    list_display = ['__str__', 'auto_open_gap_actions', 'stats_updated_until', 'updated_at']
-    fields = ['auto_open_gap_actions', 'stats_updated_until', 'created_at', 'updated_at']
+    list_display = ['__str__', 'auto_open_gap_actions', 'comments_need_profile', 'stats_updated_until', 'updated_at']
+    fields = ['auto_open_gap_actions', 'comments_need_profile', 'stats_updated_until', 'created_at', 'updated_at']
     readonly_fields = ['stats_updated_until', 'created_at', 'updated_at']
 
     def has_add_permission(self, request):
         return not StorySettings.objects.exists() and super().has_add_permission(request)
 
     def has_delete_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(StoryComment, site=superapp_admin_site)
+class StoryCommentAdmin(SuperAppModelAdmin):
+    """Moderation of the public comments: hide (kept, seen by no listener), show again, or delete."""
+
+    list_display = ['text_display', 'profile', 'story', 'slide_number', 'created_at', 'is_hidden',
+                    'platform', 'user']
+    list_filter = ['is_hidden', 'story', 'platform']
+    search_fields = ['text', 'profile__name', 'user__anonymous_id', 'story__title', 'story__slug']
+    date_hierarchy = 'created_at'
+    list_select_related = ['story', 'slide', 'profile', 'user']
+    fields = ['is_hidden', 'story', 'slide', 'profile', 'user', 'text', 'created_at', 'platform', 'app_version',
+              'locale', 'country', 'ip']
+    readonly_fields = [field for field in fields if field != 'is_hidden']
+    actions = ['hide_action', 'show_action']
+
+    @admin.display(description=_('Comment'))
+    def text_display(self, obj):
+        return obj.text if len(obj.text) <= 120 else obj.text[:119] + '…'
+
+    @admin.display(description=_('Slide'))
+    def slide_number(self, obj):
+        return obj.slide.position + 1 if obj.slide else '-'
+
+    @admin.action(description=_('Hide from listeners'), permissions=['change'])
+    def hide_action(self, request, queryset):
+        count = queryset.update(is_hidden=True)
+        self.message_user(request, _('%(count)s comments hidden.') % {'count': count}, messages.SUCCESS)
+
+    @admin.action(description=_('Show to listeners again'), permissions=['change'])
+    def show_action(self, request, queryset):
+        count = queryset.update(is_hidden=False)
+        self.message_user(request, _('%(count)s comments shown again.') % {'count': count}, messages.SUCCESS)
+
+    def has_add_permission(self, request):
         return False

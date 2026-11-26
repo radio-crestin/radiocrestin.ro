@@ -1,7 +1,8 @@
 """The stories clients get (backend/docs/stories-api.md): one list for everyone, filtered on the device.
 
-Bodies are cached with an ETag, like the announcements', and dropped by
-signals/stories.py whenever something they serve changes.
+Payloads are cached, and dropped by signals/stories.py whenever something they
+serve changes; each request then sets the current like and comment counts and
+renders the body with its ETag, so they are never older than the CDN's max-age.
 """
 import secrets
 from datetime import datetime, timedelta
@@ -9,11 +10,11 @@ from typing import Callable, Optional
 from urllib.parse import urlencode
 
 from django.core.cache import cache
-from django.db.models import Prefetch, Q
+from django.db.models import Count, Prefetch, Q
 from django.utils import timezone
 
 from ..models import (
-    CtaStyle, CtaTarget, InAppRoute, SlideType, Story, StoryLike, StorySettings, StorySlide, StoryStatus,
+    CtaStyle, CtaTarget, InAppRoute, SlideType, Story, StoryComment, StoryLike, StorySettings, StorySlide, StoryStatus,
 )
 from . import instagram_embeds, youtube_embeds
 from .announcement_feed import (
@@ -147,7 +148,16 @@ def cta_payload(slide: StorySlide) -> Optional[dict]:
     if slide.cta_style == CtaStyle.NONE or not slide.cta_label.strip():
         return None
     target = cta_target(slide)
-    return {'style': slide.cta_style, 'label': slide.cta_label.strip(), 'target': target} if target else None
+    if not target:
+        return None
+    return {
+        'style': slide.cta_style, 'label': slide.cta_label.strip(), 'target': target,
+        'color': _color(slide.cta_color), 'text_color': _color(slide.cta_text_color),
+    }
+
+
+def _color(value: str) -> Optional[str]:
+    return value.upper() if value else None
 
 
 def serialize_slide(slide: StorySlide, absolute_url: AbsoluteUrl) -> Optional[dict]:
@@ -165,6 +175,7 @@ def serialize_slide(slide: StorySlide, absolute_url: AbsoluteUrl) -> Optional[di
         'youtube_url': media.pop('youtube_url', None),
         'instagram': media.pop('instagram', None),
         **media,
+        'caption': slide.caption.strip() or None,
         'cta': cta_payload(slide),
     }
 
@@ -178,6 +189,26 @@ def display_payload(story: Story) -> dict:
         'every_actions': story.every_actions,
         'max_shows': story.max_shows,
     }
+
+
+def comments_payload(story: Story, count: int = 0) -> dict:
+    """`count` is set per request by _with_fresh_counts: comments come and go without dropping the cache."""
+    return {
+        'enabled': story.comments_enabled,
+        'placeholder': story.comments_placeholder.strip() or None,
+        'count': count if story.comments_enabled else 0,
+    }
+
+
+def profile_payload(profile, absolute_url: AbsoluteUrl) -> Optional[dict]:
+    """A profile's public face: its name and avatar; None without a profile."""
+    if profile is None or not profile.name.strip():
+        return None
+    return {'name': profile.name.strip(), 'avatar_url': _file_url(profile.avatar, absolute_url)}
+
+
+def author_payload(story: Story, absolute_url: AbsoluteUrl) -> Optional[dict]:
+    return profile_payload(story.author, absolute_url)
 
 
 def _cover_url(story: Story, slides: list, absolute_url: AbsoluteUrl) -> Optional[str]:
@@ -206,6 +237,8 @@ def serialize(story: Story, absolute_url: AbsoluteUrl) -> Optional[dict]:
         'like_count': story.like_count,
         'filters': filters_payload(story),
         'display': display_payload(story),
+        'comments': comments_payload(story),
+        'author': author_payload(story, absolute_url),
         'slides': slides,
     }
 
@@ -224,7 +257,8 @@ def _with_slides(queryset):
     slides = StorySlide.objects.select_related(
         'cta_station', 'cta_song__artist', 'cta_announcement', 'cta_form', 'cta_story',
     ).order_by('position', 'id')
-    return queryset.prefetch_related(Prefetch('slides', queryset=slides)).order_by('position', 'id')
+    return (queryset.select_related('author').prefetch_related(Prefetch('slides', queryset=slides))
+            .order_by('position', 'id'))
 
 
 def listed(statuses=PUBLIC_STATUSES, now: Optional[datetime] = None):
@@ -248,7 +282,7 @@ def list_payload(absolute_url: AbsoluteUrl, statuses=PUBLIC_STATUSES) -> dict:
     stories = (serialize(story, absolute_url) for story in listed(statuses) if is_public_slug(story.slug))
     return {
         'settings': settings_payload(StorySettings.load()),
-        'stories': [story for story in stories if story],
+        'stories': _with_fresh_counts([story for story in stories if story]),
     }
 
 
@@ -256,7 +290,8 @@ def detail_payload(slug: str, absolute_url: AbsoluteUrl, statuses=PUBLIC_STATUSE
     if not is_public_slug(slug):
         return None
     story = live(slug, statuses)
-    return serialize(story, absolute_url) if story else None
+    payload = serialize(story, absolute_url) if story else None
+    return _with_fresh_counts([payload])[0] if payload else None
 
 
 def liked_payload(device_id: str) -> dict:
@@ -280,22 +315,42 @@ def invalidate_cache():
     cache.set(GENERATION_KEY, secrets.token_hex(8), None)
 
 
-def _cached(name: str, build: Callable[[], Optional[RenderedResponse]]) -> Optional[RenderedResponse]:
+def _cached(name: str, build: Callable[[], Optional[dict]]) -> Optional[dict]:
+    """The payload, built once per generation and CACHE_SECONDS; None when there is nothing to serve."""
     key = f'stories:{_generation()}:{name}'
     entry = cache.get(key)
     if entry is None:
-        rendered = build()
-        entry = {'body': rendered.body, 'etag': rendered.etag} if rendered else {'missing': True}
+        payload = build()
+        entry = {'payload': payload} if payload else {'missing': True}
         cache.set(key, entry, CACHE_SECONDS)
-    return None if entry.get('missing') else RenderedResponse(entry['body'], entry['etag'])
+    return None if entry.get('missing') else entry['payload']
+
+
+def _with_fresh_counts(stories: list) -> list:
+    """like_count and comments.count as they are now.
+
+    Likes change like_count with update(), and comments are written all the time: neither drops the
+    cached payloads, so each request reads them (two indexed queries for the whole list).
+    """
+    ids = [story['id'] for story in stories]
+    likes = dict(Story.objects.filter(pk__in=ids).values_list('id', 'like_count'))
+    comments = dict(
+        StoryComment.objects.filter(story_id__in=ids, is_hidden=False).order_by()
+        .values('story_id').annotate(count=Count('id')).values_list('story_id', 'count')
+    )
+    return [{
+        **story,
+        'like_count': likes.get(story['id'], story['like_count']),
+        'comments': {**story['comments'],
+                     'count': comments.get(story['id'], 0) if story['comments']['enabled'] else 0},
+    } for story in stories]
 
 
 def public_list(absolute_url: AbsoluteUrl) -> RenderedResponse:
-    return _cached('list', lambda: render(list_payload(absolute_url)))
+    payload = _cached('list', lambda: list_payload(absolute_url))
+    return render({**payload, 'stories': _with_fresh_counts(payload['stories'])})
 
 
 def public_detail(slug: str, absolute_url: AbsoluteUrl) -> Optional[RenderedResponse]:
-    def build():
-        payload = detail_payload(slug, absolute_url)
-        return render(payload) if payload else None
-    return _cached(f'item:{slug}', build)
+    payload = _cached(f'item:{slug}', lambda: detail_payload(slug, absolute_url))
+    return render(_with_fresh_counts([payload])[0]) if payload else None

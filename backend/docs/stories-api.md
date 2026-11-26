@@ -14,6 +14,9 @@ already in the stores keep working. Clients must ignore keys they don't know, an
 | `GET /api/v1/stories/<slug>/` | One story in its time window (a share link, a CTA to another story) |
 | `GET /api/v1/stories/liked/?device_id=<id>` | The slugs this device liked (after a reinstall) |
 | `POST /api/v1/stories/events/` | Views, likes, CTA taps, shares and auto-opens, reported by the device |
+| `GET /api/v1/stories/<slug>/comments/` | A page of the story's public comments (see [Comments](#comments)) |
+| `POST /api/v1/stories/<slug>/comments/` | A listener writes a comment |
+| `DELETE /api/v1/stories/<slug>/comments/<id>/` | The author's device deletes its comment |
 
 `?preview=<token>` on the two story GETs also returns the stories in **Preview** status, uncached; it is the
 same token as the announcements' preview link (Announcement settings), and a wrong token gets `403`.
@@ -51,6 +54,8 @@ match the device. Each listed story has at least one slide.
         "max_app_version": null
       },
       "display": { "auto_open": true, "every_days": 3, "every_actions": 10, "max_shows": 5 },
+      "comments": { "enabled": true, "placeholder": "Scrie un gând", "count": 12 },
+      "author": { "name": "Radio Vocea Evangheliei", "avatar_url": "https://cdn.radiocrestin.ro/stories/authors/vocea.webp" },
       "slides": [
         {
           "id": 40,
@@ -64,9 +69,12 @@ match the device. Each listed story has at least one slide.
           "instagram": null,
           "width": 1080,
           "height": 1920,
+          "caption": "Concert de Crăciun, 24 decembrie, la Arad",
           "cta": {
             "style": "button",
             "label": "Ascultă acum",
+            "color": "#FFC107",
+            "text_color": "#000000",
             "target": { "type": "in_app", "route": "station", "slug": "radio-vocea-evangheliei" }
           }
         },
@@ -169,9 +177,11 @@ match the device. Each listed story has at least one slide.
 | `share_url` | string | The page to share: a landing page on radiocrestin.ro that opens the app or offers it. |
 | `starts_at`, `ends_at` | ISO 8601 UTC\|null | `null`: no limit on that side. |
 | `updated_at` | ISO 8601 UTC | Changes when the admin edits the story or its slides. |
-| `like_count` | int | Total likes, as of the list's cache (up to a few minutes old); the events answer has fresher counts. |
+| `like_count` | int | Total likes. Read fresh on every request the backend answers (the rest of the body is cached for up to 5 minutes and dropped on every admin change); Cloudflare may keep a copy for up to 60 s (`max-age=60`). The events answer has the counts right after a like. |
+| `comments` | object | `{"enabled": bool, "placeholder": string\|null, "count": int}`. Always present. `enabled`: the viewer shows the comments ("Comentarii") and lets the listener write one; `false` by default, ticked per story in the admin. `placeholder`: the hint in the empty comment box; `null`: the app's own. `count`: visible comments (0 while `enabled` is false), as fresh as `like_count`. See [Comments](#comments). |
 | `filters` | object | Same keys and meaning as the announcements' `filters`; every rule set must match. |
 | `display` | object | When the device shows it, see [Display rules](#display-rules). Always present. |
+| `author` | object\|null | The account row under the CTA: the story's [profile](#profiles), `{"name": string, "avatar_url": absolute URL\|null}`. `null`: show "Radio Creștin" with its logo. `avatar_url` `null`: the name without a picture (or the app's placeholder). |
 | `slides` | array | In order; at least one. |
 | `id`, `position` | int | *extra*: the story's id; its order (the list is already sorted). |
 
@@ -188,6 +198,7 @@ match the device. Each listed story has at least one slide.
 | `has_sound` | bool | The video has an audio track (`video`, `youtube`); the viewer offers mute/unmute. |
 | `youtube_url` | string\|null | `youtube`: the video's canonical URL. |
 | `instagram` | object\|null | `instagram`: see [Instagram](#instagram). |
+| `caption` | string\|null | Text over the bottom of the slide, like a Reels caption (at most 500 characters, may hold line breaks). `null`: none. |
 | `cta` | object\|null | The call to action, see [CTA](#cta). |
 | `width`, `height` | int | *extra*, `image` and `video`, when known. |
 | `size_bytes`, `mime_type` | | *extra*, `video`. |
@@ -232,6 +243,7 @@ to load, fall back to step 3.
 |---|---|
 | `style` | `swipe_up` (a "swipe up" hint with the label; swiping up opens the target), `button` (a labelled button), or `both` (the button, and swiping up also opens it). |
 | `label` | The hint's or the button's text. Always set. |
+| `color`, `text_color` | The button's background and text colours, each set on its own in the admin: `#RRGGBB`, or `#AARRGGBB` with the opacity first (Android's order; CSS writes it `#RRGGBBAA`), upper case. `null`: the app's colours. Always present. |
 | `target` | What it opens. Only the keys its `type` uses are sent. |
 
 | `target.type` | Keys | Opens |
@@ -342,6 +354,108 @@ Like the announcements' events: at most 100 events and 10 stories per request; u
 slides are skipped; an `at` more than 24 h old or 5 min ahead is skipped; repeats from the same device are
 dropped (views and auto-opens for 30 minutes; slide views, CTA taps, completions and shares for 1 minute);
 rate limits are 600 requests a minute per IP and 30 per device (`429`, nothing stored).
+
+## Profiles
+
+A profile is a public identity: a name and an avatar. Only the team creates them, in the portal under
+**Profiles**; there is no API to create or edit one. A profile is shown on a story's author row (the
+story's `author`) and on the comments it writes. A profile can be linked to one of the app's users (the
+`app_users` row a device registers with `/api/v1/devices/register/`, by its `device_id`): that device then
+writes comments under the profile's name and avatar.
+
+## Comments
+
+Public comments under a story, shown in the viewer as "Comentarii". They are plain text, newest first. A
+story takes them only while its `comments.enabled` is `true` (ticked per story in the admin; off by
+default). Each comment belongs to one of the app's users, found by its `device_id` (the same `app_users`
+rows as listening sessions, reviews and share links), and is shown under that user's [profile](#profiles).
+
+**Who writes them:** with **Only profiles comment** on (Story Settings; on by default), only a device
+linked to a profile can write a comment; any other device gets `403`, and the list tells the app with
+`can_comment: false` so it can hide the comment box. With it off, every device can, and those without a
+profile show as "Ascultător". The admin can hide a comment (no listener sees it any more) or delete it. Device ids are never
+returned: `mine` says whether a comment was written from the asking device. These answers are per device,
+so they are never cached (`Cache-Control: private, no-store`, by the backend and by Cloudflare).
+
+The website calls them too, like the events endpoint: POST bodies are JSON whatever the Content-Type
+(`text/plain` avoids a CORS preflight), `platform` is `"web"` there, and every answer, OPTIONS included,
+carries `Access-Control-Allow-Origin: *` (`DELETE` is preflighted: OPTIONS allows `GET, POST, DELETE`).
+
+The story must be listed (active, or in Preview) and inside its time window; otherwise every comment
+endpoint answers `404 {"error": "not found"}`.
+
+A comment:
+
+```json
+{ "id": 812, "author_name": "Radio Vocea Evangheliei", "author_avatar_url": "https://cdn.radiocrestin.ro/profiles/vocea.webp",
+  "text": "Doamne ajută!", "created_at": "2026-12-02T18:01:10Z", "mine": true }
+```
+
+| Key | Notes |
+|---|---|
+| `id` | int; pages and deletes use it. |
+| `author_name` | The profile's name, or `"Ascultător"` for a comment without a profile (filled in by the backend). |
+| `author_avatar_url` | The profile's avatar (absolute URL), or `null`. |
+| `text` | Plain text, 1 to 500 characters, may hold line breaks (at most one blank line in a row). |
+| `created_at` | ISO 8601 UTC. |
+| `mine` | Written from the `device_id` in the request. |
+
+### List
+
+`GET /api/v1/stories/<slug>/comments/?device_id=<id>&before=<id>`
+
+```json
+{ "count": 12, "comments": [ { "id": 812, "author_name": "...", "author_avatar_url": null, "text": "...", "created_at": "...", "mine": true } ],
+  "next_before": 790, "can_comment": true, "profile": { "name": "Radio Vocea Evangheliei", "avatar_url": "https://..." } }
+```
+
+Visible comments only, newest first, 30 a page. `count` is every visible comment of the story. For the next
+page, send `before=<next_before>`; `next_before` is `null` on the last page. Without `device_id`, `mine` is
+`false` everywhere. While comments are off: `{"count": 0, "comments": [], "next_before": null, ...}`.
+
+`can_comment`: this device may write a comment now (comments on, and a profile when only profiles
+comment). `profile`: the device's profile, `{"name", "avatar_url"}`, or `null`: what its comments will show.
+
+### Write
+
+`POST /api/v1/stories/<slug>/comments/`, JSON body (any Content-Type, `text/plain` included):
+
+```json
+{ "device_id": "4f3c2a...", "platform": "android", "app_version": "1.9.0", "locale": "ro-RO",
+  "slide": 41, "text": "Doamne ajută!" }
+```
+
+| Key | Notes |
+|---|---|
+| `device_id` | Required: the app's user. The comment is written as this device's profile. |
+| `text` | 1 to 500 characters, counted after HTML tags and control characters are removed and the ends trimmed. |
+| `slide` | The slide on screen, or `null`. An id that isn't one of the story's slides is stored as `null`. |
+| `platform`, `app_version`, `locale` | Like the events' (`platform`: `android`, `ios`, `web`, ...); shown to the admin with the comment. |
+
+| Answer | When |
+|---|---|
+| `201 {"comment": {..., "mine": true}}` | Stored and visible. |
+| `400 {"error": "text is empty"}` | `text` missing, not a string, or nothing left once cleaned. |
+| `400 {"error": "text is longer than 500 characters"}` | |
+| `403 {"error": "only profiles can comment"}` | Only profiles comment, and this device has no profile. |
+| `400 {"error": "comments are off for this story"}` | |
+| `400 {"error": "device_id is required"}`, `{"error": "invalid json"}`, `{"error": "expected a json object"}` | |
+| `404 {"error": "not found"}` | The story isn't listed or is outside its window. |
+| `429 {"error": "rate limited"}` | More than 5 requests a minute from one device, or 60 from one IP. Nothing stored. |
+
+The `error` texts are for logs; the app shows its own words.
+
+### Delete
+
+`DELETE /api/v1/stories/<slug>/comments/<id>/?device_id=<id>`: `204` when the comment was written from that
+device (hidden ones too). `403 {"error": "not your comment"}` for another device's comment or no
+`device_id`; `404` when the story has no such comment.
+
+### Moderation
+
+In the portal, **Story Comments** lists every comment (text, profile, story, slide, date, platform, app user),
+filtered by story from the Comments column of the Stories list, with the actions "Hide from listeners" and
+"Show to listeners again", and Delete. A story's Comments tab shows its latest 20, hidden ones greyed.
 
 ## Stats in the admin
 

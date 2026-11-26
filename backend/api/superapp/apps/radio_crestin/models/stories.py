@@ -1,6 +1,6 @@
 """Stories: full-screen slides shown in a bar at the top of the app (backend/docs/stories-api.md)."""
 from django.core.exceptions import ValidationError
-from django.core.validators import FileExtensionValidator, MaxValueValidator, MinValueValidator
+from django.core.validators import FileExtensionValidator, MaxValueValidator, MinValueValidator, RegexValidator
 from django.db import models
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
@@ -21,6 +21,14 @@ MAX_VIDEO_SECONDS = 60
 MAX_VIDEO_BYTES = 50 * 1024 * 1024
 DEFAULT_SECONDS = {'image': 6, 'video': 15, 'youtube': 15, 'instagram': 10}
 MAX_SLIDE_SECONDS = 120
+MAX_COMMENT_CHARS = 500
+
+# A CTA's colours, as the clients take them: #RRGGBB, or #AARRGGBB with the opacity first.
+validate_hex_color = RegexValidator(
+    r'^#([0-9A-Fa-f]{2})?[0-9A-Fa-f]{6}$',
+    _('Enter a colour as #RRGGBB, such as #FFC107, or #AARRGGBB with the opacity first, such as #80000000.'),
+    code='invalid_color',
+)
 
 
 class SlideType(models.TextChoices):
@@ -114,6 +122,22 @@ class Story(models.Model):
         help_text=_("After a device saw it this many times, it leaves the stories bar there. Empty: no limit."),
     )
 
+    # Public comments under the story (docs/stories-api.md#comments)
+    comments_enabled = models.BooleanField(
+        _("Comments"), default=False,
+        help_text=_("Listeners read public comments under the story; devices with a Profile write them. Moderate them in Story Comments."),
+    )
+    comments_placeholder = models.CharField(
+        _("Comment placeholder"), max_length=120, blank=True, default='',
+        help_text=_("The hint in the empty comment box, e.g. \"Scrie un gând\". Empty: the app's own."),
+    )
+
+    # The account row under the call to action
+    author = models.ForeignKey(
+        'Profile', verbose_name=_("Author"), on_delete=models.SET_NULL, null=True, blank=True, related_name='+',
+        help_text=_("Its name and avatar are shown under the call to action. Empty: \"Radio Creștin\" with its logo."),
+    )
+
     # Who sees it: the announcements' filters, applied on the device
     platforms = models.JSONField(_("Platforms"), default=list, blank=True)
     countries_include = models.JSONField(_("Only in countries"), default=list, blank=True)
@@ -147,8 +171,11 @@ class Story(models.Model):
 
     def clean(self):
         super().clean()
+        errors = {}
         if self.starts_at and self.ends_at and self.ends_at <= self.starts_at:
-            raise ValidationError({'ends_at': _('The end must be after the start.')})
+            errors['ends_at'] = _('The end must be after the start.')
+        if errors:
+            raise ValidationError(errors)
 
     def save(self, *args, **kwargs):
         if self.position is None:  # a new story goes last
@@ -215,6 +242,11 @@ class StorySlide(models.Model):
     video_seconds = models.FloatField(_("Video length (seconds)"), null=True, blank=True, editable=False)
     has_sound = models.BooleanField(_("Has sound"), default=False, editable=False)
 
+    caption = models.TextField(
+        _("Caption"), max_length=500, blank=True, default='',
+        help_text=_("Text over the bottom of the slide, like a Reels caption. Empty: none."),
+    )
+
     # Call to action
     cta_style = models.CharField(_("Call to action"), max_length=16, choices=CtaStyle.choices, default=CtaStyle.NONE)
     cta_label = models.CharField(
@@ -257,6 +289,14 @@ class StorySlide(models.Model):
     cta_share_text = models.CharField(_("Text to share"), max_length=300, blank=True, default='')
     cta_story = models.ForeignKey(
         Story, verbose_name=_("Story"), on_delete=models.SET_NULL, null=True, blank=True, related_name='+',
+    )
+    cta_color = models.CharField(
+        _("Button colour"), max_length=9, blank=True, default='', validators=[validate_hex_color],
+        help_text=_("#RRGGBB, or #AARRGGBB with the opacity first. Empty: the app's colour."),
+    )
+    cta_text_color = models.CharField(
+        _("Button text colour"), max_length=9, blank=True, default='', validators=[validate_hex_color],
+        help_text=_("#RRGGBB, or #AARRGGBB with the opacity first. Empty: the app's colour."),
     )
 
     # Totals, updated from the reported events

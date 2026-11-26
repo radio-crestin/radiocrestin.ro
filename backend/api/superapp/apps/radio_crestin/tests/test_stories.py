@@ -18,7 +18,8 @@ from django.utils import timezone
 
 from ..forms.story_admin import StoryAdminForm, StorySlideForm
 from ..models import (
-    Announcement, AnnouncementSettings, Artists, Form, Songs, Story, StoryEvent, StoryLike, StorySettings, StorySlide,
+    Announcement, AnnouncementSettings, Artists, Form, Profile, Songs, Story, StoryEvent, StoryLike, StorySettings,
+    StorySlide,
     StoryStatBucket,
 )
 from ..models.announcement_validators import validate_app_url
@@ -34,7 +35,8 @@ EXPECTED_FILTERS_KEYS = {'platforms', 'countries_include', 'countries_exclude', 
                          'min_app_version', 'max_app_version'}
 EXPECTED_SLIDE_KEYS = {'id', 'type', 'media_url', 'poster_url', 'duration_seconds', 'orientation', 'has_sound',
                        'youtube_url', 'instagram', 'cta'}
-FILE_FIELDS = [(Story, 'cover_image'), (StorySlide, 'image'), (StorySlide, 'video'), (StorySlide, 'poster')]
+FILE_FIELDS = [(Story, 'cover_image'), (StorySlide, 'image'), (StorySlide, 'video'), (StorySlide, 'poster'),
+               (Profile, 'avatar')]
 NO_YOUTUBE = patch.object(youtube_embeds, 'fetch_details', return_value={})
 
 
@@ -202,11 +204,11 @@ class StoryApiShapeTests(TemporaryMediaMixin, TestCase):
 
         ctas = [slide['cta'] for slide in self.client.get('/api/v1/stories/ctas/').json()['slides']]
 
-        self.assertEqual(ctas[0], {'style': 'button', 'label': 'Go', 'target': {
+        self.assertEqual(ctas[0], {'style': 'button', 'label': 'Go', 'color': None, 'text_color': None, 'target': {
             'type': 'url', 'url': 'https://example.com/a', 'open_in': 'browser'}})
         self.assertEqual(ctas[1]['target'], {'type': 'app_link', 'app': 'spotify', 'app_url': 'spotify:track:1',
                                              'fallback_url': 'https://open.spotify.com/track/1'})
-        self.assertEqual(ctas[2], {'style': 'both', 'label': 'Go', 'target': {
+        self.assertEqual(ctas[2], {'style': 'both', 'label': 'Go', 'color': None, 'text_color': None, 'target': {
             'type': 'in_app', 'route': 'station', 'slug': 'radio-vocea'}})
         self.assertEqual(ctas[3]['target'], {
             'type': 'in_app', 'route': 'song', 'slug': str(song.pk),
