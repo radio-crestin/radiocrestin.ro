@@ -1,0 +1,12 @@
+---
+// The fallback for stories without a built page (added after the last deploy): the 404 page
+// sends /poveste/<slug>/ here as /poveste/?s=<slug>; the island reads the story from the API,
+// puts the share URL back in the address bar, or says the story is gone.
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import StoryPage from "@/components/Story/StoryPage";
+import { SEO_STORY_FALLBACK } from "@/utils/seo";
+---
+
+<BaseLayout {...SEO_STORY_FALLBACK}>
+  <StoryPage client:load />
+</BaseLayout>

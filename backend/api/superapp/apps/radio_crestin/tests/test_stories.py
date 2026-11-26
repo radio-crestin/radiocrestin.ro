@@ -77,6 +77,18 @@ def stories(response):
     return response.json()['stories']
 
 
+def _urls(value, key=''):
+    """Every (key, value) whose key names a URL, anywhere in a payload."""
+    if isinstance(value, dict):
+        for name, item in value.items():
+            yield from _urls(item, name)
+    elif isinstance(value, list):
+        for item in value:
+            yield from _urls(item, key)
+    elif isinstance(value, str) and (key == 'url' or key.endswith('_url') or key == 'thumbnail'):
+        yield key, value
+
+
 @override_settings(CACHES=LOCMEM_CACHE)
 class StoryApiShapeTests(TemporaryMediaMixin, TestCase):
     def setUp(self):
@@ -110,6 +122,29 @@ class StoryApiShapeTests(TemporaryMediaMixin, TestCase):
         self.assertEqual((slide['width'], slide['height']), (1080, 1920))
         self.assertIsNone(slide['cta'])
         self.assertEqual(story['cover_url'], slide['media_url'])  # no cover: the first slide's picture
+
+    def test_every_media_url_is_absolute(self):
+        story = make_story('urls', slides=1, cover_image=SimpleUploadedFile('cover.png', PNG))
+        StorySlide.objects.create(story=story, position=1, type='video', video=SimpleUploadedFile('t.mp4', b'mp4'),
+                                  poster=SimpleUploadedFile('t.png', PNG))
+        StorySlide.objects.create(story=story, position=2, type='youtube', youtube_url='https://youtu.be/dQw4w9WgXcQ')
+
+        urls = list(_urls(self.client.get('/api/v1/stories/urls/').json()))
+
+        self.assertGreaterEqual(len(urls), 6)
+        for key, url in urls:
+            self.assertRegex(url, r'^https?://[^/]+/', key)
+
+    def test_media_urls_follow_the_storage_without_touching_the_database(self):
+        make_story('moved', slides=1)
+        field = StorySlide._meta.get_field('image')
+        old_storage = field.storage
+        self.addCleanup(setattr, field, 'storage', old_storage)
+        field.storage = FileSystemStorage(location=old_storage.location, base_url='https://cdn.new-host.ro/media/')
+
+        slide = self.client.get('/api/v1/stories/moved/').json()['slides'][0]
+
+        self.assertTrue(slide['media_url'].startswith('https://cdn.new-host.ro/media/stories/slides/moved-0'))
 
     def test_youtube_and_instagram_slides(self):
         story = make_story('media', slides=0)

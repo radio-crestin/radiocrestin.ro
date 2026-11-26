@@ -2,6 +2,7 @@
 
 import React, { useContext, useEffect, useRef, useState } from "react";
 import Announcements from "@/components/Announcements";
+import StoriesBar from "@/components/Story/StoriesBar";
 import type { IStation } from "@/models/Station";
 import styles from "./styles.module.scss";
 import { Context } from "@/context/ContextProvider";
@@ -404,6 +405,7 @@ const Stations = () => {
     <div className={styles.container}>
       {/* Above the favourites (or the search row without them); it stays while searching. */}
       <Announcements inHome />
+      <StoriesBar />
       {ctx.favouriteStations?.length > 0 && (
         <FavouriteStationsSection stations={ctx.favouriteStations} />
       )}

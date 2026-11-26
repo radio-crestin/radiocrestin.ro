@@ -1,0 +1,137 @@
+{
+  "settings": {
+    "auto_open_gap_actions": 20
+  },
+  "stories": [
+    {
+      "id": 12,
+      "slug": "concert-craciun-2026",
+      "title": "Concert de Crăciun",
+      "position": 0,
+      "cover_url": "https://cdn.radiocrestin.ro/stories/covers/concert.webp",
+      "share_url": "https://www.radiocrestin.ro/poveste/concert-craciun-2026/",
+      "starts_at": "2020-01-01T00:00:00Z",
+      "ends_at": null,
+      "updated_at": "2026-11-25T10:12:03Z",
+      "like_count": 152,
+      "filters": {
+        "platforms": [
+          "android",
+          "ios"
+        ],
+        "countries_include": [],
+        "countries_exclude": [],
+        "locales": [],
+        "min_app_version": "1.9.0",
+        "max_app_version": null
+      },
+      "display": {
+        "auto_open": true,
+        "every_days": 3,
+        "every_actions": 10,
+        "max_shows": 5
+      },
+      "slides": [
+        {
+          "id": 40,
+          "type": "image",
+          "media_url": "https://cdn.radiocrestin.ro/stories/slides/afis.webp",
+          "poster_url": null,
+          "duration_seconds": 6,
+          "orientation": "portrait",
+          "has_sound": false,
+          "youtube_url": null,
+          "instagram": null,
+          "width": 1080,
+          "height": 1920,
+          "cta": {
+            "style": "button",
+            "label": "Ascultă acum",
+            "target": {
+              "type": "in_app",
+              "route": "station",
+              "slug": "radio-vocea-evangheliei"
+            }
+          }
+        },
+        {
+          "id": 41,
+          "type": "video",
+          "media_url": "https://cdn.radiocrestin.ro/stories/videos/teaser.mp4",
+          "poster_url": "https://cdn.radiocrestin.ro/stories/posters/teaser.jpg",
+          "duration_seconds": 14.5,
+          "orientation": "portrait",
+          "has_sound": true,
+          "youtube_url": null,
+          "instagram": null,
+          "width": 1080,
+          "height": 1920,
+          "size_bytes": 4812345,
+          "mime_type": "video/mp4",
+          "cta": {
+            "style": "both",
+            "label": "Vezi tot concertul",
+            "target": {
+              "type": "app_link",
+              "app": "youtube",
+              "app_url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+              "fallback_url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+            }
+          }
+        },
+        {
+          "id": 42,
+          "type": "youtube",
+          "media_url": null,
+          "poster_url": "https://i.ytimg.com/vi/aBcDeFgHiJk/hqdefault.jpg",
+          "duration_seconds": 30,
+          "orientation": "portrait",
+          "has_sound": true,
+          "youtube_url": "https://www.youtube.com/shorts/aBcDeFgHiJk",
+          "youtube": {
+            "url": "https://www.youtube.com/shorts/aBcDeFgHiJk",
+            "provider": "youtube",
+            "kind": "short",
+            "video_id": "aBcDeFgHiJk",
+            "title": "Colind",
+            "thumbnail": "https://i.ytimg.com/vi/aBcDeFgHiJk/hqdefault.jpg"
+          },
+          "instagram": null,
+          "cta": null
+        },
+        {
+          "id": 43,
+          "type": "instagram",
+          "media_url": null,
+          "poster_url": "https://scontent.cdninstagram.com/v/t51.../thumb.jpg",
+          "duration_seconds": 10,
+          "orientation": "portrait",
+          "has_sound": false,
+          "youtube_url": null,
+          "instagram": {
+            "url": "https://www.instagram.com/reel/C1a2B3c4D5e/",
+            "kind": "reel",
+            "thumbnail_url": "https://scontent.cdninstagram.com/v/t51.../thumb.jpg",
+            "author_name": "radiocrestin",
+            "caption": "Repetiții pentru concert",
+            "media_url": null,
+            "media_type": null,
+            "shortcode": "C1a2B3c4D5e",
+            "embed_url": "https://www.instagram.com/reel/C1a2B3c4D5e/embed/",
+            "author_url": "https://www.instagram.com/radiocrestin/"
+          },
+          "cta": {
+            "style": "swipe_up",
+            "label": "Deschide în Instagram",
+            "target": {
+              "type": "app_link",
+              "app": "instagram",
+              "app_url": "https://www.instagram.com/reel/C1a2B3c4D5e/",
+              "fallback_url": "https://www.instagram.com/reel/C1a2B3c4D5e/"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

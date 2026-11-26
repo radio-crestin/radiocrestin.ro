@@ -177,3 +177,12 @@ export const SEO_CONTACT = {
   station: contactSeo("station"),
   announcement: contactSeo("announcement"),
 };
+
+export const SEO_STORY_FALLBACK = {
+  title: "Poveste | Radio Creștin",
+  description:
+    "Vezi poveștile Radio Creștin aici sau în aplicația Radio Creștin: peste 60 de radiouri creștine online, gratuit.",
+  imageUrl: DEFAULT_SHARE_IMAGE,
+  fullURL: `${SITE_URL}/poveste/`,
+  noindex: true,
+};

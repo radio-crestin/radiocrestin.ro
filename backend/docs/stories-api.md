@@ -204,6 +204,13 @@ match the device. Each listed story has at least one slide.
 | `size_bytes`, `mime_type` | | *extra*, `video`. |
 | `youtube` | object | *extra*, `youtube`: the announcements' embed item: `url`, `provider`, `kind` (`video`, `short`, `playlist`), `video_id`, `list_id`, `start`, `title`, `thumbnail`. |
 
+### Media URLs
+
+Every URL in the API is absolute (`https://...` in production): `cover_url`, `media_url`, `poster_url`, the
+YouTube and Instagram thumbnails. Use them as they are; never build them from a base URL or cache them past the
+list. The backend stores only each upload's path and builds its URL from the current storage on every response,
+so moving the media to another bucket or CDN changes every URL at once, with no change to the data or the apps.
+
 ### Instagram
 
 `url` (the post or reel) and `kind` (`post` or `reel`) are always set. The rest is fetched from Instagram's
