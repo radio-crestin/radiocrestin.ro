@@ -126,8 +126,7 @@ class StoryViewerPageState extends State<StoryViewerPage>
       initialStory: widget.initialStory,
       onStoryShown: _onStoryShown,
       onSlideShown: _onSlideShown,
-      onStoryCompleted: (story) =>
-          _service.report(StoryEvent.complete, story),
+      onStoryCompleted: (story) => _service.report(StoryEvent.complete, story),
       onFinished: () => _close(),
     )..addListener(_onController);
     _pages = PageController(initialPage: controller.storyIndex);
@@ -233,8 +232,8 @@ class StoryViewerPageState extends State<StoryViewerPage>
   /// Posts [text] as a public comment from the slide on screen; the field
   /// says how it went, over the story, without a dialog.
   Future<StoryCommentResult> _postComment(String text) async {
-    final (result, _) = await _service.postComment(
-        controller.story, controller.slide, text);
+    final (result, _) =
+        await _service.postComment(controller.story, controller.slide, text);
     return result;
   }
 
@@ -747,7 +746,9 @@ class _ChromeButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => IconButton(
-        icon: Icon(icon, color: Colors.white, size: 26,
+        icon: Icon(icon,
+            color: Colors.white,
+            size: 26,
             shadows: const [Shadow(blurRadius: 4, color: Colors.black45)]),
         tooltip: tooltip,
         onPressed: onPressed,
@@ -768,15 +769,19 @@ class _PausedBadge extends StatelessWidget {
           ),
           child: Padding(
             padding: EdgeInsets.all(14),
-            child: Icon(Icons.play_arrow_rounded,
-                color: Colors.white, size: 40),
+            child:
+                Icon(Icons.play_arrow_rounded, color: Colors.white, size: 40),
           ),
         ),
       );
 }
 
-/// A story as one face of a cube: swiping between stories turns it about
-/// the edge it shares with the next one, as Instagram's stories do.
+/// A story as one face of a cube seen from outside, as Instagram's
+/// stories turn: the edge two stories share comes towards the listener,
+/// their far sides fall away, and the face turning away darkens.
+///
+/// The face keeps the same widgets at rest and while it turns, so a
+/// video that plays doesn't start again when a swipe begins or stops.
 class _CubeFace extends StatelessWidget {
   const _CubeFace({
     required this.pages,
@@ -790,6 +795,13 @@ class _CubeFace extends StatelessWidget {
   final int current;
   final Widget child;
 
+  /// How much nearer things look than far ones: Instagram's strong
+  /// perspective, a face a quarter smaller at its far side half-turned.
+  static const _perspective = 0.001;
+
+  /// How dark a face gets as it turns edge-on.
+  static const _shade = 0.55;
+
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
@@ -800,14 +812,22 @@ class _CubeFace extends StatelessWidget {
             ? pages.page ?? current.toDouble()
             : current.toDouble();
         final offset = (page - index).clamp(-1.0, 1.0);
-        if (offset == 0) return child!;
         return Transform(
-          alignment:
-              offset > 0 ? Alignment.centerRight : Alignment.centerLeft,
-          transform: Matrix4.identity()
-            ..setEntry(3, 2, 0.0012)
-            ..rotateY(-offset * math.pi / 2),
-          child: child,
+          // It turns about the edge it shares with its neighbour: its
+          // right one as it leaves to the left, its left one as it comes.
+          alignment: offset > 0 ? Alignment.centerRight : Alignment.centerLeft,
+          transform: offset == 0
+              ? Matrix4.identity()
+              : (Matrix4.identity()
+                ..setEntry(3, 2, _perspective)
+                ..rotateY(offset * math.pi / 2)),
+          child: DecoratedBox(
+            position: DecorationPosition.foreground,
+            decoration: BoxDecoration(
+              color: Colors.black.withValues(alpha: offset.abs() * _shade),
+            ),
+            child: child,
+          ),
         );
       },
     );
@@ -902,8 +922,7 @@ class _Bottom extends StatelessWidget {
             Align(
               alignment: Alignment.centerLeft,
               child: ConstrainedBox(
-                constraints:
-                    const BoxConstraints(maxWidth: _maxFieldWidth),
+                constraints: const BoxConstraints(maxWidth: _maxFieldWidth),
                 child: StoryCommentField(
                   hint: comments.hint,
                   service: service,

@@ -2542,8 +2542,34 @@ void main() {
       final viewer = await app.waitForStory(StoryFixtures.verseSlug);
       final size =
           app.tester.view.physicalSize / app.tester.view.devicePixelRatio;
-      await app.tester.timedDragFrom(Offset(size.width * 0.9, size.height / 2),
-          Offset(-size.width * 0.85, 0), const Duration(milliseconds: 800));
+
+      // Halfway, the story turns as the outside of a cube does, as on
+      // Instagram: the edge it shares with the next one comes nearer
+      // (taller) and its far side falls away (shorter).
+      final slide = find.byKey(ValueKey('story-slide-'
+          '${StoryFixtures.verseSlug}-${viewer.controller.slide.id}'));
+      final before = app.tester.element(slide);
+      final turn = await app.tester
+          .startGesture(Offset(size.width * 0.9, size.height / 2));
+      Future<void> move() async {
+        for (var i = 0; i < 10; i++) {
+          await turn.moveBy(Offset(-size.width * 0.04, 0));
+          await app.tester.pump(const Duration(milliseconds: 16));
+        }
+      }
+
+      await move();
+      final farSide = app.tester.getBottomLeft(slide).dy -
+          app.tester.getTopLeft(slide).dy;
+      final sharedEdge = app.tester.getBottomRight(slide).dy -
+          app.tester.getTopRight(slide).dy;
+      expect(sharedEdge, greaterThan(farSide * 1.05),
+          reason: 'the shared edge ($sharedEdge) nearer than the far side '
+              '($farSide)');
+      expect(app.tester.element(slide), same(before),
+          reason: 'the slide turns without starting again');
+      await move();
+      await turn.up();
       await app.pumpFor(const Duration(seconds: 1));
       expect(viewer.controller.story.slug, StoryFixtures.teaserSlug,
           reason: 'left: the next story; ${app.describeStories()}');
