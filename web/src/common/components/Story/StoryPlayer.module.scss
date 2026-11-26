@@ -1,0 +1,689 @@
+// The stories player, drawn like the app's viewer (mobile/lib/pages/StoryViewerPage.dart):
+// full screen on a phone, a 9:16 card with side arrows on a desktop.
+$backdrop: #111111; // AppColors.storyBackdrop
+$primary: #e91e63; // AppColors.primary
+$text-shadow: 0 0 4px rgba(0, 0, 0, 0.45);
+
+.wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+.player {
+  position: relative;
+  width: min(100%, calc((100dvh - 40px) * 9 / 16), 460px);
+  aspect-ratio: 9 / 16;
+  border-radius: 16px;
+  overflow: hidden;
+  background: #000;
+  color: #fff;
+  font-family: "Inter", "Inter Fallback", sans-serif;
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.5);
+  touch-action: pan-y;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  cursor: pointer;
+
+  @media (max-width: 600px) {
+    width: 100vw;
+    height: 100dvh;
+    aspect-ratio: auto;
+    border-radius: 0;
+    box-shadow: none;
+  }
+}
+
+.stage {
+  position: absolute;
+  inset: 0;
+  transition: transform 0.18s ease-out;
+}
+
+.layer {
+  position: absolute;
+  inset: 0;
+  visibility: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: $backdrop;
+
+  > img,
+  > video,
+  > iframe {
+    width: 100%;
+    height: 100%;
+    // As in the app: letterboxed on the dark backdrop, unless the slide is portrait on a
+    // phone held upright, where it fills the screen.
+    object-fit: contain;
+    border: 0;
+    display: block;
+    pointer-events: none;
+  }
+
+  > iframe {
+    pointer-events: auto;
+    background: #000;
+  }
+}
+
+@media (max-width: 600px) and (orientation: portrait) {
+  .layer:not(.landscape) > img,
+  .layer:not(.landscape) > video {
+    object-fit: cover;
+  }
+}
+
+.active {
+  visibility: visible;
+  animation: fade-in 0.2s ease-out;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0.4;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: $backdrop;
+  z-index: 2;
+}
+
+.spinner {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2.5px solid rgba($primary, 0.2);
+  border-top-color: $primary;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+// The app's _Shade: darkens the top and bottom so the bars and buttons read on any picture.
+.shade {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.45) 0%,
+    transparent 18%,
+    transparent 70%,
+    rgba(0, 0, 0, 0.55) 100%
+  );
+}
+
+.chrome {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+
+  button,
+  a {
+    pointer-events: auto;
+  }
+}
+
+.chromeHidden {
+  opacity: 0;
+
+  button,
+  a {
+    pointer-events: none;
+  }
+}
+
+.top {
+  padding: max(8px, env(safe-area-inset-top)) 4px 0 8px;
+}
+
+.bars {
+  display: flex;
+  gap: 4px;
+}
+
+.bar {
+  flex: 1;
+  height: 2.5px;
+  padding: 0;
+  border: 0;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.38);
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.fill {
+  display: block;
+  height: 100%;
+  background: #fff;
+  transform-origin: left center;
+  transform: scaleX(0);
+}
+
+.head {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  margin-top: 8px;
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+// The app's _ChromeButton: a 26 px white icon with a soft shadow.
+.icon {
+  width: 48px;
+  height: 48px;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #fff;
+  cursor: pointer;
+  filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.45));
+
+  svg {
+    width: 26px;
+    height: 26px;
+  }
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.12);
+  }
+}
+
+.fastBadge {
+  position: absolute;
+  top: max(16px, env(safe-area-inset-top));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 4;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.45);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+// The app's _PausedBadge.
+.pausedBadge {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 3;
+  padding: 14px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.4);
+  color: #fff;
+  display: flex;
+  pointer-events: none;
+
+  svg {
+    width: 40px;
+    height: 40px;
+  }
+}
+
+.end {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.55);
+  pointer-events: auto;
+}
+
+.replay {
+  padding: 12px 22px;
+  border: 0;
+  border-radius: 999px;
+  background: #fff;
+  color: #000;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+// The app's _Bottom, as Reels lays it out.
+$shadow: 0 0 6px rgba(0, 0, 0, 0.45);
+
+.bottom {
+  display: flex;
+  flex-direction: column;
+  padding: 0 8px max(8px, env(safe-area-inset-bottom)) 12px;
+}
+
+.bottomRow {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+.left {
+  flex: 1;
+  min-width: 0;
+  max-width: 440px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+// The CTA's room: closed until the CTA comes in (CTA_SHOW_AFTER_MS / CTA_SHOW_MAX_SHARE), then
+// it opens smoothly, pushing who-it's-from up, and the bar rises into it.
+.ctaRoom {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.35s cubic-bezier(0.33, 1, 0.68, 1);
+}
+
+.ctaRoomInner {
+  min-height: 0;
+  overflow: hidden;
+  // Room for the bar's shadow and spring inside the clip.
+  margin: -6px -6px 0;
+  padding: 6px 6px 0;
+}
+
+.ctaRoomOpen {
+  grid-template-rows: 1fr;
+
+  .cta {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+// The app's StoryCtaBar: a full-width glassy bar; its colour sweeps in from the left after
+// CTA_FILL_AFTER_MS and the label turns to its text colour.
+.cta {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 40px;
+  margin-bottom: 14px;
+  padding: 0 8px 0 14px;
+  border-radius: 10px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.22);
+  color: #fff;
+  font-size: 14.5px;
+  font-weight: 700;
+  letter-spacing: 0.1px;
+  text-decoration: none;
+  box-shadow: 0 4px 14px transparent;
+  opacity: 0;
+  transform: translateY(12px) scale(0.96);
+  transition:
+    color 0.45s cubic-bezier(0.33, 1, 0.68, 1),
+    box-shadow 0.45s ease,
+    opacity 0.35s ease,
+    transform 0.45s cubic-bezier(0.2, 1.3, 0.45, 1);
+
+  svg {
+    position: relative;
+    flex: none;
+  }
+}
+
+@keyframes cta-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+
+.ctaSweep {
+  position: absolute;
+  inset: 0;
+  background: var(--cta-color);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 0.45s cubic-bezier(0.33, 1, 0.68, 1);
+}
+
+.ctaFilled {
+  color: var(--cta-text);
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--cta-color) 45%, transparent);
+
+  .ctaSweep {
+    transform: scaleX(1);
+  }
+
+  .ctaLabel {
+    color: var(--cta-text);
+  }
+}
+
+.ctaLabel {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  color: inherit;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: color 0.45s cubic-bezier(0.33, 1, 0.68, 1);
+}
+
+// The app's StoryAuthorRow.
+.author {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.authorAvatar {
+  width: 34px;
+  height: 34px;
+  flex: none;
+  box-sizing: border-box;
+  padding: 1.5px;
+  border-radius: 50%;
+  background: #fff;
+
+  img {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+    display: block;
+  }
+}
+
+.authorName {
+  min-width: 0;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  text-shadow: $shadow;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.caption {
+  margin: 8px 0 0;
+  color: #fff;
+  font-size: 14px;
+  line-height: 1.4;
+  text-shadow: $shadow;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+// The app's StoryActionColumn: heart, message, share, each with its label under it.
+.actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+}
+
+.action {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 52px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #fff;
+  cursor: pointer;
+
+  svg {
+    width: 30px;
+    height: 30px;
+    filter: drop-shadow(0 0 3px rgba(0, 0, 0, 0.45));
+    transition: transform 0.15s ease;
+  }
+
+  &:active svg {
+    transform: scale(0.88);
+  }
+}
+
+.action[data-testid="story-like"] svg {
+  width: 32px;
+  height: 32px;
+}
+
+.liked svg {
+  color: $primary;
+  animation: pop 0.35s ease;
+}
+
+.actionLabel {
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 600;
+  text-shadow: $shadow;
+  animation: count-in 0.2s ease;
+}
+
+@keyframes count-in {
+  from {
+    opacity: 0;
+    transform: translateY(40%);
+  }
+}
+
+// The app's StorySwipeUpHint: a chevron rising over the label, no pill.
+.swipeUp {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  align-self: center;
+  animation: cta-up 0.4s cubic-bezier(0.2, 1.3, 0.45, 1);
+  margin-top: 10px;
+  padding: 4px 24px;
+  color: #fff;
+  text-decoration: none;
+}
+
+.chevronUp {
+  display: flex;
+  filter: drop-shadow(0 0 3px rgba(0, 0, 0, 0.45));
+  animation: rise 1.1s ease-out infinite;
+}
+
+@keyframes rise {
+  0% {
+    transform: translateY(6px);
+    opacity: 1;
+  }
+  75% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-6px);
+    opacity: 0;
+  }
+}
+
+.swipeLabel {
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  text-shadow: $shadow;
+}
+
+// Comments are in the app: a small sheet over the bottom of the slide says so.
+.sheet {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+  padding: 18px 16px 16px;
+  border-radius: 18px;
+  background: rgba(0, 0, 0, 0.8);
+  color: #fff;
+  text-align: center;
+  animation: cta-up 0.25s cubic-bezier(0.33, 1, 0.68, 1);
+
+  > svg {
+    width: 28px;
+    height: 28px;
+  }
+}
+
+.sheetClose {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  background: transparent;
+  color: #fff;
+  cursor: pointer;
+
+  svg {
+    width: 20px;
+    height: 20px;
+  }
+}
+
+.sheetTitle {
+  margin: 0;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.sheetText {
+  margin: 0 0 6px;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.sheetButton {
+  padding: 10px 20px;
+  border-radius: 10px;
+  background: $primary;
+  color: #fff;
+  font-size: 14.5px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.igCaption {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 84px;
+  padding: 0 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: #fff;
+  font-size: 14px;
+  text-decoration: none;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
+  z-index: 1;
+
+  strong,
+  span {
+    color: inherit;
+  }
+}
+
+.play {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 76px;
+  height: 54px;
+  border: 0;
+  border-radius: 16px;
+  background: #ff0033;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 3;
+}
+
+.side {
+  position: absolute;
+  flex: none;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.9);
+  color: #121212;
+  cursor: pointer;
+
+  @media (max-width: 600px) {
+    display: none;
+  }
+}
+
+.sidePrev {
+  right: calc(50% + min(50%, calc((100dvh - 40px) * 9 / 32), 230px) + 16px);
+}
+
+.sideNext {
+  left: calc(50% + min(50%, calc((100dvh - 40px) * 9 / 32), 230px) + 16px);
+}
+
+@keyframes pop {
+  40% {
+    transform: scale(1.3);
+  }
+}

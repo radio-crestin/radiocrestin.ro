@@ -1,0 +1,22 @@
+---
+// A story's share page, built for every story the API lists at build time (with its share
+// preview); the island asks the API again on load. Stories added after the deploy reach the
+// fallback (/poveste/, via the 404 page).
+import BaseLayout from "../../../layouts/BaseLayout.astro";
+import StoryPage from "@/components/Story/StoryPage";
+import { getStoriesForBuild } from "@/services/stories";
+import { seoStory } from "@/utils/stories";
+import { DEFAULT_SHARE_IMAGE } from "@/utils/seo";
+import type { StoryView } from "@/utils/stories";
+
+export async function getStaticPaths() {
+  const stories = await getStoriesForBuild();
+  return stories.map((story) => ({ params: { slug: story.slug }, props: { story } }));
+}
+
+const { story } = Astro.props as { story: StoryView };
+---
+
+<BaseLayout {...seoStory(story, DEFAULT_SHARE_IMAGE)}>
+  <StoryPage client:load story={story} />
+</BaseLayout>
