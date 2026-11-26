@@ -1,0 +1,130 @@
+.page {
+  min-height: 100vh;
+  background: var(--bg-body);
+  color: var(--text-color);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  padding: 56px 16px 32px;
+  position: relative;
+}
+
+.home {
+  position: absolute;
+  top: 18px;
+  left: 18px;
+  color: var(--text-color);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  opacity: 0.75;
+
+  &:hover {
+    opacity: 1;
+  }
+}
+
+.primary {
+  display: inline-block;
+  padding: 12px 22px;
+  border: 0;
+  border-radius: 999px;
+  background: #fdae1c;
+  color: #121212;
+  font-size: 15px;
+  font-weight: 700;
+  text-decoration: none;
+  text-align: center;
+  cursor: pointer;
+
+  &:hover {
+    filter: brightness(1.05);
+  }
+}
+
+
+
+.withPlayer {
+  padding-top: 20px;
+
+  // A phone: the player fills the screen (it has its own close button); the app box is below it.
+  @media (max-width: 600px) {
+    padding: 0 0 32px;
+
+    .home {
+      display: none;
+    }
+
+    .app {
+      width: calc(100% - 32px);
+    }
+  }
+}
+
+@media (min-width: 601px) {
+  .withPlayer .home {
+    z-index: 4;
+  }
+}
+
+.status {
+  margin-top: 30vh;
+  color: var(--subtext-metadata-color);
+}
+
+.message {
+  max-width: 420px;
+  margin-top: 12vh;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+
+  h1 {
+    color: var(--text-color);
+    font-size: 1.4rem;
+    font-weight: 800;
+    margin: 0;
+  }
+
+  p {
+    margin: 0 0 8px;
+    color: var(--subtext-metadata-color);
+    line-height: 1.5;
+  }
+}
+
+.app {
+  width: 100%;
+  max-width: 420px;
+  padding: 18px;
+  border-radius: 16px;
+  background: var(--bg-favourite-intro);
+  border: 1px solid var(--bg-active-station-border);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
+}
+
+.appTitle {
+  color: var(--text-color);
+  margin: 0;
+  font-weight: 700;
+}
+
+.appText {
+  margin: 0;
+  font-size: 14px;
+  color: var(--subtext-metadata-color);
+}
+
+.stores {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+}

@@ -154,6 +154,30 @@ def extend_superapp_settings(main_settings):
                     "permission": lambda request: request.user.has_perm("radio_crestin.view_announcementsettings"),
                 },
                 {
+                    "title": lambda request: _("Stories"),
+                    "icon": "auto_stories",
+                    "link": reverse_lazy("admin:radio_crestin_story_changelist"),
+                    "permission": lambda request: request.user.has_perm("radio_crestin.view_story"),
+                },
+                {
+                    "title": lambda request: _("Profiles"),
+                    "icon": "badge",
+                    "link": reverse_lazy("admin:radio_crestin_profile_changelist"),
+                    "permission": lambda request: request.user.has_perm("radio_crestin.view_profile"),
+                },
+                {
+                    "title": lambda request: _("Story Comments"),
+                    "icon": "chat",
+                    "link": reverse_lazy("admin:radio_crestin_storycomment_changelist"),
+                    "permission": lambda request: request.user.has_perm("radio_crestin.view_storycomment"),
+                },
+                {
+                    "title": lambda request: _("Story Settings"),
+                    "icon": "settings_slow_motion",
+                    "link": reverse_lazy("admin:radio_crestin_storysettings_changelist"),
+                    "permission": lambda request: request.user.has_perm("radio_crestin.view_storysettings"),
+                },
+                {
                     "title": lambda request: _("Forms"),
                     "icon": "ballot",
                     "link": reverse_lazy("admin:radio_crestin_form_changelist"),
@@ -219,6 +243,18 @@ def extend_superapp_settings(main_settings):
             'update-announcement-stat-buckets': {
                 'task': 'superapp.apps.radio_crestin.tasks.update_announcement_stat_buckets.update_announcement_stat_buckets',
                 'schedule': crontab(minute='*/5'),  # Every 5 minutes
+            },
+            'update-story-stat-buckets': {
+                'task': 'superapp.apps.radio_crestin.tasks.update_story_stat_buckets.update_story_stat_buckets',
+                'schedule': crontab(minute='*/5'),  # Every 5 minutes
+            },
+            'delete-old-story-events': {
+                'task': 'superapp.apps.radio_crestin.tasks.delete_old_story_events.delete_old_story_events',
+                'schedule': crontab(hour=2, minute=40),  # Daily at 2:40 AM
+            },
+            'refresh-story-embeds': {
+                'task': 'superapp.apps.radio_crestin.tasks.refresh_story_embeds.refresh_story_embeds',
+                'schedule': crontab(hour=4, minute=10),  # Daily at 4:10 AM
             },
             'send-scheduled-announcement-pushes': {
                 'task': 'superapp.apps.radio_crestin.tasks.send_announcement_push.send_scheduled_announcement_pushes',

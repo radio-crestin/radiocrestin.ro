@@ -1,4 +1,6 @@
 """Link checks for announcement buttons: clients open these, so only safe schemes are stored."""
+import re
+
 from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator, URLValidator
 from django.utils.translation import gettext_lazy as _
@@ -42,3 +44,24 @@ def validate_action_url(value: str):
 def validate_intent_uri(value: str):
     if not value.strip().lower().startswith('intent:'):
         raise ValidationError(_('An Android intent URI starts with intent:'), code='invalid_intent')
+
+
+# Schemes an app link may never use: they run code, read local files or open other apps' content.
+# Android intents have their own field (validate_intent_uri).
+BLOCKED_APP_SCHEMES = ('javascript', 'data', 'file', 'vbscript', 'about', 'blob', 'content', 'intent')
+APP_SCHEME_PATTERN = re.compile(r'^([a-z][a-z0-9+.-]{1,31}):(.+)$', re.IGNORECASE)
+
+
+def validate_app_url(value: str):
+    """A native app's link: a universal/app link (https) or a custom scheme such as spotify: or fb://."""
+    lowered = value.strip().lower()
+    if lowered.startswith(('https://', 'http://')):
+        validate_web_url(value)
+        return
+    match = APP_SCHEME_PATTERN.match(value.strip())
+    if (not match or match.group(1).lower() in BLOCKED_APP_SCHEMES
+            or any(char.isspace() or ord(char) < 32 for char in match.group(2))):
+        raise ValidationError(
+            _('Enter the app\'s link: https://... or its own scheme such as spotify:track:... or fb://...'),
+            code='invalid_app_url',
+        )

@@ -7,15 +7,24 @@ import { cleanStationsMetadata, toIslandStations } from "@/utils";
 import { SEO_404 } from "@/utils/seo";
 import type { IStation } from "@/models/Station";
 import { getBuildSnapshot } from "@/services/announcementsBuild";
+import { getStoryBubblesForBuild } from "@/services/stories";
 
 const { stations: rawStations } = await getStations();
 rawStations.forEach((station: IStation) => { station.is_favorite = false; });
 const stations = cleanStationsMetadata(rawStations);
 
 const announcements = await getBuildSnapshot();
+const stories = await getStoryBubblesForBuild();
 ---
 
 <BaseLayout {...SEO_404}>
-  <RadioApp client:load announcements={announcements} stations={toIslandStations(stations)} />
+  <!-- A story's share link without a built page (added after the deploy): its fallback page reads it from the API. -->
+  <script is:inline slot="head">
+    (function () {
+      var m = location.pathname.match(/^\/poveste\/([a-z0-9-]{1,100})\/?$/);
+      if (m) location.replace("/poveste/?s=" + m[1] + location.hash);
+    })();
+  </script>
+  <RadioApp client:load stories={stories} announcements={announcements} stations={toIslandStations(stations)} />
   <PinStations />
 </BaseLayout>

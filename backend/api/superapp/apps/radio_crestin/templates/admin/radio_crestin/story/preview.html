@@ -1,0 +1,66 @@
+{% load i18n %}
+<div class="story-preview" data-story-preview>
+  {% for entry in slides %}{% with item=entry.item slide=entry.slide %}
+  <figure class="story-preview__slide">
+    <div class="story-preview__phone">
+      <div class="story-preview__bars">
+        {% for other in slides %}<span class="{% if forloop.counter <= forloop.parentloop.counter %}is-done{% endif %}"></span>{% endfor %}
+      </div>
+      <div class="story-preview__head">
+        {% if story.cover_image %}<img src="{{ story.cover_image.url }}" alt="">{% endif %}
+        <strong>{{ story.title }}</strong>
+      </div>
+      <div class="story-preview__media story-preview__media--{{ slide.orientation }}">
+        {% if not item %}
+          <p class="story-preview__missing">{% trans "This slide's media is missing: the app skips it." %}</p>
+        {% elif item.type == 'image' %}
+          <img src="{{ item.media_url }}" alt="">
+        {% elif item.type == 'video' %}
+          <video src="{{ item.media_url }}"{% if item.poster_url %} poster="{{ item.poster_url }}"{% endif %} muted playsinline controls preload="none"></video>
+        {% elif item.type == 'youtube' %}
+          {% if item.poster_url %}<img src="{{ item.poster_url }}" alt="">{% endif %}
+          <span class="story-preview__badge">▶ YouTube{% if item.youtube.title %} · {{ item.youtube.title }}{% endif %}</span>
+        {% elif item.type == 'instagram' %}
+          {% if item.instagram.thumbnail_url %}
+            <img src="{{ item.instagram.thumbnail_url }}" alt="">
+            <span class="story-preview__badge">Instagram{% if item.instagram.author_name %} · @{{ item.instagram.author_name }}{% endif %}</span>
+          {% else %}
+            <iframe src="{{ item.instagram.embed_url }}" title="Instagram" loading="lazy" scrolling="no"></iframe>
+          {% endif %}
+        {% endif %}
+      </div>
+      <div class="story-preview__bottom">
+      {% if item.caption %}<p class="story-preview__caption">{{ item.caption }}</p>{% endif %}
+      {% if item.cta %}
+      <div class="story-preview__cta">
+        {% if item.cta.style == 'swipe_up' or item.cta.style == 'both' %}
+          <span class="story-preview__swipe">︿<br>{% if item.cta.style == 'swipe_up' %}{{ item.cta.label }}{% else %}{% trans "Swipe up" %}{% endif %}</span>
+        {% endif %}
+        {% if item.cta.style == 'button' or item.cta.style == 'both' %}
+          <span class="story-preview__button" style="{% if entry.cta_color %}background: {{ entry.cta_color }};{% endif %}{% if entry.cta_text_color %} color: {{ entry.cta_text_color }};{% endif %}">{{ item.cta.label }}</span>
+        {% endif %}
+      </div>
+      {% endif %}
+      <div class="story-preview__author">
+        {% if author %}{% if author.avatar_url %}<img src="{{ author.avatar_url }}" alt="">{% endif %}<span>{{ author.name }}</span>{% else %}<span>Radio Creștin</span>{% endif %}
+      </div>
+      </div>
+      <div class="story-preview__like" aria-hidden="true">♡ {{ story.like_count }}</div>
+    </div>
+    <figcaption>
+      <strong>{% blocktrans with number=forloop.counter %}Slide {{ number }}{% endblocktrans %}</strong>
+      · {{ slide.get_type_display }}{% if item %} · {{ item.duration_seconds }} s{% endif %}
+      {% if item.cta %}<br>{% trans "Opens" %}:
+        {% with target=item.cta.target %}
+        {% if target.type == 'url' %}{{ target.url }} ({{ target.open_in }})
+        {% elif target.type == 'app_link' %}{{ target.app }}: {{ target.app_url }}{% if target.fallback_url %}, {% trans "else" %} {{ target.fallback_url }}{% endif %}
+        {% elif target.type == 'in_app' %}{% trans "app screen" %} “{{ target.route }}”{% if target.slug %} {{ target.slug }}{% endif %}{% if target.song %} ({{ target.song.artist }} – {{ target.song.name }}){% endif %}
+        {% elif target.type == 'story' %}{% trans "story" %} {{ target.story_slug }}{% endif %}
+        {% endwith %}
+      {% elif slide.cta_style != 'none' %}<br><span class="story-preview__warn">{% trans "The call to action is hidden: what it opens is missing." %}</span>{% endif %}
+    </figcaption>
+  </figure>
+  {% endwith %}{% empty %}
+  <p>{% trans "Add a slide and save to see the preview." %}</p>
+  {% endfor %}
+</div>
