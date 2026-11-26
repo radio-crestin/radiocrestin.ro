@@ -20,6 +20,13 @@ def _number(value):
     return f'{value or 0:,}'
 
 
+def _css_color(value):
+    """The API's #AARRGGBB as CSS's #RRGGBBAA; #RRGGBB as it is."""
+    if value and len(value) == 9:
+        return f'#{value[3:]}{value[1:3]}'
+    return value
+
+
 def _comments_url(story):
     return reverse('admin:radio_crestin_storycomment_changelist') + f'?story__id__exact={story.pk}'
 
@@ -199,7 +206,11 @@ class StoryAdmin(SuperAppModelAdmin):
         return render_to_string('admin/radio_crestin/story/preview.html', {
             'story': obj,
             'author': story_feed.author_payload(obj, lambda url: url),
-            'slides': [{'slide': slide, 'item': item} for slide, item in slides],
+            'slides': [{
+                'slide': slide, 'item': item,
+                'cta_color': _css_color(item and item['cta'] and item['cta']['color']),
+                'cta_text_color': _css_color(item and item['cta'] and item['cta']['text_color']),
+            } for slide, item in slides],
         })
 
     @admin.display(description=_('Links'))

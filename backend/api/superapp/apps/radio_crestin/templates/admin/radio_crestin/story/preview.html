@@ -37,7 +37,7 @@
           <span class="story-preview__swipe">︿<br>{% if item.cta.style == 'swipe_up' %}{{ item.cta.label }}{% else %}{% trans "Swipe up" %}{% endif %}</span>
         {% endif %}
         {% if item.cta.style == 'button' or item.cta.style == 'both' %}
-          <span class="story-preview__button" style="{% if item.cta.color %}background: {{ item.cta.color }};{% endif %}{% if item.cta.text_color %} color: {{ item.cta.text_color }};{% endif %}">{{ item.cta.label }}</span>
+          <span class="story-preview__button" style="{% if entry.cta_color %}background: {{ entry.cta_color }};{% endif %}{% if entry.cta_text_color %} color: {{ entry.cta_text_color }};{% endif %}">{{ item.cta.label }}</span>
         {% endif %}
       </div>
       {% endif %}

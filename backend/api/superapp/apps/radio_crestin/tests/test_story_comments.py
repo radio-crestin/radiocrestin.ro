@@ -63,13 +63,20 @@ class StoryNewKeysTests(TemporaryMediaMixin, TestCase):
         make_story('named', author_name='Ana')
         self.assertEqual(self.client.get(LIST_URL).json()['stories'][0]['author'], {'name': 'Ana', 'avatar_url': None})
 
-    def test_colours_must_be_hex_and_an_avatar_needs_a_name(self):
+    def test_colours_are_rrggbb_or_aarrggbb_and_an_avatar_needs_a_name(self):
         story = make_story('checks')
         slide = story.slides.get()
-        slide.cta_color = 'red'
-        with self.assertRaises(ValidationError) as raised:
-            slide.full_clean()
-        self.assertIn('cta_color', raised.exception.message_dict)
+        for bad in ('red', '#FFF', '#FFC1070', '#80FFC1071', 'FFC107'):
+            slide.cta_color = bad
+            with self.assertRaises(ValidationError, msg=bad) as raised:
+                slide.full_clean()
+            self.assertIn('cta_color', raised.exception.message_dict)
+        slide.cta_color, slide.cta_text_color = '#80ffc107', '#FFFFFF'
+        slide.full_clean()
+        slide.cta_style, slide.cta_label, slide.cta_target, slide.cta_url = 'button', 'Go', 'url', 'https://e.com'
+        slide.save()
+        cta = self.client.get('/api/v1/stories/checks/').json()['slides'][0]['cta']
+        self.assertEqual((cta['color'], cta['text_color']), ('#80FFC107', '#FFFFFF'))
 
         story.author_avatar = SimpleUploadedFile('a.png', PNG)
         with self.assertRaises(ValidationError) as raised:
@@ -177,6 +184,29 @@ class StoryCommentsEndpointTests(TemporaryMediaMixin, TestCase):
             self.assertEqual(self.get(slug=slug).status_code, 404, slug)
         self.assertFalse(StoryComment.objects.exists())
 
+    def test_the_website_posts_text_plain_json_as_web(self):
+        body = ('{"device_id": "web-1", "platform": "web", "app_version": "2026.11", "locale": "ro",'
+                ' "slide": null, "text": "Amin", "author_name": "Ana"}')
+        response = self.client.post(comments_url(), body, content_type='text/plain;charset=UTF-8',
+                                    HTTP_ORIGIN='https://www.radiocrestin.ro')
+
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response['Access-Control-Allow-Origin'], '*')
+        self.assertEqual(StoryComment.objects.get().platform, 'web')
+
+    def test_cors_on_every_answer_for_the_website(self):
+        comment = StoryComment.objects.create(story=self.story, text='Amin', device_id='web-1')
+        origin = {'HTTP_ORIGIN': 'https://www.radiocrestin.ro'}
+        preflight = self.client.options(comments_url(comment_id=comment.pk), **origin,
+                                        HTTP_ACCESS_CONTROL_REQUEST_METHOD='DELETE')
+        self.assertEqual(preflight.status_code, 200)
+        self.assertIn('DELETE', preflight['Access-Control-Allow-Methods'])
+        for response in (self.client.get(comments_url(), {'device_id': 'web-1'}, **origin),
+                         self.client.get(comments_url('missing'), **origin),
+                         self.client.delete(comments_url(comment_id=comment.pk) + '?device_id=web-2', **origin),
+                         self.client.delete(comments_url(comment_id=comment.pk) + '?device_id=web-1', **origin)):
+            self.assertEqual(response['Access-Control-Allow-Origin'], '*', response.status_code)
+
     def test_device_id_and_json_object_are_required(self):
         self.assertEqual(self.post(device_id='').json(), {'error': 'device_id is required'})
         for body in ('nope', [1]):
@@ -276,7 +306,8 @@ class StoryCommentsAdminTests(TemporaryMediaMixin, TestCase):
                                 author_name='Ana')
         StorySlide.objects.filter(story=self.story).update(caption='O seară de colinde', cta_style='button',
                                                            cta_label='Bilete', cta_target='url',
-                                                           cta_url='https://example.com', cta_color='#FFC107')
+                                                           cta_url='https://example.com', cta_color='#FFC107',
+                                                           cta_text_color='#80000000')
         self.comments = [StoryComment.objects.create(story=self.story, slide=self.story.slides.get(),
                                                      text=f'Comentariul {number}', platform='ios',
                                                      device_id=f'phone-{number}') for number in range(3)]
@@ -296,7 +327,7 @@ class StoryCommentsAdminTests(TemporaryMediaMixin, TestCase):
 
         for text in ('comments_enabled', 'comments_placeholder', 'author_name', 'author_avatar',
                      'slides-0-caption', 'slides-0-cta_color', 'slides-0-cta_text_color',
-                     'Comentariul 0', 'O seară de colinde', 'background: #FFC107'):
+                     'Comentariul 0', 'O seară de colinde', 'background: #FFC107', 'color: #00000080'):
             self.assertIn(text, page)
 
     def test_hide_and_show_actions_and_delete(self):

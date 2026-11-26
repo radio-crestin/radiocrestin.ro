@@ -236,7 +236,7 @@ to load, fall back to step 3.
 |---|---|
 | `style` | `swipe_up` (a "swipe up" hint with the label; swiping up opens the target), `button` (a labelled button), or `both` (the button, and swiping up also opens it). |
 | `label` | The hint's or the button's text. Always set. |
-| `color`, `text_color` | The button's background and text colours, `#RRGGBB` (upper case), each set on its own in the admin. `null`: the app's colours. Always present. |
+| `color`, `text_color` | The button's background and text colours, each set on its own in the admin: `#RRGGBB`, or `#AARRGGBB` with the opacity first (Android's order; CSS writes it `#RRGGBBAA`), upper case. `null`: the app's colours. Always present. |
 | `target` | What it opens. Only the keys its `type` uses are sent. |
 
 | `target.type` | Keys | Opens |
@@ -356,6 +356,10 @@ default). The admin can hide a comment (no listener sees it any more) or delete 
 returned: `mine` says whether a comment was written from the asking device. These answers are per device,
 so they are never cached (`Cache-Control: private, no-store`, by the backend and by Cloudflare).
 
+The website calls them too, like the events endpoint: POST bodies are JSON whatever the Content-Type
+(`text/plain` avoids a CORS preflight), `platform` is `"web"` there, and every answer, OPTIONS included,
+carries `Access-Control-Allow-Origin: *` (`DELETE` is preflighted: OPTIONS allows `GET, POST, DELETE`).
+
 The story must be listed (active, or in Preview) and inside its time window; otherwise every comment
 endpoint answers `404 {"error": "not found"}`.
 
@@ -387,7 +391,7 @@ page, send `before=<next_before>`; `next_before` is `null` on the last page. Wit
 
 ### Write
 
-`POST /api/v1/stories/<slug>/comments/`, JSON body (any Content-Type):
+`POST /api/v1/stories/<slug>/comments/`, JSON body (any Content-Type, `text/plain` included):
 
 ```json
 { "device_id": "4f3c2a...", "platform": "android", "app_version": "1.9.0", "locale": "ro-RO",
@@ -400,7 +404,7 @@ page, send `before=<next_before>`; `next_before` is `null` on the last page. Wit
 | `text` | 1 to 500 characters, counted after HTML tags and control characters are removed and the ends trimmed. |
 | `author_name` | Optional, at most 40 characters (cleaned the same way); `null` or empty: shown as `"Ascultător"`. |
 | `slide` | The slide on screen, or `null`. An id that isn't one of the story's slides is stored as `null`. |
-| `platform`, `app_version`, `locale` | Like the events'; shown to the admin with the comment. |
+| `platform`, `app_version`, `locale` | Like the events' (`platform`: `android`, `ios`, `web`, ...); shown to the admin with the comment. |
 
 | Answer | When |
 |---|---|

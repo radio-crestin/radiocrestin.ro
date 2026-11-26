@@ -24,9 +24,11 @@ MAX_SLIDE_SECONDS = 120
 MAX_COMMENT_CHARS = 500
 MAX_COMMENT_AUTHOR_CHARS = 40
 
-# A CTA's colours, as the app takes them: #RRGGBB.
+# A CTA's colours, as the clients take them: #RRGGBB, or #AARRGGBB with the opacity first.
 validate_hex_color = RegexValidator(
-    r'^#[0-9A-Fa-f]{6}$', _('Enter a colour as #RRGGBB, such as #FFC107.'), code='invalid_color',
+    r'^#([0-9A-Fa-f]{2})?[0-9A-Fa-f]{6}$',
+    _('Enter a colour as #RRGGBB, such as #FFC107, or #AARRGGBB with the opacity first, such as #80000000.'),
+    code='invalid_color',
 )
 
 
@@ -297,12 +299,12 @@ class StorySlide(models.Model):
         Story, verbose_name=_("Story"), on_delete=models.SET_NULL, null=True, blank=True, related_name='+',
     )
     cta_color = models.CharField(
-        _("Button colour"), max_length=7, blank=True, default='', validators=[validate_hex_color],
-        help_text=_("#RRGGBB. Empty: the app's colour."),
+        _("Button colour"), max_length=9, blank=True, default='', validators=[validate_hex_color],
+        help_text=_("#RRGGBB, or #AARRGGBB with the opacity first. Empty: the app's colour."),
     )
     cta_text_color = models.CharField(
-        _("Button text colour"), max_length=7, blank=True, default='', validators=[validate_hex_color],
-        help_text=_("#RRGGBB. Empty: the app's colour."),
+        _("Button text colour"), max_length=9, blank=True, default='', validators=[validate_hex_color],
+        help_text=_("#RRGGBB, or #AARRGGBB with the opacity first. Empty: the app's colour."),
     )
 
     # Totals, updated from the reported events
