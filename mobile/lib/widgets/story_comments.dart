@@ -260,42 +260,62 @@ class _PublicNotice extends StatelessWidget {
 }
 
 /// The name a listener signs comments with, asked in a small dialog.
-class StoryCommentName {
-  StoryCommentName._();
+class StoryCommentName extends StatefulWidget {
+  const StoryCommentName({super.key, required this.initial});
+
+  final String? initial;
 
   static Future<void> edit(BuildContext context, StoriesService service) async {
-    final controller = TextEditingController(text: service.commentName ?? '');
     final name = await showDialog<String>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Numele sub comentarii'),
-        content: TextField(
-          key: const ValueKey('story-comment-name-field'),
-          controller: controller,
-          autofocus: true,
-          maxLength: StoriesService.maxNameLength,
-          textCapitalization: TextCapitalization.words,
-          decoration: const InputDecoration(
-            hintText: StoryComment.anonymousName,
-            helperText: 'Gol: „Ascultător”. Îl văd toți cei care citesc.',
-          ),
-          onSubmitted: (value) => Navigator.of(context).pop(value),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Renunță'),
-          ),
-          FilledButton(
-            key: const ValueKey('story-comment-name-save'),
-            onPressed: () => Navigator.of(context).pop(controller.text),
-            child: const Text('Salvează'),
-          ),
-        ],
-      ),
+      builder: (context) => StoryCommentName(initial: service.commentName),
     );
-    controller.dispose();
     if (name != null) await service.saveCommentName(name);
+  }
+
+  @override
+  State<StoryCommentName> createState() => _StoryCommentNameState();
+}
+
+class _StoryCommentNameState extends State<StoryCommentName> {
+  // Owned here: the dialog still builds its field while it animates out.
+  late final TextEditingController _name =
+      TextEditingController(text: widget.initial ?? '');
+
+  @override
+  void dispose() {
+    _name.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Numele sub comentarii'),
+      content: TextField(
+        key: const ValueKey('story-comment-name-field'),
+        controller: _name,
+        autofocus: true,
+        maxLength: StoriesService.maxNameLength,
+        textCapitalization: TextCapitalization.words,
+        decoration: const InputDecoration(
+          hintText: StoryComment.anonymousName,
+          helperText: 'Gol: „Ascultător”. Îl văd toți cei care citesc.',
+        ),
+        onSubmitted: (value) => Navigator.of(context).pop(value),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Renunță'),
+        ),
+        FilledButton(
+          key: const ValueKey('story-comment-name-save'),
+          onPressed: () => Navigator.of(context).pop(_name.text),
+          child: const Text('Salvează'),
+        ),
+      ],
+    );
   }
 }
 

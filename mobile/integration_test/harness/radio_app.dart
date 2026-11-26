@@ -10,6 +10,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:radio_crestin/appAudioHandler.dart';
 import 'package:radio_crestin/app_launch_options.dart';
 import 'package:radio_crestin/components/MiniAudioPlayer.dart';
+import 'package:radio_crestin/globals.dart' as globals;
 import 'package:radio_crestin/main.dart';
 import 'package:radio_crestin/pages/SettingsPage.dart';
 import 'package:radio_crestin/pages/StoryViewerPage.dart';
@@ -464,11 +465,11 @@ class RadioApp {
           '${bubble.story.slug}${bubble.highlighted ? '*' : ''}',
       ];
 
-  /// Closes the story viewer if it is open, as Back does.
+  /// Closes the story viewer if it is open, as Back does, with whatever
+  /// a test left over it (the comments sheet, a dialog).
   Future<void> closeStoryViewer() async {
-    final viewer = storyViewer;
-    if (viewer == null) return;
-    viewer.close();
+    if (storyViewer == null) return;
+    globals.navigatorKey.currentState?.popUntil((route) => route.isFirst);
     await waitFor(() => storyViewer == null, reason: 'the viewer to close');
   }
 
