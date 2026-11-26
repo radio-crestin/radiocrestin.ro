@@ -15,6 +15,7 @@ import 'package:get_it/get_it.dart';
 import 'package:radio_crestin/components/StationsList.dart';
 import 'package:radio_crestin/services/announcement.dart';
 import 'package:radio_crestin/services/announcement_hide_rules.dart';
+import 'package:radio_crestin/pages/StoryViewerPage.dart';
 import 'package:radio_crestin/services/announcements_service.dart';
 import 'package:radio_crestin/services/home_promo_slot.dart';
 import 'package:radio_crestin/services/story.dart';
@@ -2467,7 +2468,17 @@ void main() {
       expect(app.storyBar,
           ['${StoryFixtures.verseSlug}*', '${StoryFixtures.teaserSlug}*']);
 
+      // The viewer grows out of the tapped bubble, as on Instagram (its
+      // frames can't be timed here: a debug build's first frame of the
+      // viewer comes after the 300 ms the zoom takes).
       await app.tapStoryBubble(StoryFixtures.verseSlug);
+      final route = <String>[];
+      find.byType(StoryViewerPage).evaluate().first.visitAncestorElements((e) {
+        route.add(e.widget.runtimeType.toString());
+        return route.length < 12;
+      });
+      expect(route, contains('_GrowFromBubble'),
+          reason: 'opened growing out of the bubble: ${route.join(' < ')}');
       await app.waitForStory(StoryFixtures.verseSlug);
       app.storyViewer!.controller.next();
       await app.waitForStory(StoryFixtures.verseSlug);
