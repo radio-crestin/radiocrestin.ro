@@ -125,7 +125,7 @@ class Story(models.Model):
     # Public comments under the story (docs/stories-api.md#comments)
     comments_enabled = models.BooleanField(
         _("Comments"), default=False,
-        help_text=_("Listeners can read and write public comments under the story. Moderate them in Story Comments."),
+        help_text=_("Listeners read public comments under the story; devices with a Profile write them. Moderate them in Story Comments."),
     )
     comments_placeholder = models.CharField(
         _("Comment placeholder"), max_length=120, blank=True, default='',

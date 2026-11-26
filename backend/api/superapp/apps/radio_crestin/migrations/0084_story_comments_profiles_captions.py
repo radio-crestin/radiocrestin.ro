@@ -16,7 +16,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='story',
             name='comments_enabled',
-            field=models.BooleanField(default=False, help_text='Listeners can read and write public comments under the story. Moderate them in Story Comments.', verbose_name='Comments'),
+            field=models.BooleanField(default=False, help_text='Listeners read public comments under the story; devices with a Profile write them. Moderate them in Story Comments.', verbose_name='Comments'),
         ),
         migrations.AddField(
             model_name='story',
