@@ -29,6 +29,11 @@ class CONSTANTS {
   static String get ANNOUNCEMENTS_URL => "$API_BASE_URL/announcements";
   static String get ANNOUNCEMENT_EVENTS_URL =>
       "$API_BASE_URL/announcements/events/";
+  // The stories bar and viewer (backend/docs/stories-api.md). One story:
+  // "$STORIES_URL/<slug>/"; its comments: "$STORIES_URL/<slug>/comments/";
+  // a device's likes: "$STORIES_URL/liked/".
+  static String get STORIES_URL => "$API_BASE_URL/stories";
+  static String get STORY_EVENTS_URL => "$API_BASE_URL/stories/events/";
   static String DEFAULT_STATION_THUMBNAIL_URL = "";
   static String IMAGE_PROXY_PREFIX = "";
   static String STATIC_MP3_URL =

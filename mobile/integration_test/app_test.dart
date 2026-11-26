@@ -15,7 +15,17 @@ import 'package:get_it/get_it.dart';
 import 'package:radio_crestin/components/StationsList.dart';
 import 'package:radio_crestin/services/announcement.dart';
 import 'package:radio_crestin/services/announcement_hide_rules.dart';
+import 'package:radio_crestin/pages/StoryViewerPage.dart';
 import 'package:radio_crestin/services/announcements_service.dart';
+import 'package:radio_crestin/services/home_promo_slot.dart';
+import 'package:radio_crestin/services/story.dart';
+import 'package:radio_crestin/services/story_cta.dart';
+import 'package:radio_crestin/services/story_deep_link.dart';
+import 'package:radio_crestin/utils.dart';
+import 'package:radio_crestin/widgets/story_comments.dart';
+import 'package:radio_crestin/widgets/story_overlay.dart';
+import 'package:radio_crestin/services/story_schedule.dart';
+import 'package:radio_crestin/services/story_viewer_controller.dart';
 import 'package:radio_crestin/theme.dart';
 import 'package:radio_crestin/widgets/announcement_banner.dart';
 import 'package:radio_crestin/widgets/announcement_card.dart';
@@ -34,6 +44,7 @@ import 'harness/network_conditions.dart';
 import 'harness/recording_launcher.dart';
 import 'harness/radio_app.dart';
 import 'harness/station_catalog.dart';
+import 'harness/story_fixtures.dart';
 
 /// The app's core flows, end to end, on good and bad networks. How the
 /// harness works and how to add a test: README.md next to this file.
@@ -2022,6 +2033,927 @@ void main() {
     });
   });
 
+  group('Stories', () {
+    /// Runs [body] from a device that never saw a story, and leaves none
+    /// behind for the tests after it.
+    void storyTest(
+      String description,
+      Future<void> Function(RadioApp app) body,
+    ) =>
+        test(description, (app) async {
+          await _forgetStories(app);
+          try {
+            await body(app);
+          } finally {
+            server.stories.clear();
+            await _forgetStories(app);
+          }
+        });
+
+    Story story(Map<String, Object?> json) => Story.fromJson(json)!;
+    String base() => server.baseUrl;
+
+    test('the display rules: due, highlighted, max shows and auto-open',
+        (app) async {
+      final now = DateTime.utc(2026, 12, 2, 18);
+      final daily = story({
+        ...StoryFixtures.autoOpen(base(), everyDays: 3, everyActions: 10),
+      });
+      final once = story(StoryFixtures.autoOpen(base(), maxShows: 2));
+      final schedule = StorySchedule(now: now, actions: 30);
+      StoryHistory shown({int shows = 1, int daysAgo = 0, int actions = 30}) =>
+          StoryHistory(
+            shows: shows,
+            lastShownAt: now.subtract(Duration(days: daysAgo)),
+            actionsAtLastShow: actions,
+            seenSlides: {for (final s in daily.slides) s.id},
+          );
+
+      expect(schedule.isDue(daily, StoryHistory.none), isTrue,
+          reason: 'never shown: due');
+      expect(schedule.isDue(daily, shown(daysAgo: 1)), isFalse,
+          reason: 'shown yesterday, no actions since');
+      expect(schedule.isDue(daily, shown(daysAgo: 3)), isTrue,
+          reason: 'every_days reached');
+      expect(schedule.isDue(daily, shown(daysAgo: 1, actions: 20)), isTrue,
+          reason: 'every_actions reached first');
+      expect(schedule.isDue(once, shown(daysAgo: 30)), isFalse,
+          reason: 'no interval: due only until its first show');
+      expect(schedule.isListed(once, shown()), isTrue);
+      expect(schedule.isListed(once, shown(shows: 2)), isFalse,
+          reason: 'max_shows reached: it leaves the bar');
+      expect(schedule.isHighlighted(daily, shown(daysAgo: 1)), isFalse);
+      expect(
+          schedule.isHighlighted(
+              daily,
+              StoryHistory(
+                  shows: 1, lastShownAt: now, actionsAtLastShow: 30)),
+          isTrue,
+          reason: 'a slide never seen keeps the ring coloured');
+      final ended = story({
+        ...StoryFixtures.verse(base()),
+        'ends_at': now.toIso8601String(),
+      });
+      expect(schedule.isListed(ended, StoryHistory.none), isFalse,
+          reason: 'its window ended');
+
+      final seen = story(StoryFixtures.verse(base()));
+      final fresh = story(StoryFixtures.teaser(base()));
+      final histories = {
+        seen.slug: StoryHistory(
+          shows: 1,
+          lastShownAt: now.subtract(const Duration(days: 1)),
+          actionsAtLastShow: 30,
+          seenSlides: {for (final slide in seen.slides) slide.id},
+        ),
+      };
+      StoryHistory historyOf(String slug) =>
+          histories[slug] ?? StoryHistory.none;
+      expect(schedule.bar([seen, fresh], historyOf).map((s) => s.slug),
+          [fresh.slug, seen.slug],
+          reason: 'due stories first');
+
+      Story? autoOpen({bool openedThisLaunch = false, int? lastAt}) =>
+          schedule.autoOpen([seen, daily], historyOf,
+              openedThisLaunch: openedThisLaunch,
+              actionsAtLastAutoOpen: lastAt,
+              gapActions: 20);
+      expect(autoOpen()?.slug, daily.slug,
+          reason: 'the first due story that opens by itself');
+      expect(autoOpen(openedThisLaunch: true), isNull,
+          reason: 'one per app open');
+      expect(autoOpen(lastAt: 15), isNull, reason: 'within the gap');
+      expect(autoOpen(lastAt: 10)?.slug, daily.slug,
+          reason: 'the gap passed');
+    });
+
+    test('the viewer state: on, back, pause, players and the end',
+        (app) async {
+      final shownSlides = <String>[];
+      final completed = <String>[];
+      var finished = false;
+      final controller = StoryViewerController(
+        stories: [
+          story(StoryFixtures.verse(base())),
+          story(StoryFixtures.teaser(base())),
+        ],
+        onSlideShown: (story, slide) => shownSlides.add(slide.id),
+        onStoryCompleted: (story) => completed.add(story.slug),
+        onFinished: () => finished = true,
+      )..start();
+      expect(shownSlides, ['401']);
+      controller.tick(const Duration(seconds: 2));
+      expect(controller.progress, closeTo(0.5, 0.01));
+      controller.pause(StoryPause.hold);
+      controller.tick(const Duration(seconds: 2));
+      expect(controller.progress, closeTo(0.5, 0.01),
+          reason: 'holding stops the timer');
+      controller.resume(StoryPause.hold);
+      controller.tick(const Duration(seconds: 2));
+      expect(controller.slideIndex, 1, reason: 'the slide ran out');
+      expect(controller.barProgress(0), 1);
+      controller.previous();
+      expect(controller.slideIndex, 0);
+      controller.next();
+      controller.next();
+      expect(completed, [StoryFixtures.verseSlug]);
+      expect(controller.story.slug, StoryFixtures.teaserSlug);
+      controller.tick(const Duration(seconds: 10));
+      expect(controller.slideIndex, 0,
+          reason: 'a video sets its own pace, not the timer');
+      controller.playerProgress(
+          const Duration(seconds: 1), const Duration(seconds: 4));
+      expect(controller.progress, closeTo(0.25, 0.01));
+      expect(controller.slideDuration, const Duration(seconds: 4));
+      controller.slideEnded();
+      expect(controller.slideIndex, 1);
+      controller.previous();
+      controller.previous();
+      expect(controller.story.slug, StoryFixtures.verseSlug,
+          reason: 'back from a first slide: the previous story');
+      controller.showStory(1);
+      controller.next();
+      controller.next();
+      expect(finished, isTrue, reason: 'the last story ended');
+      expect(shownSlides, ['401', '402', '401', '402', '411', '412', '411',
+          '401', '411', '412']);
+      controller.dispose();
+    });
+
+    test('the CTA comes in after 4 s of play, or 30% of the slide sooner',
+        (app) async {
+      Duration ms(int n) => Duration(milliseconds: n);
+      const six = Duration(seconds: 6);
+      expect(StoryCtaTiming.showAt(six), ms(1800));
+      expect(StoryCtaTiming.showAt(const Duration(seconds: 10)), ms(3000));
+      expect(StoryCtaTiming.showAt(ms(14500)), ms(4000));
+      expect(StoryCtaTiming.showAt(const Duration(seconds: 60)), ms(4000));
+      expect(StoryCtaTiming.phaseAt(ms(1799), six), StoryCtaPhase.hidden);
+      expect(StoryCtaTiming.phaseAt(ms(1800), six), StoryCtaPhase.shown);
+      expect(StoryCtaTiming.phaseAt(ms(2799), six), StoryCtaPhase.shown);
+      expect(StoryCtaTiming.phaseAt(ms(2800), six), StoryCtaPhase.filled,
+          reason: 'its colour a second after it comes in');
+
+      final controller = StoryViewerController(stories: [
+        story(StoryFixtures.verse(base())),
+        story(StoryFixtures.teaser(base())),
+      ])
+        ..start();
+      // A 4 s picture: in at 1.2 s of play, its colour at 2.2 s.
+      controller.tick(ms(1000));
+      expect(controller.ctaPhase, StoryCtaPhase.hidden);
+      controller.pause(StoryPause.hold);
+      controller.tick(ms(2000));
+      expect(controller.ctaPhase, StoryCtaPhase.hidden,
+          reason: 'a hold stops the count');
+      controller.resume(StoryPause.hold);
+      controller.tick(ms(300));
+      expect(controller.ctaPhase, StoryCtaPhase.shown);
+      controller.tick(ms(1000));
+      expect(controller.ctaPhase, StoryCtaPhase.filled);
+      controller.next();
+      expect(controller.ctaPhase, StoryCtaPhase.hidden,
+          reason: 'each slide counts afresh');
+
+      // A 3 s video counts its own position: in at 0.9 s.
+      controller.showStory(1);
+      controller.tick(const Duration(seconds: 10));
+      expect(controller.ctaPhase, StoryCtaPhase.hidden,
+          reason: 'the timer doesn\'t count for a video');
+      controller.playerProgress(ms(800), const Duration(seconds: 3));
+      expect(controller.ctaPhase, StoryCtaPhase.hidden);
+      controller.playerProgress(ms(950), const Duration(seconds: 3));
+      expect(controller.ctaPhase, StoryCtaPhase.shown);
+      controller.playerProgress(ms(500), const Duration(seconds: 3));
+      expect(controller.ctaPhase, StoryCtaPhase.shown,
+          reason: 'a seek back doesn\'t hide it again');
+      controller.dispose();
+    });
+
+    test('the CTA routing: what each target does, and the app link order',
+        (app) async {
+      StoryCtaTarget target(Map<String, Object?> json) =>
+          StoryCtaTarget.fromJson(json)!;
+      expect(
+          StoryCtaRouter.plan(
+              target({'type': 'url', 'url': 'https://radiocrestin.ro'})),
+          StoryCtaPlan.leaveApp);
+      expect(
+          StoryCtaRouter.plan(target(
+              {'type': 'in_app', 'route': 'station', 'slug': 'e2e-alpha'})),
+          StoryCtaPlan.closeThenOpen);
+      expect(
+          StoryCtaRouter.plan(target({'type': 'in_app', 'route': 'share'})),
+          StoryCtaPlan.sheet);
+      expect(
+          StoryCtaRouter.plan(
+              target({'type': 'story', 'story_slug': 'other'})),
+          StoryCtaPlan.showStory);
+
+      final youtube = target({
+        'type': 'app_link',
+        'app_url': StoryFixtures.youtubeUrl,
+        'fallback_url': StoryFixtures.youtubeUrl,
+      });
+      expect(
+          StoryCtaRouter.appLinkAttempts(youtube)
+              .map((a) => '${a.$1} ${a.$2.name}'),
+          [
+            '${StoryFixtures.youtubeUrl} externalNonBrowserApplication',
+            '${StoryFixtures.youtubeUrl} externalApplication',
+          ],
+          reason: 'the app if installed, else the browser');
+      final spotify = target({
+        'type': 'app_link',
+        'app_url': 'spotify:track:1',
+        'fallback_url': 'https://open.spotify.com/track/1',
+      });
+      expect(
+          StoryCtaRouter.appLinkAttempts(spotify)
+              .map((a) => '${a.$1} ${a.$2.name}'),
+          [
+            'spotify:track:1 externalApplication',
+            'https://open.spotify.com/track/1 externalApplication',
+          ]);
+      expect(StoryCtaRouter.appLink('javascript:alert(1)'), isNull);
+      expect(StoryCtaRouter.appLink('intent://x#Intent;end'), isNull);
+
+      final unknown = StoryCtaTarget.fromJson({
+        'type': 'in_app',
+        'route': 'radio-quiz',
+        'fallback_url': 'https://radiocrestin.ro/quiz',
+      });
+      expect(unknown?.type, StoryCtaTargetType.url,
+          reason: 'an unknown route opens its fallback');
+      expect(unknown?.url, 'https://radiocrestin.ro/quiz');
+      expect(
+          StoryCta.fromJson({
+            'style': 'swipe_up',
+            'label': 'x',
+            'target': {'type': 'hologram'},
+          }),
+          isNull,
+          reason: 'an unknown target without a fallback hides the CTA');
+    });
+
+    test('a story link opens the story; station links still play stations',
+        (app) async {
+      const slug = 'concert-craciun-2026';
+      for (final link in [
+        'https://www.radiocrestin.ro/poveste/$slug/',
+        'https://www.radiocrestin.ro/poveste/$slug',
+        'https://radiocrestin.ro/poveste/$slug/?utm_source=whatsapp',
+        'radiocrestin://poveste/$slug',
+        'radiocrestin:///poveste/$slug',
+      ]) {
+        final uri = Uri.parse(link);
+        expect(storySlugFromUri(uri), slug, reason: link);
+        expect(Utils.stationSlugFromUri(uri), '',
+            reason: '$link names no station');
+      }
+      for (final (link, station) in [
+        ('radiocrestin://radio-vocea-evangheliei', 'radio-vocea-evangheliei'),
+        ('https://www.radiocrestin.ro/radio-vocea-evangheliei',
+            'radio-vocea-evangheliei'),
+        ('https://share.radiocrestin.ro/poveste-de-seara', 'poveste-de-seara'),
+      ]) {
+        final uri = Uri.parse(link);
+        expect(storySlugFromUri(uri), isNull, reason: link);
+        expect(Utils.stationSlugFromUri(uri), station, reason: link);
+      }
+      for (final link in [
+        'https://www.radiocrestin.ro/poveste/',
+        'radiocrestin://poveste',
+        'https://www.radiocrestin.ro/poveste/<script>/',
+      ]) {
+        expect(storySlugFromUri(Uri.parse(link)), isNull, reason: link);
+      }
+    });
+
+    storyTest(
+        'a story a link names but the list lacks is fetched by its slug',
+        (app) async {
+      server.stories.add(StoryFixtures.verse(base()));
+      // Not in the list this device kept: only the single-story endpoint.
+      final story = await app.stories.find(StoryFixtures.verseSlug);
+      expect(story?.title, StoryFixtures.verseTitle);
+      expect(await app.stories.find('e2e-gone'), isNull);
+    });
+
+    test('the new keys: comments, author, caption, CTA colours; counts',
+        (app) async {
+      final plain = story(StoryFixtures.verse(base()));
+      expect(plain.comments.enabled, isFalse,
+          reason: 'comments are off unless the admin turns them on');
+      expect(story({
+        ...StoryFixtures.verse(base()),
+        'comments': {'enabled': false, 'placeholder': 'x', 'count': 3},
+      }).comments.enabled, isFalse);
+      expect(plain.author, isNull);
+      final full = story({
+        ...StoryFixtures.verse(base(), comments: true),
+        'author': {'name': 'Radio Vocea Evangheliei', 'avatar_url': null},
+      });
+      expect(full.comments.enabled, isTrue);
+      expect(full.comments.hint, StoryFixtures.commentPlaceholder);
+      expect(story({
+        ...StoryFixtures.verse(base()),
+        'comments': {'enabled': true, 'placeholder': null, 'count': 12},
+      }).comments.hint, StoryComments.defaultPlaceholder);
+      expect(StoryComments.defaultPlaceholder, contains('public'),
+          reason: 'the field says the comment is public');
+      expect(full.author?.name, 'Radio Vocea Evangheliei');
+      expect(full.slides.first.caption, StoryFixtures.caption);
+      final cta = StoryCta.fromJson({
+        'style': 'button',
+        'label': 'Vezi',
+        'color': '#2D5BFF',
+        'text_color': '#FFFFFF',
+        'target': {'type': 'url', 'url': 'https://radiocrestin.ro'},
+      });
+      expect(cta?.color, const Color(0xFF2D5BFF));
+      expect(formatStoryCount(2229), '2.229');
+      expect(formatStoryCount(152340), '152.340');
+      expect(formatStoryCount(7), '7');
+      final now = DateTime(2026, 11, 26, 12);
+      expect(storyCommentAge(now.subtract(const Duration(seconds: 20)),
+          now: now), 'acum');
+      expect(storyCommentAge(now.subtract(const Duration(minutes: 5)),
+          now: now), 'acum 5 min');
+      expect(storyCommentAge(now.subtract(const Duration(hours: 3)),
+          now: now), 'acum 3 h');
+      expect(storyCommentAge(now.subtract(const Duration(days: 1)),
+          now: now), 'ieri');
+      expect(StoryComment.fromJson({'id': 7, 'text': 'Amin',
+          'author_name': null, 'created_at': '2026-11-26T10:00:00Z'})
+          ?.authorName, StoryComment.anonymousName);
+      expect(StoryComment.fromJson({'id': 8, 'text': 'Amin',
+          'author_name': 'Ana', 'author_avatar_url': 'https://x/a.webp'})
+          ?.authorAvatarUrl, 'https://x/a.webp');
+      final profile = StoryCommentAccess.fromJson({
+        'can_comment': true,
+        'profile': {'name': 'Ana', 'avatar_url': null},
+      });
+      expect(profile.canComment, isTrue);
+      expect(profile.profile?.name, 'Ana');
+      expect(StoryCommentAccess.fromJson({'can_comment': false}).canComment,
+          isFalse, reason: 'only profiles comment, and this phone has none');
+      expect(StoryCommentAccess.fromJson({}).canComment, isTrue,
+          reason: 'an API before profiles lets everyone comment');
+    });
+
+    storyTest(
+        'a phone with a profile gets the comment field, told it is public '
+        'and as whom; it holds the story, posts as the profile, and lists '
+        'it with the others, with their pictures', (app) async {
+      server
+        ..stories.add(StoryFixtures.verse(base(), comments: true))
+        ..storyCommentProfile = {
+          'name': 'Ana',
+          'avatar_url': '${base()}/images/profile-ana.png',
+        }
+        ..storyComments[StoryFixtures.verseSlug] = [
+          {
+            'id': 1,
+            'author_name': 'Maria',
+            'text': 'Ce verset frumos!',
+            'created_at': DateTime.now().toUtc().toIso8601String(),
+            'device_id': 'someone-else',
+          },
+        ];
+      await app.coldStartStories();
+      await app.tapStoryBubble(StoryFixtures.verseSlug);
+      final viewer = await app.waitForStory(StoryFixtures.verseSlug);
+      await app.waitFor(() => app.findsKey('story-comment-field'),
+          reason: 'the field, once the API says this phone may comment');
+      await app.pumpFor(StoryCtaReveal.riseDuration);
+      // The field lies over its hint: it is there, not hit-testable.
+      expect(find.text(StoryFixtures.commentPlaceholder), findsOneWidget,
+          reason: 'the admin\'s placeholder');
+      expect(app.showsText(StoryFixtures.caption), isTrue,
+          reason: 'the slide\'s caption');
+      final field = find.byKey(const ValueKey('story-comment-field'));
+      await app.tester.tap(field.hitTestable());
+      await app.pumpFor(const Duration(milliseconds: 500));
+      expect(viewer.controller.pauses, contains(StoryPause.comment),
+          reason: 'the story waits while the listener writes');
+      await app.waitFor(
+          () => find
+              .byKey(const ValueKey('story-comment-public'))
+              .evaluate()
+              .isNotEmpty,
+          reason: 'it says the comment is public, and as whom');
+      expect(
+          find.descendant(
+              of: find.byKey(const ValueKey('story-comment-public')),
+              matching: find.byType(StoryAvatar)),
+          findsOneWidget,
+          reason: 'with the profile\'s picture');
+      expect(find.textContaining('Ana'), findsWidgets,
+          reason: 'and its name');
+
+      final held = viewer.controller.progress;
+      await app.tester.enterText(field, 'Vă mulțumim!');
+      await app.pumpFor(const Duration(seconds: 2));
+      expect(viewer.controller.progress, closeTo(held, 0.02));
+      await app.tapKey('story-comment-send');
+      await app.waitFor(() => server.postedComments.isNotEmpty,
+          reason: 'the comment to reach the API');
+      final posted = server.postedComments.single;
+      expect(posted['text'], 'Vă mulțumim!');
+      expect(posted.containsKey('author_name'), isFalse,
+          reason: 'the profile signs it, not a name the app sends');
+      expect(posted['slide'], 401);
+      await app.waitFor(() => app.showsText('Comentariu publicat'),
+          reason: 'the listener told it is published');
+      expect(app.findsKey('story-comments'), isTrue);
+      expect(find.descendant(
+              of: find.byKey(const ValueKey('story-comments')),
+              matching: find.text('2')),
+          findsOneWidget,
+          reason: 'Maria\'s and ours: the count goes up at once');
+
+      await app.tapKey('story-comments');
+      await app.waitFor(() => app.showsText('Ce verset frumos!'),
+          reason: 'the comments sheet with the others\' comments');
+      expect(app.showsText('Vă mulțumim!'), isTrue, reason: 'and ours');
+      expect(viewer.controller.pauses, contains(StoryPause.sheet),
+          reason: 'the story waits under the sheet');
+      final mine = server.storyComments[StoryFixtures.verseSlug]!.first['id'];
+      // Maria has no picture: her initial; Ana's comment, her picture.
+      expect(
+          find.descendant(
+              of: find.byKey(const ValueKey('story-comment-avatar-1')),
+              matching: find.text('M')),
+          findsOneWidget,
+          reason: 'a profile without a picture shows its initial');
+      expect(
+          find.descendant(
+              of: find.byKey(ValueKey('story-comment-avatar-$mine')),
+              matching: find.byType(Image)),
+          findsOneWidget,
+          reason: 'our comment shows the profile\'s picture');
+      expect(app.findsKey('story-comment-delete-1'), isFalse,
+          reason: 'another listener\'s comment can\'t be deleted');
+      await app.tapKey('story-comment-delete-$mine');
+      await app.waitFor(() => !app.showsText('Vă mulțumim!'),
+          reason: 'our own comment deleted');
+      expect(server.storyComments[StoryFixtures.verseSlug], hasLength(1));
+    });
+
+    storyTest(
+        'over the comments limit (429) the listener is told to try later, '
+        'once, and keeps the text', (app) async {
+      server
+        ..stories.add(StoryFixtures.verse(base(), comments: true))
+        ..storyCommentProfile = {'name': 'Ana', 'avatar_url': null}
+        ..storyCommentsLimited = true;
+      await app.coldStartStories();
+      await app.tapStoryBubble(StoryFixtures.verseSlug);
+      await app.waitForStory(StoryFixtures.verseSlug);
+      await app.waitFor(() => app.findsKey('story-comment-field'),
+          reason: 'the field for a profile');
+      await app.pumpFor(StoryCtaReveal.riseDuration);
+      final field = find.byKey(const ValueKey('story-comment-field'));
+      await app.tester.tap(field.hitTestable());
+      await app.tester.enterText(field, 'Încă un comentariu');
+      await app.pumpFor(const Duration(milliseconds: 500));
+      await app.tapKey('story-comment-send');
+      await app.waitFor(
+          () => find
+              .textContaining('Ai trimis multe comentarii')
+              .evaluate()
+              .isNotEmpty,
+          reason: 'the listener told to try again later');
+      await app.pumpFor(const Duration(seconds: 2));
+      expect(server.postedComments, hasLength(1), reason: 'never retried');
+      expect(find.text('Încă un comentariu'), findsOneWidget,
+          reason: 'the text stays to send later');
+    });
+
+    storyTest(
+        'only profiles comment: a phone without one reads the comments, '
+        'with no field to write', (app) async {
+      server
+        ..stories.add(StoryFixtures.verse(base(), comments: true))
+        ..storyComments[StoryFixtures.verseSlug] = [
+          {
+            'id': 1,
+            'author_name': 'Maria',
+            'text': 'Ce verset frumos!',
+            'created_at': DateTime.now().toUtc().toIso8601String(),
+            'device_id': 'someone-else',
+          },
+        ];
+      await app.coldStartStories();
+      await app.tapStoryBubble(StoryFixtures.verseSlug);
+      await app.waitForStory(StoryFixtures.verseSlug);
+      await app.waitFor(
+          () =>
+              app.stories.commentAccess.value[StoryFixtures.verseSlug] !=
+              null,
+          reason: 'the API to say whether this phone may comment');
+      await app.pumpFor(const Duration(milliseconds: 500));
+      expect(app.findsKey('story-comment-field'), isFalse,
+          reason: 'no profile: no field');
+      await app.tapKey('story-comments');
+      await app.waitFor(() => app.showsText('Ce verset frumos!'),
+          reason: 'the comments, to read');
+      expect(app.findsKey('story-comment-field'), isFalse,
+          reason: 'no field in the sheet either');
+    });
+
+    storyTest('comments are off by default: no field, no comments button',
+        (app) async {
+      server.stories.add(StoryFixtures.verse(base()));
+      await app.coldStartStories();
+      await app.tapStoryBubble(StoryFixtures.verseSlug);
+      await app.waitForStory(StoryFixtures.verseSlug);
+      expect(app.findsKey('story-comment-field'), isFalse);
+      expect(app.findsKey('story-comments'), isFalse);
+    });
+
+    storyTest(
+        'the bar shows new stories first with a coloured ring, and a '
+        'story once seen after them, grey', (app) async {
+      server.stories
+        ..add(StoryFixtures.verse(base()))
+        ..add(StoryFixtures.teaser(base()));
+      await app.coldStartStories();
+      await app.waitFor(
+          () => app.findsKey('story-bubble-${StoryFixtures.verseSlug}'),
+          reason: 'the bubbles on Home');
+      expect(app.storyBar,
+          ['${StoryFixtures.verseSlug}*', '${StoryFixtures.teaserSlug}*']);
+
+      // The viewer grows out of the tapped bubble, as on Instagram (its
+      // frames can't be timed here: a debug build's first frame of the
+      // viewer comes after the 300 ms the zoom takes).
+      await app.tapStoryBubble(StoryFixtures.verseSlug);
+      final route = <String>[];
+      find.byType(StoryViewerPage).evaluate().first.visitAncestorElements((e) {
+        route.add(e.widget.runtimeType.toString());
+        return route.length < 12;
+      });
+      expect(route, contains('_GrowFromBubble'),
+          reason: 'opened growing out of the bubble: ${route.join(' < ')}');
+      await app.waitForStory(StoryFixtures.verseSlug);
+      app.storyViewer!.controller.next();
+      await app.waitForStory(StoryFixtures.verseSlug);
+      await app.tapKey('story-close');
+      await app.waitFor(() => app.storyViewer == null,
+          reason: 'the viewer to close');
+      expect(app.storyBar,
+          ['${StoryFixtures.teaserSlug}*', StoryFixtures.verseSlug],
+          reason: 'the seen story goes after the new one, without its '
+              'ring; ${app.describeStories()}');
+      await app.waitFor(
+          () => server.storyEventsOf('slide_view').length >= 2,
+          reason: 'the seen slides to reach the API');
+      expect(server.storyEventsOf('view').single['story'],
+          StoryFixtures.verseSlug);
+    });
+
+    storyTest(
+        'a tap goes on or back, holding pauses, and the last slide '
+        'closes the viewer', (app) async {
+      server.stories.add(StoryFixtures.verse(base()));
+      await app.coldStartStories();
+      await app.tapStoryBubble(StoryFixtures.verseSlug);
+      final viewer = await app.waitForStory(StoryFixtures.verseSlug);
+      final size = app.tester.view.physicalSize / app.tester.view.devicePixelRatio;
+      await app.tester.tapAt(Offset(size.width * 0.8, size.height / 2));
+      await app.pumpFor(const Duration(milliseconds: 400));
+      expect(viewer.controller.slideIndex, 1, reason: 'right: on');
+      await app.tester.tapAt(Offset(size.width * 0.15, size.height / 2));
+      await app.pumpFor(const Duration(milliseconds: 400));
+      expect(viewer.controller.slideIndex, 0, reason: 'left: back');
+
+      final hold = await app.tester
+          .startGesture(Offset(size.width / 2, size.height / 2));
+      await app.pumpFor(const Duration(milliseconds: 800));
+      final held = viewer.controller.progress;
+      await app.pumpFor(const Duration(seconds: 2));
+      expect(viewer.controller.progress, closeTo(held, 0.02),
+          reason: 'holding pauses; ${app.describeStories()}');
+      expect(viewer.controller.pauses, contains(StoryPause.hold));
+      await hold.up();
+      await app.pumpFor(const Duration(milliseconds: 600));
+      expect(viewer.controller.progress, greaterThan(held),
+          reason: 'letting go goes on');
+
+      await app.waitFor(() => app.storyViewer == null,
+          reason: 'the viewer to close after the last slide',
+          timeout: const Duration(seconds: 15));
+      await app.waitFor(() => server.storyEventsOf('complete').isNotEmpty,
+          reason: 'the completion to reach the API');
+    });
+
+    storyTest(
+        'a swipe to the left turns to the next story, to the right back',
+        (app) async {
+      server.stories
+        ..add(StoryFixtures.verse(base(), comments: true))
+        ..add(StoryFixtures.teaser(base()));
+      await app.coldStartStories();
+      await app.tapStoryBubble(StoryFixtures.verseSlug);
+      final viewer = await app.waitForStory(StoryFixtures.verseSlug);
+      final size =
+          app.tester.view.physicalSize / app.tester.view.devicePixelRatio;
+
+      // Halfway, the story turns as the outside of a cube does, as on
+      // Instagram: the edge it shares with the next one comes nearer
+      // (taller) and its far side falls away (shorter).
+      final slide = find.byKey(ValueKey('story-slide-'
+          '${StoryFixtures.verseSlug}-${viewer.controller.slide.id}'));
+      final before = app.tester.element(slide);
+      final turn = await app.tester
+          .startGesture(Offset(size.width * 0.9, size.height / 2));
+      Future<void> move() async {
+        for (var i = 0; i < 10; i++) {
+          await turn.moveBy(Offset(-size.width * 0.04, 0));
+          await app.tester.pump(const Duration(milliseconds: 16));
+        }
+      }
+
+      await move();
+      final farSide = app.tester.getBottomLeft(slide).dy -
+          app.tester.getTopLeft(slide).dy;
+      final sharedEdge = app.tester.getBottomRight(slide).dy -
+          app.tester.getTopRight(slide).dy;
+      expect(sharedEdge, greaterThan(farSide * 1.05),
+          reason: 'the shared edge ($sharedEdge) nearer than the far side '
+              '($farSide)');
+      expect(app.tester.element(slide), same(before),
+          reason: 'the slide turns without starting again');
+      expect(viewer.controller.pauses, contains(StoryPause.turn),
+          reason: 'the story waits while the finger turns it');
+      final held = viewer.controller.progress;
+      await app.pumpFor(const Duration(seconds: 1));
+      expect(viewer.controller.progress, held);
+      await move();
+      await turn.up();
+      await app.pumpFor(const Duration(seconds: 1));
+      expect(viewer.controller.pauses, isNot(contains(StoryPause.turn)),
+          reason: 'the next story runs once turned');
+      expect(viewer.controller.story.slug, StoryFixtures.teaserSlug,
+          reason: 'left: the next story; ${app.describeStories()}');
+      await app.tester.timedDragFrom(Offset(size.width * 0.1, size.height / 2),
+          Offset(size.width * 0.85, 0), const Duration(milliseconds: 800));
+      await app.pumpFor(const Duration(seconds: 1));
+      expect(viewer.controller.story.slug, StoryFixtures.verseSlug,
+          reason: 'right: back; ${app.describeStories()}');
+    });
+
+    storyTest('a swipe down closes the viewer', (app) async {
+      server.stories.add(StoryFixtures.verse(base()));
+      await app.coldStartStories();
+      await app.tapStoryBubble(StoryFixtures.verseSlug);
+      await app.waitForStory(StoryFixtures.verseSlug);
+      final size = app.tester.view.physicalSize / app.tester.view.devicePixelRatio;
+      await app.tester.timedDragFrom(Offset(size.width / 2, size.height / 3),
+          const Offset(0, 300), const Duration(milliseconds: 300));
+      await app.waitFor(() => app.storyViewer == null,
+          reason: 'the viewer to close');
+    });
+
+    storyTest(
+        'a like shows at once and reaches the API; tapping again takes '
+        'it back', (app) async {
+      server.stories.add(StoryFixtures.verse(base(), likeCount: 4));
+      await app.coldStartStories();
+      await app.tapStoryBubble(StoryFixtures.verseSlug);
+      final viewer = await app.waitForStory(StoryFixtures.verseSlug);
+      final like = 'story-like-${StoryFixtures.verseSlug}';
+      await app.tapKey(like);
+      expect(app.stories.isLiked(StoryFixtures.verseSlug), isTrue);
+      expect(app.findsKey('story-likes-5'), isTrue,
+          reason: 'the count under the heart goes up at once');
+      await app.waitFor(
+          () => server.storyLikes.contains(StoryFixtures.verseSlug),
+          reason: 'the like to reach the API');
+      viewer.controller.pause(StoryPause.hold);
+      await app.tapKey(like);
+      expect(app.stories.isLiked(StoryFixtures.verseSlug), isFalse);
+      await app.waitFor(
+          () => !server.storyLikes.contains(StoryFixtures.verseSlug),
+          reason: 'the unlike to reach the API');
+    });
+
+    storyTest(
+        'a teaser video plays after its poster and quiets the radio; '
+        'swiping up opens YouTube, on the web without the app', (app) async {
+      final since = await app.tapStation(Stations.alpha);
+      await app.expectPlaying(Stations.alpha, since: since);
+      server.stories.add(StoryFixtures.teaser(base()));
+      await app.coldStartStories();
+      await app.tapStoryBubble(StoryFixtures.teaserSlug);
+      final viewer = await app.waitForStory(StoryFixtures.teaserSlug);
+      await app.waitFor(() => viewer.controller.progress > 0.1,
+          reason: 'the video to play and fill its bar; '
+              '${app.describeStories()}');
+      await app.waitFor(() => app.audio.player.volume < 0.05,
+          reason: 'the radio to step back under the video\'s sound');
+      await app.waitFor(
+          () => viewer.controller.ctaPhase != StoryCtaPhase.hidden,
+          reason: 'the CTA to come in at 30% of the video; '
+              '${app.describeStories()}');
+      await app.pumpFor(StoryCtaReveal.riseDuration);
+      expect(app.showsText(StoryFixtures.teaserCta), isTrue,
+          reason: 'the CTA button');
+      expect(app.findsKey('story-swipe-up'), isTrue,
+          reason: 'the swipe-up hint');
+      final hint =
+          app.tester.getCenter(find.byKey(const ValueKey('story-swipe-up')));
+      final screen =
+          app.tester.view.physicalSize / app.tester.view.devicePixelRatio;
+      expect(hint.dx, closeTo(screen.width / 2, 6),
+          reason: 'the swipe-up hint in the middle');
+
+      final launcher = RecordingLauncher()..appInstalled = false;
+      final systemLauncher = UrlLauncherPlatform.instance;
+      UrlLauncherPlatform.instance = launcher;
+      try {
+        final size =
+            app.tester.view.physicalSize / app.tester.view.devicePixelRatio;
+        await app.tester.timedDragFrom(
+            Offset(size.width / 2, size.height * 0.6),
+            const Offset(0, -300),
+            const Duration(milliseconds: 300));
+        await app.waitFor(() => launcher.launches.length >= 2,
+            reason: 'YouTube to open, then the web');
+        expect(launcher.launches.map((l) => '${l.url} ${l.mode.name}'), [
+          '${StoryFixtures.youtubeUrl} externalNonBrowserApplication',
+          '${StoryFixtures.youtubeUrl} externalApplication',
+        ]);
+      } finally {
+        UrlLauncherPlatform.instance = systemLauncher;
+      }
+      expect(viewer.controller.pauses, contains(StoryPause.cta),
+          reason: 'the story waits while YouTube is open');
+      await app.waitFor(
+          () => server.storyEventsOf('cta_click').isNotEmpty,
+          reason: 'the CTA tap to reach the API');
+      expect(server.storyEventsOf('cta_click').single['target'], 'swipe_up');
+
+      // YouTube takes the screen: the video waits where it was, and goes on
+      // from there on the way back.
+      final left = viewer.controller.progress;
+      app.goToBackground();
+      await Future<void>.delayed(const Duration(seconds: 3));
+      await app.comeBack();
+      expect(viewer.controller.progress, closeTo(left, 0.1),
+          reason: 'the video waited; ${app.describeStories()}');
+      await app.waitFor(
+          () =>
+              !viewer.controller.isPaused &&
+              viewer.controller.progress > left + 0.05,
+          reason: 'the video to go on from where it was; '
+              '${app.describeStories()}');
+
+      await app.closeStoryViewer();
+      await app.waitFor(() => app.audio.player.volume > 0.95,
+          reason: 'the radio back at its volume');
+      await app.expectAudioAdvances(const Duration(seconds: 3));
+    });
+
+    storyTest(
+        'the CTA button to a station closes the viewer and plays it',
+        (app) async {
+      server.stories.add(StoryFixtures.verse(base()));
+      await app.coldStartStories();
+      await app.tapStoryBubble(StoryFixtures.verseSlug);
+      final viewer = await app.waitForStory(StoryFixtures.verseSlug);
+      viewer.controller.next();
+      await app.waitForStory(StoryFixtures.verseSlug);
+      // The bar comes in after 30% of the 4 s slide's play, its colour a
+      // second later.
+      expect(app.showsText(StoryFixtures.stationCta), isFalse,
+          reason: 'the CTA waits for its time; ${app.describeStories()}');
+      expect(app.findsKey('story-swipe-up'), isFalse);
+      await app.waitFor(
+          () => viewer.controller.ctaPhase == StoryCtaPhase.filled,
+          reason: 'the CTA to come in; ${app.describeStories()}');
+      await app.pumpFor(StoryCtaBar.fillDuration);
+      expect(find.text(StoryFixtures.stationCta), findsOneWidget,
+          reason: 'the CTA bar; ${app.describeStories()}');
+      final since = DateTime.now();
+      await app.tapText(StoryFixtures.stationCta);
+      await app.waitFor(() => app.storyViewer == null,
+          reason: 'the viewer to close');
+      await app.expectPlaying(Stations.alpha, since: since);
+    });
+
+    storyTest(
+        'an Instagram post shows in its embed; when the embed fails, its '
+        'picture, author and caption, with Open in Instagram', (app) async {
+      server.stories.add(StoryFixtures.instagram(base()));
+      await app.coldStartStories();
+      await app.tapStoryBubble(StoryFixtures.instagramSlug);
+      await app.waitForStory(StoryFixtures.instagramSlug);
+      expect(find.byKey(const ValueKey('story-instagram-embed')),
+          findsOneWidget, reason: 'the embed loaded');
+      await app.closeStoryViewer();
+
+      server.stories
+        ..clear()
+        ..add(StoryFixtures.instagram(base(), loads: false));
+      await _forgetStories(app);
+      await app.tapStoryBubble(StoryFixtures.instagramSlug);
+      final viewer = await app.waitForStory(StoryFixtures.instagramSlug);
+      viewer.controller.pause(StoryPause.hold);
+      await app.pumpFor(const Duration(milliseconds: 300));
+      viewer.controller.resume(StoryPause.hold);
+      await app.waitFor(() => app.showsText('@radiocrestin'),
+          reason: 'the author, from the stored details');
+      expect(app.showsText(StoryFixtures.instagramCaption), isTrue);
+      final launcher = RecordingLauncher();
+      final systemLauncher = UrlLauncherPlatform.instance;
+      UrlLauncherPlatform.instance = launcher;
+      try {
+        await app.waitFor(
+            () => viewer.controller.ctaPhase != StoryCtaPhase.hidden,
+            reason: 'Open in Instagram to come in at 30% of the slide; '
+                '${app.describeStories()}');
+        await app.pumpFor(StoryCtaReveal.riseDuration);
+        await app.tapText('Deschide în Instagram');
+        await app.waitFor(() => launcher.launches.isNotEmpty,
+            reason: 'Instagram to open');
+        expect(launcher.launches.first.url, StoryFixtures.instagramUrl);
+        expect(launcher.launches.first.mode,
+            PreferredLaunchMode.externalNonBrowserApplication,
+            reason: 'the Instagram app, when installed');
+      } finally {
+        UrlLauncherPlatform.instance = systemLauncher;
+      }
+    });
+
+    storyTest(
+        'a due story opens by itself once per app open, takes turns with '
+        'the cards, comes back after its actions and leaves after max '
+        'shows', (app) async {
+      server.stories
+          .add(StoryFixtures.autoOpen(base(), everyActions: 2, maxShows: 2));
+      await app.coldStartStories();
+      await app.waitForStory(StoryFixtures.autoSlug);
+      await app.waitFor(() => server.storyEventsOf('auto_open').isNotEmpty,
+          reason: 'the auto-open to reach the API');
+      await app.closeStoryViewer();
+
+      Future<bool> opensAtLaunch() async {
+        await app.coldStartStories();
+        await app.pumpFor(const Duration(seconds: 3));
+        final opened = app.storyViewer != null;
+        await app.closeStoryViewer();
+        return opened;
+      }
+
+      // One action since its show (this app open): not due yet.
+      expect(await opensAtLaunch(), isFalse, reason: 'one action since');
+      // Due now, but a card would be next: the cards' gap holds it.
+      expect(await opensAtLaunch(), isFalse,
+          reason: 'the home cards\' gap since it closed');
+      await _countReviewActions(HomePromoSlot.gapActions);
+      expect(await opensAtLaunch(), isTrue,
+          reason: 'due again, the gap passed; ${app.describeStories()}');
+      await app.coldStartStories();
+      expect(app.storyBar, isEmpty,
+          reason: 'two shows: it left the bar');
+    });
+
+    storyTest('the viewer works sideways, on a phone held landscape',
+        (app) async {
+      // Its tallest bottom: the CTA bar, the caption and the comment field.
+      server
+        ..stories.add(StoryFixtures.verse(base(), comments: true))
+        ..storyCommentProfile = {'name': 'Ana', 'avatar_url': null};
+      await app.coldStartStories();
+      await app.tapStoryBubble(StoryFixtures.verseSlug);
+      final view = app.tester.view;
+      final upright = view.physicalSize;
+      view.physicalSize = Size(upright.height, upright.width);
+      try {
+        await app.waitForStory(StoryFixtures.verseSlug);
+        await app.pumpFor(const Duration(seconds: 1));
+        expect(app.findsKey('story-close'), isTrue);
+        expect(app.findsKey('story-like-${StoryFixtures.verseSlug}'), isTrue);
+        app.storyViewer!.controller.next();
+        await app.waitForStory(StoryFixtures.verseSlug);
+        await app.waitFor(
+            () => app.storyViewer!.controller.ctaPhase !=
+                StoryCtaPhase.hidden,
+            reason: 'the CTA to come in');
+        await app.pumpFor(StoryCtaReveal.riseDuration);
+        expect(app.findsKey('story-comment-field'), isTrue);
+        expect(app.showsText(StoryFixtures.stationCta), isTrue);
+        expect(app.tester.takeException(), isNull, reason: 'no overflow');
+      } finally {
+        view.physicalSize = upright;
+        await app.pumpFor(const Duration(milliseconds: 500));
+      }
+    });
+  });
+
   group('Settings', () {
     test("the contact button opens the website's contact page, with the "
         "app's details", (app) async {
@@ -2131,4 +3063,24 @@ Future<void> tapText(RadioApp app, Finder within, String text) async {
       .first;
   await app.tester.tapAt(paragraph.localToGlobal(box.toRect().center));
   await app.tester.pump();
+}
+
+/// Forgets what the device kept about stories (and when the last home
+/// card closed), then starts their service again: a device that never saw
+/// one.
+Future<void> _forgetStories(RadioApp app) async {
+  final prefs = await SharedPreferences.getInstance();
+  for (final key in prefs.getKeys().toList()) {
+    if (key.startsWith('stories_')) await prefs.remove(key);
+  }
+  await prefs.remove('promo_card_closed_at_actions');
+  await app.coldStartStories();
+}
+
+/// Counts [count] more of the actions the home cards wait for.
+Future<void> _countReviewActions(int count) async {
+  final prefs = await SharedPreferences.getInstance();
+  final status = jsonDecode(prefs.getString('_reviewStatus') ?? '{}') as Map;
+  status['actions_made'] = (status['actions_made'] as int? ?? 0) + count;
+  await prefs.setString('_reviewStatus', jsonEncode(status));
 }

@@ -40,6 +40,16 @@ import '../services/announcement_push.dart';
 import '../services/autoplay_hold.dart';
 import '../services/announcements_service.dart';
 import '../services/home_promo_slot.dart';
+import '../services/announcement_actions.dart';
+import '../services/stories_service.dart';
+import 'package:url_launcher/url_launcher.dart' show LaunchMode;
+import '../services/story.dart';
+import '../services/story_deep_link.dart';
+import '../widgets/announcement_form_sheet.dart';
+import '../widgets/stories_bar.dart';
+import '../widgets/bottom_toast.dart';
+import 'AnnouncementPage.dart';
+import 'StoryViewerPage.dart';
 import '../services/analytics_service.dart';
 import '../services/background_polling_policy.dart';
 import '../types/Station.dart';
@@ -206,6 +216,20 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   final AnnouncementsService _announcements = getIt<AnnouncementsService>();
   StreamSubscription<AnnouncementList>? _announcementsSub;
 
+  final StoriesService _stories = getIt<StoriesService>();
+  late List<StoryBubble> _storyBubbles = _stories.bubbles.value;
+  StreamSubscription<List<StoryBubble>>? _storiesSub;
+
+  /// Whether the story viewer is open (no story opens by itself then).
+  bool _storyViewerOpen = false;
+
+  /// Whether a link opened the app this launch: it came for that, so no
+  /// story opens by itself over it.
+  bool _openedByLink = false;
+
+  /// The search text a story's call to action asked for (a song).
+  String? _searchSeed;
+
   /// Whether the app bar is a search field: the list then shows only the
   /// stations whose names, or songs on now, match what the listener types
   /// into it.
@@ -265,6 +289,11 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     _announcementsSub = _announcements.announcements
         .skip(1)
         .listen(_onAnnouncementsChanged);
+    _storiesSub = _stories.bubbles.skip(1).listen((bubbles) {
+      if (!mounted) return;
+      setState(() => _storyBubbles = bubbles);
+      _maybeAutoOpenStory();
+    });
 
     // Listen for custom events from notification/Android Auto actions
     _customEventSub = _audioHandler.customEvent.listen((event) {
@@ -308,6 +337,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       AnnouncementPush.attach(_announcements);
       _loadHomePromo();
+      // Once the home screen has settled, a due story may open by itself.
+      Timer(_storyAutoOpenDelay, _maybeAutoOpenStory);
       _loadShareLinkData();
       // Well after startup, when station data has loaded and the first
       // images are on screen.
@@ -545,6 +576,145 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     }
   }
 
+  /// How long the home screen shows before a story opens by itself.
+  static const _storyAutoOpenDelay = Duration(milliseconds: 1500);
+
+  /// Opens the viewer at bubble [index] of the bar.
+  void _openStoryBubble(int index, Rect from) {
+    AnalyticsService.instance
+        .capture('button_clicked', {'button_name': 'story_bubble'});
+    unawaited(_openStories(
+      [for (final bubble in _storyBubbles) bubble.story],
+      index,
+      from: from,
+    ));
+  }
+
+  /// Opens the story [slug] a link named, alone in the viewer; tells the
+  /// listener when it is gone.
+  Future<void> _openStoryFromLink(String slug) async {
+    final story = await _stories.find(slug);
+    if (!mounted) return;
+    if (story == null) {
+      showBottomToast(
+        context,
+        title: 'Povestea nu mai este disponibilă',
+        message: 'A expirat sau a fost ștearsă.',
+        icon: Icons.auto_stories_outlined,
+        isError: true,
+      );
+      return;
+    }
+    // The home screen may still be opening (a link that launched the app).
+    await WidgetsBinding.instance.endOfFrame;
+    if (mounted) await _openStories([story], 0);
+  }
+
+  /// Opens a due story by itself, per its display rules, when nothing
+  /// else has the listener's attention: no link opened the app, no viewer,
+  /// player, search or other page is open, and the last card or story
+  /// closed long enough ago ([HomePromoSlot.allowsStoryPopup]).
+  void _maybeAutoOpenStory() {
+    if (!mounted || _storyViewerOpen || _openedByLink || _searching) return;
+    if (ModalRoute.of(context)?.isCurrent != true) return;
+    final panel = slidingUpPanelController;
+    if (panel.isAttached && !panel.isPanelClosed) return;
+    if (!HomePromoSlot(getIt<SharedPreferences>()).allowsStoryPopup) return;
+    final story = _stories.autoOpenCandidate();
+    if (story == null) return;
+    unawaited(_openStories([story], 0, autoOpened: true));
+  }
+
+  Future<void> _openStories(
+    List<Story> stories,
+    int index, {
+    bool autoOpened = false,
+    Rect? from,
+  }) async {
+    if (_storyViewerOpen || stories.isEmpty) return;
+    _storyViewerOpen = true;
+    final target = await StoryViewerPage.open(
+      context,
+      stories: stories,
+      initialStory: index,
+      autoOpened: autoOpened,
+      from: from,
+    );
+    _storyViewerOpen = false;
+    if (autoOpened) {
+      await HomePromoSlot(getIt<SharedPreferences>()).storyPopupClosed();
+    }
+    if (target != null && mounted) await _openFromStory(target);
+  }
+
+  /// Opens the page of the app a story's call to action asked for, once
+  /// the viewer has closed.
+  Future<void> _openFromStory(StoryCtaTarget target) async {
+    final opened = switch (target.route) {
+      StoryInAppRoute.station => _playStoryStation(target.slug),
+      StoryInAppRoute.song => _openStorySong(target),
+      StoryInAppRoute.announcement => _openStoryAnnouncement(target.slug),
+      StoryInAppRoute.settings => _openStorySettings(),
+      StoryInAppRoute.form => _openStoryForm(target.slug),
+      StoryInAppRoute.share || null => Future.value(false),
+    };
+    if (await opened) return;
+    final fallback = target.fallbackUrl;
+    if (fallback != null) {
+      await AnnouncementActions.openLink(
+          fallback, LaunchMode.externalApplication);
+    }
+  }
+
+  /// Plays the station [slug] and opens the full player.
+  Future<bool> _playStoryStation(String? slug) async {
+    if (slug == null) return false;
+    final station = await AnnouncementActions.findStation(slug);
+    if (station == null || !mounted) return false;
+    unawaited(_audioHandler.playStation(station, fromFavorites: false));
+    if (slidingUpPanelController.isAttached) {
+      unawaited(slidingUpPanelController.open());
+    }
+    return true;
+  }
+
+  /// A song: the station it plays on, else the stations whose songs
+  /// match it (the home search).
+  Future<bool> _openStorySong(StoryCtaTarget target) async {
+    if (await _playStoryStation(target.stationSlug)) return true;
+    final title = target.songTitle;
+    if (title == null || !mounted) return false;
+    setState(() {
+      _searchSeed = title;
+      _searching = true;
+    });
+    _search(title);
+    return true;
+  }
+
+  Future<bool> _openStoryAnnouncement(String? slug) async {
+    if (slug == null) return false;
+    final item = await _announcements.fetch(slug);
+    if (item == null || item.page == null || !mounted) return false;
+    unawaited(Navigator.of(context).push(AnnouncementPage.route(item)));
+    return true;
+  }
+
+  Future<bool> _openStorySettings() async {
+    SettingsPage.show(context, shareLinkData: _shareLinkData);
+    return true;
+  }
+
+  Future<bool> _openStoryForm(String? slug) async {
+    if (slug == null) return false;
+    unawaited(AnnouncementFormSheet.show(
+      context,
+      formSlug: slug,
+      announcementSlug: 'story',
+    ));
+    return true;
+  }
+
   Future<void> _closeHomePromo() async {
     final promo = _homePromo;
     if (promo == null) return;
@@ -602,6 +772,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     _customEventSub?.cancel();
     _imageCachePruneTimer?.cancel();
     _announcementsSub?.cancel();
+    _storiesSub?.cancel();
     _statusSnackbar.dispose();
     _statusListInset.dispose();
     _rowTransitions.dispose();
@@ -621,7 +792,10 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   void _startSearch() {
     AnalyticsService.instance
         .capture('button_clicked', {'button_name': 'search'});
-    setState(() => _searching = true);
+    setState(() {
+      _searchSeed = null;
+      _searching = true;
+    });
   }
 
   /// Narrows the list to the stations whose names or songs match [text].
@@ -660,7 +834,10 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   void _closeSearch() {
     _closeKeyboard();
     _search('');
-    setState(() => _searching = false);
+    setState(() {
+      _searching = false;
+      _searchSeed = null;
+    });
   }
 
   /// Takes the keyboard away from the search field.
@@ -1124,6 +1301,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                                 child: _searching
                                     ? _HomeSearchBar(
                                         key: const ValueKey('search'),
+                                        initialText: _searchSeed,
                                         onChanged: _search,
                                         onCancel: _endSearch,
                                       )
@@ -1168,6 +1346,13 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                             ),
                           ),
                           // Search results come first.
+                          if (searchResults == null)
+                            SliverToBoxAdapter(
+                              child: StoriesBar(
+                                bubbles: _storyBubbles,
+                                onOpen: _openStoryBubble,
+                              ),
+                            ),
                           if (searchResults == null)
                             SliverToBoxAdapter(
                               child: _AnnouncementSlot(
@@ -1499,11 +1684,19 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         return;
       }
       if (_isDuplicateLink(uri)) return;
+      _openedByLink = true;
       // An admin's preview link: unpublished announcements on this phone.
       if (uri.scheme == 'radiocrestin' && uri.host == 'anunturi-preview') {
         unawaited(_announcements
             .setPreviewToken(uri.queryParameters['token']));
         playerAutoplay();
+        return;
+      }
+
+      // A story's page on the website, or its "open in app".
+      final storySlug = storySlugFromUri(uri);
+      if (storySlug != null) {
+        unawaited(_openStoryFromLink(storySlug));
         return;
       }
 
@@ -1713,7 +1906,11 @@ class _HomeSearchBar extends StatefulWidget {
     super.key,
     required this.onChanged,
     required this.onCancel,
+    this.initialText,
   });
+
+  /// What the field starts with (a song a story asked for).
+  final String? initialText;
 
   /// Called with the text as the listener types it.
   final ValueChanged<String> onChanged;
@@ -1725,7 +1922,8 @@ class _HomeSearchBar extends StatefulWidget {
 }
 
 class _HomeSearchBarState extends State<_HomeSearchBar> {
-  final TextEditingController _text = TextEditingController();
+  late final TextEditingController _text =
+      TextEditingController(text: widget.initialText);
   final FocusNode _focus = FocusNode();
 
   /// The field's height, within the app bar's.
