@@ -37,11 +37,15 @@ def share_url(slug: str) -> str:
 
 
 def _file_url(file_field, absolute_url: AbsoluteUrl) -> Optional[str]:
+    """An upload's absolute URL, built from the storage it is in now (S3/CDN in production).
+
+    Only the file's path is stored, so moving the media to another bucket or CDN changes every
+    URL the API sends at once. A URL that can't be made absolute is never sent.
+    """
     if not file_field:
         return None
     url = absolute_url(file_field.url)
-    # The API makes local paths absolute; the admin preview shows them as they are.
-    return url if url.lower().startswith(('https://', 'http://', '/')) else None
+    return url if url.lower().startswith(('https://', 'http://')) else None
 
 
 def _station_slug(station) -> Optional[str]:
@@ -146,7 +150,7 @@ def cta_payload(slide: StorySlide) -> Optional[dict]:
     return {'style': slide.cta_style, 'label': slide.cta_label.strip(), 'target': target} if target else None
 
 
-def serialize_slide(slide: StorySlide, absolute_url: AbsoluteUrl = lambda url: url) -> Optional[dict]:
+def serialize_slide(slide: StorySlide, absolute_url: AbsoluteUrl) -> Optional[dict]:
     media = _media(slide, absolute_url)
     if not media:
         return None
@@ -184,7 +188,7 @@ def _cover_url(story: Story, slides: list, absolute_url: AbsoluteUrl) -> Optiona
     return first['media_url'] if first['type'] == SlideType.IMAGE else first['poster_url']
 
 
-def serialize(story: Story, absolute_url: AbsoluteUrl = lambda url: url) -> Optional[dict]:
+def serialize(story: Story, absolute_url: AbsoluteUrl) -> Optional[dict]:
     """One story as the API sends it; None when none of its slides can be shown."""
     slides = [item for item in (serialize_slide(slide, absolute_url) for slide in story.slides.all()) if item]
     if not slides:

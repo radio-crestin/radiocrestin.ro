@@ -121,6 +121,13 @@ class StoryAdmin(SuperAppModelAdmin):
             ]}),
         ]
 
+    def get_object(self, request, object_id, from_field=None):
+        """The preview builds the same absolute media URLs as the API, from this request's host."""
+        obj = super().get_object(request, object_id, from_field)
+        if obj is not None:
+            obj._absolute_url = lambda url: request.build_absolute_uri(url) if url.startswith('/') else url
+        return obj
+
     def get_queryset(self, request):
         queryset = super().get_queryset(request)
         if request.resolver_match and request.resolver_match.url_name.endswith('_changelist'):
@@ -166,7 +173,8 @@ class StoryAdmin(SuperAppModelAdmin):
         """The slides as the app gets them from the API: media, duration and the call to action."""
         if not obj or not obj.pk:
             return '-'
-        slides = [(slide, story_feed.serialize_slide(slide)) for slide in obj.slides.all()]
+        absolute_url = getattr(obj, '_absolute_url', None) or (lambda url: url)
+        slides = [(slide, story_feed.serialize_slide(slide, absolute_url)) for slide in obj.slides.all()]
         return render_to_string('admin/radio_crestin/story/preview.html', {
             'story': obj,
             'slides': [{'slide': slide, 'item': item} for slide, item in slides],
