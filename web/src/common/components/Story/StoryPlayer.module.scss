@@ -307,6 +307,31 @@ $shadow: 0 0 6px rgba(0, 0, 0, 0.45);
   align-items: stretch;
 }
 
+// The CTA's room: closed until the CTA comes in (CTA_SHOW_AFTER_MS / CTA_SHOW_MAX_SHARE), then
+// it opens smoothly, pushing who-it's-from up, and the bar rises into it.
+.ctaRoom {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.35s cubic-bezier(0.33, 1, 0.68, 1);
+}
+
+.ctaRoomInner {
+  min-height: 0;
+  overflow: hidden;
+  // Room for the bar's shadow and spring inside the clip.
+  margin: -6px -6px 0;
+  padding: 6px 6px 0;
+}
+
+.ctaRoomOpen {
+  grid-template-rows: 1fr;
+
+  .cta {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 // The app's StoryCtaBar: a full-width glassy bar; its colour sweeps in from the left after
 // CTA_FILL_AFTER_MS and the label turns to its text colour.
 .cta {
@@ -325,8 +350,13 @@ $shadow: 0 0 6px rgba(0, 0, 0, 0.45);
   letter-spacing: 0.1px;
   text-decoration: none;
   box-shadow: 0 4px 14px transparent;
-  transition: color 0.45s cubic-bezier(0.33, 1, 0.68, 1), box-shadow 0.45s ease;
-  animation: cta-up 0.35s cubic-bezier(0.33, 1, 0.68, 1);
+  opacity: 0;
+  transform: translateY(12px) scale(0.96);
+  transition:
+    color 0.45s cubic-bezier(0.33, 1, 0.68, 1),
+    box-shadow 0.45s ease,
+    opacity 0.35s ease,
+    transform 0.45s cubic-bezier(0.2, 1.3, 0.45, 1);
 
   svg {
     position: relative;
@@ -486,6 +516,7 @@ $shadow: 0 0 6px rgba(0, 0, 0, 0.45);
   flex-direction: column;
   align-items: center;
   align-self: center;
+  animation: cta-up 0.4s cubic-bezier(0.2, 1.3, 0.45, 1);
   margin-top: 10px;
   padding: 4px 24px;
   color: #fff;

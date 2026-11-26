@@ -4,6 +4,7 @@ import { createElement } from "react";
 import { renderToString } from "react-dom/server";
 import fixture from "@/components/Story/fixtures/stories.json";
 import StoryPage from "@/components/Story/StoryPage";
+import { ctaShowAt } from "@/components/Story/StoryPlayer";
 import { toStoryView } from "@/utils/stories";
 
 describe("StoryPage", () => {
@@ -19,7 +20,8 @@ describe("StoryPage", () => {
     expect(html).toContain('aria-label="Îmi place"');
     expect(html).toContain(">152<");
     expect(html).toContain('aria-label="Distribuie"');
-    // The CTA bar is there from the start, glassy (its colour sweeps in after 2 s of play).
+    // The CTA starts hidden (it comes in after 4 s of play, or 30% of the slide when sooner).
+    expect(html).toContain('data-shown="0"');
     expect(html).toContain('data-filled="0"');
     expect(html).toContain(">Trimite<");
     expect(html).toContain("apps.apple.com");
@@ -29,5 +31,14 @@ describe("StoryPage", () => {
   it("the fallback page starts loading", () => {
     const html = renderToString(createElement(StoryPage, {}));
     expect(html).toContain("Se încarcă povestea");
+  });
+});
+
+describe("when the CTA comes in", () => {
+  it("after 4 s, or 30% of the slide when that is sooner", () => {
+    expect(ctaShowAt(30_000)).toBe(4000);
+    expect(ctaShowAt(14_500)).toBe(4000);
+    expect(ctaShowAt(10_000)).toBe(3000);
+    expect(ctaShowAt(6_000)).toBe(1800);
   });
 });

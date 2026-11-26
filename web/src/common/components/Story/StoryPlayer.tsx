@@ -6,17 +6,28 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { sendStoryEvents, type StoryEvent } from "@/services/stories";
 import { getUserId } from "@/utils/posthog";
 import { shareLink } from "@/components/Announcements/share";
-import { appLinks, formatStoryCount, type StoryMedia, type StorySlideView, type StoryView } from "@/utils/stories";
+import {
+  appLinks,
+  formatStoryCount,
+  type StoryMedia,
+  type StorySlideView,
+  type StoryView,
+} from "@/utils/stories";
 import { markStorySeen } from "./seen";
 import styles from "./StoryPlayer.module.scss";
 
 export const HOLD_MS = 220;
 export const FAST_RATE = 2;
 /**
- * As the app's StoryCtaBar: the CTA is on screen from the start, glassy, and its colour sweeps in
- * from the left once this much of the slide has played (half a slide shorter than that).
+ * The CTA (button bar or swipe-up hint) starts hidden and comes in once the slide has played
+ * CTA_SHOW_AFTER_MS, or CTA_SHOW_MAX_SHARE of it when that is sooner (a short slide or video).
+ * The bar comes in glassy, and its colour sweeps in from the left CTA_FILL_DELAY_MS later.
  */
-export const CTA_FILL_AFTER_MS = 2000;
+export const CTA_SHOW_AFTER_MS = 4000;
+export const CTA_SHOW_MAX_SHARE = 0.3;
+export const CTA_FILL_DELAY_MS = 1000;
+export const ctaShowAt = (totalMs: number) =>
+  Math.min(CTA_SHOW_AFTER_MS, CTA_SHOW_MAX_SHARE * totalMs);
 const SWIPE_PX = 50;
 const LOAD_TIMEOUT_MS = 10_000;
 const LIKES_KEY = "stories-liked";
@@ -26,7 +37,9 @@ const report = (events: StoryEvent[]) => sendStoryEvents(events, getUserId());
 const readLiked = (): string[] => {
   try {
     const value = JSON.parse(localStorage.getItem(LIKES_KEY) ?? "[]");
-    return Array.isArray(value) ? value.filter((s) => typeof s === "string") : [];
+    return Array.isArray(value)
+      ? value.filter((s) => typeof s === "string")
+      : [];
   } catch {
     return [];
   }
@@ -46,8 +59,13 @@ export function useStoryLike(story: StoryView) {
     setLiked(next);
     setCount((c) => Math.max(0, c + (next ? 1 : -1)));
     const others = readLiked().filter((s) => s !== story.slug);
-    localStorage.setItem(LIKES_KEY, JSON.stringify(next ? [...others, story.slug] : others));
-    const answer = await report([{ type: next ? "like" : "unlike", story: story.slug }]);
+    localStorage.setItem(
+      LIKES_KEY,
+      JSON.stringify(next ? [...others, story.slug] : others),
+    );
+    const answer = await report([
+      { type: next ? "like" : "unlike", story: story.slug },
+    ]);
     const fresh = answer?.like_counts?.[story.slug];
     if (typeof fresh === "number") setCount(fresh);
   }, [liked, story.slug]);
@@ -65,7 +83,12 @@ interface PlayerProps {
   onBackFromStart?: () => void;
 }
 
-export default function StoryPlayer({ story, onClose, onFinished, onBackFromStart }: PlayerProps) {
+export default function StoryPlayer({
+  story,
+  onClose,
+  onFinished,
+  onBackFromStart,
+}: PlayerProps) {
   const slides = story.slides;
   const count = slides.length;
   const [index, setIndex] = useState(0);
@@ -76,10 +99,13 @@ export default function StoryPlayer({ story, onClose, onFinished, onBackFromStar
   const [ended, setEnded] = useState(false);
   const [embedOpen, setEmbedOpen] = useState(false);
   const [hidden, setHidden] = useState(false);
-  const [ctaFilled, setCtaShown] = useState(false);
+  // 0: hidden, 1: shown (glassy), 2: filled with its colour.
+  const [ctaPhase, setCtaPhase] = useState<0 | 1 | 2>(0);
+  const ctaShown = ctaPhase > 0;
+  const ctaFilled = ctaPhase === 2;
   // Comments are read and written in the app: the button says so, with a way there.
   const [commentsPrompt, setCommentsPrompt] = useState(false);
-  const ctaShownRef = useRef(false);
+  const ctaPhaseRef = useRef(0);
   const { liked, count: likes, toggle: toggleLike } = useStoryLike(story);
 
   const barRef = useRef<HTMLSpanElement>(null);
@@ -88,12 +114,17 @@ export default function StoryPlayer({ story, onClose, onFinished, onBackFromStar
   const elapsed = useRef(0);
   const slide = slides[Math.min(index, count - 1)];
   const ready = !!loaded[index];
-  const running = ready && !paused && !ended && !embedOpen && !hidden && !commentsPrompt;
+  const running =
+    ready && !paused && !ended && !embedOpen && !hidden && !commentsPrompt;
 
-  const markLoaded = useCallback((i: number) => setLoaded((l) => (l[i] ? l : { ...l, [i]: true })), []);
+  const markLoaded = useCallback(
+    (i: number) => setLoaded((l) => (l[i] ? l : { ...l, [i]: true })),
+    [],
+  );
 
   const setBar = (fraction: number) => {
-    if (barRef.current) barRef.current.style.transform = `scaleX(${Math.min(1, Math.max(0, fraction))})`;
+    if (barRef.current)
+      barRef.current.style.transform = `scaleX(${Math.min(1, Math.max(0, fraction))})`;
   };
 
   const go = useCallback(
@@ -105,8 +136,8 @@ export default function StoryPlayer({ story, onClose, onFinished, onBackFromStar
       if (to < 0) {
         // Back on the first slide: play it again.
         elapsed.current = 0;
-        ctaShownRef.current = false;
-        setCtaShown(false);
+        ctaPhaseRef.current = 0;
+        setCtaPhase(0);
         setBar(0);
         if (videoRef.current) videoRef.current.currentTime = 0;
         return;
@@ -140,8 +171,8 @@ export default function StoryPlayer({ story, onClose, onFinished, onBackFromStar
   useEffect(() => {
     elapsed.current = 0;
     setBar(0);
-    ctaShownRef.current = false;
-    setCtaShown(false);
+    ctaPhaseRef.current = 0;
+    setCtaPhase(0);
     void report([{ type: "slide_view", story: story.slug, slide: slide.id }]);
     const timer = window.setTimeout(() => markLoaded(index), LOAD_TIMEOUT_MS);
     return () => window.clearTimeout(timer);
@@ -174,9 +205,13 @@ export default function StoryPlayer({ story, onClose, onFinished, onBackFromStar
     let last = performance.now();
     let frame = 0;
     const showCtaAfter = (playedMs: number, totalMs: number) => {
-      if (!ctaShownRef.current && slide.cta && playedMs >= Math.min(CTA_FILL_AFTER_MS, totalMs / 2)) {
-        ctaShownRef.current = true;
-        setCtaShown(true);
+      if (!slide.cta || ctaPhaseRef.current === 2) return;
+      const showAt = ctaShowAt(totalMs);
+      const phase =
+        playedMs >= showAt + CTA_FILL_DELAY_MS ? 2 : playedMs >= showAt ? 1 : 0;
+      if (phase > ctaPhaseRef.current) {
+        ctaPhaseRef.current = phase;
+        setCtaPhase(phase);
       }
     };
     const tick = (now: number) => {
@@ -205,7 +240,11 @@ export default function StoryPlayer({ story, onClose, onFinished, onBackFromStar
   // Keyboard: ← → to move, Space to pause.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLElement && e.target.closest("input, textarea")) return;
+      if (
+        e.target instanceof HTMLElement &&
+        e.target.closest("input, textarea")
+      )
+        return;
       if (e.key === "ArrowRight") go(index + 1);
       else if (e.key === "ArrowLeft") go(index - 1);
       else if (e.key === "Escape" && onClose) onClose();
@@ -219,26 +258,51 @@ export default function StoryPlayer({ story, onClose, onFinished, onBackFromStar
   }, [go, index, onClose]);
 
   // Gestures: tap (left third back, else on), swipe left / right, press and hold for double speed.
-  const gesture = useRef<{ x: number; y: number; id: number; holdTimer: number; held: boolean; swiping: boolean } | null>(null);
+  const gesture = useRef<{
+    x: number;
+    y: number;
+    id: number;
+    holdTimer: number;
+    held: boolean;
+    swiping: boolean;
+  } | null>(null);
   const onPointerDown = (e: React.PointerEvent) => {
-    if ((e.target as HTMLElement).closest("button, a, iframe, input, form, video[controls]") || e.button > 0) return;
+    if (
+      (e.target as HTMLElement).closest(
+        "button, a, iframe, input, form, video[controls]",
+      ) ||
+      e.button > 0
+    )
+      return;
     const holdTimer = window.setTimeout(() => {
       if (gesture.current) {
         gesture.current.held = true;
         setFast(true);
       }
     }, HOLD_MS);
-    gesture.current = { x: e.clientX, y: e.clientY, id: e.pointerId, holdTimer, held: false, swiping: false };
+    gesture.current = {
+      x: e.clientX,
+      y: e.clientY,
+      id: e.pointerId,
+      holdTimer,
+      held: false,
+      swiping: false,
+    };
   };
   const onPointerMove = (e: React.PointerEvent) => {
     const g = gesture.current;
     if (!g || g.id !== e.pointerId || g.held) return;
     const dx = e.clientX - g.x;
-    if (!g.swiping && Math.abs(dx) > 12 && Math.abs(dx) > Math.abs(e.clientY - g.y)) {
+    if (
+      !g.swiping &&
+      Math.abs(dx) > 12 &&
+      Math.abs(dx) > Math.abs(e.clientY - g.y)
+    ) {
       g.swiping = true;
       window.clearTimeout(g.holdTimer);
     }
-    if (g.swiping && stageRef.current) stageRef.current.style.transform = `translateX(${dx * 0.6}px)`;
+    if (g.swiping && stageRef.current)
+      stageRef.current.style.transform = `translateX(${dx * 0.6}px)`;
   };
   const endGesture = (e: React.PointerEvent, cancelled = false) => {
     const g = gesture.current;
@@ -276,12 +340,19 @@ export default function StoryPlayer({ story, onClose, onFinished, onBackFromStar
   };
 
   // The slides on stage: this one, the next (loading meanwhile) and the previous (instant back).
-  const mounted = [index - 1, index, index + 1].filter((i) => i >= 0 && i < count);
+  const mounted = [index - 1, index, index + 1].filter(
+    (i) => i >= 0 && i < count,
+  );
 
   return (
     <div className={styles.wrap}>
       {(index > 0 || onBackFromStart) && (
-        <button type="button" className={`${styles.side} ${styles.sidePrev}`} aria-label="Înapoi" onClick={() => go(index - 1)}>
+        <button
+          type="button"
+          className={`${styles.side} ${styles.sidePrev}`}
+          aria-label="Înapoi"
+          onClick={() => go(index - 1)}
+        >
           <Chevron left />
         </button>
       )}
@@ -331,9 +402,17 @@ export default function StoryPlayer({ story, onClose, onFinished, onBackFromStar
         )}
 
         {/* Like the app: the chrome fades while a finger holds the slide. */}
-        <div className={fast ? `${styles.chrome} ${styles.chromeHidden}` : styles.chrome}>
+        <div
+          className={
+            fast ? `${styles.chrome} ${styles.chromeHidden}` : styles.chrome
+          }
+        >
           <div className={styles.top}>
-            <div className={styles.bars} role="tablist" aria-label="Diapozitive">
+            <div
+              className={styles.bars}
+              role="tablist"
+              aria-label="Diapozitive"
+            >
               {slides.map((s, i) => (
                 <button
                   key={`${s.id}-${i}`}
@@ -347,7 +426,9 @@ export default function StoryPlayer({ story, onClose, onFinished, onBackFromStar
                   <span
                     ref={i === index ? barRef : undefined}
                     className={styles.fill}
-                    style={{ transform: `scaleX(${i < index || (ended && i === index) ? 1 : 0})` }}
+                    style={{
+                      transform: `scaleX(${i < index || (ended && i === index) ? 1 : 0})`,
+                    }}
                   />
                 </button>
               ))}
@@ -355,16 +436,32 @@ export default function StoryPlayer({ story, onClose, onFinished, onBackFromStar
             <div className={styles.head}>
               <h1 className={styles.srOnly}>{story.title}</h1>
               {slide.hasSound && (
-                <button type="button" className={styles.icon} aria-label={muted ? "Pornește sunetul" : "Oprește sunetul"} onClick={() => setMuted((m) => !m)}>
+                <button
+                  type="button"
+                  className={styles.icon}
+                  aria-label={muted ? "Pornește sunetul" : "Oprește sunetul"}
+                  onClick={() => setMuted((m) => !m)}
+                >
                   {muted ? <MutedIcon /> : <SoundIcon />}
                 </button>
               )}
               {onClose ? (
-                <button type="button" className={styles.icon} aria-label="Închide" onClick={onClose} data-testid="story-close">
+                <button
+                  type="button"
+                  className={styles.icon}
+                  aria-label="Închide"
+                  onClick={onClose}
+                  data-testid="story-close"
+                >
                   <CloseIcon />
                 </button>
               ) : (
-                <a href="/" className={styles.icon} aria-label="Închide" data-testid="story-close">
+                <a
+                  href="/"
+                  className={styles.icon}
+                  aria-label="Închide"
+                  data-testid="story-close"
+                >
                   <CloseIcon />
                 </a>
               )}
@@ -384,51 +481,95 @@ export default function StoryPlayer({ story, onClose, onFinished, onBackFromStar
             <div className={styles.bottomRow}>
               <div className={styles.left}>
                 {slide.cta && slide.cta.style !== "swipe_up" && (
-                  <a
-                    key={`cta-${slide.id}-${index}`}
-                    className={ctaFilled ? `${styles.cta} ${styles.ctaFilled}` : styles.cta}
-                    style={
-                      {
-                        "--cta-color": slide.cta.color ?? "#e91e63",
-                        "--cta-text": slide.cta.textColor ?? "#fff",
-                      } as React.CSSProperties
+                  // Opens its room smoothly, pushing who-it's-from up, when it comes in.
+                  <div
+                    className={
+                      ctaShown
+                        ? `${styles.ctaRoom} ${styles.ctaRoomOpen}`
+                        : styles.ctaRoom
                     }
-                    href={slide.cta.href}
-                    data-testid="story-cta"
-                    data-filled={ctaFilled ? "1" : "0"}
-                    onClick={() => void report([{ type: "cta_click", story: story.slug, slide: slide.id, target: "button" }])}
-                    {...(slide.cta.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+                    aria-hidden={!ctaShown}
                   >
-                    <span className={styles.ctaSweep} aria-hidden="true" />
-                    <span className={styles.ctaLabel}>{slide.cta.label}</span>
-                    <ChevronRight />
-                  </a>
+                    <div className={styles.ctaRoomInner}>
+                      <a
+                        key={`cta-${slide.id}-${index}`}
+                        tabIndex={ctaShown ? undefined : -1}
+                        data-shown={ctaShown ? "1" : "0"}
+                        className={
+                          ctaFilled
+                            ? `${styles.cta} ${styles.ctaFilled}`
+                            : styles.cta
+                        }
+                        style={
+                          {
+                            "--cta-color": slide.cta.color ?? "#e91e63",
+                            "--cta-text": slide.cta.textColor ?? "#fff",
+                          } as React.CSSProperties
+                        }
+                        href={slide.cta.href}
+                        data-testid="story-cta"
+                        data-filled={ctaFilled ? "1" : "0"}
+                        onClick={() =>
+                          void report([
+                            {
+                              type: "cta_click",
+                              story: story.slug,
+                              slide: slide.id,
+                              target: "button",
+                            },
+                          ])
+                        }
+                        {...(slide.cta.external
+                          ? { target: "_blank", rel: "noopener noreferrer" }
+                          : {})}
+                      >
+                        <span className={styles.ctaSweep} aria-hidden="true" />
+                        <span className={styles.ctaLabel}>
+                          {slide.cta.label}
+                        </span>
+                        <ChevronRight />
+                      </a>
+                    </div>
+                  </div>
                 )}
                 <div className={styles.author}>
                   <span className={styles.authorAvatar}>
-                    {story.author?.avatar ?? story.cover ? (
-                      <img src={(story.author?.avatar ?? story.cover)!} alt="" />
+                    {(story.author?.avatar ?? story.cover) ? (
+                      <img
+                        src={(story.author?.avatar ?? story.cover)!}
+                        alt=""
+                      />
                     ) : (
                       <img src="/favicon/android-chrome-192x192.png" alt="" />
                     )}
                   </span>
-                  <span className={styles.authorName}>{story.author?.name ?? story.title}</span>
+                  <span className={styles.authorName}>
+                    {story.author?.name ?? story.title}
+                  </span>
                 </div>
                 {(slide.caption ?? (story.author ? story.title : null)) && (
-                  <p className={styles.caption}>{slide.caption ?? story.title}</p>
+                  <p className={styles.caption}>
+                    {slide.caption ?? story.title}
+                  </p>
                 )}
               </div>
               <div className={styles.actions}>
                 <button
                   type="button"
-                  className={liked ? `${styles.action} ${styles.liked}` : styles.action}
+                  className={
+                    liked ? `${styles.action} ${styles.liked}` : styles.action
+                  }
                   aria-label={liked ? "Nu-mi mai place" : "Îmi place"}
                   aria-pressed={liked}
                   onClick={() => void toggleLike()}
                   data-testid="story-like"
                 >
                   <HeartIcon filled={liked} />
-                  <span key={likes} className={styles.actionLabel} data-testid="story-like-count">
+                  <span
+                    key={likes}
+                    className={styles.actionLabel}
+                    data-testid="story-like-count"
+                  >
                     {likes > 0 ? formatStoryCount(likes) : "Îmi place"}
                   </span>
                 </button>
@@ -442,36 +583,76 @@ export default function StoryPlayer({ story, onClose, onFinished, onBackFromStar
                     data-testid="story-comments"
                   >
                     <ChatIcon />
-                    <span className={styles.actionLabel}>{story.comments.count > 0 ? formatStoryCount(story.comments.count) : "Comentarii"}</span>
+                    <span className={styles.actionLabel}>
+                      {story.comments.count > 0
+                        ? formatStoryCount(story.comments.count)
+                        : "Comentarii"}
+                    </span>
                   </button>
                 )}
-                <button type="button" className={styles.action} aria-label="Distribuie" onClick={share} data-testid="story-share">
+                <button
+                  type="button"
+                  className={styles.action}
+                  aria-label="Distribuie"
+                  onClick={share}
+                  data-testid="story-share"
+                >
                   <SendIcon />
                   <span className={styles.actionLabel}>Trimite</span>
                 </button>
               </div>
             </div>
-            {slide.cta && slide.cta.style !== "button" && (
+            {slide.cta && slide.cta.style !== "button" && ctaShown && (
               <a
                 className={styles.swipeUp}
                 href={slide.cta.href}
                 aria-label={slide.cta.label}
-                data-testid={slide.cta.style === "swipe_up" ? "story-cta" : "story-swipe-up"}
-                onClick={() => void report([{ type: "cta_click", story: story.slug, slide: slide.id, target: "swipe_up" }])}
-                {...(slide.cta.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+                data-testid={
+                  slide.cta.style === "swipe_up"
+                    ? "story-cta"
+                    : "story-swipe-up"
+                }
+                onClick={() =>
+                  void report([
+                    {
+                      type: "cta_click",
+                      story: story.slug,
+                      slide: slide.id,
+                      target: "swipe_up",
+                    },
+                  ])
+                }
+                {...(slide.cta.external
+                  ? { target: "_blank", rel: "noopener noreferrer" }
+                  : {})}
               >
                 <span className={styles.chevronUp}>
                   <ChevronUp />
                 </span>
-                <span className={styles.swipeLabel}>{slide.cta.style === "both" ? "Glisează în sus" : slide.cta.label}</span>
+                <span className={styles.swipeLabel}>
+                  {slide.cta.style === "both"
+                    ? "Glisează în sus"
+                    : slide.cta.label}
+                </span>
               </a>
             )}
-            {commentsPrompt && <CommentsInApp slug={story.slug} count={story.comments.count} onClose={() => setCommentsPrompt(false)} />}
+            {commentsPrompt && (
+              <CommentsInApp
+                slug={story.slug}
+                count={story.comments.count}
+                onClose={() => setCommentsPrompt(false)}
+              />
+            )}
           </div>
         </div>
       </div>
       {(index < count - 1 || onFinished) && (
-        <button type="button" className={`${styles.side} ${styles.sideNext}`} aria-label="Înainte" onClick={() => go(index + 1)}>
+        <button
+          type="button"
+          className={`${styles.side} ${styles.sideNext}`}
+          aria-label="Înainte"
+          onClick={() => go(index + 1)}
+        >
           <Chevron />
         </button>
       )}
@@ -489,7 +670,14 @@ interface LayerProps {
 }
 
 /** One slide's media, mounted ahead of time so it has loaded when it comes on. */
-function SlideLayer({ slide, active, onLoaded, videoRef, onVideoEnded, onEmbedOpen }: LayerProps) {
+function SlideLayer({
+  slide,
+  active,
+  onLoaded,
+  videoRef,
+  onVideoEnded,
+  onEmbedOpen,
+}: LayerProps) {
   const imgRef = useCallback(
     (img: HTMLImageElement | null) => {
       // Already in the cache (or server-rendered and loaded before hydration).
@@ -506,12 +694,23 @@ function SlideLayer({ slide, active, onLoaded, videoRef, onVideoEnded, onEmbedOp
       v.currentTime = 0;
     }
   }, [active]);
-  const cls = [styles.layer, active ? styles.active : "", slide.landscape ? styles.landscape : ""].join(" ");
+  const cls = [
+    styles.layer,
+    active ? styles.active : "",
+    slide.landscape ? styles.landscape : "",
+  ].join(" ");
   const media: StoryMedia = slide.media;
   return (
     <div className={cls} aria-hidden={!active}>
       {media.kind === "image" && (
-        <img ref={imgRef} src={media.src} alt="" draggable={false} onLoad={onLoaded} onError={onLoaded} />
+        <img
+          ref={imgRef}
+          src={media.src}
+          alt=""
+          draggable={false}
+          onLoad={onLoaded}
+          onError={onLoaded}
+        />
       )}
       {media.kind === "video" && (
         <video
@@ -530,8 +729,18 @@ function SlideLayer({ slide, active, onLoaded, videoRef, onVideoEnded, onEmbedOp
           onEnded={active ? onVideoEnded : undefined}
         />
       )}
-      {media.kind === "youtube" && <YouTubeLayer media={media} active={active} imgRef={imgRef} onLoaded={onLoaded} onOpen={onEmbedOpen} />}
-      {media.kind === "instagram" && <InstagramLayer media={media} imgRef={imgRef} onLoaded={onLoaded} />}
+      {media.kind === "youtube" && (
+        <YouTubeLayer
+          media={media}
+          active={active}
+          imgRef={imgRef}
+          onLoaded={onLoaded}
+          onOpen={onEmbedOpen}
+        />
+      )}
+      {media.kind === "instagram" && (
+        <InstagramLayer media={media} imgRef={imgRef} onLoaded={onLoaded} />
+      )}
     </div>
   );
 }
@@ -565,7 +774,14 @@ function YouTubeLayer({
   }
   return (
     <>
-      <img ref={imgRef} src={media.thumbnail} alt="" draggable={false} onLoad={onLoaded} onError={onLoaded} />
+      <img
+        ref={imgRef}
+        src={media.thumbnail}
+        alt=""
+        draggable={false}
+        onLoad={onLoaded}
+        onError={onLoaded}
+      />
       <button
         type="button"
         className={styles.play}
@@ -592,11 +808,24 @@ function InstagramLayer({
   onLoaded: () => void;
 }) {
   const [embed, setEmbed] = useState(!media.thumbnail);
-  if (embed) return <iframe src={media.embedUrl} title="Instagram" onLoad={onLoaded} />;
+  if (embed)
+    return <iframe src={media.embedUrl} title="Instagram" onLoad={onLoaded} />;
   return (
     <>
-      <img ref={imgRef} src={media.thumbnail} alt="" draggable={false} onLoad={onLoaded} onError={() => setEmbed(true)} />
-      <a className={styles.igCaption} href={media.url} target="_blank" rel="noopener noreferrer">
+      <img
+        ref={imgRef}
+        src={media.thumbnail}
+        alt=""
+        draggable={false}
+        onLoad={onLoaded}
+        onError={() => setEmbed(true)}
+      />
+      <a
+        className={styles.igCaption}
+        href={media.url}
+        target="_blank"
+        rel="noopener noreferrer"
+      >
         {media.author && <strong>@{media.author}</strong>}
         {media.caption && <span>{media.caption}</span>}
       </a>
@@ -608,7 +837,15 @@ function InstagramLayer({
  * Comments live in the app (public, per story): the website shows their count, and this sheet
  * offers the app (its link on a phone, the download page elsewhere). The story waits meanwhile.
  */
-function CommentsInApp({ slug, count, onClose }: { slug: string; count: number; onClose: () => void }) {
+function CommentsInApp({
+  slug,
+  count,
+  onClose,
+}: {
+  slug: string;
+  count: number;
+  onClose: () => void;
+}) {
   const [href, setHref] = useState("/descarca-aplicatia-radio-crestin/");
   useEffect(() => {
     const ua = navigator.userAgent;
@@ -617,14 +854,34 @@ function CommentsInApp({ slug, count, onClose }: { slug: string; count: number; 
     else if (/iphone|ipad|ipod/i.test(ua)) setHref(links.ios);
   }, [slug]);
   return (
-    <div className={styles.sheet} role="dialog" aria-label="Comentarii" data-testid="story-comments-sheet">
-      <button type="button" className={styles.sheetClose} aria-label="Închide" onClick={onClose}>
+    <div
+      className={styles.sheet}
+      role="dialog"
+      aria-label="Comentarii"
+      data-testid="story-comments-sheet"
+    >
+      <button
+        type="button"
+        className={styles.sheetClose}
+        aria-label="Închide"
+        onClick={onClose}
+      >
         <CloseIcon />
       </button>
       <ChatIcon />
-      <p className={styles.sheetTitle}>{count > 0 ? `${formatStoryCount(count)} ${count === 1 ? "comentariu" : "comentarii"}` : "Comentarii"}</p>
-      <p className={styles.sheetText}>Comentariile se citesc și se scriu în aplicația Radio Creștin.</p>
-      <a className={styles.sheetButton} href={href} data-testid="story-comments-app">
+      <p className={styles.sheetTitle}>
+        {count > 0
+          ? `${formatStoryCount(count)} ${count === 1 ? "comentariu" : "comentarii"}`
+          : "Comentarii"}
+      </p>
+      <p className={styles.sheetText}>
+        Comentariile se citesc și se scriu în aplicația Radio Creștin.
+      </p>
+      <a
+        className={styles.sheetButton}
+        href={href}
+        data-testid="story-comments-app"
+      >
         Deschide aplicația
       </a>
     </div>
@@ -632,7 +889,18 @@ function CommentsInApp({ slug, count, onClose }: { slug: string; count: number; 
 }
 
 const Svg = ({ children, ...rest }: React.SVGProps<SVGSVGElement>) => (
-  <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...rest}>
+  <svg
+    viewBox="0 0 24 24"
+    width="24"
+    height="24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+    {...rest}
+  >
     {children}
   </svg>
 );
@@ -643,7 +911,11 @@ const HeartIcon = ({ filled }: { filled: boolean }) => (
 );
 // Material's send_rounded, tilted as the app's paper plane.
 const SendIcon = () => (
-  <Svg fill="currentColor" stroke="none" style={{ transform: "rotate(-29deg)" }}>
+  <Svg
+    fill="currentColor"
+    stroke="none"
+    style={{ transform: "rotate(-29deg)" }}
+  >
     <path d="M3.4 20.4 20.85 12.92a1 1 0 0 0 0-1.84L3.4 3.6a.99.99 0 0 0-1.39.91L2 9.12c0 .5.37.93.87.99L17 12 2.87 13.88c-.5.07-.87.5-.87 1l.01 4.61c0 .71.73 1.2 1.39.91z" />
   </Svg>
 );
