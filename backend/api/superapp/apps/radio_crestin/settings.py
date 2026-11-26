@@ -160,10 +160,10 @@ def extend_superapp_settings(main_settings):
                     "permission": lambda request: request.user.has_perm("radio_crestin.view_story"),
                 },
                 {
-                    "title": lambda request: _("Story Messages"),
+                    "title": lambda request: _("Story Comments"),
                     "icon": "chat",
-                    "link": reverse_lazy("admin:radio_crestin_storymessage_changelist"),
-                    "permission": lambda request: request.user.has_perm("radio_crestin.view_storymessage"),
+                    "link": reverse_lazy("admin:radio_crestin_storycomment_changelist"),
+                    "permission": lambda request: request.user.has_perm("radio_crestin.view_storycomment"),
                 },
                 {
                     "title": lambda request: _("Story Settings"),

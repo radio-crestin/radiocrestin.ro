@@ -21,7 +21,8 @@ MAX_VIDEO_SECONDS = 60
 MAX_VIDEO_BYTES = 50 * 1024 * 1024
 DEFAULT_SECONDS = {'image': 6, 'video': 15, 'youtube': 15, 'instagram': 10}
 MAX_SLIDE_SECONDS = 120
-MAX_MESSAGE_CHARS = 1000
+MAX_COMMENT_CHARS = 500
+MAX_COMMENT_AUTHOR_CHARS = 40
 
 # A CTA's colours, as the app takes them: #RRGGBB.
 validate_hex_color = RegexValidator(
@@ -120,14 +121,14 @@ class Story(models.Model):
         help_text=_("After a device saw it this many times, it leaves the stories bar there. Empty: no limit."),
     )
 
-    # Replies from listeners (docs/stories-api.md#messages)
-    messages_enabled = models.BooleanField(
-        _("Take messages"), default=False,
-        help_text=_("Listeners can write a message under the story; you read them in Story Messages."),
+    # Public comments under the story (docs/stories-api.md#comments)
+    comments_enabled = models.BooleanField(
+        _("Comments"), default=False,
+        help_text=_("Listeners can read and write public comments under the story. Moderate them in Story Comments."),
     )
-    messages_placeholder = models.CharField(
-        _("Message placeholder"), max_length=120, blank=True, default='',
-        help_text=_("The hint in the empty message box, e.g. \"Write us a prayer request\". Empty: the app's own."),
+    comments_placeholder = models.CharField(
+        _("Comment placeholder"), max_length=120, blank=True, default='',
+        help_text=_("The hint in the empty comment box, e.g. \"Scrie un gând\". Empty: the app's own."),
     )
 
     # The account row under the call to action

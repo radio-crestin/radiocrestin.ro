@@ -14,7 +14,9 @@ already in the stores keep working. Clients must ignore keys they don't know, an
 | `GET /api/v1/stories/<slug>/` | One story in its time window (a share link, a CTA to another story) |
 | `GET /api/v1/stories/liked/?device_id=<id>` | The slugs this device liked (after a reinstall) |
 | `POST /api/v1/stories/events/` | Views, likes, CTA taps, shares and auto-opens, reported by the device |
-| `POST /api/v1/stories/messages/` | A listener's message under a story that takes messages (see [Messages](#messages)) |
+| `GET /api/v1/stories/<slug>/comments/` | A page of the story's public comments (see [Comments](#comments)) |
+| `POST /api/v1/stories/<slug>/comments/` | A listener writes a comment |
+| `DELETE /api/v1/stories/<slug>/comments/<id>/` | The author's device deletes its comment |
 
 `?preview=<token>` on the two story GETs also returns the stories in **Preview** status, uncached; it is the
 same token as the announcements' preview link (Announcement settings), and a wrong token gets `403`.
@@ -52,7 +54,7 @@ match the device. Each listed story has at least one slide.
         "max_app_version": null
       },
       "display": { "auto_open": true, "every_days": 3, "every_actions": 10, "max_shows": 5 },
-      "messages": { "enabled": true, "placeholder": "Scrie-ne o cerere de rugăciune" },
+      "comments": { "enabled": true, "placeholder": "Scrie un gând", "count": 12 },
       "author": { "name": "Radio Vocea Evangheliei", "avatar_url": "https://cdn.radiocrestin.ro/stories/authors/vocea.webp" },
       "slides": [
         {
@@ -176,9 +178,9 @@ match the device. Each listed story has at least one slide.
 | `starts_at`, `ends_at` | ISO 8601 UTC\|null | `null`: no limit on that side. |
 | `updated_at` | ISO 8601 UTC | Changes when the admin edits the story or its slides. |
 | `like_count` | int | Total likes. Read fresh on every request the backend answers (the rest of the body is cached for up to 5 minutes and dropped on every admin change); Cloudflare may keep a copy for up to 60 s (`max-age=60`). The events answer has the counts right after a like. |
+| `comments` | object | `{"enabled": bool, "placeholder": string\|null, "count": int}`. Always present. `enabled`: the viewer shows the comments ("Comentarii") and lets the listener write one; `false` by default, ticked per story in the admin. `placeholder`: the hint in the empty comment box; `null`: the app's own. `count`: visible comments (0 while `enabled` is false), as fresh as `like_count`. See [Comments](#comments). |
 | `filters` | object | Same keys and meaning as the announcements' `filters`; every rule set must match. |
 | `display` | object | When the device shows it, see [Display rules](#display-rules). Always present. |
-| `messages` | object | `{"enabled": bool, "placeholder": string\|null}`. Always present. `enabled`: the viewer offers a message box (sent to [Messages](#messages)); `false` by default. `placeholder`: the hint in the empty box, set in the admin; `null`: the app's own. |
 | `author` | object\|null | The account row under the CTA: `{"name": string, "avatar_url": absolute URL\|null}`. `null`: show "Radio Creștin" with its logo. `avatar_url` `null`: the name without a picture (or the app's placeholder). |
 | `slides` | array | In order; at least one. |
 | `id`, `position` | int | *extra*: the story's id; its order (the list is already sorted). |
@@ -346,43 +348,83 @@ slides are skipped; an `at` more than 24 h old or 5 min ahead is skipped; repeat
 dropped (views and auto-opens for 30 minutes; slide views, CTA taps, completions and shares for 1 minute);
 rate limits are 600 requests a minute per IP and 30 per device (`429`, nothing stored).
 
-## Messages
+## Comments
 
-`POST /api/v1/stories/messages/`, JSON body (any Content-Type), only for a story whose `messages.enabled` is
-`true`:
+Public comments under a story, shown in the viewer as "Comentarii". They are plain text, newest first. A
+story takes them only while its `comments.enabled` is `true` (ticked per story in the admin; off by
+default). The admin can hide a comment (no listener sees it any more) or delete it. Device ids are never
+returned: `mine` says whether a comment was written from the asking device. These answers are per device,
+so they are never cached (`Cache-Control: private, no-store`, by the backend and by Cloudflare).
+
+The story must be listed (active, or in Preview) and inside its time window; otherwise every comment
+endpoint answers `404 {"error": "not found"}`.
+
+A comment:
 
 ```json
-{
-  "device_id": "4f3c2a...",
-  "platform": "android",
-  "app_version": "1.9.0",
-  "locale": "ro-RO",
-  "story": "concert-craciun-2026",
-  "slide": 41,
-  "text": "Vă rog să vă rugați pentru mama mea."
-}
+{ "id": 812, "author_name": "Ana", "text": "Doamne ajută!", "created_at": "2026-12-02T18:01:10Z", "mine": true }
 ```
 
 | Key | Notes |
 |---|---|
-| `device_id` | Required: the rate limit counts per device. |
-| `story` | The story's slug. |
+| `id` | int; pages and deletes use it. |
+| `author_name` | The name the listener typed, or `"Ascultător"` when they gave none (filled in by the backend). |
+| `text` | Plain text, 1 to 500 characters, may hold line breaks (at most one blank line in a row). |
+| `created_at` | ISO 8601 UTC. |
+| `mine` | Written from the `device_id` in the request. |
+
+### List
+
+`GET /api/v1/stories/<slug>/comments/?device_id=<id>&before=<id>`
+
+```json
+{ "count": 12, "comments": [ { "id": 812, "author_name": "Ana", "text": "...", "created_at": "...", "mine": true } ], "next_before": 790 }
+```
+
+Visible comments only, newest first, 30 a page. `count` is every visible comment of the story. For the next
+page, send `before=<next_before>`; `next_before` is `null` on the last page. Without `device_id`, `mine` is
+`false` everywhere. While comments are off: `{"count": 0, "comments": [], "next_before": null}`.
+
+### Write
+
+`POST /api/v1/stories/<slug>/comments/`, JSON body (any Content-Type):
+
+```json
+{ "device_id": "4f3c2a...", "platform": "android", "app_version": "1.9.0", "locale": "ro-RO",
+  "slide": 41, "text": "Doamne ajută!", "author_name": "Ana" }
+```
+
+| Key | Notes |
+|---|---|
+| `device_id` | Required. |
+| `text` | 1 to 500 characters, counted after HTML tags and control characters are removed and the ends trimmed. |
+| `author_name` | Optional, at most 40 characters (cleaned the same way); `null` or empty: shown as `"Ascultător"`. |
 | `slide` | The slide on screen, or `null`. An id that isn't one of the story's slides is stored as `null`. |
-| `text` | 1 to 1000 characters once trimmed of surrounding spaces and line breaks. |
-| `platform`, `app_version`, `locale` | Like the events'; shown to the admin with the message. |
+| `platform`, `app_version`, `locale` | Like the events'; shown to the admin with the comment. |
 
 | Answer | When |
 |---|---|
-| `201 {"status": "ok"}` | Stored. |
-| `400 {"error": "text is empty"}` | `text` missing, not a string, or only spaces. |
-| `400 {"error": "text is longer than 1000 characters"}` | |
-| `400 {"error": "this story does not take messages"}` | Unknown slug, messages off, or the story isn't active (or in Preview) inside its window. |
+| `201 {"comment": {..., "mine": true}}` | Stored and visible. |
+| `400 {"error": "text is empty"}` | `text` missing, not a string, or nothing left once cleaned. |
+| `400 {"error": "text is longer than 500 characters"}`, `{"error": "author_name is longer than 40 characters"}` | |
+| `400 {"error": "comments are off for this story"}` | |
 | `400 {"error": "device_id is required"}`, `{"error": "invalid json"}`, `{"error": "expected a json object"}` | |
+| `404 {"error": "not found"}` | The story isn't listed or is outside its window. |
 | `429 {"error": "rate limited"}` | More than 5 requests a minute from one device, or 60 from one IP. Nothing stored. |
 
-The `error` texts are for logs; the app shows its own words. Messages are never shown to other listeners: the
-admin reads them under **Story Messages** (text, date, slide, platform and app version, device), filtered by
-story from the Messages column of the Stories list, and the latest 20 on the story's Messages tab.
+The `error` texts are for logs; the app shows its own words.
+
+### Delete
+
+`DELETE /api/v1/stories/<slug>/comments/<id>/?device_id=<id>`: `204` when the comment was written from that
+device (hidden ones too). `403 {"error": "not your comment"}` for another device's comment or no
+`device_id`; `404` when the story has no such comment.
+
+### Moderation
+
+In the portal, **Story Comments** lists every comment (text, name, story, slide, date, platform, device),
+filtered by story from the Comments column of the Stories list, with the actions "Hide from listeners" and
+"Show to listeners again", and Delete. A story's Comments tab shows its latest 20, hidden ones greyed.
 
 ## Stats in the admin
 

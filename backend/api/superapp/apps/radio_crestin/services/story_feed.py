@@ -1,8 +1,8 @@
 """The stories clients get (backend/docs/stories-api.md): one list for everyone, filtered on the device.
 
 Payloads are cached, and dropped by signals/stories.py whenever something they
-serve changes; each request then sets the current like counts and renders the
-body with its ETag, so like_count is never older than the CDN's max-age.
+serve changes; each request then sets the current like and comment counts and
+renders the body with its ETag, so they are never older than the CDN's max-age.
 """
 import secrets
 from datetime import datetime, timedelta
@@ -10,11 +10,11 @@ from typing import Callable, Optional
 from urllib.parse import urlencode
 
 from django.core.cache import cache
-from django.db.models import Prefetch, Q
+from django.db.models import Count, Prefetch, Q
 from django.utils import timezone
 
 from ..models import (
-    CtaStyle, CtaTarget, InAppRoute, SlideType, Story, StoryLike, StorySettings, StorySlide, StoryStatus,
+    CtaStyle, CtaTarget, InAppRoute, SlideType, Story, StoryComment, StoryLike, StorySettings, StorySlide, StoryStatus,
 )
 from . import instagram_embeds, youtube_embeds
 from .announcement_feed import (
@@ -187,8 +187,13 @@ def display_payload(story: Story) -> dict:
     }
 
 
-def messages_payload(story: Story) -> dict:
-    return {'enabled': story.messages_enabled, 'placeholder': story.messages_placeholder.strip() or None}
+def comments_payload(story: Story, count: int = 0) -> dict:
+    """`count` is set per request by _with_fresh_counts: comments come and go without dropping the cache."""
+    return {
+        'enabled': story.comments_enabled,
+        'placeholder': story.comments_placeholder.strip() or None,
+        'count': count if story.comments_enabled else 0,
+    }
 
 
 def author_payload(story: Story, absolute_url: AbsoluteUrl) -> Optional[dict]:
@@ -224,7 +229,7 @@ def serialize(story: Story, absolute_url: AbsoluteUrl = lambda url: url) -> Opti
         'like_count': story.like_count,
         'filters': filters_payload(story),
         'display': display_payload(story),
-        'messages': messages_payload(story),
+        'comments': comments_payload(story),
         'author': author_payload(story, absolute_url),
         'slides': slides,
     }
@@ -268,7 +273,7 @@ def list_payload(absolute_url: AbsoluteUrl, statuses=PUBLIC_STATUSES) -> dict:
     stories = (serialize(story, absolute_url) for story in listed(statuses) if is_public_slug(story.slug))
     return {
         'settings': settings_payload(StorySettings.load()),
-        'stories': [story for story in stories if story],
+        'stories': _with_fresh_counts([story for story in stories if story]),
     }
 
 
@@ -276,7 +281,8 @@ def detail_payload(slug: str, absolute_url: AbsoluteUrl, statuses=PUBLIC_STATUSE
     if not is_public_slug(slug):
         return None
     story = live(slug, statuses)
-    return serialize(story, absolute_url) if story else None
+    payload = serialize(story, absolute_url) if story else None
+    return _with_fresh_counts([payload])[0] if payload else None
 
 
 def liked_payload(device_id: str) -> dict:
@@ -311,17 +317,31 @@ def _cached(name: str, build: Callable[[], Optional[dict]]) -> Optional[dict]:
     return None if entry.get('missing') else entry['payload']
 
 
-def _with_fresh_likes(stories: list) -> list:
-    """like_count as stored now: likes change it with update(), which doesn't drop the cached payloads."""
-    counts = dict(Story.objects.filter(pk__in=[story['id'] for story in stories]).values_list('id', 'like_count'))
-    return [{**story, 'like_count': counts.get(story['id'], story['like_count'])} for story in stories]
+def _with_fresh_counts(stories: list) -> list:
+    """like_count and comments.count as they are now.
+
+    Likes change like_count with update(), and comments are written all the time: neither drops the
+    cached payloads, so each request reads them (two indexed queries for the whole list).
+    """
+    ids = [story['id'] for story in stories]
+    likes = dict(Story.objects.filter(pk__in=ids).values_list('id', 'like_count'))
+    comments = dict(
+        StoryComment.objects.filter(story_id__in=ids, is_hidden=False).order_by()
+        .values('story_id').annotate(count=Count('id')).values_list('story_id', 'count')
+    )
+    return [{
+        **story,
+        'like_count': likes.get(story['id'], story['like_count']),
+        'comments': {**story['comments'],
+                     'count': comments.get(story['id'], 0) if story['comments']['enabled'] else 0},
+    } for story in stories]
 
 
 def public_list(absolute_url: AbsoluteUrl) -> RenderedResponse:
     payload = _cached('list', lambda: list_payload(absolute_url))
-    return render({**payload, 'stories': _with_fresh_likes(payload['stories'])})
+    return render({**payload, 'stories': _with_fresh_counts(payload['stories'])})
 
 
 def public_detail(slug: str, absolute_url: AbsoluteUrl) -> Optional[RenderedResponse]:
     payload = _cached(f'item:{slug}', lambda: detail_payload(slug, absolute_url))
-    return render(_with_fresh_likes([payload])[0]) if payload else None
+    return render(_with_fresh_counts([payload])[0]) if payload else None

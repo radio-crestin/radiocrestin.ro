@@ -9,19 +9,19 @@ from django.utils.translation import gettext_lazy as _
 from superapp.apps.admin_portal.admin import SuperAppModelAdmin, SuperAppStackedInline
 from superapp.apps.admin_portal.sites import superapp_admin_site
 from ..forms.story_admin import StoryAdminForm, StorySlideForm
-from ..models import AnnouncementSettings, SlideType, Story, StoryMessage, StorySettings, StorySlide
+from ..models import AnnouncementSettings, SlideType, Story, StoryComment, StorySettings, StorySlide
 from ..services import announcement_order, instagram_embeds, story_embeds, story_feed, story_stats
 
 
-RECENT_MESSAGES = 20
+RECENT_COMMENTS = 20
 
 
 def _number(value):
     return f'{value or 0:,}'
 
 
-def _messages_url(story):
-    return reverse('admin:radio_crestin_storymessage_changelist') + f'?story__id__exact={story.pk}'
+def _comments_url(story):
+    return reverse('admin:radio_crestin_storycomment_changelist') + f'?story__id__exact={story.pk}'
 
 
 class StorySlideInline(SuperAppStackedInline):
@@ -81,17 +81,17 @@ class StoryAdmin(SuperAppModelAdmin):
     inlines = [StorySlideInline]
     list_display = [
         'title', 'slug', 'status', 'starts_at', 'ends_at', 'slide_count',
-        'views', 'unique_viewers_display', 'like_count', 'cta_clicks', 'shares', 'message_count_display',
+        'views', 'unique_viewers_display', 'like_count', 'cta_clicks', 'shares', 'comment_count_display',
     ]
     ordering = ['position', 'id']
     ordering_field = 'position'
     hide_ordering_field = True
     list_before_template = 'admin/radio_crestin/announcement/list_before.html'
     MAX_REORDER_ROWS = 1000
-    list_filter = ['status', 'auto_open', 'messages_enabled']
+    list_filter = ['status', 'auto_open', 'comments_enabled']
     search_fields = ['title', 'slug']
     readonly_fields = [
-        'preview_display', 'stats_display', 'links_display', 'recent_messages_display',
+        'preview_display', 'stats_display', 'links_display', 'recent_comments_display',
         'views', 'auto_opens', 'completions', 'slide_views', 'cta_clicks', 'shares', 'like_count',
         'created_at', 'updated_at',
     ]
@@ -115,10 +115,10 @@ class StoryAdmin(SuperAppModelAdmin):
                 'platforms', 'countries_include', 'countries_exclude', 'locales',
                 ('min_app_version', 'max_app_version'),
             ]}),
-            (_('Messages and author'), {'classes': ['tab'], 'description': _(
-                "Listeners can write a message under a story that takes messages; they are listed in Story "
-                "Messages. The author is the account row under the call to action."), 'fields': [
-                'messages_enabled', 'messages_placeholder', 'author_name', 'author_avatar',
+            (_('Comments and author'), {'classes': ['tab'], 'description': _(
+                "With comments on, listeners read and write public comments under the story; hide or delete them "
+                "in Story Comments. The author is the account row under the call to action."), 'fields': [
+                'comments_enabled', 'comments_placeholder', 'author_name', 'author_avatar',
             ]}),
         ]
         if obj is None:
@@ -131,7 +131,7 @@ class StoryAdmin(SuperAppModelAdmin):
                 ('views', 'auto_opens', 'completions'), ('slide_views', 'cta_clicks', 'shares', 'like_count'),
                 ('created_at', 'updated_at'),
             ]}),
-            (_('Messages'), {'classes': ['tab'], 'fields': ['recent_messages_display']}),
+            (_('Comments'), {'classes': ['tab'], 'fields': ['recent_comments_display']}),
         ]
 
     def get_queryset(self, request):
@@ -172,23 +172,22 @@ class StoryAdmin(SuperAppModelAdmin):
     def unique_viewers_display(self, obj):
         return _number(obj.unique_viewers)
 
-    @admin.display(description=_('Messages'), ordering='message_count')
-    def message_count_display(self, obj):
-        if not obj.message_count:
-            return '0'
-        return format_html('<a href="{}">{}</a>', _messages_url(obj), _number(obj.message_count))
+    @admin.display(description=_('Comments'), ordering='comment_count')
+    def comment_count_display(self, obj):
+        return format_html('<a href="{}">{}</a>', _comments_url(obj), _number(obj.comment_count))
 
     # ------------------------------------------------------------ change page blocks
 
-    @admin.display(description=_('Latest messages'))
-    def recent_messages_display(self, obj):
+    @admin.display(description=_('Latest comments'))
+    def recent_comments_display(self, obj):
         if not obj or not obj.pk:
             return '-'
-        return render_to_string('admin/radio_crestin/story/messages.html', {
-            'messages': obj.messages.select_related('slide')[:RECENT_MESSAGES],
-            'total': obj.messages.count(),
-            'all_url': _messages_url(obj),
-            'enabled': obj.messages_enabled,
+        return render_to_string('admin/radio_crestin/story/comments.html', {
+            'comments': obj.comments.select_related('slide')[:RECENT_COMMENTS],
+            'visible': obj.comments.filter(is_hidden=False).count(),
+            'hidden': obj.comments.filter(is_hidden=True).count(),
+            'all_url': _comments_url(obj),
+            'enabled': obj.comments_enabled,
         })
 
     @admin.display(description=_('Preview'))
@@ -259,29 +258,42 @@ class StorySettingsAdmin(SuperAppModelAdmin):
         return False
 
 
-@admin.register(StoryMessage, site=superapp_admin_site)
-class StoryMessageAdmin(SuperAppModelAdmin):
-    """What listeners wrote under the stories: read-only, deletable."""
+@admin.register(StoryComment, site=superapp_admin_site)
+class StoryCommentAdmin(SuperAppModelAdmin):
+    """Moderation of the public comments: hide (kept, seen by no listener), show again, or delete."""
 
-    list_display = ['text_display', 'story', 'slide_number', 'created_at', 'platform', 'app_version', 'device_id']
-    list_filter = ['story', 'platform']
-    search_fields = ['text', 'device_id', 'story__title', 'story__slug']
+    list_display = ['text_display', 'author_display', 'story', 'slide_number', 'created_at', 'is_hidden',
+                    'platform', 'device_id']
+    list_filter = ['is_hidden', 'story', 'platform']
+    search_fields = ['text', 'author_name', 'device_id', 'story__title', 'story__slug']
     date_hierarchy = 'created_at'
     list_select_related = ['story', 'slide']
-    fields = ['story', 'slide', 'text', 'created_at', 'platform', 'app_version', 'locale', 'country', 'device_id',
-              'ip']
-    readonly_fields = fields
+    fields = ['is_hidden', 'story', 'slide', 'author_name', 'text', 'created_at', 'platform', 'app_version', 'locale',
+              'country', 'device_id', 'ip']
+    readonly_fields = [field for field in fields if field != 'is_hidden']
+    actions = ['hide_action', 'show_action']
 
-    @admin.display(description=_('Message'))
+    @admin.display(description=_('Comment'))
     def text_display(self, obj):
         return obj.text if len(obj.text) <= 120 else obj.text[:119] + '…'
+
+    @admin.display(description=_('Name'), ordering='author_name')
+    def author_display(self, obj):
+        return obj.author_name or '-'
 
     @admin.display(description=_('Slide'))
     def slide_number(self, obj):
         return obj.slide.position + 1 if obj.slide else '-'
 
-    def has_add_permission(self, request):
-        return False
+    @admin.action(description=_('Hide from listeners'), permissions=['change'])
+    def hide_action(self, request, queryset):
+        count = queryset.update(is_hidden=True)
+        self.message_user(request, _('%(count)s comments hidden.') % {'count': count}, messages.SUCCESS)
 
-    def has_change_permission(self, request, obj=None):
+    @admin.action(description=_('Show to listeners again'), permissions=['change'])
+    def show_action(self, request, queryset):
+        count = queryset.update(is_hidden=False)
+        self.message_user(request, _('%(count)s comments shown again.') % {'count': count}, messages.SUCCESS)
+
+    def has_add_permission(self, request):
         return False
