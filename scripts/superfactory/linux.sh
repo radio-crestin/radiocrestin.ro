@@ -3,7 +3,7 @@
 # Open it when a Linux task lacks a tool. Idempotent: each step checks first, so a second run changes nothing.
 #
 # Installs Python 3.14 with a venv each for the API and streaming (CI's versions), Node 24, the Flutter version mobile/.fvmrc pins,
-# JDK 17 and the Android SDK, plus Docker for backend/docker-compose.yaml. System packages need sudo
+# JDK 17 and the Android SDK with an x86_64 emulator, plus Docker for backend/docker-compose.yaml. System packages need sudo
 # (SUPERFACTORY_SETUP_SUDO=1); everything else goes into the user's home, linked from ~/.local/bin.
 set -euo pipefail
 
@@ -11,7 +11,9 @@ NODE_MAJOR=24
 PYTHON_VERSION=3.14
 FLUTTER_VERSION=$(sed -n 's/.*"flutter": *"\([^"]*\)".*/\1/p' mobile/.fvmrc)
 ANDROID_SDK="$HOME/Android/Sdk"
-ANDROID_PACKAGES=("platform-tools" "platforms;android-36" "build-tools;36.0.0" "ndk;27.0.12077973")
+ANDROID_PACKAGES=("platform-tools" "platforms;android-36" "platforms;android-34" "build-tools;36.0.0" "ndk;27.0.12077973"
+  "emulator" "system-images;android-34;google_apis;x86_64")
+AVD_NAME=radiocrestin_api34
 CMDLINE_TOOLS_ZIP=commandlinetools-linux-13114758_latest.zip
 API_VENV="$HOME/.venvs/radiocrestin-api"
 STREAMING_VENV="$HOME/.venvs/radiocrestin-streaming"
@@ -118,7 +120,8 @@ install_android_sdk() {
   fi
   local missing=()
   for package in "${ANDROID_PACKAGES[@]}"; do
-    [ -d "$ANDROID_SDK/${package//;//}" ] || missing+=("$package")
+    # package.xml is written last: a folder without it is an interrupted download.
+    [ -f "$ANDROID_SDK/${package//;//}/package.xml" ] || missing+=("$package")
   done
   if [ ${#missing[@]} -gt 0 ]; then
     echo "setup: installing Android ${missing[*]}"
@@ -126,6 +129,16 @@ install_android_sdk() {
     "$sdkmanager" --sdk_root="$ANDROID_SDK" "${missing[@]}" >/dev/null
   fi
   link "$ANDROID_SDK/platform-tools/adb"
+  link "$ANDROID_SDK/emulator/emulator"
+  # An emulator to run the app on (`emulator -avd radiocrestin_api34 -no-window`, or `flutter emulators --launch`).
+  # In ~/.android/avd, where the emulator looks; avdmanager alone may pick $XDG_CONFIG_HOME/.android.
+  local avdmanager="$ANDROID_SDK/cmdline-tools/latest/bin/avdmanager" avd_home="$HOME/.android/avd"
+  if [ ! -f "$avd_home/$AVD_NAME.ini" ]; then
+    echo "setup: creating the Android emulator $AVD_NAME"
+    mkdir -p "$avd_home"
+    echo no | ANDROID_HOME="$ANDROID_SDK" ANDROID_AVD_HOME="$avd_home" "$avdmanager" create avd -n "$AVD_NAME" \
+      -d pixel_6 -k "system-images;android-34;google_apis;x86_64" -p "$avd_home/$AVD_NAME.avd" >/dev/null
+  fi
 }
 
 install_system_packages

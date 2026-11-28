@@ -66,8 +66,11 @@ output.json
 *.jks
 *.keystore
 
-# Google Services (e.g. APIs or Firebase)
+# Google Services (e.g. APIs or Firebase). Release builds use the maintainer's own
+# android/app/google-services.json; debug builds use the committed src/debug one, made from
+# the same public values as lib/firebase_options.dart.
 google-services.json
+!android/app/src/debug/google-services.json
 
 # Android Profiling
 *.hprof

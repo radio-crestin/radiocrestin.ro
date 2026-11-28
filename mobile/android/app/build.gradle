@@ -31,6 +31,9 @@ if (flutterVersionCode == null) {
     flutterVersionCode = '1'
 }
 
+// Releases have shipped with minSdk 26 (local.properties.example); local.properties may still override it.
+def flutterMinSdkVersion = (localProperties.getProperty('flutter.minSdkVersion') ?: '26').toInteger()
+
 def flutterVersionName = localProperties.getProperty('flutter.versionName')
 if (flutterVersionName == null) {
     flutterVersionName = '1.0'
@@ -71,7 +74,7 @@ android {
         applicationId "com.radiocrestin.radio_crestin"
         // You can update the following values to match your application needs.
         // For more information, see: https://docs.flutter.dev/deployment/android#reviewing-the-gradle-build-configuration.
-        minSdkVersion localProperties.getProperty('flutter.minSdkVersion').toInteger()
+        minSdkVersion flutterMinSdkVersion
         targetSdkVersion 36
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
