@@ -18,6 +18,10 @@ const Color _facebookBlue = Color(0xFF1877F2);
 /// buttons, and the system share sheet is the card's only filled button.
 class SharePromotionCard extends StatefulWidget {
   final GraphQLClient client;
+
+  /// Shown when the API's share link has no title or message of its own.
+  final String fallbackTitle;
+  final String fallbackMessage;
   final String? currentStationSlug;
   final String? currentStationName;
   final VoidCallback? onClose;
@@ -25,6 +29,8 @@ class SharePromotionCard extends StatefulWidget {
   const SharePromotionCard({
     super.key,
     required this.client,
+    required this.fallbackTitle,
+    required this.fallbackMessage,
     this.currentStationSlug,
     this.currentStationName,
     this.onClose,
@@ -98,16 +104,14 @@ class SharePromotionCardState extends State<SharePromotionCard> {
                 _Header(
                   title: data.shareSectionTitle.isNotEmpty
                       ? data.shareSectionTitle
-                      : 'Distribuie aplicația',
+                      : widget.fallbackTitle,
                   palette: palette,
                 ),
                 const SizedBox(height: 10),
                 Text(
                   data.shareSectionMessage.isNotEmpty
                       ? data.shareSectionMessage
-                      : 'Ajută la răspândirea Evangheliei prin intermediul '
-                          'radioului creștin. Apasă aici pentru a trimite '
-                          'această aplicație prietenilor tăi.',
+                      : widget.fallbackMessage,
                   style: TextStyle(
                     fontSize: 13.5,
                     height: 1.5,

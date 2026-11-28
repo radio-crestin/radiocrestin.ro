@@ -40,6 +40,7 @@ import '../services/announcement_push.dart';
 import '../services/autoplay_hold.dart';
 import '../services/announcements_service.dart';
 import '../services/home_promo_slot.dart';
+import '../services/promo_notification_service.dart';
 import '../services/analytics_service.dart';
 import '../services/background_polling_policy.dart';
 import '../types/Station.dart';
@@ -510,7 +511,10 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       ]).timeout(const Duration(seconds: 3));
 
       // Refresh share promotion card if it's visible
-      if (_homePromo is SharePromo) {
+      if (_homePromo
+          case NotificationPromo(
+            notification: PromoNotification(kind: PromoKind.share)
+          )) {
         _sharePromotionKey.currentState?.refreshShareLink();
       }
     } catch (e) {
@@ -1179,20 +1183,21 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                               case NotificationPromo(:final notification)
                               when searchResults == null)
                             SliverToBoxAdapter(
-                              child: PromoNotificationCard(
-                                notification: notification,
-                                onDismiss: _closeHomePromo,
-                              ),
-                            ),
-                          if (_homePromo is SharePromo && searchResults == null)
-                            SliverToBoxAdapter(
-                              child: SharePromotionCard(
-                                key: _sharePromotionKey,
-                                client: _audioHandler.graphqlClient,
-                                currentStationSlug: currentStation?.slug,
-                                currentStationName: currentStation?.title,
-                                onClose: _closeHomePromo,
-                              ),
+                              child: switch (notification.kind) {
+                                PromoKind.car => PromoNotificationCard(
+                                    notification: notification,
+                                    onDismiss: _closeHomePromo,
+                                  ),
+                                PromoKind.share => SharePromotionCard(
+                                    key: _sharePromotionKey,
+                                    client: _audioHandler.graphqlClient,
+                                    fallbackTitle: notification.title,
+                                    fallbackMessage: notification.message,
+                                    currentStationSlug: currentStation?.slug,
+                                    currentStationName: currentStation?.title,
+                                    onClose: _closeHomePromo,
+                                  ),
+                              },
                             ),
                           if (favoriteStations.isNotEmpty)
                             SliverStickyHeader(
