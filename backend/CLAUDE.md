@@ -62,8 +62,9 @@ make collectstatic            # Collect static files
 
 ### Testing and Quality
 ```bash
-# What CI runs (.github/workflows/ci.yml); no services needed, Django falls back to SQLite
-cd api && SECRET_KEY=dev python manage.py check && SECRET_KEY=dev python -m pytest -q tests
+# What CI runs (.github/workflows/ci.yml). Every API test: system check, api/tests and the apps' Django
+# tests, on a throwaway PostgreSQL container (Docker) unless DATABASE_URL is set; Redis optional
+make test                                   # from backend/; or api/scripts/test.sh <django test labels>
 cd streaming && python -m pytest -q tests --ignore=tests/test_hls_stream.py --ignore=tests/test_segment_serving.py
 # The two ignored files test a running stream: make dev-stream-test (from backend/)
 ```

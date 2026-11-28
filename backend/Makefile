@@ -30,6 +30,10 @@ stream-controller-logs:
 live-streaming-logs:
 	docker-compose logs -f -n 100 live-streaming
 
+# Every API test against a throwaway PostgreSQL container (api/scripts/test.sh); .env's database is left alone.
+test:
+	env -u DATABASE_URL -u DATABASE_DIRECT_URL -u REDIS_BROKER_URL api/scripts/test.sh
+
 load-admin-fixtures:
 	cd api && make load-fixtures
 

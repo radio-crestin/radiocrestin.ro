@@ -19,7 +19,7 @@ ENV PATH="/opt/venv/bin:$PATH"
 COPY --from=requirements /app/unified_requirements.txt /app/
 COPY constraints.txt /app/
 RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
-    pip install --no-cache-dir -r /app/unified_requirements.txt -c /app/constraints.txt psycopg2-binary
+    pip install --no-cache-dir -r /app/unified_requirements.txt -c /app/constraints.txt
 
 # Static ffmpeg/ffprobe (the stream_id3 scraper runs ffprobe). Debian's
 # ffmpeg package drags in libxml2, openexr and others with unfixed critical CVEs.
