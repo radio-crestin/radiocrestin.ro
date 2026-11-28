@@ -52,6 +52,9 @@ report_event() {
     python3 "$SCRIPTS_DIR/report_event.py" "$@" >/dev/null 2>&1 &
 }
 
+# Whole seconds of wall time; tests stub it with a fake clock.
+now_s() { date +%s; }
+
 # Interruptible sleep: a SIGTERM trap runs at once instead of after it.
 backoff_sleep() {
     sleep "$1" &
@@ -72,7 +75,7 @@ ffmpeg_loop() {
     # until its input ends.
     trap 'stop_child "$RELAY_PID"; stop_child "$FFMPEG_PID"; exit 0' TERM
     while true; do
-        started_at=$(date +%s)
+        started_at=$(now_s)
         RELAY_PID=""
         start_ffmpeg
         exit_code=0
@@ -84,7 +87,7 @@ ffmpeg_loop() {
             relay_code=0
             wait "$RELAY_PID" || relay_code=$?
         fi
-        ran_for=$(( $(date +%s) - started_at ))
+        ran_for=$(( $(now_s) - started_at ))
         restarts=$(( restarts + 1 ))
         if [ "$ran_for" -ge "$FFMPEG_STABLE_RUN" ]; then
             delay=$FFMPEG_RETRY_DELAY
@@ -116,12 +119,12 @@ supervise() {
     local delay=$HELPER_RETRY_DELAY child="" started_at ran_for code
     trap 'stop_child "$child"; exit 0' TERM
     while true; do
-        started_at=$(date +%s)
+        started_at=$(now_s)
         "$@" &
         child=$!
         code=0
         wait "$child" || code=$?
-        ran_for=$(( $(date +%s) - started_at ))
+        ran_for=$(( $(now_s) - started_at ))
         if [ "$ran_for" -ge "$FFMPEG_STABLE_RUN" ]; then
             delay=$HELPER_RETRY_DELAY
         fi

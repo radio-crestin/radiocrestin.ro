@@ -19,6 +19,9 @@ STUBS = """
 set -euo pipefail
 . "{supervisor}"
 sleeps=0
+# Fake clock: stubs advance CLOCK instead of taking real time.
+CLOCK=0
+now_s() {{ echo "$CLOCK"; }}
 report_event() {{ echo "event $*"; }}
 backoff_sleep() {{
     echo "sleep $1"
@@ -49,9 +52,7 @@ start_ffmpeg() { (exit 3) & FFMPEG_PID=$!; }
 ffmpeg_loop
 """)
         self.assertEqual(sleeps(out), [2, 4, 8, 16, 20, 20])
-        # `ran` has whole-second resolution (date +%s): the instant run
-        # reads 1 s when it straddles a second boundary.
-        self.assertRegex(out, r"ffmpeg exited \(code=3, ran=[01]s, "
+        self.assertRegex(out, r"ffmpeg exited \(code=3, ran=0s, "
                               r"restart_count=1\); retrying in 2s")
         self.assertIn("event ffmpeg_exit --prop exit_code=3", out)
 
@@ -61,7 +62,9 @@ FFMPEG_STABLE_RUN=1
 runs=0
 start_ffmpeg() {
     runs=$((runs + 1))
-    if [ "$runs" -eq 4 ]; then (sleep 1.2) & else (exit 1) & fi
+    # Run 4 lasts FFMPEG_STABLE_RUN seconds of fake time; the others none.
+    if [ "$runs" -eq 4 ]; then CLOCK=$((CLOCK + 1)); (exit 0) &
+    else (exit 1) & fi
     FFMPEG_PID=$!
 }
 ffmpeg_loop
