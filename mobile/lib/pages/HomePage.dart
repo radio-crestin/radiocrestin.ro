@@ -524,7 +524,10 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
   Future<void> _loadHomePromo() async {
     final promo = await HomePromoSlot(getIt<SharedPreferences>())
-        .current(announcements: _announcements.announcements.value);
+        .current(
+          announcements: _announcements.announcements.value,
+          shareFromApi: _announcements.offersShare,
+        );
     if (!mounted) return;
     // Announcements that arrived meanwhile keep the slot.
     final announcements = _announcements.announcements.value;

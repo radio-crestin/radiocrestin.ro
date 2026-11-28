@@ -158,6 +158,43 @@ void main() {
     });
   });
 
+  group('a share announcement from the API', () {
+    Future<String?> shownWithApiShare(int actions) async {
+      await _setActions(actions);
+      final promo = await HomePromoSlot(_prefs).current(shareFromApi: true);
+      return switch (promo) {
+        NotificationPromo(:final notification) => notification.id,
+        _ => null,
+      };
+    }
+
+    test('keeps the built-in share card from showing', () async {
+      await _start({
+        'promo_notifications_dismissed': [_car],
+      });
+      expect(await shownWithApiShare(40), isNull);
+      expect(await shownWithApiShare(5000), isNull);
+      // Once the API stops asking, the built-in card's turn comes.
+      expect(await _shownAt(5000), _share);
+    });
+
+    test('hides a share card on screen until the announcement goes',
+        () async {
+      await _start({
+        'promo_notifications_dismissed': [_car],
+      });
+      expect(await _shownAt(40), _share);
+      expect(await shownWithApiShare(41), isNull);
+      expect(PromoNotificationService(_prefs).closesOf(_share), 0);
+      expect(await _shownAt(42), _share);
+    });
+
+    test('still lets the car card show', () async {
+      await _start();
+      expect(await shownWithApiShare(30), _car);
+    });
+  });
+
   group('migration from the old share prefs', () {
     test('a share card on screen stays on screen', () async {
       await _start({

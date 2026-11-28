@@ -57,8 +57,14 @@ class HomePromoSlot {
   /// [announcements] from the API come first: they are what the team
   /// wants seen now. Otherwise the notification already on screen keeps the
   /// slot until it is closed.
+  ///
+  /// With [shareFromApi] (the API has a share announcement for this
+  /// device) the built-in share card never shows: the announcement asks
+  /// instead, with its own text and timing. A share card already on
+  /// screen waits, still on, for the announcement to go.
   Future<HomePromo?> current({
     AnnouncementList announcements = AnnouncementList.empty,
+    bool shareFromApi = false,
   }) async {
     await _migrateLegacyShare();
     if (announcements.items.isNotEmpty) {
@@ -68,6 +74,7 @@ class HomePromoSlot {
     if (shownId != null) {
       final shown = PromoNotificationService.byId(shownId);
       if (shown != null && !_notifications.isFinished(shownId)) {
+        if (shareFromApi && shown.kind == PromoKind.share) return null;
         return NotificationPromo(shown);
       }
       // Gone from the registry, or taken away meanwhile (the car card once
@@ -79,7 +86,9 @@ class HomePromoSlot {
         _notifications.actionsMade < closedAt + gapActions) {
       return null;
     }
-    final next = _notifications.getNextNotification();
+    final next = _notifications.getNextNotification(
+      skip: shareFromApi ? const {PromoKind.share} : const {},
+    );
     if (next == null) return null;
     await _prefs.setString(_currentKey, next.id);
     return NotificationPromo(next);

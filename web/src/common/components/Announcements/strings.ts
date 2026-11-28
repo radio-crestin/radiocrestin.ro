@@ -23,4 +23,7 @@ export const T = {
   stationSheetTitle: "Anunțuri ale postului",
   stationSheetSub: (station: string) => `De la ${station}`,
   bellLabel: "Anunțuri pentru acest post",
+  shareText: "Ascultă radio creștin online, gratuit, pe Radio Creștin:",
+  linkCopied: "Linkul a fost copiat",
+  copyFailed: (link: string) => `Copiază linkul: ${link}`,
 };

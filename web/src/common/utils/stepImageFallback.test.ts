@@ -77,7 +77,7 @@ describe("stepImageFallback", () => {
   it("clears srcset when stepping so the fallback src actually wins", () => {
     // srcset candidates outrank src — left in place, the browser would
     // re-select the broken 2x resource instead of loading the fallback
-    const img = fakeImg(STATION, `${STATION} 256w, /station-thumbnails/rve-cluj@2x.webp 512w`);
+    const img = fakeImg(STATION, `${STATION} 256w, /station-thumbnails/rve-cluj.2x.webp 512w`);
     stepImageFallback(img, STATION);
     expect(img.src).toBe(DEFAULT_RADIO_IMG);
     expect(img.srcset).toBeUndefined();

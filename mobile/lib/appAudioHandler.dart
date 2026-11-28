@@ -16,6 +16,7 @@ import 'package:just_audio/just_audio.dart';
 import 'package:radio_crestin/performance_monitor.dart';
 import 'package:radio_crestin/types/Station.dart';
 import 'package:flutter_airplay/flutter_airplay.dart' as flutter_airplay;
+import 'package:radio_crestin/services/announcements_service.dart';
 import 'package:radio_crestin/services/image_cache_service.dart';
 import 'package:radio_crestin/services/android_auto_browse.dart';
 import 'package:radio_crestin/services/car_play_layout.dart';
@@ -1993,9 +1994,18 @@ class AppAudioHandler extends BaseAudioHandler {
   final StreamFailover _failover = StreamFailover();
 
   final PlayCountTracker _playCountTracker = PlayCountTracker(
-    onCounted: (slug) =>
-        GetIt.instance<PlayCountService>().incrementPlayCount(slug),
+    onCounted: _onStationPlayed,
   );
+
+  /// A station was heard long enough to count: for "Most played", and for
+  /// the announcements that wait for playbacks (`count_on: playbacks`).
+  static void _onStationPlayed(String slug) {
+    final getIt = GetIt.instance;
+    getIt<PlayCountService>().incrementPlayCount(slug);
+    if (getIt.isRegistered<AnnouncementsService>()) {
+      getIt<AnnouncementsService>().onPlayback(slug);
+    }
+  }
   StreamSubscription<bool>? _playCountSub;
 
   AppAudioHandler({required this.graphqlClient, required this.player}) {

@@ -15,6 +15,7 @@ STATION_FIELDS_BLOCK = '''    __typename
     proxy_stream_url
     hls_stream_url
     hls_dvr_stream_url
+    audio_gain_db
     thumbnail_url
     total_listeners
     radio_crestin_listeners

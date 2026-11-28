@@ -100,10 +100,12 @@ class PromoNotificationService {
 
   PromoNotificationService(this._prefs);
 
-  /// The first notification due now, or null.
-  PromoNotification? getNextNotification() {
+  /// The first notification due now, or null; notifications of a kind in
+  /// [skip] are left out.
+  PromoNotification? getNextNotification({Set<PromoKind> skip = const {}}) {
     final actions = actionsMade;
     for (final notification in notifications) {
+      if (skip.contains(notification.kind)) continue;
       final due = dueAt(notification);
       if (due != null && actions >= due) return notification;
     }

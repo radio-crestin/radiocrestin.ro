@@ -2,6 +2,7 @@
 
 import React, { useContext, useEffect, useRef, useState } from "react";
 import { StationAnnouncementsBell } from "@/components/Announcements";
+import { reportPlayback } from "@/components/Announcements/playbacks";
 import type HlsType from "hls.js";
 import type { HlsConfig } from "hls.js";
 
@@ -80,6 +81,8 @@ export default function RadioPlayer() {
   const favouriteItems = useFavourite((s) => s.favouriteItems);
   const toggleFavourite = useFavourite((s) => s.toggleFavourite);
   const incrementPlayCount = usePlayCount((s) => s.incrementPlayCount);
+  /** The station whose playback was reported (reportPlayback); null once stopped. */
+  const playbackReportedRef = useRef<string | null>(null);
   const { refreshStations } = useRefreshStations();
   const [isFavorite, setIsFavorite] = useState(false);
   const [expanded, setExpanded] = useState(false);
@@ -832,6 +835,7 @@ export default function RadioPlayer() {
       case PLAYBACK_STATE.STOPPED:
         // A stop (user or exhausted retries) cancels any pending network auto-resume
         waitingForNetworkRef.current = false;
+        playbackReportedRef.current = null; // playing again is a new playback
         if (listeningStartRef.current) {
           const durationSeconds = (Date.now() - listeningStartRef.current.time) / 1000;
           trackListeningStopped(listeningStartRef.current.slug, listeningStartRef.current.title, durationSeconds, "stop", listeningStartRef.current.id);
@@ -1605,6 +1609,11 @@ export default function RadioPlayer() {
             // refill the retry budget so long sessions survive many hiccups.
             waitingForNetworkRef.current = false;
             retriesRef.current = MAX_MEDIA_RETRIES;
+            // a playback for the announcement waits: once per station started (not per recovery)
+            if (playbackReportedRef.current !== station.slug) {
+              playbackReportedRef.current = station.slug;
+              reportPlayback(station.slug);
+            }
             setPlaybackState(PLAYBACK_STATE.PLAYING);
             setHasError(false);
             hlsRecoveryRef.current = 0;
